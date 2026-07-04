@@ -29,8 +29,17 @@
 - `05_simulation/configs/marl_algorithm_sweep.yaml`
 - `05_simulation/src/isac_nd_sim/mobility.py`
 - `05_simulation/src/isac_nd_sim/simulator.py`
+- `05_simulation/src/isac_nd_sim/runner.py`
+- `05_simulation/configs/mobile_smoke.yaml`
 - `05_simulation/tests/test_mobility.py`
 - `05_simulation/tests/test_simulator_smoke.py`
+
+快速运行动态 smoke test：
+
+```powershell
+python 05_simulation/run_smoke.py --episodes 1 --slots 50 --protocols uniform_random,itap_nd --mobility gauss_markov
+python -m pytest 05_simulation/tests -q
+```
 
 ## Repository Rules
 

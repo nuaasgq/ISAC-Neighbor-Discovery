@@ -232,6 +232,23 @@ $env:PYTHONPATH='05_simulation/src'
 python -m isac_nd_sim.runner --config 05_simulation/configs/mvp.yaml --output 05_simulation/results_raw/smoke_dynamic --episodes 2 --slots 100 --protocols uniform_random,isac_only,itap_nd
 ```
 
+也可以直接使用仓库根入口和轻量配置：
+
+```powershell
+python 05_simulation/run_smoke.py --episodes 1 --slots 50 --protocols uniform_random,itap_nd --mobility gauss_markov
+```
+
+当前 runner 输出：
+
+| 文件 | 内容 |
+|---|---|
+| `config.yaml` | 本次运行使用的配置副本 |
+| `seed_manifest.json` | 每个 protocol-episode 的随机种子 |
+| `per_episode_summary.csv` | 发现率、censored delay、空扫率、碰撞数、移动距离、LCC、`lambda2` 等 episode 级指标 |
+| `per_slot_metrics.csv` | 每个 slot 的真实边数、累计发现边数、新发现边数、空扫率、连通分量、LCC、`lambda2` |
+| `discovered_edges.csv` | 每条首次发现链路的端点、首次可见 slot、发现 slot 和时延 |
+| `aggregate_metrics.json` | 按协议聚合的均值指标 |
+
 运行测试：
 
 ```powershell

@@ -10,7 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import load_config  # noqa: E402
-from isac_nd_sim.runner import override_config, run, write_outputs  # noqa: E402
+from isac_nd_sim.runner import override_config, override_mobility, run_detailed, write_outputs  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,16 +20,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--episodes", type=int, default=None)
     parser.add_argument("--slots", type=int, default=None)
     parser.add_argument("--protocols", default=None)
+    parser.add_argument("--mobility", default=None)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     config_path = Path(args.config)
-    config = override_config(load_config(config_path), args.episodes, args.slots)
+    config = override_mobility(override_config(load_config(config_path), args.episodes, args.slots), args.mobility)
     protocols = args.protocols.split(",") if args.protocols else list(config.baselines)
-    rows = run(config, protocols)
-    write_outputs(config_path, Path(args.output), rows)
+    rows, slot_rows, edge_rows = run_detailed(config, protocols)
+    write_outputs(config_path, Path(args.output), rows, config, slot_rows, edge_rows)
     print(f"wrote {len(rows)} episode summaries to {args.output}")
 
 
