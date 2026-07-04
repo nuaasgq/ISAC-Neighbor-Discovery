@@ -1,0 +1,40 @@
+{
+  "created_at": "2026-07-05T07:29:49",
+  "input_root": "05_simulation\\results_raw\\pre11_marl_probe_20260705_072514",
+  "output_dir": "06_analysis\\paper_tables\\structured_marl_probe",
+  "figure_dir": "06_analysis\\paper_figures\\structured_marl_probe",
+  "rows": 600,
+  "runs": 12,
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_eval_discovery_rate.png",
+      "type": "eval_grouped",
+      "metric": "env_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_eval_lambda2.png",
+      "type": "eval_grouped",
+      "metric": "env_lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_eval_empty_scan_ratio.png",
+      "type": "eval_grouped",
+      "metric": "env_empty_scan_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_bc_loss_curve.png",
+      "type": "training_curve",
+      "metric": "loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_reward_curve.png",
+      "type": "training_curve",
+      "metric": "reward_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_empty_collision_tradeoff.png",
+      "type": "scatter",
+      "metric": "empty_collision"
+    }
+  ]
+}

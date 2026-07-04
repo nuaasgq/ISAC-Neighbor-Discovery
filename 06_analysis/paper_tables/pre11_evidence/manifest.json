@@ -1,0 +1,38 @@
+{
+  "created_at": "2026-07-05T07:28:28",
+  "round10": "06_analysis\\paper_tables\\round10_n100_b10_b15_extra_seeds",
+  "output_dir": "06_analysis\\paper_tables\\pre11_evidence",
+  "figure_dir": "06_analysis\\paper_figures\\pre11_evidence",
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\pre11_evidence\\round10_cumulative_discovery_b10.png",
+      "type": "cumulative",
+      "beamwidth_deg": 10.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\pre11_evidence\\round10_cumulative_discovery_b15.png",
+      "type": "cumulative",
+      "beamwidth_deg": 15.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\pre11_evidence\\round10_tradeoff_discovery_rate.png",
+      "type": "tradeoff_bar",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\pre11_evidence\\round10_tradeoff_collision_penalized.png",
+      "type": "tradeoff_bar",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\pre11_evidence\\round10_tradeoff_lambda2.png",
+      "type": "tradeoff_bar",
+      "metric": "lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\pre11_evidence\\round10_tradeoff_empty_scan.png",
+      "type": "tradeoff_bar",
+      "metric": "empty_scan_ratio_mean"
+    }
+  ]
+}
