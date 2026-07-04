@@ -1,0 +1,105 @@
+experiment:
+  name: "paper_comparison_matrix"
+  objective: "minimal paper-grade comparison set"
+  reference_baseline: "skyorbs_like_skip_scan"
+
+name: "paper_comparison_matrix"
+base_config: "05_simulation/configs/mobile_smoke.yaml"
+output_root: "05_simulation/results_raw/paper_comparison_matrix"
+
+protocols:
+  - "skyorbs_like_skip_scan"
+  - "uniform_random"
+  - "rl_no_isac"
+  - "improved_rl_no_isac"
+  - "improved_rl_isac"
+
+sweep:
+  episodes: 5
+  seeds: [20260704, 20260705, 20260706]
+  mobility:
+    - "gauss_markov"
+    - "random_walk"
+    - "random_direction"
+  slots: [200]
+  node_counts: [12, 24]
+  beam_cells:
+    - {azimuth_cells: 12, elevation_cells: 4}
+    - {azimuth_cells: 24, elevation_cells: 8}
+
+comparison_groups:
+  reference_literature:
+    method: "skyorbs_like_skip_scan"
+    source: "SkyOrbs: A Fast 3-D Directional Neighbor Discovery Algorithm for UAV Networks, IEEE TMC 2024"
+    isac_prior: false
+    learning: false
+    note: "engineering approximation in current simulator"
+
+  random_baseline:
+    method: "uniform_random"
+    isac_prior: false
+    learning: false
+
+  rl_no_isac:
+    method: "rl_no_isac"
+    isac_prior: false
+    learning: true
+    architecture: "vanilla_shared_actor"
+    observation:
+      include_self_state: true
+      include_history: true
+      include_isac_prior: false
+      include_undiscovered_neighbor_truth: false
+
+  improved_rl_no_isac:
+    method: "improved_rl_no_isac"
+    isac_prior: false
+    learning: true
+    architecture: "hierarchical_mode_beam_with_memory_and_topology_reward"
+    observation:
+      include_self_state: true
+      include_history: true
+      include_neighbor_pooling: true
+      include_isac_prior: false
+      include_undiscovered_neighbor_truth: false
+
+  improved_rl_isac:
+    method: "improved_rl_isac"
+    isac_prior: true
+    learning: true
+    architecture: "piggyback_isac_rule_residual_pabr_or_scalegraph_beam"
+    observation:
+      include_self_state: true
+      include_history: true
+      include_neighbor_pooling: true
+      include_isac_prior: true
+      include_uncertainty: true
+      include_undiscovered_neighbor_truth: false
+
+minimum_metrics:
+  discovery:
+    - "finite_time_discovery_rate"
+    - "mean_discovery_delay"
+    - "p95_discovery_delay"
+    - "p99_discovery_delay"
+    - "empty_scan_ratio"
+  topology:
+    - "lcc_ratio"
+    - "isolated_node_ratio"
+    - "lambda2"
+  scalability:
+    - "scale_retention"
+    - "per_node_inference_time"
+
+success_gate:
+  random_vs_reference:
+    reference_not_weaker_than_random: true
+  rl_baseline:
+    rl_no_isac_should_exceed_random: true
+    rl_no_isac_expected_limited_gain: true
+  method_innovation:
+    improved_rl_no_isac_exceeds_rl_no_isac: true
+  mechanism_innovation:
+    improved_rl_isac_exceeds_improved_rl_no_isac: true
+  paper_claim:
+    improved_rl_isac_exceeds_reference_on_at_least_metric_categories: 3

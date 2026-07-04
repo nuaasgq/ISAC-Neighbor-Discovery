@@ -3,6 +3,8 @@
 __all__ = [
     "beam",
     "config",
+    "marl_env",
     "mobility",
     "simulator",
+    "sweep",
 ]

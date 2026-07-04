@@ -96,6 +96,20 @@
 | MAT-I-TAP | multi-agent transformer / sequence modeling | 结构创新候选 |
 | Oracle ND | 已知真实 occupied beam cells | 上界，不参与公平协议比较 |
 
+## 论文必须完成的五类对比
+
+配置入口：`05_simulation/configs/paper_comparison_matrix.yaml`
+
+| 类别 | 方法名 | 成功目的 |
+|---|---|---|
+| 参考文献基线 | `skyorbs_like_skip_scan` | 与 3D UAV directional ND 近邻工作比较 |
+| 完全随机 | `uniform_random` | 随机盲扫下界 |
+| 强化学习但没有 ISAC | `rl_no_isac` | 验证仅靠 RL 在高维搜索中提升有限 |
+| 改进强化学习 | `improved_rl_no_isac` | 验证分层动作、记忆、拓扑奖励等方法创新 |
+| 改进强化学习 + ISAC | `improved_rl_isac` | 验证 ISAC prior 与方法创新叠加收益 |
+
+当前 `skyorbs_like_skip_scan` 是 SkyOrbs 论文思想的工程近似版，用于早期对比；论文终稿前应继续核对 SkyOrbs 原文扫描序列和天线切换约束。
+
 ## Metrics
 
 ### 发现效率

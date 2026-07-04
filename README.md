@@ -24,8 +24,10 @@
 
 - `00_workflow/sprint_4_marl_algorithm_exploration.md`
 - `00_workflow/sprint_5_dynamic_simulation_task_breakdown.md`
+- `04_protocol/comparison_baselines.md`
 - `04_protocol/marl_algorithm_suite.md`
 - `04_protocol/neural_architecture_innovation.md`
+- `05_simulation/configs/paper_comparison_matrix.yaml`
 - `05_simulation/configs/marl_algorithm_sweep.yaml`
 - `05_simulation/src/isac_nd_sim/mobility.py`
 - `05_simulation/src/isac_nd_sim/simulator.py`

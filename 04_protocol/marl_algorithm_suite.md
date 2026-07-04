@@ -149,3 +149,13 @@ ISAC-Prior-Guided Scalable MARL Neighbor Discovery
 4. **Uncertainty-aware entropy control**：根据 ISAC prior 不确定性调节探索熵，防止漏检造成永久剪枝。
 5. **PABR-Net**：姿态感知 beam token、per-beam action memory 和 risk head 共同建模三维 ISAC 波位信念。
 6. **ScaleGraph-Beam MARL**：top-K beam attention、已发现邻居 pooling 和 mean-field congestion summary 支撑小到大规模迁移。
+
+## 9. 必须进入论文的 RL 消融链
+
+| 方法 | ISAC | 结构增强 | 目的 |
+|---|---:|---:|---|
+| `rl_no_isac` | 否 | 否 | 普通学习能否替代盲扫 |
+| `improved_rl_no_isac` | 否 | 是 | 方法创新的独立收益 |
+| `improved_rl_isac` | 是 | 是 | ISAC 机制与方法创新叠加收益 |
+
+这三类方法必须与 `uniform_random` 和 `skyorbs_like_skip_scan` 同场景比较，才能支撑论文主张。

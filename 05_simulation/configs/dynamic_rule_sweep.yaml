@@ -1,0 +1,24 @@
+name: "dynamic_rule_sweep"
+base_config: "05_simulation/configs/mobile_smoke.yaml"
+output_root: "05_simulation/results_raw/dynamic_rule_sweep"
+
+protocols:
+  - "uniform_random"
+  - "deterministic_scan"
+  - "isac_only"
+  - "topology_only"
+  - "itap_nd"
+
+sweep:
+  episodes: 3
+  seeds: [20260704, 20260705, 20260706]
+  mobility:
+    - "gauss_markov"
+    - "random_walk"
+    - "random_direction"
+    - "random_waypoint"
+  slots: [200, 500]
+  node_counts: [12, 24]
+  beam_cells:
+    - {azimuth_cells: 12, elevation_cells: 4}
+    - {azimuth_cells: 24, elevation_cells: 8}

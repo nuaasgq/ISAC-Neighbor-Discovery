@@ -51,8 +51,9 @@ def run_detailed(config: SimulationConfig, protocols: list[str]) -> tuple[list[d
     edge_rows: list[dict] = []
     for protocol in protocols:
         for episode in range(config.episodes):
-            seed = config.seed + 1009 * episode + stable_protocol_offset(protocol)
-            simulator = NeighborDiscoverySimulator(config, protocol, seed)
+            scenario_seed = config.seed + 1009 * episode
+            policy_seed = scenario_seed + stable_protocol_offset(protocol)
+            simulator = NeighborDiscoverySimulator(config, protocol, policy_seed, scenario_seed=scenario_seed)
             rows.append(with_metric_aliases(simulator.run_episode(episode).as_dict(), config.n_nodes))
             slot_rows.extend(simulator.per_slot_rows)
             for edge_row in simulator.edge_rows:
@@ -67,7 +68,9 @@ def stable_protocol_offset(protocol: str) -> int:
 def with_metric_aliases(row: dict, n_nodes: int) -> dict:
     row = dict(row)
     row["mean_discovery_delay"] = row["mean_delay_censored"]
+    row["p90_discovery_delay"] = row["p90_delay_censored"]
     row["p95_discovery_delay"] = row["p95_delay_censored"]
+    row["p99_discovery_delay"] = row["p99_delay_censored"]
     row["finite_time_discovery_rate"] = row["discovery_rate"]
     row["lcc_ratio"] = row["largest_component_size"] / max(1, n_nodes)
     row.setdefault("lambda2", 0.0)
