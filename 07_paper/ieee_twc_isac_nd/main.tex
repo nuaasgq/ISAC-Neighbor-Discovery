@@ -27,13 +27,13 @@ Narrow beams improve the link budget of millimeter-wave unmanned aerial vehicle 
 Deterministic directional neighbor discovery protocols can provide bounded delay but are tightly coupled with network scale and scan schedules, while random protocols are flexible but suffer from long-tail discovery latency and weak topology quality within a finite discovery window.
 This paper studies a fully distributed UAV-UAV setting where each UAV knows its own pose and position but has no prior information about undiscovered neighbors.
 We abstract integrated sensing and communication (ISAC) as a link-layer beam-cell occupancy prior, rather than as an oracle position estimator, and propose \method{}, an ISAC-assisted topology-aware protocol that uses sensing feedback to suppress empty beam cells, preserve exploration under sensing errors, and prioritize beam choices that are more likely to improve local connectivity.
-We further develop \learnedmethod{}, a shared-policy learning-enhanced variant trained at a small scale and transferred without fine-tuning to larger swarms and different beamwidths.
-Simulation results under dynamic UAV mobility show that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learning baselines.
-Ongoing robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, and mechanism ablations.
+We further develop \learnedmethod{}, a shared-policy learning-enhanced variant trained at a small scale and tested for zero-shot transfer to larger swarms and different beamwidths.
+Simulation results in the tested dynamic UAV scenarios show that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learning baselines.
+Additional robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, angular-cell errors, and mechanism ablations.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Integrated sensing and communication, neighbor discovery, UAV swarm, narrow beam, directional antenna, distributed networking, multi-agent learning.
+Integrated sensing and communication, neighbor discovery, UAV swarm, narrow beam, directional antenna, distributed networking, shared-policy learning.
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -73,7 +73,7 @@ This paper makes the following contributions.
 Early directional ND work studied probabilistic transmission and listening strategies for nodes with directional antennas \cite{Vasudevan2005DirectionalND}.
 Oblivious ND later established a theoretical foundation for distributed directional discovery without prior coordination or synchronization \cite{Chen2017ObliviousND}.
 For UAV networks, SkyOrbs introduced a fast three-dimensional directional ND algorithm tailored to aerial scenarios \cite{SkyOrbs2024TMC}.
-Our work differs by treating sensing feedback as a link-layer prior and by optimizing finite-time discovery jointly with topology-quality proxies.
+Our work differs by treating sensing feedback as a link-layer prior and by using topology-quality proxies to guide finite-time discovery priorities.
 
 \subsection{ISAC-Assisted Beam Management}
 ISAC has been used to reduce beam training overhead in vehicular and UAV-assisted systems \cite{Li2024SensingNRV2X,Cui2024SensingUAVBM}.
@@ -85,7 +85,7 @@ By contrast, this paper targets a fully distributed UAV-UAV ND protocol and uses
 Multi-agent reinforcement learning and graph neural policies have been studied for wireless resource allocation and distributed channel access \cite{Naderializadeh2021MADRLTWC,Eisen2020REGNN,Guo2022MARLMAC}.
 Learning has also appeared in directional ND and beam configuration \cite{Wang2024RLDirectionalND}.
 The present draft uses a shared-policy, learning-enhanced distributed policy rather than claiming a complete neural MARL algorithm as the final contribution.
-The learning component is used to tune scalable local decision rules that can transfer across swarm sizes.
+The learning component is used to tune scalable local decision rules whose zero-shot transfer behavior can be tested across swarm sizes.
 
 \section{System Model}
 Consider $N$ UAVs moving in a three-dimensional region.
@@ -147,7 +147,7 @@ Future neural variants can replace the score function with actor-critic, value-d
 \subsection{Mobility and Slot Timing}
 The simulation uses dynamic UAV mobility, including Gauss-Markov, random-walk, and random-direction/waypoint variants.
 The slot duration is set to 5 ms so that ISAC observations remain meaningful within the mobility timescale.
-The primary training configuration uses $N=10$ UAVs and 10-degree beams, and evaluates zero-shot transfer to larger swarms.
+The primary training configuration uses $N=10$ UAVs and 10-degree beams, and evaluates zero-shot transfer to larger swarms. The 5 ms slot duration is an explicit modeling assumption rather than a physical-layer timing result.
 
 \subsection{Baselines}
 The comparison set includes uniform random scanning, a SkyOrbs-like directional baseline, learning without ISAC, improved learning without ISAC, and the proposed improved learning with ISAC.
@@ -210,9 +210,23 @@ Increasing $\Rs$ beyond $\Rc$ does not provide additional gain for communication
   \label{fig:range_gain_heatmap}
 \end{figure}
 
+The sensing-error experiments show a bounded degradation rather than a collapse.
+In the paired 600-slot profile sweep, the proposed policy's discovery rate decreases from 0.3655 under ideal sensing to 0.3357 under $(P_{\mathrm{fa}},P_{\mathrm{md}},\sigma_b)=(0.01,0.05,0.5)$ and to 0.2854 under $(0.05,0.15,1.0)$.
+The severe $(0.10,0.30,1.5)$ profile remains around 0.2935 in this stochastic run.
+These results support the weaker but important claim that the ISAC prior remains useful under moderate sensing errors; they do not imply immunity to severe sensing faults.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png}
+  \caption{ISAC error-profile robustness at N=100 and 10-degree beams. The error severity index combines false alarms, missed detections, and angular-cell offset for visualization only; each point corresponds to one configured error profile.}
+  \label{fig:error_profile}
+\end{figure}
+
 The mechanism ablation completed first.
 At $N=100$ and 10-degree beams, removing the ISAC-driven candidate-set refinement reduces the discovery rate from 0.3655 to 0.0313 and drives the discovered graph connectivity to nearly zero.
 Removing topology-aware scoring or beam-lock refinement causes a smaller degradation, suggesting that candidate-set formation is the dominant mechanism in the current protocol.
+This result is also a modeling caveat: the candidate-set refinement assumes that ISAC-updated candidate beams can affect readiness inside the discovery opportunity represented by a slot.
+A hardware-constrained implementation may need to delay the candidate-set use by one slot or restrict the number of candidate beams, which should be evaluated in future work.
 
 \begin{figure}[!t]
   \centering
@@ -226,7 +240,9 @@ This draft has four important limitations.
 First, the current learning component is a shared-policy parameter optimization workflow, not yet a full MAPPO, QMIX, or graph neural MARL implementation.
 Second, the SkyOrbs comparison is a SkyOrbs-like baseline rather than a strict reproduction of the complete original algorithm.
 Third, ISAC is represented by an abstract beam-cell occupancy prior; physical waveform design and estimator implementation are outside the scope.
-Fourth, extremely narrow beams at 3 and 5 degrees remain a stress region and should be discussed as such.
+Fourth, candidate-set refinement currently abstracts sub-slot or readiness behavior that requires a dedicated implementation analysis.
+Fifth, extremely narrow beams at 3 and 5 degrees remain a stress region and should be discussed as such.
+Finally, the proposed ISAC-assisted policy creates more collision attempts than the no-ISAC baseline in dense finite-horizon tests; collision-normalized efficiency and energy cost should be added before a submission-ready version.
 
 \section{Conclusion}
 This paper studies ISAC-assisted narrow-beam neighbor discovery for fully distributed UAV swarms.

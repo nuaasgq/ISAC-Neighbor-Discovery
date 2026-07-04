@@ -211,7 +211,7 @@ def save_range_gain_heatmap(df, metric_key: str, path: Path, plt, node_count: in
     metric_col, ylabel, direction = METRICS[metric_key]
     if metric_col not in df:
         return skipped(path, metric_key, f"missing metric {metric_col}")
-    subset = select_common(df, node_count, beamwidth_deg)
+    subset = range_sweep_subset(select_common(df, node_count, beamwidth_deg))
     subset = zero_error_subset(subset)
     merged = proposed_vs_baseline(subset, metric_col)
     if merged.empty:
@@ -251,7 +251,8 @@ def save_error_gain_heatmap(df, metric_key: str, path: Path, plt, node_count: in
     metric_col, ylabel, direction = METRICS[metric_key]
     if metric_col not in df:
         return skipped(path, metric_key, f"missing metric {metric_col}")
-    subset = select_common(df, node_count, beamwidth_deg)
+    subset = source_contains_subset(select_common(df, node_count, beamwidth_deg), "error_robustness")
+    subset = error_sweep_subset(subset)
     if "angular_cell_offset_std" in subset:
         subset = subset[subset["angular_cell_offset_std"] == subset["angular_cell_offset_std"].min()]
     merged = proposed_vs_baseline(subset, metric_col)
@@ -286,7 +287,7 @@ def save_ablation_bar(df, metric_key: str, path: Path, plt, node_count: int, bea
     protocols = set(df["protocol"].astype(str))
     if not any(protocol.startswith("ablation_") for protocol in protocols):
         return skipped(path, metric_key, "missing ablation protocols")
-    subset = select_common(df, node_count, beamwidth_deg)
+    subset = source_contains_subset(select_common(df, node_count, beamwidth_deg), "ablation")
     subset = zero_error_subset(subset)
     subset = subset[subset["protocol"].isin(PROTOCOL_ORDER)]
     if subset.empty:
@@ -320,7 +321,7 @@ def save_range_protocol_curves(df, metric_key: str, path: Path, plt, node_count:
     metric_col, ylabel, _direction = METRICS[metric_key]
     if metric_col not in df:
         return skipped(path, metric_key, f"missing metric {metric_col}")
-    subset = select_common(df, node_count, beamwidth_deg)
+    subset = range_sweep_subset(select_common(df, node_count, beamwidth_deg))
     subset = zero_error_subset(subset)
     subset = subset[subset["protocol"].isin(["uniform_random", NO_ISAC, PROPOSED])]
     if subset.empty or subset["sensing_to_comm_range_ratio"].nunique() < 2:
@@ -363,7 +364,8 @@ def save_error_profile_curves(df, metric_key: str, path: Path, plt, node_count: 
     metric_col, ylabel, _direction = METRICS[metric_key]
     if metric_col not in df:
         return skipped(path, metric_key, f"missing metric {metric_col}")
-    subset = select_common(df, node_count, beamwidth_deg)
+    subset = source_contains_subset(select_common(df, node_count, beamwidth_deg), "error_profiles")
+    subset = error_sweep_subset(subset)
     subset = subset[subset["protocol"].isin([NO_ISAC, PROPOSED])]
     if subset.empty:
         return skipped(path, metric_key, "missing proposed/no-ISAC rows")
@@ -433,6 +435,44 @@ def zero_error_subset(df):
         if column in subset and subset[column].notna().any() and 0.0 in set(subset[column].astype(float)):
             subset = subset[subset[column].astype(float) == 0.0]
     return subset
+
+
+def error_sweep_subset(df):
+    subset = df.copy()
+    if "source" in subset:
+        error_sources = subset["source"].astype(str).str.contains("error", case=False, na=False)
+        if error_sources.any():
+            return subset[error_sources]
+    nonzero_columns = [
+        column
+        for column in ("false_alarm_rate", "miss_detection_rate", "angular_cell_offset_std")
+        if column in subset.columns
+    ]
+    if nonzero_columns:
+        nonzero_mask = False
+        for column in nonzero_columns:
+            nonzero_mask = nonzero_mask | (subset[column].fillna(0).astype(float) > 0.0)
+        if nonzero_mask.any():
+            sources = set(subset.loc[nonzero_mask, "source"]) if "source" in subset else set()
+            if sources and "source" in subset:
+                return subset[subset["source"].isin(sources)]
+    return subset
+
+
+def range_sweep_subset(df):
+    subset = source_contains_subset(df, "range")
+    if not subset.empty:
+        return subset
+    return df
+
+
+def source_contains_subset(df, token: str):
+    if "source" not in df:
+        return df
+    mask = df["source"].astype(str).str.contains(token, case=False, na=False)
+    if mask.any():
+        return df[mask].copy()
+    return df
 
 
 def improvement(proposed, baseline, direction: str):

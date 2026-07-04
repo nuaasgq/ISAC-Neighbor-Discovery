@@ -11,8 +11,8 @@ Generated during the long-run goal window ending at 2026-07-05 11:00 (Asia/Shang
 | `round3_n100_fixed_multiseed` | Multi-seed N=100 transfer under fixed-area scaling | complete | `05_simulation/results_raw/round3_n100_fixed_multiseed` | `06_analysis/paper_tables/round3_robustness/n100_fixed_multiseed` | `06_analysis/paper_figures/round3_n100_transfer` |
 | `round3_range_rc_rs_grid` | Physical range sensitivity over `Rc/D` and `Rs/Rc` | complete | `05_simulation/results_raw/round3_range_rc_rs_grid` | `06_analysis/paper_tables/round3_robustness/range_rc_rs_grid` | `06_analysis/paper_figures/round3_robustness` |
 | `round3_range_rs_ratio` | Auxiliary `Rs/Rc` sensitivity at single-hop `Rc/D=1.05` | complete | `05_simulation/results_raw/round3_range_rs_ratio` | `06_analysis/paper_tables/round3_robustness/range_rs_ratio` | `06_analysis/paper_figures/round3_robustness` |
-| `round3_error_profiles` | Paired ISAC false-alarm, miss-detection, angular-error profiles | running | `05_simulation/results_raw/round3_error_profiles` | pending | pending |
-| `round3_error_robustness` | Auxiliary full-factor small ISAC error grid | running | `05_simulation/results_raw/round3_error_robustness` | pending | pending |
+| `round3_error_profiles` | Paired ISAC false-alarm, miss-detection, angular-error profiles | complete | `05_simulation/results_raw/round3_error_profiles` | `06_analysis/paper_tables/round3_robustness/error_profiles` | `06_analysis/paper_figures/round3_robustness` |
+| `round3_error_robustness` | Auxiliary full-factor small ISAC error grid | complete | `05_simulation/results_raw/round3_error_robustness` | `06_analysis/paper_tables/round3_robustness/error_robustness` | `06_analysis/paper_figures/round3_robustness` |
 
 ## Completed Results Snapshot
 
@@ -74,6 +74,33 @@ Interpretation: increasing sensing range from half the communication range to th
 
 Interpretation: the useful sensing range saturates around the communication range in this communication-neighbor-discovery model. The most visible degradation appears when both communication range and sensing range are small (`Rc/D=0.65`, `Rs/Rc=0.5`).
 
+### ISAC Error Robustness, N=100, 10-degree Beam
+
+The full-factor error grid uses 400-slot episodes with two seeds. It should be used for robustness trends, not directly compared against the 600-slot main transfer numbers.
+
+| Pfa | Pmd | Angular std | Proposed discovery rate | Proposed empty-scan ratio | No-ISAC discovery rate |
+|---:|---:|---:|---:|---:|---:|
+| 0.000 | 0.00 | 0.0 | 0.2771 | 0.4929 | 0.0004 |
+| 0.000 | 0.02 | 0.0 | 0.2847 | 0.4981 | 0.0004 |
+| 0.000 | 0.05 | 0.0 | 0.2772 | 0.4973 | 0.0004 |
+| 0.005 | 0.00 | 0.0 | 0.2699 | 0.5015 | 0.0004 |
+| 0.005 | 0.02 | 0.0 | 0.2691 | 0.5066 | 0.0004 |
+| 0.005 | 0.05 | 0.0 | 0.2747 | 0.5002 | 0.0004 |
+| 0.010 | 0.00 | 0.0 | 0.2657 | 0.5005 | 0.0004 |
+| 0.010 | 0.02 | 0.0 | 0.2687 | 0.5045 | 0.0004 |
+| 0.010 | 0.05 | 0.0 | 0.2694 | 0.5028 | 0.0004 |
+
+The paired 600-slot profile sweep further includes angular error:
+
+| Pfa | Pmd | Angular std | Proposed discovery rate | Proposed empty-scan ratio | Lambda2 |
+|---:|---:|---:|---:|---:|---:|
+| 0.00 | 0.00 | 0.0 | 0.3655 | 0.4986 | 12.9222 |
+| 0.01 | 0.05 | 0.5 | 0.3357 | 0.5464 | 13.6500 |
+| 0.05 | 0.15 | 1.0 | 0.2854 | 0.5934 | 9.8519 |
+| 0.10 | 0.30 | 1.5 | 0.2935 | 0.6111 | 12.0446 |
+
+Interpretation: noisy ISAC degrades discovery and increases empty scans, but the proposed protocol remains far above the no-ISAC baseline in these tested regimes. The result supports a bounded robustness claim, not a claim of immunity to sensing errors.
+
 ## Figure Inventory
 
 - `06_analysis/paper_figures/round3_robustness/ablation_discovery_n100_b10.png`
@@ -93,6 +120,9 @@ Interpretation: the useful sensing range saturates around the communication rang
 - `06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png`
 - `06_analysis/paper_figures/round3_robustness/range_gain_empty_scan_n100_b10.png`
 - `06_analysis/paper_figures/round3_robustness/range_gain_lambda2_n100_b10.png`
+- `06_analysis/paper_figures/round3_robustness/error_gain_discovery_n100_b10.png`
+- `06_analysis/paper_figures/round3_robustness/error_gain_empty_scan_n100_b10.png`
+- `06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png`
 
 ## Paper-Writing Implications
 
@@ -100,4 +130,4 @@ Interpretation: the useful sensing range saturates around the communication rang
 - Strong claim: the learned small-scale policy transfers to N=100 for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - Conservative claim: 3-5 degree beams are still a stress region under the current finite-time horizon.
 - Conservative claim: current learning is shared-policy parameter optimization, not yet a full neural MARL implementation.
-- Pending claim: ISAC error robustness must wait for the running round3 error jobs.
+- Remaining gap: candidate-set refinement still needs an explicit implementation-boundary analysis, especially whether it assumes same-slot multi-beam readiness or can be delayed by one slot.

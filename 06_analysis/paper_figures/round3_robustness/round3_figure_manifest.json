@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-04T16:57:09.940452+00:00",
+  "generated_at_utc": "2026-07-04T17:18:50.342219+00:00",
   "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_round3_results.py",
   "style": {
     "figsize_inches": [
@@ -21,15 +21,17 @@
   "inputs": [
     "05_simulation\\results_raw\\round3_ablation",
     "05_simulation\\results_raw\\round3_range_rs_ratio",
-    "05_simulation\\results_raw\\round3_range_rc_rs_grid"
+    "05_simulation\\results_raw\\round3_range_rc_rs_grid",
+    "05_simulation\\results_raw\\round3_error_robustness",
+    "05_simulation\\results_raw\\round3_error_profiles"
   ],
   "selection": {
     "node_count": 100,
     "beamwidth_deg": 10.0
   },
   "counts": {
-    "generated": 8,
-    "skipped": 3,
+    "generated": 11,
+    "skipped": 0,
     "total": 11
   },
   "figures": [
@@ -38,7 +40,7 @@
       "metric": "discovery",
       "filename": "range_gain_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\range_gain_discovery_n100_b10.png",
-      "rows_used": 17,
+      "rows_used": 16,
       "figsize_inches": [
         6.4,
         4.8
@@ -53,7 +55,7 @@
       "metric": "empty_scan",
       "filename": "range_gain_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\range_gain_empty_scan_n100_b10.png",
-      "rows_used": 17,
+      "rows_used": 16,
       "figsize_inches": [
         6.4,
         4.8
@@ -68,7 +70,7 @@
       "metric": "lambda2",
       "filename": "range_gain_lambda2_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\range_gain_lambda2_n100_b10.png",
-      "rows_used": 17,
+      "rows_used": 16,
       "figsize_inches": [
         6.4,
         4.8
@@ -79,25 +81,33 @@
       ]
     },
     {
-      "status": "skipped",
+      "status": "generated",
       "metric": "discovery",
       "filename": "error_gain_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\error_gain_discovery_n100_b10.png",
-      "reason": "insufficient Pfa/Pmd variation",
+      "rows_used": 9,
       "figsize_inches": [
         6.4,
         4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
       ]
     },
     {
-      "status": "skipped",
+      "status": "generated",
       "metric": "empty_scan",
       "filename": "error_gain_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\error_gain_empty_scan_n100_b10.png",
-      "reason": "insufficient Pfa/Pmd variation",
+      "rows_used": 9,
       "figsize_inches": [
         6.4,
         4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
       ]
     },
     {
@@ -176,14 +186,18 @@
       ]
     },
     {
-      "status": "skipped",
+      "status": "generated",
       "metric": "discovery",
       "filename": "error_profile_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\error_profile_discovery_n100_b10.png",
-      "reason": "insufficient error-profile variation",
+      "rows_used": 8,
       "figsize_inches": [
         6.4,
         4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
       ]
     }
   ]
