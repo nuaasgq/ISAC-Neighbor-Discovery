@@ -1,6 +1,6 @@
 # Statistical Stability Summary
 
-Generated: 2026-07-04T20:17:58.016165+00:00
+Generated: 2026-07-04T21:26:42.163945+00:00
 
 This directory contains compact mean/std/95% CI summaries extracted from archived `aggregate_metrics.csv` files for the manuscript and supplement.
 
@@ -15,4 +15,4 @@ Interpretation notes:
 - Rows tagged `main_boundary` support applicability-boundary claims.
 - Rows tagged `supplement` are useful for reviewer-facing robustness evidence but should not replace the current main evidence chain without a separate promotion decision.
 - Rows tagged `supplement_sanity` are quick or one-seed checks; use them only to track trends while waiting for fuller multi-seed results.
-- Total rows: 217
+- Total rows: 233

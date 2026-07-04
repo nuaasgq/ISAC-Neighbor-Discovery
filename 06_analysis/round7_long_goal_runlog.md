@@ -41,6 +41,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - A quick one-seed round7 error-profile backup completed and was archived under `06_analysis/paper_tables/round7_error_profiles_quick` with one 4:3 figure in `06_analysis/paper_figures/round7_error_profiles_quick`. It is superseded by the full three-seed round7 error-profile archive for quantitative reporting.
 - The full three-seed round7 error-profile job completed and was archived under `06_analysis/paper_tables/round7_error_profiles_light`, with figures in `06_analysis/paper_figures/round7_error_profiles_light`. It confirms the moderate-error robustness trend without replacing the existing round3 main evidence chain.
 - The round8 missing-baseline mobility job adds SkyOrbs-like and vanilla RL without ISAC for `N=100`, 10/15-degree beams, and four mobility models. The merged full-baseline table is archived under `06_analysis/paper_tables/round8_n100_multimobility_full_baseline`.
+- A quick B=15 error-profile fallback completed for Gauss-Markov and random-walk mobility and is archived under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`; the full three-seed B=15 job continues.
 
 ## Conservative Boundaries
 

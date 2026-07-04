@@ -68,6 +68,11 @@ SOURCE_DEFS = (
         "supplement",
         "06_analysis/paper_tables/round8_n100_multimobility_missing_baselines_600slot/aggregate_metrics.csv",
     ),
+    (
+        "round8_error_profiles_b15_quick",
+        "supplement_sanity",
+        "06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick/aggregate_metrics.csv",
+    ),
 )
 
 CONTEXT_COLUMNS = (
