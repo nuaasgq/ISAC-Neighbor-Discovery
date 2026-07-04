@@ -1,0 +1,1336 @@
+{
+  "created_at_utc": "2026-07-04T19:17:33.387232+00:00",
+  "style": {
+    "figsize_inches": [
+      6.4,
+      4.8
+    ],
+    "aspect_ratio": "4:3",
+    "font_family": "Times New Roman with serif fallback",
+    "dpi": 300,
+    "palette": {
+      "skyorbs_like_skip_scan": "#0072B2",
+      "uniform_random": "#D55E00",
+      "rl_no_isac": "#009E73",
+      "improved_rl_no_isac": "#CC79A7",
+      "improved_rl_isac": "#E69F00",
+      "ablation_isac_one_slot_delay": "#8A6BBE"
+    }
+  },
+  "inputs": [
+    "05_simulation\\results_raw\\round7_scale_beam_grid_light"
+  ],
+  "counts": {
+    "generated": 83,
+    "skipped": 0,
+    "total": 83
+  },
+  "figures": [
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_rate_n10.png",
+      "metric": "discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_rate_n20.png",
+      "metric": "discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_rate_n50.png",
+      "metric": "discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_rate_n100.png",
+      "metric": "discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_rate_b3.png",
+      "metric": "discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_rate_b5.png",
+      "metric": "discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_rate_b10.png",
+      "metric": "discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_rate_b15.png",
+      "metric": "discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_rate_b30.png",
+      "metric": "discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_discovery_rate.png",
+      "metric": "discovery_rate_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_mean_delay_n10.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_mean_delay_n20.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_mean_delay_n50.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_mean_delay_n100.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_mean_delay_b3.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_mean_delay_b5.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_mean_delay_b10.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_mean_delay_b15.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_mean_delay_b30.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_mean_delay.png",
+      "metric": "mean_discovery_delay_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_p95_delay_n10.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_p95_delay_n20.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_p95_delay_n50.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_p95_delay_n100.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_p95_delay_b3.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_p95_delay_b5.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_p95_delay_b10.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_p95_delay_b15.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_p95_delay_b30.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_p95_delay.png",
+      "metric": "p95_discovery_delay_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_empty_scan_n10.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_empty_scan_n20.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_empty_scan_n50.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_empty_scan_n100.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_empty_scan_b3.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_empty_scan_b5.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_empty_scan_b10.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_empty_scan_b15.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_empty_scan_b30.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_empty_scan.png",
+      "metric": "empty_scan_ratio_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_lambda2_n10.png",
+      "metric": "lambda2_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_lambda2_n20.png",
+      "metric": "lambda2_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_lambda2_n50.png",
+      "metric": "lambda2_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_lambda2_n100.png",
+      "metric": "lambda2_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_lambda2_b3.png",
+      "metric": "lambda2_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_lambda2_b5.png",
+      "metric": "lambda2_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_lambda2_b10.png",
+      "metric": "lambda2_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_lambda2_b15.png",
+      "metric": "lambda2_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_lambda2_b30.png",
+      "metric": "lambda2_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_lambda2.png",
+      "metric": "lambda2_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_per_scan_n10.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_per_scan_n20.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_per_scan_n50.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_discovery_per_scan_n100.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_per_scan_b3.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_per_scan_b5.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_per_scan_b10.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_per_scan_b15.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_discovery_per_scan_b30.png",
+      "metric": "discovery_per_scan_action_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_discovery_per_scan.png",
+      "metric": "discovery_per_scan_action_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_penalized_discovery_n10.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_penalized_discovery_n20.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_penalized_discovery_n50.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_penalized_discovery_n100.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_penalized_discovery_b3.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_penalized_discovery_b5.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_penalized_discovery_b10.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_penalized_discovery_b15.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_penalized_discovery_b30.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_collision_penalized_discovery.png",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_efficiency_n10.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 10,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_efficiency_n20.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 20,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_efficiency_n50.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 50,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_beamwidth_collision_efficiency_n100.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_efficiency_b3.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 3.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_efficiency_b5.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 5.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_efficiency_b10.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 10.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_efficiency_b15.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 15.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_node_count_collision_efficiency_b30.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "x": "node_count",
+      "fixed": "beamwidth_deg",
+      "fixed_value": 30.0,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_proposed_collision_efficiency.png",
+      "metric": "collision_normalized_efficiency_mean",
+      "protocol": "improved_rl_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_gain_discovery_vs_random.png",
+      "metric": "discovery_rate_mean",
+      "baseline": "uniform_random",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_gain_delay_vs_random.png",
+      "metric": "mean_discovery_delay_mean",
+      "baseline": "uniform_random",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round7_scale_beam_grid_light\\density_heatmap_gain_discovery_vs_improved_no_isac.png",
+      "metric": "discovery_rate_mean",
+      "baseline": "improved_rl_no_isac",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    }
+  ]
+}

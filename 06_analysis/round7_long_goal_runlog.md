@@ -12,7 +12,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 | Stream | Status | Artifact target | Notes |
 |---|---|---|---|
 | Long CEM training | complete | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | Trained at `N=10`, `10 deg`, 600-slot horizon with 3 training seeds and 3 held-out seeds. Compact tables are archived under `06_analysis/paper_tables/round7_long_cem_training`. |
-| Round7 transfer/evaluation jobs | running | `05_simulation/results_raw/round7_*` | Started N=100 multi-mobility, scale/beam grid, and error-profile evaluations using the round7 trained config. |
+| Round7 transfer/evaluation jobs | partially complete | `05_simulation/results_raw/round7_*` | Scale/beam grid is complete and archived; N=100 multi-mobility and error-profile evaluations are still running. |
 | Neural MARL probe | method probe completed | `05_simulation/run_actor_critic_imitation_probe.py` | Rule-assisted BC works in teacher-forced mode. After fixing the MARL env to expose ISAC piggyback belief updates, stochastic autonomous eval became nonzero but remains a method probe. |
 | Experiment-matrix audit | running in parallel agent | analysis summary | Checks whether current figures cover the dimensions commonly expected in TWC/TCOM-style ISAC/beam-management papers. |
 | Paper evidence audit | active | `07_paper/ieee_twc_isac_nd/main.tex` and result indexes | Added a compact `N=100` transfer table and clarified the dynamic-table empty-scan column. Main risk remains wording: supported claims must be separated from stress-regime and limitation claims. |
@@ -34,6 +34,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Recompiled the IEEE LaTeX manuscript with `pdflatex` twice after the edit. The final log has no undefined references/citations and no overfull warnings; only normal underfull warnings remain.
 - Generated round7 training figures in `06_analysis/paper_figures/round7_long_cem_training`; this includes reward, score, discovery, empty-scan, delay, collision, and connectivity curves.
 - The round7 small-scale held-out score is lower than the earlier round2 candidate training result under a different 1200-slot setup, so round7 is not promoted to the main result unless the transfer/evaluation jobs show stronger large-scale robustness.
+- The completed round7 scale/beam grid gives a useful caution: at `N=100`, raw discovery peaks around 15 degrees, but collision-penalized discovery is strongest around 10 degrees. This supports reporting collision-aware efficiency alongside raw discovery.
 
 ## Conservative Boundaries
 

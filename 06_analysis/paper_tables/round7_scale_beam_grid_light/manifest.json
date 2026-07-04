@@ -1,0 +1,62 @@
+{
+  "created_at": "2026-07-05T03:16:17",
+  "name": "transfer_sweep",
+  "config": "05_simulation\\configs\\paper_transfer_train_n10_b10_singlehop.yaml",
+  "trained_config": "05_simulation\\results_raw\\round7_long_cem_train_n10_b10_600slot\\best_config.yaml",
+  "protocols": [
+    "uniform_random",
+    "improved_rl_no_isac",
+    "improved_rl_isac"
+  ],
+  "node_counts": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "beamwidth_degs": [
+    3.0,
+    5.0,
+    10.0,
+    15.0,
+    30.0
+  ],
+  "mobilities": [
+    "gauss_markov"
+  ],
+  "seeds": [
+    20290704,
+    20291713
+  ],
+  "communication_range_ratios": [
+    null
+  ],
+  "sensing_to_comm_ratios": [
+    null
+  ],
+  "slot_duration_ms_values": [
+    null
+  ],
+  "false_alarm_rates": [
+    null
+  ],
+  "miss_detection_rates": [
+    null
+  ],
+  "angular_cell_offsets": [
+    null
+  ],
+  "isac_error_profiles": null,
+  "episodes_per_seed": 1,
+  "slots": 600,
+  "slot_metric_period": 0,
+  "area_scale": "density",
+  "range_mode": "singlehop",
+  "train_node_count": 10,
+  "train_beamwidth_deg": 10.0,
+  "case_count": 40,
+  "episode_rows": 120,
+  "slot_rows": 0,
+  "edge_rows": 22322,
+  "aggregate_rows": 60
+}
