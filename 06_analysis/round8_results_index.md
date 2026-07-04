@@ -11,7 +11,7 @@ Round8 contains targeted follow-up jobs launched after the round7 audit. These j
 | Experiment | Status | Raw output | Archived output | Notes |
 |---|---|---|---|---|
 | N=100 mobility missing baselines | complete | `05_simulation/results_raw/round8_n100_multimobility_missing_baselines_600slot` | `06_analysis/paper_tables/round8_n100_multimobility_missing_baselines_600slot` | Adds SkyOrbs-like and vanilla RL without ISAC for four mobility models and 10/15-degree beams. |
-| N=100 B=15 error profiles | quick complete; full run still running | full: `05_simulation/results_raw/round8_error_profiles_b15_gm_rw_600slot`; quick: `05_simulation/results_raw/round8_error_profiles_b15_gm_rw_quick` | quick: `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick` | Evaluates B=15 under Gauss-Markov and random-walk mobility with ISAC error profiles. |
+| N=100 B=15 error profiles | complete | full: `05_simulation/results_raw/round8_error_profiles_b15_gm_rw_600slot`; quick: `05_simulation/results_raw/round8_error_profiles_b15_gm_rw_quick` | full: `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot`; quick: `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick` | Evaluates B=15 under Gauss-Markov and random-walk mobility with ISAC error profiles. |
 
 ## Mobility Missing-Baseline Snapshot
 
@@ -34,19 +34,21 @@ The compact merged table for all protocols is generated at `06_analysis/paper_ta
 
 Use this result as supplementary baseline-completeness evidence for the mobility section. It does not change the manuscript's main mobility conclusion: the proposed method is strongest under Gauss-Markov and random-walk mobility, while random-direction and random-waypoint remain stress regimes.
 
-## B=15 Error-Profile Quick Snapshot
+## B=15 Error-Profile Full Snapshot
 
-The quick B=15 fallback completed with one seed for Gauss-Markov and random-walk mobility, comparing full ISAC against improved no-ISAC. It is a sanity result while the full three-seed B=15 job continues.
+The full B=15 error-profile sweep completed with three seeds for Gauss-Markov and random-walk mobility. It compares full ISAC, one-slot delayed ISAC, and improved no-ISAC.
 
-| Mobility | Pfa | Pmd | Offset | ISAC discovery | no-ISAC discovery | ISAC lambda2 | ISAC collisions | Collision-penalized |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Gauss-Markov | 0.00 | 0.00 | 0.0 | 0.5481 | 0.0030 | 30.2564 | 8230.0 | 0.2058 |
-| Gauss-Markov | 0.01 | 0.05 | 0.5 | 0.5828 | 0.0030 | 35.1516 | 6055.0 | 0.2622 |
-| Gauss-Markov | 0.05 | 0.15 | 1.0 | 0.5271 | 0.0030 | 32.0803 | 3642.0 | 0.3037 |
-| Gauss-Markov | 0.10 | 0.30 | 1.5 | 0.5152 | 0.0030 | 36.1082 | 2162.0 | 0.3585 |
-| Random walk | 0.00 | 0.00 | 0.0 | 0.4503 | 0.0038 | 25.6022 | 899.0 | 0.3811 |
-| Random walk | 0.01 | 0.05 | 0.5 | 0.3475 | 0.0038 | 19.9646 | 540.0 | 0.3133 |
-| Random walk | 0.05 | 0.15 | 1.0 | 0.2782 | 0.0038 | 12.2877 | 236.0 | 0.2655 |
-| Random walk | 0.10 | 0.30 | 1.5 | 0.2240 | 0.0038 | 9.3605 | 141.0 | 0.2178 |
+| Mobility | Pfa | Pmd | Offset | ISAC disc. | Std. | no-ISAC disc. | ISAC lambda2 | ISAC coll. | Coll.-penalized |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Gauss-Markov | 0.00 | 0.00 | 0.0 | 0.5477 | 0.0037 | 0.0037 | 29.0615 | 8769.7 | 0.1980 |
+| Gauss-Markov | 0.01 | 0.05 | 0.5 | 0.5852 | 0.0028 | 0.0037 | 32.7013 | 6548.7 | 0.2522 |
+| Gauss-Markov | 0.05 | 0.15 | 1.0 | 0.5421 | 0.0106 | 0.0037 | 34.4420 | 3840.0 | 0.3053 |
+| Gauss-Markov | 0.10 | 0.30 | 1.5 | 0.5272 | 0.0087 | 0.0037 | 35.8572 | 2380.7 | 0.3560 |
+| Random walk | 0.00 | 0.00 | 0.0 | 0.4414 | 0.0092 | 0.0041 | 25.1352 | 840.0 | 0.3773 |
+| Random walk | 0.01 | 0.05 | 0.5 | 0.3477 | 0.0058 | 0.0041 | 18.3021 | 497.0 | 0.3160 |
+| Random walk | 0.05 | 0.15 | 1.0 | 0.2704 | 0.0084 | 0.0041 | 14.1573 | 209.3 | 0.2595 |
+| Random walk | 0.10 | 0.30 | 1.5 | 0.2253 | 0.0013 | 0.0041 | 10.1517 | 141.0 | 0.2191 |
 
 Interpretation: B=15 keeps strong raw discovery and connectivity under Gauss-Markov even with configured errors, but collision counts are high. Under random-walk mobility, error severity causes a clearer raw-discovery decline, although full ISAC remains far above the no-ISAC baseline.
+
+The quick one-seed fallback remains archived at `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`, but it is superseded by the full three-seed sweep for quantitative reporting.

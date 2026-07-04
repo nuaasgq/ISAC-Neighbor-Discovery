@@ -13,7 +13,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 |---|---|---|---|
 | Long CEM training | complete | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | Trained at `N=10`, `10 deg`, 600-slot horizon with 3 training seeds and 3 held-out seeds. Compact tables are archived under `06_analysis/paper_tables/round7_long_cem_training`. |
 | Round7 transfer/evaluation jobs | complete | `05_simulation/results_raw/round7_*` | Scale/beam grid, N=100 multi-mobility, and error-profile evaluation are complete and archived. |
-| Round8 targeted follow-ups | partially complete | `05_simulation/results_raw/round8_*` | The N=100 mobility missing-baseline job is complete and archived; the B=15 error-profile job is running. |
+| Round8 targeted follow-ups | complete | `05_simulation/results_raw/round8_*` | The N=100 mobility missing-baseline job and B=15 error-profile job are complete and archived. |
 | Neural MARL probe | method probe completed | `05_simulation/run_actor_critic_imitation_probe.py` | Rule-assisted BC works in teacher-forced mode. After fixing the MARL env to expose ISAC piggyback belief updates, stochastic autonomous eval became nonzero but remains a method probe. |
 | Experiment-matrix audit | running in parallel agent | analysis summary | Checks whether current figures cover the dimensions commonly expected in TWC/TCOM-style ISAC/beam-management papers. |
 | Paper evidence audit | active | `07_paper/ieee_twc_isac_nd/main.tex` and result indexes | Added a compact `N=100` transfer table and clarified the dynamic-table empty-scan column. Main risk remains wording: supported claims must be separated from stress-regime and limitation claims. |
@@ -41,7 +41,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - A quick one-seed round7 error-profile backup completed and was archived under `06_analysis/paper_tables/round7_error_profiles_quick` with one 4:3 figure in `06_analysis/paper_figures/round7_error_profiles_quick`. It is superseded by the full three-seed round7 error-profile archive for quantitative reporting.
 - The full three-seed round7 error-profile job completed and was archived under `06_analysis/paper_tables/round7_error_profiles_light`, with figures in `06_analysis/paper_figures/round7_error_profiles_light`. It confirms the moderate-error robustness trend without replacing the existing round3 main evidence chain.
 - The round8 missing-baseline mobility job adds SkyOrbs-like and vanilla RL without ISAC for `N=100`, 10/15-degree beams, and four mobility models. The merged full-baseline table is archived under `06_analysis/paper_tables/round8_n100_multimobility_full_baseline`.
-- A quick B=15 error-profile fallback completed for Gauss-Markov and random-walk mobility and is archived under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`; the full three-seed B=15 job continues.
+- A quick B=15 error-profile fallback completed for Gauss-Markov and random-walk mobility and is archived under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`; it is superseded by the full three-seed archive under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot`.
 
 ## Conservative Boundaries
 
