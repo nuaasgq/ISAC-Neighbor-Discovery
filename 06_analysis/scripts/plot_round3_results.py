@@ -545,8 +545,8 @@ def protocol_sort_key(protocol: str) -> tuple[int, str]:
 def label_protocol(protocol: str) -> str:
     labels = {
         "uniform_random": "Random",
-        "improved_rl_no_isac": "Improved-RL",
-        "improved_rl_isac": "Improved-RL+ISAC",
+        "improved_rl_no_isac": "Enhanced-NoISAC",
+        "improved_rl_isac": "Enhanced+ISAC",
         "ablation_isac_one_slot_delay": "One-slot delay",
         "ablation_isac_no_candidate_set": "No candidate set",
         "ablation_isac_no_beam_lock": "No beam lock",

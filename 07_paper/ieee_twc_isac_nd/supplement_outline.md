@@ -65,7 +65,7 @@ Recommended focus:
 
 - Gauss-Markov and random-walk are favorable tested regimes.
 - Random-direction and random-waypoint remain stress regimes.
-- SkyOrbs-like and vanilla RL without ISAC remain near zero in the same large-scale mobility settings.
+- SkyOrbs-like and vanilla learned policy without ISAC remain near zero in the evaluated large-scale mobility settings.
 
 ## S5. ISAC Error Robustness
 
@@ -77,8 +77,8 @@ Use:
 
 Recommended focus:
 
-- Full ISAC remains useful under configured moderate errors.
-- B=15 Gauss-Markov remains strong but collision counts are high.
+- The configured ISAC-assisted policy remains useful in the B=10/B=15 error-profile tests.
+- B=15 Gauss-Markov retains high raw discovery in the configured tests, but collision counts are high.
 - B=15 random-walk declines more clearly with error severity.
 - Do not imply physical-layer estimator immunity.
 

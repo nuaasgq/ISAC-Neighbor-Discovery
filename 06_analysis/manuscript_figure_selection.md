@@ -37,7 +37,7 @@ These figures should carry the main paper narrative.
 - Use `06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/` when reviewers ask for the full five-baseline comparison in the 3-degree extreme stress case. These figures support a boundary claim, not a success claim.
 - Use `06_analysis/paper_figures/round7_n100_multimobility_600slot/` when discussing mobility-model stress tests at `N=100` for 10- and 15-degree beams.
 - Use `06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/` for the B=15 error-profile extension; keep it as operating-region nuance because random-walk mobility is much more error-sensitive than Gauss-Markov mobility.
-- Use `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/` and the combined table `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv` when reviewers ask whether the large-scale mobility boundary is caused by omitted SkyOrbs-like or vanilla RL baselines.
+- Use `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/` and the combined table `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv` when reviewers ask whether the large-scale mobility boundary is caused by omitted SkyOrbs-like or vanilla learned-policy baselines.
 - Use `round6_slot_duration_sensitivity/` if the 5 ms subframe timescale needs more explicit defense.
 - Use `round4_delay_ablation/ablation_collision_penalized_discovery_n100_b10.png` and `ablation_discovery_per_scan_n100_b10.png` if collision or scan-efficiency criticism becomes central.
 

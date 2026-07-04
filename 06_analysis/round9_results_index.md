@@ -19,7 +19,7 @@ Configuration:
 - Scale mode: density-preserving.
 - Horizon: 600 slots.
 - Seeds: `20290704`, `20291713`, `20292722`.
-- Protocols: uniform random, SkyOrbs-like skip scan, RL without ISAC, improved RL without ISAC, improved RL with ISAC.
+- Protocols: uniform random, SkyOrbs-like skip scan, learned policy without ISAC, enhanced learned policy without ISAC, enhanced learned policy with ISAC.
 
 ## Snapshot
 
@@ -27,9 +27,9 @@ Configuration:
 |---|---:|---:|---:|---:|---:|
 | Uniform random | 0.0000 | 0.0000 | 0.9870 | 0.0000 | 0.0000 |
 | SkyOrbs-like | 0.0000 | 0.0000 | 0.9865 | 0.0000 | 0.0000 |
-| RL no-ISAC | 0.0001 | 0.0001 | 0.9868 | 0.0000 | 0.0001 |
-| Improved no-ISAC | 0.0000 | 0.0000 | 0.9871 | 0.0000 | 0.0000 |
-| Improved ISAC | 0.0131 | 0.0007 | 0.9418 | 0.0000 | 0.0130 |
+| Learned no-ISAC | 0.0001 | 0.0001 | 0.9868 | 0.0000 | 0.0001 |
+| Enhanced no-ISAC | 0.0000 | 0.0000 | 0.9871 | 0.0000 | 0.0000 |
+| Enhanced ISAC | 0.0131 | 0.0007 | 0.9418 | 0.0000 | 0.0130 |
 
 ## Interpretation
 

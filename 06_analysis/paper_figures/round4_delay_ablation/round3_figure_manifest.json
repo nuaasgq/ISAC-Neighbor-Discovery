@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-04T17:53:08.778709+00:00",
+  "generated_at_utc": "2026-07-04T22:16:43.417100+00:00",
   "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_round3_results.py",
   "style": {
     "figsize_inches": [
@@ -20,9 +20,6 @@
     }
   },
   "inputs": [
-    "05_simulation\\results_raw\\round3_range_rc_rs_grid",
-    "05_simulation\\results_raw\\round3_error_robustness",
-    "05_simulation\\results_raw\\round3_error_profiles",
     "05_simulation\\results_raw\\round4_delay_ablation"
   ],
   "selection": {
@@ -30,84 +27,64 @@
     "beamwidth_deg": 10.0
   },
   "counts": {
-    "generated": 15,
-    "skipped": 0,
+    "generated": 8,
+    "skipped": 7,
     "total": 15
   },
   "figures": [
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "discovery",
       "filename": "range_gain_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\range_gain_discovery_n100_b10.png",
-      "rows_used": 12,
+      "reason": "insufficient Rc/D variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "empty_scan",
       "filename": "range_gain_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\range_gain_empty_scan_n100_b10.png",
-      "rows_used": 12,
+      "reason": "insufficient Rc/D variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "lambda2",
       "filename": "range_gain_lambda2_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\range_gain_lambda2_n100_b10.png",
-      "rows_used": 12,
+      "reason": "insufficient Rc/D variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "discovery",
       "filename": "error_gain_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\error_gain_discovery_n100_b10.png",
-      "rows_used": 9,
+      "reason": "insufficient Pfa/Pmd variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "empty_scan",
       "filename": "error_gain_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\error_gain_empty_scan_n100_b10.png",
-      "rows_used": 9,
+      "reason": "insufficient Pfa/Pmd variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
@@ -231,33 +208,25 @@
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "discovery",
       "filename": "range_protocol_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\range_protocol_discovery_n100_b10.png",
-      "rows_used": 36,
+      "reason": "insufficient Rs/Rc variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "discovery",
       "filename": "error_profile_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round4_delay_ablation\\error_profile_discovery_n100_b10.png",
-      "rows_used": 8,
+      "reason": "insufficient error-profile variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     }
   ]

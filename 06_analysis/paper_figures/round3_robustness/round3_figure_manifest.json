@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-04T17:18:50.342219+00:00",
+  "generated_at_utc": "2026-07-04T22:16:00.722943+00:00",
   "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_round3_results.py",
   "style": {
     "figsize_inches": [
@@ -13,26 +13,26 @@
       "uniform_random": "#D55E00",
       "improved_rl_no_isac": "#009E73",
       "improved_rl_isac": "#E69F00",
+      "ablation_isac_one_slot_delay": "#8A6BBE",
       "ablation_isac_no_candidate_set": "#56B4E9",
       "ablation_isac_no_beam_lock": "#CC79A7",
       "ablation_isac_no_topology": "#0072B2"
     }
   },
   "inputs": [
-    "05_simulation\\results_raw\\round3_ablation",
-    "05_simulation\\results_raw\\round3_range_rs_ratio",
-    "05_simulation\\results_raw\\round3_range_rc_rs_grid",
-    "05_simulation\\results_raw\\round3_error_robustness",
-    "05_simulation\\results_raw\\round3_error_profiles"
+    "06_analysis\\paper_tables\\round3_robustness\\range_rc_rs_grid",
+    "06_analysis\\paper_tables\\round3_robustness\\error_profiles",
+    "06_analysis\\paper_tables\\round3_robustness\\ablation_candidate_topology",
+    "06_analysis\\paper_tables\\round3_robustness\\n100_density_multiseed"
   ],
   "selection": {
     "node_count": 100,
     "beamwidth_deg": 10.0
   },
   "counts": {
-    "generated": 11,
-    "skipped": 0,
-    "total": 11
+    "generated": 5,
+    "skipped": 10,
+    "total": 15
   },
   "figures": [
     {
@@ -40,7 +40,7 @@
       "metric": "discovery",
       "filename": "range_gain_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\range_gain_discovery_n100_b10.png",
-      "rows_used": 16,
+      "rows_used": 12,
       "figsize_inches": [
         6.4,
         4.8
@@ -55,7 +55,7 @@
       "metric": "empty_scan",
       "filename": "range_gain_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\range_gain_empty_scan_n100_b10.png",
-      "rows_used": 16,
+      "rows_used": 12,
       "figsize_inches": [
         6.4,
         4.8
@@ -70,7 +70,7 @@
       "metric": "lambda2",
       "filename": "range_gain_lambda2_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\range_gain_lambda2_n100_b10.png",
-      "rows_used": 16,
+      "rows_used": 12,
       "figsize_inches": [
         6.4,
         4.8
@@ -81,93 +81,113 @@
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "discovery",
       "filename": "error_gain_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\error_gain_discovery_n100_b10.png",
-      "rows_used": 9,
+      "reason": "insufficient Pfa/Pmd variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "empty_scan",
       "filename": "error_gain_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\error_gain_empty_scan_n100_b10.png",
-      "rows_used": 9,
+      "reason": "insufficient Pfa/Pmd variation",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "discovery",
       "filename": "ablation_discovery_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_discovery_n100_b10.png",
-      "rows_used": 6,
+      "reason": "missing ablation protocols",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "empty_scan",
       "filename": "ablation_empty_scan_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_empty_scan_n100_b10.png",
-      "rows_used": 6,
+      "reason": "missing ablation protocols",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "lambda2",
       "filename": "ablation_lambda2_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_lambda2_n100_b10.png",
-      "rows_used": 6,
+      "reason": "missing ablation protocols",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
       ]
     },
     {
-      "status": "generated",
+      "status": "skipped",
       "metric": "collision",
       "filename": "ablation_collision_n100_b10.png",
       "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_collision_n100_b10.png",
-      "rows_used": 6,
+      "reason": "missing ablation protocols",
       "figsize_inches": [
         6.4,
         4.8
-      ],
-      "pixel_size": [
-        1920,
-        1440
+      ]
+    },
+    {
+      "status": "skipped",
+      "metric": "discovery_per_scan",
+      "filename": "ablation_discovery_per_scan_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_discovery_per_scan_n100_b10.png",
+      "reason": "missing metric discovery_per_scan_action_mean",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ]
+    },
+    {
+      "status": "skipped",
+      "metric": "scan_actions_per_discovery",
+      "filename": "ablation_scan_actions_per_discovery_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_scan_actions_per_discovery_n100_b10.png",
+      "reason": "missing metric scan_actions_per_discovery_censored_mean",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ]
+    },
+    {
+      "status": "skipped",
+      "metric": "collision_penalized_discovery",
+      "filename": "ablation_collision_penalized_discovery_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_collision_penalized_discovery_n100_b10.png",
+      "reason": "missing ablation protocols",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ]
+    },
+    {
+      "status": "skipped",
+      "metric": "collision_efficiency",
+      "filename": "ablation_collision_efficiency_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round3_robustness\\ablation_collision_efficiency_n100_b10.png",
+      "reason": "missing ablation protocols",
+      "figsize_inches": [
+        6.4,
+        4.8
       ]
     },
     {

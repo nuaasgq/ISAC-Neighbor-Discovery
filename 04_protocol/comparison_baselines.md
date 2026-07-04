@@ -43,9 +43,9 @@ SkyOrbs-like 3D directional neighbor discovery
 |---|---|---:|---:|---:|---|
 | 参考文献基线 | `skyorbs_like_skip_scan` | 否 | 否 | 否 | 对比 3D UAV DND 近邻工作 |
 | 完全随机 | `uniform_random` | 否 | 否 | 否 | 下界与随机盲扫基线 |
-| RL no ISAC | `rl_no_isac` | 否 | 是 | 否 | 验证仅靠学习能否解决高维盲扫 |
-| Improved RL | `improved_rl_no_isac` | 否 | 是 | 是 | 验证分层动作、记忆、拓扑奖励等方法创新的独立价值 |
-| Improved RL + ISAC | `improved_rl_isac` | 是 | 是 | 是 | 验证 ISAC prior 与方法创新叠加收益 |
+| Learned policy no ISAC | `rl_no_isac` | 否 | 是 | 否 | 验证仅靠学习能否解决高维盲扫 |
+| Enhanced learned policy | `improved_rl_no_isac` | 否 | 是 | 是 | 验证分层动作、记忆、拓扑奖励等方法创新的独立价值 |
+| Enhanced learned policy + ISAC | `improved_rl_isac` | 是 | 是 | 是 | 验证 ISAC prior 与方法创新叠加收益 |
 
 ## 公平信息边界
 

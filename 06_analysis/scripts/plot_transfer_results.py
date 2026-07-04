@@ -243,10 +243,10 @@ def label_protocol(protocol: str) -> str:
     labels = {
         "skyorbs_like_skip_scan": "SkyOrbs-like",
         "uniform_random": "Random",
-        "rl_no_isac": "RL-NoISAC",
-        "improved_rl_no_isac": "Improved-RL",
+        "rl_no_isac": "Learned-NoISAC",
+        "improved_rl_no_isac": "Enhanced-NoISAC",
         "ablation_isac_one_slot_delay": "One-slot delay",
-        "improved_rl_isac": "Improved-RL+ISAC",
+        "improved_rl_isac": "Enhanced+ISAC",
     }
     return labels.get(protocol, protocol)
 

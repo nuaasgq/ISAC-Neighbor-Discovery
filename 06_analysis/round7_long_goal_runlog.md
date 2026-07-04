@@ -31,7 +31,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 ## Morning Manuscript Checkpoint
 
 - Added `Table~\ref{tab:n100_transfer}` to `07_paper/ieee_twc_isac_nd/main.tex`, summarizing `N=100` zero-shot transfer for 5, 10, 15, and 30 degree beams under density-preserving and fixed-area scaling.
-- Added an explicit `N=100`, 10-degree baseline table covering uniform random, SkyOrbs-like, RL without ISAC, improved RL without ISAC, and improved RL with ISAC.
+- Added an explicit `N=100`, 10-degree baseline table covering uniform random, SkyOrbs-like, learned policy without ISAC, enhanced learned policy without ISAC, and enhanced learned policy with ISAC.
 - Clarified the small-scale dynamic comparison table header from `Empty` to `Empty (ISAC)` so the column is not misread as a multi-protocol comparison.
 - Recompiled the IEEE LaTeX manuscript with `pdflatex` twice after the edit. The final log has no undefined references/citations and no overfull warnings; only normal underfull warnings remain.
 - Generated round7 training figures in `06_analysis/paper_figures/round7_long_cem_training`; this includes reward, score, discovery, empty-scan, delay, collision, and connectivity curves.
@@ -41,7 +41,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - The completed round7 mobility sweep slightly improves abrupt-mobility stress cases but does not remove the applicability boundary: random-direction and random-waypoint remain weak compared with Gauss-Markov and random walk.
 - A quick one-seed round7 error-profile backup completed and was archived under `06_analysis/paper_tables/round7_error_profiles_quick` with one 4:3 figure in `06_analysis/paper_figures/round7_error_profiles_quick`. It is superseded by the full three-seed round7 error-profile archive for quantitative reporting.
 - The full three-seed round7 error-profile job completed and was archived under `06_analysis/paper_tables/round7_error_profiles_light`, with figures in `06_analysis/paper_figures/round7_error_profiles_light`. It confirms the moderate-error robustness trend without replacing the existing round3 main evidence chain.
-- The round8 missing-baseline mobility job adds SkyOrbs-like and vanilla RL without ISAC for `N=100`, 10/15-degree beams, and four mobility models. The merged full-baseline table is archived under `06_analysis/paper_tables/round8_n100_multimobility_full_baseline`.
+- The round8 missing-baseline mobility job adds SkyOrbs-like and vanilla learned policy without ISAC for `N=100`, 10/15-degree beams, and four mobility models. The merged full-baseline table is archived under `06_analysis/paper_tables/round8_n100_multimobility_full_baseline`.
 - Generated 8 full-baseline mobility supplement figures under `06_analysis/paper_figures/round8_n100_multimobility_full_baseline` from the merged round7/round8 table.
 - Completed and archived a round9 `N=100`, 3-degree five-baseline stress check. The proposed ISAC policy reaches only about 0.0131 discovery and zero connectivity, while the other baselines remain essentially zero. This strengthens the boundary statement that 3-degree beams are not solved under the current finite horizon.
 - A quick B=15 error-profile fallback completed for Gauss-Markov and random-walk mobility and is archived under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`; it is superseded by the full three-seed archive under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot`.
@@ -51,7 +51,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - The current main learning result is CEM/shared-policy parameter optimization, not a full MAPPO, QMIX, or GNN-MARL algorithm.
 - The actor-critic implementation is currently a probe. It should only become a paper result after multi-seed baseline comparisons and transfer tests.
 - Round7 imitation probes show that the MARL environment must preserve ISAC piggyback belief updates. With the corrected ISAC-capable env, stochastic student evaluation reached about 0.647 mean discovery rate over five short episodes, but this is not yet a paper main result.
-- The SkyOrbs comparison is a SkyOrbs-like baseline, not a strict reproduction of the full original protocol.
+- The SkyOrbs-like comparison is an inspired baseline, not a strict reproduction of the full original protocol.
   See `06_analysis/skyorbs_baseline_reproduction_checklist.md` before upgrading this wording.
 - 3-5 degree beams and abrupt mobility models remain stress regimes under the current finite horizon.
 - Energy-normalized discovery is not yet available because a Joule-level action-energy model has not been added.

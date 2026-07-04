@@ -24,12 +24,12 @@ Generated during the long-run goal window ending at 2026-07-05 11:00 (Asia/Shang
 | Protocol | Discovery rate | Empty-scan ratio | Lambda2 | Collisions |
 |---|---:|---:|---:|---:|
 | Uniform random | 0.0005 | 0.9015 | 0.0000 | 0.0 |
-| Improved-RL without ISAC | 0.0007 | 0.9011 | 0.0000 | 0.0 |
+| Enhanced learned policy without ISAC | 0.0007 | 0.9011 | 0.0000 | 0.0 |
 | No topology term | 0.3617 | 0.5011 | 10.3293 | 1083.3 |
 | No beam lock | 0.3553 | 0.4904 | 13.1866 | 1096.3 |
 | One-slot candidate delay | 0.2989 | 0.4947 | 8.4709 | 697.0 |
 | No candidate set | 0.0313 | 0.4985 | 0.0000 | 3.3 |
-| Improved-RL + ISAC | 0.3655 | 0.4986 | 12.9222 | 1050.0 |
+| Enhanced learned policy + ISAC | 0.3655 | 0.4986 | 12.9222 | 1050.0 |
 
 Interpretation: the candidate-set refinement enabled by ISAC feedback is the most critical mechanism in this implementation. Removing topology or beam-lock refinements preserves much of the finite-time discovery rate, while removing the candidate set nearly collapses discovery and connectivity. The one-slot delayed candidate-set ablation preserves most of the ISAC benefit while reducing collisions, so it is the key implementation-boundary result for the paper.
 
@@ -38,9 +38,9 @@ Interpretation: the candidate-set refinement enabled by ISAC feedback is the mos
 | Protocol | Discovery rate | Discoveries / 1000 scans | Scan actions / discovery | Collision-penalized discovery |
 |---|---:|---:|---:|---:|
 | Uniform random | 0.0005 | 0.0458 | 22658.1 | 0.0005 |
-| Improved-RL without ISAC | 0.0007 | 0.0567 | 19587.9 | 0.0007 |
+| Enhanced learned policy without ISAC | 0.0007 | 0.0567 | 19587.9 | 0.0007 |
 | One-slot candidate delay | 0.2989 | 25.6069 | 39.10 | 0.2620 |
-| Improved-RL + ISAC | 0.3655 | 31.3563 | 31.89 | 0.3015 |
+| Enhanced learned policy + ISAC | 0.3655 | 31.3563 | 31.89 | 0.3015 |
 
 Interpretation: the delayed candidate-set protocol is a conservative, more implementable variant. It retains about 82% of the full ISAC discovery rate at N=100 and 10-degree beams, while reducing collisions from 1050.0 to 697.0. This supports writing the full ISAC protocol as a low-latency upper design point and the one-slot delayed variant as a practical implementation boundary.
 
@@ -63,10 +63,10 @@ Interpretation: density-preserving and fixed-area scaling give similar trends fo
 
 | Protocol | Rs/Rc | Discovery rate | Empty-scan ratio | Lambda2 |
 |---|---:|---:|---:|---:|
-| Improved-RL + ISAC | 0.50 | 0.3570 | 0.5082 | 11.0633 |
-| Improved-RL + ISAC | 0.75 | 0.3637 | 0.4970 | 13.9211 |
-| Improved-RL + ISAC | 1.00 | 0.3655 | 0.4986 | 12.9222 |
-| Improved-RL + ISAC | 1.25 | 0.3655 | 0.4986 | 12.9222 |
+| Enhanced learned policy + ISAC | 0.50 | 0.3570 | 0.5082 | 11.0633 |
+| Enhanced learned policy + ISAC | 0.75 | 0.3637 | 0.4970 | 13.9211 |
+| Enhanced learned policy + ISAC | 1.00 | 0.3655 | 0.4986 | 12.9222 |
+| Enhanced learned policy + ISAC | 1.25 | 0.3655 | 0.4986 | 12.9222 |
 
 Interpretation: increasing sensing range from half the communication range to the communication range gives a small improvement. Increasing sensing beyond the communication range does not further improve communication neighbor discovery in the current model because only communication-range neighbors are immediately discoverable.
 

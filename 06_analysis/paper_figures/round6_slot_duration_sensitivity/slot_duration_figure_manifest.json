@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-04T18:23:44.948917+00:00",
+  "generated_at_utc": "2026-07-04T22:16:13.171097+00:00",
   "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_slot_duration_results.py",
   "style": {
     "figsize_inches": [
@@ -16,7 +16,7 @@
     }
   },
   "inputs": [
-    "05_simulation\\results_raw\\round6_slot_duration_sensitivity"
+    "06_analysis\\paper_tables\\round6_slot_duration_sensitivity"
   ],
   "selection": {
     "node_count": 100,

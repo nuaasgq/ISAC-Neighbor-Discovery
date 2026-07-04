@@ -10,23 +10,23 @@ Round8 contains targeted follow-up jobs launched after the round7 audit. These j
 
 | Experiment | Status | Raw output | Archived output | Notes |
 |---|---|---|---|---|
-| N=100 mobility missing baselines | complete | `05_simulation/results_raw/round8_n100_multimobility_missing_baselines_600slot` | `06_analysis/paper_tables/round8_n100_multimobility_missing_baselines_600slot` | Adds SkyOrbs-like and vanilla RL without ISAC for four mobility models and 10/15-degree beams. |
+| N=100 mobility missing baselines | complete | `05_simulation/results_raw/round8_n100_multimobility_missing_baselines_600slot` | `06_analysis/paper_tables/round8_n100_multimobility_missing_baselines_600slot` | Adds SkyOrbs-like and vanilla learned policy without ISAC for four mobility models and 10/15-degree beams. |
 | N=100 B=15 error profiles | complete | full: `05_simulation/results_raw/round8_error_profiles_b15_gm_rw_600slot`; quick: `05_simulation/results_raw/round8_error_profiles_b15_gm_rw_quick` | full: `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot`; quick: `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick` | Evaluates B=15 under Gauss-Markov and random-walk mobility with ISAC error profiles. |
 
 ## Mobility Missing-Baseline Snapshot
 
-The missing-baseline sweep confirms that the mobility-boundary result is not caused by omitting SkyOrbs-like or vanilla RL baselines. Across all tested mobility models and 10/15-degree beams, these two baselines remain near-zero in finite-time discovery and fail to form connected discovered graphs.
+The missing-baseline sweep confirms that the mobility-boundary result is not caused by omitting SkyOrbs-like or vanilla learned-policy baselines. Across all tested mobility models and 10/15-degree beams, these two baselines remain near-zero in finite-time discovery and fail to form connected discovered graphs.
 
 | Mobility | Beam | Baseline | Discovery | Empty scan | Lambda2 |
 |---|---:|---|---:|---:|---:|
 | Gauss-Markov | 10 deg | SkyOrbs-like | 0.0007 | 0.9020 | 0.0000 |
-| Gauss-Markov | 10 deg | RL no-ISAC | 0.0006 | 0.9012 | 0.0000 |
+| Gauss-Markov | 10 deg | Learned no-ISAC | 0.0006 | 0.9012 | 0.0000 |
 | Random walk | 10 deg | SkyOrbs-like | 0.0007 | 0.9014 | 0.0000 |
-| Random walk | 10 deg | RL no-ISAC | 0.0003 | 0.9010 | 0.0000 |
+| Random walk | 10 deg | Learned no-ISAC | 0.0003 | 0.9010 | 0.0000 |
 | Random direction | 10 deg | SkyOrbs-like | 0.0004 | 0.9006 | 0.0000 |
-| Random direction | 10 deg | RL no-ISAC | 0.0002 | 0.9016 | 0.0000 |
+| Random direction | 10 deg | Learned no-ISAC | 0.0002 | 0.9016 | 0.0000 |
 | Random waypoint | 10 deg | SkyOrbs-like | 0.0001 | 0.9037 | 0.0000 |
-| Random waypoint | 10 deg | RL no-ISAC | 0.0007 | 0.9032 | 0.0000 |
+| Random waypoint | 10 deg | Learned no-ISAC | 0.0007 | 0.9032 | 0.0000 |
 
 The compact merged table for all protocols is generated at `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`.
 The corresponding full-baseline supplement figures are generated under `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/`:
