@@ -19,6 +19,7 @@ dist/
 Thumbs.db
 
 # Large or generated research artifacts
+tmp/
 *.pdf
 *.docx
 *.pptx
