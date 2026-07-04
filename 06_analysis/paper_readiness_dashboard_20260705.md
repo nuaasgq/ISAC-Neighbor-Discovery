@@ -21,6 +21,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Moderate ISAC errors degrade but do not collapse the gain. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`, `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv` | Strong bounded robustness claim. |
 | B=15 remains strong under Gauss-Markov error profiles but random-walk is more sensitive. | `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot/aggregate_metrics.csv` | Supplementary evidence for operating-region nuance. |
 | Mobility-boundary results are not caused by missing SkyOrbs-like or vanilla RL baselines. | `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`, `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/` | Supplementary baseline-completeness evidence. |
+| The 3-degree beam setting is an explicit stress/failure boundary even with five baselines. | `06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv`, `06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/` | Supplementary stress evidence. |
 
 ## Recommended Main-Text Figures
 
@@ -43,7 +44,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 
 - `pdflatex -interaction=nonstopmode main.tex`: passed; no undefined references/citations and no overfull warnings in the final checked log.
 - `python -m pytest 05_simulation\tests`: 25 passed.
-- `06_analysis/paper_figures`: 354 PNG figures, all checked at 4:3 aspect ratio.
+- `06_analysis/paper_figures`: 358 PNG figures, all checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
 
 ## Literature Boundary Notes

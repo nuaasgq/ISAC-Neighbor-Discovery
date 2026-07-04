@@ -14,6 +14,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 | Long CEM training | complete | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | Trained at `N=10`, `10 deg`, 600-slot horizon with 3 training seeds and 3 held-out seeds. Compact tables are archived under `06_analysis/paper_tables/round7_long_cem_training`. |
 | Round7 transfer/evaluation jobs | complete | `05_simulation/results_raw/round7_*` | Scale/beam grid, N=100 multi-mobility, and error-profile evaluation are complete and archived. |
 | Round8 targeted follow-ups | complete | `05_simulation/results_raw/round8_*` | The N=100 mobility missing-baseline job and B=15 error-profile job are complete and archived. |
+| Round9 targeted stress check | complete | `05_simulation/results_raw/round9_n100_b3_full_baselines_600slot` | Adds full five-baseline evidence for the `N=100`, 3-degree extreme stress case. |
 | Neural MARL probe | method probe completed | `05_simulation/run_actor_critic_imitation_probe.py` | Rule-assisted BC works in teacher-forced mode. After fixing the MARL env to expose ISAC piggyback belief updates, stochastic autonomous eval became nonzero but remains a method probe. |
 | Experiment-matrix audit | complete | analysis summary | Confirmed that the main evidence chain covers the minimum TWC/TCOM-style variables if claims remain bounded. |
 | Paper evidence audit | complete | `07_paper/ieee_twc_isac_nd/main.tex` and result indexes | Added compact N=100 transfer/baseline tables, seed-reporting text, mobility-baseline checks, and B=15 error robustness notes. |
@@ -25,7 +26,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Small-scale shared-policy tuning at `N=10`, `10 deg` transfers to `N=100` for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - The sensing range benefit saturates around the communication range in the current communication-neighbor-discovery model.
 - Slot duration from 1 ms to 20 ms does not materially change the Gauss-Markov `N=100`, 10-degree conclusion.
-- The current figure archive contains 354 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft exist on disk.
+- The current figure archive contains 358 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft exist on disk.
 
 ## Morning Manuscript Checkpoint
 
@@ -42,6 +43,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - The full three-seed round7 error-profile job completed and was archived under `06_analysis/paper_tables/round7_error_profiles_light`, with figures in `06_analysis/paper_figures/round7_error_profiles_light`. It confirms the moderate-error robustness trend without replacing the existing round3 main evidence chain.
 - The round8 missing-baseline mobility job adds SkyOrbs-like and vanilla RL without ISAC for `N=100`, 10/15-degree beams, and four mobility models. The merged full-baseline table is archived under `06_analysis/paper_tables/round8_n100_multimobility_full_baseline`.
 - Generated 8 full-baseline mobility supplement figures under `06_analysis/paper_figures/round8_n100_multimobility_full_baseline` from the merged round7/round8 table.
+- Completed and archived a round9 `N=100`, 3-degree five-baseline stress check. The proposed ISAC policy reaches only about 0.0131 discovery and zero connectivity, while the other baselines remain essentially zero. This strengthens the boundary statement that 3-degree beams are not solved under the current finite horizon.
 - A quick B=15 error-profile fallback completed for Gauss-Markov and random-walk mobility and is archived under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`; it is superseded by the full three-seed archive under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot`.
 
 ## Conservative Boundaries

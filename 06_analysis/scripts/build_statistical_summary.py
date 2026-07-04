@@ -78,6 +78,11 @@ SOURCE_DEFS = (
         "supplement",
         "06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot/aggregate_metrics.csv",
     ),
+    (
+        "round9_b3_full_baselines",
+        "supplement_stress",
+        "06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv",
+    ),
 )
 
 CONTEXT_COLUMNS = (
@@ -187,6 +192,7 @@ Interpretation notes:
 - Rows tagged `main` support current manuscript tables and figures.
 - Rows tagged `main_boundary` support applicability-boundary claims.
 - Rows tagged `supplement` are useful for reviewer-facing robustness evidence but should not replace the current main evidence chain without a separate promotion decision.
+- Rows tagged `supplement_stress` are failure-boundary or extreme-regime checks; use them to bound claims rather than to advertise main performance.
 - Rows tagged `supplement_sanity` are quick or one-seed checks; use them only to track trends while waiting for fuller multi-seed results.
 - Total rows: {row_count}
 """

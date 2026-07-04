@@ -12,6 +12,7 @@ Purpose: keep the main IEEE draft compact while preserving the full experiment e
   - `06_analysis/scripts/plot_transfer_results.py`
   - `06_analysis/scripts/plot_mobility_results.py`
   - `06_analysis/scripts/plot_mobility_full_baselines.py`
+  - `06_analysis/scripts/plot_baseline_stress.py`
   - `06_analysis/scripts/plot_slot_duration_results.py`
   - `06_analysis/scripts/draw_concept_figures.py`
   - `06_analysis/scripts/build_statistical_summary.py`
@@ -41,11 +42,14 @@ Use:
 
 - `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv`
 - `06_analysis/paper_figures/round7_scale_beam_grid_light/`
+- `06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv`
+- `06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/`
 
 Recommended focus:
 
 - `N=10,20,50,100` and `3,5,10,15,30` degree transfer.
 - Raw discovery versus collision-penalized discovery.
+- Full five-baseline comparison for the `N=100`, 3-degree stress case.
 - State explicitly that 3/5-degree beams are stress regimes.
 
 ## S4. Mobility Boundary and Missing Baselines
