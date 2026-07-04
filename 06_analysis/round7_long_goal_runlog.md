@@ -30,6 +30,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - The actor-critic implementation is currently a probe. It should only become a paper result if it produces stable nonzero discovery and meaningful reward convergence.
 - Round7 imitation probes show that flat neural beam selection is the current bottleneck: stochastic student evaluation produced only about 0.014 mean discovery rate over five short episodes.
 - The SkyOrbs comparison is a SkyOrbs-like baseline, not a strict reproduction of the full original protocol.
+  See `06_analysis/skyorbs_baseline_reproduction_checklist.md` before upgrading this wording.
 - 3-5 degree beams and abrupt mobility models remain stress regimes under the current finite horizon.
 - Energy-normalized discovery is not yet available because a Joule-level action-energy model has not been added.
   See `06_analysis/energy_efficiency_extension_plan.md` for the required radio-state model and implementation touch points.
