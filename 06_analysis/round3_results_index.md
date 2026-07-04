@@ -13,6 +13,7 @@ Generated during the long-run goal window ending at 2026-07-05 11:00 (Asia/Shang
 | `round3_range_rs_ratio` | Auxiliary `Rs/Rc` sensitivity at single-hop `Rc/D=1.05` | complete | `05_simulation/results_raw/round3_range_rs_ratio` | `06_analysis/paper_tables/round3_robustness/range_rs_ratio` | `06_analysis/paper_figures/round3_robustness` |
 | `round3_error_profiles` | Paired ISAC false-alarm, miss-detection, angular-error profiles | complete | `05_simulation/results_raw/round3_error_profiles` | `06_analysis/paper_tables/round3_robustness/error_profiles` | `06_analysis/paper_figures/round3_robustness` |
 | `round3_error_robustness` | Auxiliary full-factor small ISAC error grid | complete | `05_simulation/results_raw/round3_error_robustness` | `06_analysis/paper_tables/round3_robustness/error_robustness` | `06_analysis/paper_figures/round3_robustness` |
+| `round4_delay_ablation` | Implementation-boundary ablation for one-slot delayed candidate-set use plus efficiency metrics | complete | `05_simulation/results_raw/round4_delay_ablation` | `06_analysis/paper_tables/round4_delay_ablation` | `06_analysis/paper_figures/round4_delay_ablation` |
 
 ## Completed Results Snapshot
 
@@ -24,10 +25,22 @@ Generated during the long-run goal window ending at 2026-07-05 11:00 (Asia/Shang
 | Improved-RL without ISAC | 0.0007 | 0.9011 | 0.0000 | 0.0 |
 | No topology term | 0.3617 | 0.5011 | 10.3293 | 1083.3 |
 | No beam lock | 0.3553 | 0.4904 | 13.1866 | 1096.3 |
+| One-slot candidate delay | 0.2989 | 0.4947 | 8.4709 | 697.0 |
 | No candidate set | 0.0313 | 0.4985 | 0.0000 | 3.3 |
 | Improved-RL + ISAC | 0.3655 | 0.4986 | 12.9222 | 1050.0 |
 
-Interpretation: the candidate-set refinement enabled by ISAC feedback is the most critical mechanism in this implementation. Removing topology or beam-lock refinements preserves much of the finite-time discovery rate, while removing the candidate set nearly collapses discovery and connectivity.
+Interpretation: the candidate-set refinement enabled by ISAC feedback is the most critical mechanism in this implementation. Removing topology or beam-lock refinements preserves much of the finite-time discovery rate, while removing the candidate set nearly collapses discovery and connectivity. The one-slot delayed candidate-set ablation preserves most of the ISAC benefit while reducing collisions, so it is the key implementation-boundary result for the paper.
+
+### Implementation-Boundary Efficiency, N=100, 10-degree Beam
+
+| Protocol | Discovery rate | Discoveries / 1000 scans | Scan actions / discovery | Collision-penalized discovery |
+|---|---:|---:|---:|---:|
+| Uniform random | 0.0005 | 0.0458 | 22658.1 | 0.0005 |
+| Improved-RL without ISAC | 0.0007 | 0.0567 | 19587.9 | 0.0007 |
+| One-slot candidate delay | 0.2989 | 25.6069 | 39.10 | 0.2620 |
+| Improved-RL + ISAC | 0.3655 | 31.3563 | 31.89 | 0.3015 |
+
+Interpretation: the delayed candidate-set protocol is a conservative, more implementable variant. It retains about 82% of the full ISAC discovery rate at N=100 and 10-degree beams, while reducing collisions from 1050.0 to 697.0. This supports writing the full ISAC protocol as a low-latency upper design point and the one-slot delayed variant as a practical implementation boundary.
 
 ### N=100 Multi-Seed Transfer, Proposed Method
 
@@ -123,11 +136,15 @@ Interpretation: noisy ISAC degrades discovery and increases empty scans, but the
 - `06_analysis/paper_figures/round3_robustness/error_gain_discovery_n100_b10.png`
 - `06_analysis/paper_figures/round3_robustness/error_gain_empty_scan_n100_b10.png`
 - `06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png`
+- `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png`
+- `06_analysis/paper_figures/round4_delay_ablation/ablation_collision_penalized_discovery_n100_b10.png`
+- `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_per_scan_n100_b10.png`
 
 ## Paper-Writing Implications
 
 - Strong claim: ISAC feedback is useful mainly because it creates a candidate beam set after blind probing, not because it directly discovers neighbors.
+- Strong claim: a one-slot delayed candidate-set variant remains far above no-ISAC baselines, so the mechanism is not wholly dependent on same-slot sensing-to-handshake reuse.
 - Strong claim: the learned small-scale policy transfers to N=100 for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - Conservative claim: 3-5 degree beams are still a stress region under the current finite-time horizon.
 - Conservative claim: current learning is shared-policy parameter optimization, not yet a full neural MARL implementation.
-- Remaining gap: candidate-set refinement still needs an explicit implementation-boundary analysis, especially whether it assumes same-slot multi-beam readiness or can be delayed by one slot.
+- Remaining gap: energy-normalized efficiency still requires an explicit action-energy model; current efficiency results are scan-action and collision normalized, not Joule normalized.

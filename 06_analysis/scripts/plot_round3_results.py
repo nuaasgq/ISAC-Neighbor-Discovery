@@ -15,6 +15,7 @@ COLORS = {
     "uniform_random": "#D55E00",
     "improved_rl_no_isac": "#009E73",
     "improved_rl_isac": "#E69F00",
+    "ablation_isac_one_slot_delay": "#8A6BBE",
     "ablation_isac_no_candidate_set": "#56B4E9",
     "ablation_isac_no_beam_lock": "#CC79A7",
     "ablation_isac_no_topology": "#0072B2",
@@ -24,6 +25,7 @@ PROTOCOL_ORDER = (
     "improved_rl_no_isac",
     "ablation_isac_no_topology",
     "ablation_isac_no_beam_lock",
+    "ablation_isac_one_slot_delay",
     "ablation_isac_no_candidate_set",
     "improved_rl_isac",
 )
@@ -33,6 +35,18 @@ METRICS = {
     "lambda2": ("lambda2_mean", "Algebraic connectivity", "higher"),
     "mean_delay": ("mean_discovery_delay_mean", "Mean delay (slots)", "lower"),
     "collision": ("collision_count_mean", "Collisions per episode", "lower"),
+    "discovery_per_scan": ("discovery_per_scan_action_mean", "Discoveries per scan action", "higher"),
+    "scan_actions_per_discovery": (
+        "scan_actions_per_discovery_censored_mean",
+        "Scan actions per discovery",
+        "lower",
+    ),
+    "collision_penalized_discovery": (
+        "collision_penalized_discovery_rate_mean",
+        "Collision-penalized discovery rate",
+        "higher",
+    ),
+    "collision_efficiency": ("collision_normalized_efficiency_mean", "Collision-normalized efficiency", "higher"),
 }
 
 
@@ -81,6 +95,7 @@ def load_frame(paths: Iterable[str | Path]):
     ):
         if column in df.columns:
             df[column] = pd.to_numeric(df[column], errors="coerce").round(6)
+    df = add_derived_efficiency_columns(df)
     return df
 
 
@@ -147,7 +162,16 @@ def generate_round3_figures(
                 beamwidth_deg,
             )
         )
-    for stem in ("discovery", "empty_scan", "lambda2", "collision"):
+    for stem in (
+        "discovery",
+        "empty_scan",
+        "lambda2",
+        "collision",
+        "discovery_per_scan",
+        "scan_actions_per_discovery",
+        "collision_penalized_discovery",
+        "collision_efficiency",
+    ):
         manifest.append(
             save_ablation_bar(
                 df,
@@ -475,6 +499,26 @@ def source_contains_subset(df, token: str):
     return df
 
 
+def add_derived_efficiency_columns(df):
+    if "discovery_per_scan_action_mean" not in df and has_columns(df, ["discovered_edges_mean", "scan_actions_mean"]):
+        denominator = df["scan_actions_mean"].astype(float).clip(lower=1.0)
+        df["discovery_per_scan_action_mean"] = df["discovered_edges_mean"].astype(float) / denominator
+    if "scan_actions_per_discovery_censored_mean" not in df and has_columns(df, ["scan_actions_mean", "discovered_edges_mean"]):
+        denominator = df["discovered_edges_mean"].astype(float).clip(lower=1.0)
+        df["scan_actions_per_discovery_censored_mean"] = df["scan_actions_mean"].astype(float) / denominator
+    if "collision_normalized_efficiency_mean" not in df and has_columns(df, ["discovered_edges_mean", "collision_count_mean"]):
+        denominator = (df["discovered_edges_mean"].astype(float) + df["collision_count_mean"].astype(float)).clip(lower=1.0)
+        df["collision_normalized_efficiency_mean"] = df["discovered_edges_mean"].astype(float) / denominator
+    if "collision_penalized_discovery_rate_mean" not in df and has_columns(
+        df, ["discovered_edges_mean", "true_edges_seen_mean", "collision_count_mean"]
+    ):
+        denominator = (
+            df["true_edges_seen_mean"].astype(float) + df["collision_count_mean"].astype(float)
+        ).clip(lower=1.0)
+        df["collision_penalized_discovery_rate_mean"] = df["discovered_edges_mean"].astype(float) / denominator
+    return df
+
+
 def improvement(proposed, baseline, direction: str):
     if direction == "lower":
         return baseline - proposed
@@ -503,6 +547,7 @@ def label_protocol(protocol: str) -> str:
         "uniform_random": "Random",
         "improved_rl_no_isac": "Improved-RL",
         "improved_rl_isac": "Improved-RL+ISAC",
+        "ablation_isac_one_slot_delay": "One-slot delay",
         "ablation_isac_no_candidate_set": "No candidate set",
         "ablation_isac_no_beam_lock": "No beam lock",
         "ablation_isac_no_topology": "No topology",

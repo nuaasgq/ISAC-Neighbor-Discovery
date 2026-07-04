@@ -80,6 +80,10 @@ def test_run_sweep_writes_episode_and_aggregate_outputs(tmp_path: Path) -> None:
         "finite_time_discovery_rate",
         "mean_discovery_delay",
         "p95_discovery_delay",
+        "scan_actions",
+        "discovery_per_scan_action",
+        "collision_penalized_discovery_rate",
+        "collision_normalized_efficiency",
     }
     assert required_episode_fields.issubset(episode_rows[0].keys())
     assert {row["protocol"] for row in episode_rows} == {"uniform_random", "itap_nd"}
@@ -115,6 +119,9 @@ def test_run_sweep_writes_episode_and_aggregate_outputs(tmp_path: Path) -> None:
         "discovery_rate_mean",
         "empty_scan_ratio_mean",
         "lambda2_mean",
+        "discovery_per_scan_action_mean",
+        "collision_penalized_discovery_rate_mean",
+        "collision_normalized_efficiency_mean",
     }
     assert required_aggregate_fields.issubset(aggregate_rows[0].keys())
     assert {row["n_episodes"] for row in aggregate_rows} == {"2"}

@@ -29,6 +29,10 @@ PROTOCOL_ORDER = (
     "uniform_random",
     "rl_no_isac",
     "improved_rl_no_isac",
+    "ablation_isac_no_topology",
+    "ablation_isac_no_beam_lock",
+    "ablation_isac_one_slot_delay",
+    "ablation_isac_no_candidate_set",
     "improved_rl_isac",
     "isac_only",
     "topology_only",
@@ -135,7 +139,31 @@ TEST_SUMMARY_FIGURES = (
         "collision_count",
         "Collision count",
         "Collisions per episode",
-        ("collision_count",),
+        ("collision_count", "collision_count_mean"),
+    ),
+    SummaryFigureSpec(
+        "discovery_per_scan_action",
+        "Discovery efficiency",
+        "Discoveries per scan action",
+        ("discovery_per_scan_action", "discovery_per_scan_action_mean"),
+    ),
+    SummaryFigureSpec(
+        "collision_penalized_discovery_rate",
+        "Collision-penalized discovery rate",
+        "Collision-penalized discovery rate",
+        ("collision_penalized_discovery_rate", "collision_penalized_discovery_rate_mean"),
+    ),
+    SummaryFigureSpec(
+        "scan_actions_per_discovery",
+        "Scan actions per discovery",
+        "Scan actions per discovery",
+        ("scan_actions_per_discovery_censored", "scan_actions_per_discovery_censored_mean"),
+    ),
+    SummaryFigureSpec(
+        "collision_normalized_efficiency",
+        "Collision-normalized efficiency",
+        "Efficiency",
+        ("collision_normalized_efficiency", "collision_normalized_efficiency_mean"),
     ),
     SummaryFigureSpec(
         "discovered_edges",
@@ -157,6 +185,12 @@ TEST_SLOT_FIGURES = (
         "Connectivity trajectory",
         "LCC ratio",
         ("lcc_ratio",),
+    ),
+    SlotFigureSpec(
+        "slot_discovery_per_scan_action",
+        "Discovery-efficiency trajectory",
+        "Discoveries per scan action",
+        ("discovery_per_scan_action",),
     ),
 )
 

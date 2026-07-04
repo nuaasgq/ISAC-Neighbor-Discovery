@@ -24,7 +24,7 @@ NO_ISAC_PROTOCOLS = [
     "uniform_random",
 ]
 
-ISAC_PROTOCOLS = ["improved_rl_isac", "isac_only", "itap_nd"]
+ISAC_PROTOCOLS = ["improved_rl_isac", "ablation_isac_one_slot_delay", "isac_only", "itap_nd"]
 
 
 def compact_config() -> SimulationConfig:
@@ -61,6 +61,10 @@ def test_runner_runs_five_paper_comparison_protocols() -> None:
     for row in rows:
         assert "p99_discovery_delay" in row
         assert "p99_delay_censored" in row
+        assert "scan_actions" in row
+        assert "discovery_per_scan_action" in row
+        assert "collision_penalized_discovery_rate" in row
+        assert "collision_normalized_efficiency" in row
         assert row["p99_discovery_delay"] == row["p99_delay_censored"]
 
 
@@ -120,3 +124,23 @@ def test_isac_protocol_beam_selection_can_follow_belief_values() -> None:
 
         assert beam_a.select_beam(0, 4, MODE_TX, oracle_occupied, true_edges) == 3
         assert beam_b.select_beam(0, 4, MODE_TX, oracle_occupied, true_edges) == 21
+
+
+def test_one_slot_delay_handshake_uses_pre_sensing_candidate_snapshot() -> None:
+    cfg = replace(compact_config(), exploration_floor=1e-9)
+    delayed = initialized_simulator(cfg, "ablation_isac_one_slot_delay")
+    immediate = initialized_simulator(cfg, "improved_rl_isac")
+    target_beam = 5
+
+    delayed.belief.fill(0.0)
+    immediate.belief.fill(0.0)
+    delayed.snapshot_pre_sensing_candidates(slot=3)
+
+    for simulator in (delayed, immediate):
+        simulator.belief[0, target_beam] = 1.0
+        simulator.success_count[0, target_beam] = 1.0
+        simulator.last_positive_slot[0, target_beam] = 3
+        simulator._candidate_pool_cache.clear()
+
+    assert target_beam in set(immediate.handshake_candidate_pool(0, 3).tolist())
+    assert target_beam not in set(delayed.handshake_candidate_pool(0, 3).tolist())

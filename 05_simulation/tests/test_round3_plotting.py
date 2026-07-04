@@ -92,6 +92,12 @@ def base_row(protocol: str, rc: float = 1.05, rs: float = 1.0, pfa: float = 0.0,
         "lambda2_mean": discovery * 20,
         "mean_discovery_delay_mean": 600 * (1.0 - discovery),
         "collision_count_mean": 80 * discovery,
+        "discovered_edges_mean": 4950 * discovery,
+        "scan_actions_mean": 60000 * (0.8 + 0.2 * (1.0 - discovery)),
+        "discovery_per_scan_action_mean": discovery / 12.0,
+        "scan_actions_per_discovery_censored_mean": 12.0 / max(discovery, 1e-6),
+        "collision_normalized_efficiency_mean": discovery / (discovery + 0.2),
+        "collision_penalized_discovery_rate_mean": discovery / (1.0 + 0.2 * discovery),
     }
 
 
@@ -120,6 +126,7 @@ def ablation_rows() -> list[dict[str, object]]:
             "improved_rl_no_isac",
             "ablation_isac_no_topology",
             "ablation_isac_no_beam_lock",
+            "ablation_isac_one_slot_delay",
             "ablation_isac_no_candidate_set",
             "improved_rl_isac",
         )
@@ -133,4 +140,3 @@ def write_aggregate(directory: Path, rows: list[dict[str, object]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
-

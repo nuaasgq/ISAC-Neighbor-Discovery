@@ -47,6 +47,10 @@ def test_mobile_smoke_runner_writes_required_outputs(tmp_path: Path) -> None:
         "largest_component_size",
         "lcc_ratio",
         "lambda2",
+        "scan_actions",
+        "discovery_per_scan_action",
+        "collision_penalized_discovery_rate",
+        "collision_normalized_efficiency",
     }
     assert required.issubset(summary_rows[0].keys())
     assert summary_rows[0]["mobility_model"] != "static"
@@ -58,4 +62,4 @@ def test_mobile_smoke_runner_writes_required_outputs(tmp_path: Path) -> None:
     with (tmp_path / "per_slot_metrics.csv").open("r", encoding="utf-8") as handle:
         slot_metric_rows = list(csv.DictReader(handle))
     assert len(slot_metric_rows) == 24
-    assert {"slot", "protocol", "new_edges", "lambda2"}.issubset(slot_metric_rows[0].keys())
+    assert {"slot", "protocol", "new_edges", "lambda2", "scan_actions"}.issubset(slot_metric_rows[0].keys())

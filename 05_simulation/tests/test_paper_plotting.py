@@ -51,7 +51,7 @@ def test_paper_plotting_writes_manifest_and_4x3_figures(tmp_path: Path) -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["style"]["aspect_ratio"] == "4:3"
     assert manifest["capability"]["training_figure_specs"] == 8
-    assert manifest["capability"]["test_figure_specs_per_table_dir"] == 12
+    assert manifest["capability"]["test_figure_specs_per_table_dir"] == 17
     assert manifest["counts"]["generated"] >= 16
     assert stdout_manifest["counts"] == manifest["counts"]
 

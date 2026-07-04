@@ -14,12 +14,14 @@ COLORS = {
     "rl_no_isac": "#009E73",
     "improved_rl_no_isac": "#CC79A7",
     "improved_rl_isac": "#E69F00",
+    "ablation_isac_one_slot_delay": "#8A6BBE",
 }
 PROTOCOL_ORDER = (
     "skyorbs_like_skip_scan",
     "uniform_random",
     "rl_no_isac",
     "improved_rl_no_isac",
+    "ablation_isac_one_slot_delay",
     "improved_rl_isac",
 )
 METRICS = (
@@ -28,6 +30,9 @@ METRICS = (
     ("p95_discovery_delay_mean", "P95 delay (slots)", "p95_delay"),
     ("empty_scan_ratio_mean", "Empty-scan ratio", "empty_scan"),
     ("lambda2_mean", "Algebraic connectivity", "lambda2"),
+    ("discovery_per_scan_action_mean", "Discoveries per scan action", "discovery_per_scan"),
+    ("collision_penalized_discovery_rate_mean", "Collision-penalized discovery rate", "collision_penalized_discovery"),
+    ("collision_normalized_efficiency_mean", "Collision-normalized efficiency", "collision_efficiency"),
 )
 
 
@@ -240,6 +245,7 @@ def label_protocol(protocol: str) -> str:
         "uniform_random": "Random",
         "rl_no_isac": "RL-NoISAC",
         "improved_rl_no_isac": "Improved-RL",
+        "ablation_isac_one_slot_delay": "One-slot delay",
         "improved_rl_isac": "Improved-RL+ISAC",
     }
     return labels.get(protocol, protocol)

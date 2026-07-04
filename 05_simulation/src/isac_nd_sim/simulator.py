@@ -17,10 +17,13 @@ MODE_IDLE = "idle"
 ISAC_PROTOCOLS = (
     "improved_rl_isac",
     "isac_structured_marl",
+    "ablation_isac_one_slot_delay",
     "ablation_isac_no_candidate_set",
     "ablation_isac_no_beam_lock",
     "ablation_isac_no_topology",
 )
+
+DELAYED_CANDIDATE_PROTOCOLS = ("ablation_isac_one_slot_delay",)
 
 
 @dataclass(frozen=True)
@@ -46,6 +49,19 @@ class EpisodeResult:
     p99_delay_censored: float
     empty_scan_ratio: float
     collision_count: int
+    empty_scan_count: int
+    scan_actions: int
+    tx_actions: int
+    rx_actions: int
+    sense_actions: int
+    idle_actions: int
+    piggyback_sense_actions: int
+    discovery_per_scan_action: float
+    discoveries_per_1000_scan_actions: float
+    scan_actions_per_discovery_censored: float
+    collisions_per_discovery_censored: float
+    collision_normalized_efficiency: float
+    collision_penalized_discovery_rate: float
     moved_distance_mean_m: float
     largest_component_size: int
     connected_components: int
@@ -79,10 +95,16 @@ class NeighborDiscoverySimulator:
         self.empty_scans = 0
         self.scan_actions = 0
         self.collision_count = 0
+        self.tx_actions = 0
+        self.rx_actions = 0
+        self.sense_actions = 0
+        self.idle_actions = 0
+        self.piggyback_sense_actions = 0
         self.last_sense_slot = np.full(self.cfg.n_nodes, -10**9, dtype=int)
         self.per_slot_rows: list[dict] = []
         self.edge_rows: list[dict] = []
         self._candidate_pool_cache: dict[tuple[int, int], np.ndarray] = {}
+        self._pre_sensing_candidate_pool: dict[int, np.ndarray] = {}
         self._beam_matrix_cache: np.ndarray | None = None
         self._distance_matrix_cache: np.ndarray | None = None
         self._complete_edges_cache: set[tuple[int, int]] | None = None
@@ -102,10 +124,16 @@ class NeighborDiscoverySimulator:
         self.empty_scans = 0
         self.scan_actions = 0
         self.collision_count = 0
+        self.tx_actions = 0
+        self.rx_actions = 0
+        self.sense_actions = 0
+        self.idle_actions = 0
+        self.piggyback_sense_actions = 0
         self.last_sense_slot.fill(-10**9)
         self.per_slot_rows = []
         self.edge_rows = []
         self._candidate_pool_cache.clear()
+        self._pre_sensing_candidate_pool.clear()
         self._beam_matrix_cache = None
         self._distance_matrix_cache = None
         self._complete_edges_cache = None
@@ -122,6 +150,8 @@ class NeighborDiscoverySimulator:
             self.belief *= self.cfg.confidence_decay
             self._candidate_pool_cache.clear()
             actions = self.select_actions(slot, true_comm_edges)
+            self.snapshot_pre_sensing_candidates(slot)
+            self.update_action_counts(actions, slot)
             self.update_empty_scan_counts(actions, true_comm_edges)
             self.update_sensing(actions, slot)
             self._candidate_pool_cache.clear()
@@ -161,6 +191,13 @@ class NeighborDiscoverySimulator:
             "new_edges": len(new_edges),
             "empty_scan_ratio": self.empty_scans / max(1, self.scan_actions),
             "collision_count": self.collision_count,
+            "empty_scan_count": self.empty_scans,
+            "scan_actions": self.scan_actions,
+            "tx_actions": self.tx_actions,
+            "rx_actions": self.rx_actions,
+            "sense_actions": self.sense_actions,
+            "idle_actions": self.idle_actions,
+            "piggyback_sense_actions": self.piggyback_sense_actions,
             "largest_component_size": largest,
             "connected_components": len(components),
             "lcc_ratio": largest / max(1, self.cfg.n_nodes),
@@ -405,6 +442,19 @@ class NeighborDiscoverySimulator:
         selected_index = int((slot // lock_period + node) % len(selected))
         return int(selected[selected_index])
 
+    def snapshot_pre_sensing_candidates(self, slot: int) -> None:
+        if self.protocol not in DELAYED_CANDIDATE_PROTOCOLS:
+            self._pre_sensing_candidate_pool.clear()
+            return
+        self._pre_sensing_candidate_pool = {
+            node: self.isac_candidate_pool(node, slot).copy() for node in range(self.cfg.n_nodes)
+        }
+
+    def handshake_candidate_pool(self, node: int, slot: int) -> np.ndarray:
+        if self.protocol in DELAYED_CANDIDATE_PROTOCOLS:
+            return self._pre_sensing_candidate_pool.get(int(node), np.asarray([], dtype=int))
+        return self.isac_candidate_pool(node, slot)
+
     def isac_candidate_pool(self, node: int, slot: int) -> np.ndarray:
         cache_key = (int(slot), int(node))
         cached = self._candidate_pool_cache.get(cache_key)
@@ -438,7 +488,7 @@ class NeighborDiscoverySimulator:
             return False
         if self.protocol == "ablation_isac_no_candidate_set":
             return False
-        for candidate in self.isac_candidate_pool(node, slot):
+        for candidate in self.handshake_candidate_pool(node, slot):
             if beam_matches(int(candidate), expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
                 return True
         return False
@@ -593,6 +643,24 @@ class NeighborDiscoverySimulator:
             self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
             self.age[node, sensed_beams] = 0.0
 
+    def update_action_counts(self, actions: list[Action], slot: int) -> None:
+        for node, action in enumerate(actions):
+            if action.mode == MODE_TX:
+                self.tx_actions += 1
+            elif action.mode == MODE_RX:
+                self.rx_actions += 1
+            elif action.mode == MODE_SENSE:
+                self.sense_actions += 1
+            elif action.mode == MODE_IDLE:
+                self.idle_actions += 1
+
+            if self.protocol not in ISAC_PROTOCOLS or action.mode not in (MODE_TX, MODE_RX):
+                continue
+            period = max(1, self.cfg.sensing_period_slots)
+            period = max(1, int(round(period * self.cfg.piggyback_sensing_period_multiplier)))
+            if slot - int(self.last_sense_slot[node]) >= period:
+                self.piggyback_sense_actions += 1
+
     def sensing_sector(self, center_beam: int) -> np.ndarray:
         radius = max(1, self.cfg.alignment_tolerance_cells + int(np.ceil(self.cfg.angular_cell_offset_std)))
         center_el, center_az = divmod(center_beam, self.cfg.azimuth_cells)
@@ -649,7 +717,7 @@ class NeighborDiscoverySimulator:
                 continue
             ready_mask[node, action.beam] = True
             if self.protocol in ISAC_PROTOCOLS and self.protocol != "ablation_isac_no_candidate_set":
-                pool = self.isac_candidate_pool(node, slot)
+                pool = self.handshake_candidate_pool(node, slot)
                 if len(pool) > 0:
                     ready_mask[node, pool] = True
 
@@ -709,6 +777,14 @@ class NeighborDiscoverySimulator:
         components = connected_components(self.cfg.n_nodes, self.discovered_edges)
         largest = max((len(c) for c in components), default=0)
         isolated = sum(1 for c in components if len(c) == 1)
+        discovered_count = len(self.discovered_edges)
+        discovery_rate = discovered_count / max(1, len(self.first_true_slot))
+        discovery_per_scan_action = discovered_count / max(1, self.scan_actions)
+        discoveries_per_1000_scan_actions = 1000.0 * discovery_per_scan_action
+        scan_actions_per_discovery = self.scan_actions / max(1, discovered_count)
+        collisions_per_discovery = self.collision_count / max(1, discovered_count)
+        collision_normalized_efficiency = discovered_count / max(1, discovered_count + self.collision_count)
+        collision_penalized_discovery_rate = discovered_count / max(1, len(self.first_true_slot) + self.collision_count)
         moved = 0.0
         if self.initial_positions is not None:
             moved = float(np.linalg.norm(self.positions() - self.initial_positions, axis=1).mean())
@@ -720,14 +796,27 @@ class NeighborDiscoverySimulator:
             slots=self.cfg.slots_per_episode,
             mobility_model=str(self.cfg.mobility.get("model", "gauss_markov")),
             true_edges_seen=len(self.first_true_slot),
-            discovered_edges=len(self.discovered_edges),
-            discovery_rate=len(self.discovered_edges) / max(1, len(self.first_true_slot)),
+            discovered_edges=discovered_count,
+            discovery_rate=discovery_rate,
             mean_delay_censored=float(np.mean(delays)),
             p90_delay_censored=float(np.percentile(delays, 90)),
             p95_delay_censored=float(np.percentile(delays, 95)),
             p99_delay_censored=float(np.percentile(delays, 99)),
             empty_scan_ratio=self.empty_scans / max(1, self.scan_actions),
             collision_count=self.collision_count,
+            empty_scan_count=self.empty_scans,
+            scan_actions=self.scan_actions,
+            tx_actions=self.tx_actions,
+            rx_actions=self.rx_actions,
+            sense_actions=self.sense_actions,
+            idle_actions=self.idle_actions,
+            piggyback_sense_actions=self.piggyback_sense_actions,
+            discovery_per_scan_action=discovery_per_scan_action,
+            discoveries_per_1000_scan_actions=discoveries_per_1000_scan_actions,
+            scan_actions_per_discovery_censored=scan_actions_per_discovery,
+            collisions_per_discovery_censored=collisions_per_discovery,
+            collision_normalized_efficiency=collision_normalized_efficiency,
+            collision_penalized_discovery_rate=collision_penalized_discovery_rate,
             moved_distance_mean_m=moved,
             largest_component_size=largest,
             connected_components=len(components),
