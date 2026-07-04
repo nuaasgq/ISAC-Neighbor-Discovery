@@ -1,0 +1,63 @@
+# Paper Readiness Dashboard
+
+Date: 2026-07-05
+
+## Readiness Verdict
+
+The current data package is sufficient for a bounded IEEE TWC/TCOM-style manuscript if the paper is framed as:
+
+> ISAC-assisted link-layer beam-cell occupancy priors improve fully distributed narrow-beam UAV-UAV neighbor discovery and finite-time topology formation in tested dynamic regimes.
+
+The data do not yet support a claim of full neural MARL superiority, strict SkyOrbs reproduction, Joule-level energy efficiency, or universal robustness across all extremely narrow beams and abrupt mobility models.
+
+## Main Evidence Chain
+
+| Claim | Primary artifacts | Current status |
+|---|---|---|
+| ISAC candidate-beam refinement is the dominant mechanism. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`, `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | Strong main claim. |
+| Proposed ISAC policy beats random, SkyOrbs-like, RL-no-ISAC, and improved no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong main claim. |
+| Small-scale training transfers to `N=100` for 10--30 degree beams in tested regimes. | `06_analysis/paper_tables/round3_robustness/n100_*_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_transfer}` | Strong but bounded; 3/5 degrees remain stress regimes. |
+| Collision-aware metrics change the preferred beamwidth. | `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv` | Supplementary but important for reviewer discussion. |
+| Moderate ISAC errors degrade but do not collapse the gain. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`, `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv` | Strong bounded robustness claim. |
+| B=15 remains strong under Gauss-Markov error profiles but random-walk is more sensitive. | `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot/aggregate_metrics.csv` | Supplementary evidence for operating-region nuance. |
+| Mobility-boundary results are not caused by missing SkyOrbs-like or vanilla RL baselines. | `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv` | Supplementary baseline-completeness evidence. |
+
+## Recommended Main-Text Figures
+
+Use the existing main draft selection:
+
+- System model: `06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png`
+- Protocol mechanism: `06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png`
+- Shared-policy architecture: `06_analysis/paper_figures/concept/policy_architecture_shared_agent.png`
+- Training-score evolution: `06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png`
+- N=100 transfer: `06_analysis/paper_figures/round3_n100_transfer/density_beamwidth_discovery_rate_n100.png`
+- Area-scale check: `06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_lambda2.png`
+- Mobility boundary: `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png`
+- Range sensitivity: `06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png`
+- ISAC error profile: `06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png`
+- Mechanism ablation: `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png`
+
+Keep round7/round8 stress figures as supplement unless the main draft expands.
+
+## Verification Snapshot
+
+- `pdflatex -interaction=nonstopmode main.tex`: passed; no undefined references/citations and no overfull warnings in the final checked log.
+- `python -m pytest 05_simulation\tests`: 25 passed.
+- `06_analysis/paper_figures`: 346 PNG figures, all checked at 4:3 aspect ratio.
+- Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
+
+## Literature Boundary Notes
+
+Recent checks support the current scope:
+
+- SkyOrbs is the closest UAV 3-D directional ND reference, but our baseline remains `SkyOrbs-like`, not a strict reproduction: `https://ieeexplore.ieee.org/document/10659183/`
+- Delay-power UAV ND work supports reporting collision and radio-activity caveats, but our work does not yet have a Joule-level energy model: `https://www.computer.org/csdl/journal/tm/2026/06/11320813/2cTQxGWicIo`
+- ISAC predictive beam tracking remains mostly physical-layer/beam-management work, so our protocol layer distinction should remain explicit.
+
+## Remaining Risks
+
+- Full neural MARL is not yet a main contribution.
+- Energy efficiency is collision/scan normalized only.
+- 3-degree and 5-degree beams are not solved.
+- Random-direction and random-waypoint mobility remain stress regimes.
+- The main paper is still compact; a supplement is recommended for round7/round8 stress results and full std/CI tables.
