@@ -1,0 +1,151 @@
+{
+  "generated_at_utc": "2026-07-04T19:24:21.520914+00:00",
+  "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_mobility_results.py",
+  "style": {
+    "figsize_inches": [
+      6.4,
+      4.8
+    ],
+    "aspect_ratio": "4:3",
+    "font_family": "Times New Roman with serif fallback",
+    "dpi": 300,
+    "palette": {
+      "improved_rl_no_isac": "#009E73",
+      "ablation_isac_one_slot_delay": "#8A6BBE",
+      "improved_rl_isac": "#E69F00"
+    }
+  },
+  "inputs": [
+    "05_simulation\\results_raw\\round7_n100_multimobility_600slot"
+  ],
+  "selection": {
+    "node_count": 100
+  },
+  "counts": {
+    "generated": 8,
+    "skipped": 0,
+    "total": 8
+  },
+  "figures": [
+    {
+      "status": "generated",
+      "metric": "discovery_rate_mean",
+      "filename": "mobility_discovery_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_discovery_n100_b10.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "lambda2_mean",
+      "filename": "mobility_lambda2_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_lambda2_n100_b10.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "filename": "mobility_collision_penalized_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_collision_penalized_n100_b10.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "empty_scan_ratio_mean",
+      "filename": "mobility_empty_scan_n100_b10.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_empty_scan_n100_b10.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "discovery_rate_mean",
+      "filename": "mobility_discovery_n100_b15.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_discovery_n100_b15.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "lambda2_mean",
+      "filename": "mobility_lambda2_n100_b15.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_lambda2_n100_b15.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "collision_penalized_discovery_rate_mean",
+      "filename": "mobility_collision_penalized_n100_b15.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_collision_penalized_n100_b15.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "metric": "empty_scan_ratio_mean",
+      "filename": "mobility_empty_scan_n100_b15.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\round7_n100_multimobility_600slot\\mobility_empty_scan_n100_b15.png",
+      "rows_used": 12,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    }
+  ]
+}
