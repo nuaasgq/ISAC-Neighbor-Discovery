@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -31,7 +32,19 @@ def main() -> None:
     protocols = args.protocols.split(",") if args.protocols else list(config.baselines)
     rows, slot_rows, edge_rows = run_detailed(config, protocols)
     write_outputs(config_path, Path(args.output), rows, config, slot_rows, edge_rows)
-    print(f"wrote {len(rows)} episode summaries to {args.output}")
+    print(
+        json.dumps(
+            {
+                "output": args.output,
+                "episode_rows": len(rows),
+                "slot_rows": len(slot_rows),
+                "edge_rows": len(edge_rows),
+                "protocols": protocols,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":
