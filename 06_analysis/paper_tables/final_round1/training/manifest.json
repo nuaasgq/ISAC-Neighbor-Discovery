@@ -1,0 +1,72 @@
+{
+  "created_at": "2026-07-04T21:03:15",
+  "base_config_path": "05_simulation\\configs\\paper_core_d1.yaml",
+  "output_dir": "05_simulation\\results_raw\\final_cem_train_g10_p10",
+  "trained_protocol": "improved_rl_isac",
+  "settings": {
+    "generations": 10,
+    "population": 10,
+    "episodes": 2,
+    "slots_per_episode": 300,
+    "seeds": [
+      20260704,
+      20261713,
+      20262722
+    ],
+    "test_seeds": [
+      20270704,
+      20271713,
+      20272722
+    ],
+    "test_episodes": 2,
+    "elite_fraction": 0.25,
+    "learning_rate": 0.7,
+    "min_std": 0.03,
+    "training_seed": 20260704
+  },
+  "parameter_specs": [
+    {
+      "name": "alpha_occupancy",
+      "lower": 0.0,
+      "upper": 3.0
+    },
+    {
+      "name": "softmax_beta",
+      "lower": 0.25,
+      "upper": 8.0
+    },
+    {
+      "name": "exploration_floor",
+      "lower": 0.01,
+      "upper": 0.35
+    },
+    {
+      "name": "confidence_decay",
+      "lower": 0.8,
+      "upper": 0.995
+    },
+    {
+      "name": "piggyback_sensing_period_multiplier",
+      "lower": 0.5,
+      "upper": 4.0
+    }
+  ],
+  "best_score": 123.90195957977188,
+  "best_generation": 8,
+  "best_candidate": 2,
+  "best_parameters": {
+    "alpha_occupancy": 1.9833346811183463,
+    "softmax_beta": 3.23374412453593,
+    "exploration_floor": 0.056678327612762154,
+    "confidence_decay": 0.9937361998464305,
+    "piggyback_sensing_period_multiplier": 0.5
+  },
+  "test_score": 130.7997094118633,
+  "files": [
+    "training_history.csv",
+    "elite_history.csv",
+    "best_config.yaml",
+    "test_summary.csv",
+    "manifest.json"
+  ]
+}

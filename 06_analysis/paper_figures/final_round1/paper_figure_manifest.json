@@ -1,0 +1,1053 @@
+{
+  "generated_at_utc": "2026-07-04T13:28:24.597501+00:00",
+  "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_paper_results.py",
+  "style": {
+    "figsize_inches": [
+      6.4,
+      4.8
+    ],
+    "aspect_ratio": "4:3",
+    "font_family": "Times New Roman with serif fallback",
+    "dpi": 300,
+    "palette": [
+      "#0072B2",
+      "#D55E00",
+      "#009E73",
+      "#CC79A7",
+      "#E69F00",
+      "#56B4E9",
+      "#000000",
+      "#F0E442"
+    ]
+  },
+  "capability": {
+    "training_figure_specs": 8,
+    "test_figure_specs_per_table_dir": 12,
+    "maximum_figures_for_this_input": 56
+  },
+  "inputs": {
+    "table_dirs": [
+      {
+        "label": "final_eval_gm_20ep_analysis",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\final_eval_gm_20ep_analysis\\tables"
+      },
+      {
+        "label": "final_eval_rd_10ep_analysis",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\final_eval_rd_10ep_analysis\\tables"
+      },
+      {
+        "label": "final_eval_rw_20ep_analysis",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\final_eval_rw_20ep_analysis\\tables"
+      },
+      {
+        "label": "final_eval_rwp_10ep_analysis",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\final_eval_rwp_10ep_analysis\\tables"
+      }
+    ],
+    "training_files": [
+      {
+        "label": "final_cem_train_g10_p10",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\final_cem_train_g10_p10\\elite_history.csv"
+      },
+      {
+        "label": "final_cem_train_g10_p10_2",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\final_cem_train_g10_p10\\training_history.csv"
+      }
+    ]
+  },
+  "counts": {
+    "generated": 54,
+    "skipped": 2,
+    "total_manifest_entries": 56
+  },
+  "figures": [
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovery_rate",
+      "filename": "test_final_eval_gm_20ep_analysis_discovery_rate.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_discovery_rate.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "empty_scan_ratio",
+      "filename": "test_final_eval_gm_20ep_analysis_empty_scan_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_empty_scan_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "mean_discovery_delay",
+      "filename": "test_final_eval_gm_20ep_analysis_mean_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_mean_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p90_discovery_delay",
+      "filename": "test_final_eval_gm_20ep_analysis_p90_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_p90_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p95_discovery_delay",
+      "filename": "test_final_eval_gm_20ep_analysis_p95_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_p95_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p99_discovery_delay",
+      "filename": "test_final_eval_gm_20ep_analysis_p99_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_p99_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lcc_ratio",
+      "filename": "test_final_eval_gm_20ep_analysis_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lambda2",
+      "filename": "test_final_eval_gm_20ep_analysis_lambda2.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_lambda2.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "collision_count",
+      "filename": "test_final_eval_gm_20ep_analysis_collision_count.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_collision_count.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovered_edges",
+      "filename": "test_final_eval_gm_20ep_analysis_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_discovered_edges",
+      "filename": "test_final_eval_gm_20ep_analysis_slot_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_slot_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_lcc_ratio",
+      "filename": "test_final_eval_gm_20ep_analysis_slot_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_gm_20ep_analysis_slot_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_gm_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovery_rate",
+      "filename": "test_final_eval_rd_10ep_analysis_discovery_rate.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_discovery_rate.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "empty_scan_ratio",
+      "filename": "test_final_eval_rd_10ep_analysis_empty_scan_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_empty_scan_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "mean_discovery_delay",
+      "filename": "test_final_eval_rd_10ep_analysis_mean_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_mean_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p90_discovery_delay",
+      "filename": "test_final_eval_rd_10ep_analysis_p90_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_p90_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p95_discovery_delay",
+      "filename": "test_final_eval_rd_10ep_analysis_p95_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_p95_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p99_discovery_delay",
+      "filename": "test_final_eval_rd_10ep_analysis_p99_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_p99_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lcc_ratio",
+      "filename": "test_final_eval_rd_10ep_analysis_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lambda2",
+      "filename": "test_final_eval_rd_10ep_analysis_lambda2.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_lambda2.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "collision_count",
+      "filename": "test_final_eval_rd_10ep_analysis_collision_count.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_collision_count.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovered_edges",
+      "filename": "test_final_eval_rd_10ep_analysis_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_discovered_edges",
+      "filename": "test_final_eval_rd_10ep_analysis_slot_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_slot_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_lcc_ratio",
+      "filename": "test_final_eval_rd_10ep_analysis_slot_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rd_10ep_analysis_slot_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_rd_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovery_rate",
+      "filename": "test_final_eval_rw_20ep_analysis_discovery_rate.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_discovery_rate.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "empty_scan_ratio",
+      "filename": "test_final_eval_rw_20ep_analysis_empty_scan_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_empty_scan_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "mean_discovery_delay",
+      "filename": "test_final_eval_rw_20ep_analysis_mean_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_mean_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p90_discovery_delay",
+      "filename": "test_final_eval_rw_20ep_analysis_p90_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_p90_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p95_discovery_delay",
+      "filename": "test_final_eval_rw_20ep_analysis_p95_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_p95_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p99_discovery_delay",
+      "filename": "test_final_eval_rw_20ep_analysis_p99_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_p99_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lcc_ratio",
+      "filename": "test_final_eval_rw_20ep_analysis_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lambda2",
+      "filename": "test_final_eval_rw_20ep_analysis_lambda2.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_lambda2.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "collision_count",
+      "filename": "test_final_eval_rw_20ep_analysis_collision_count.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_collision_count.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovered_edges",
+      "filename": "test_final_eval_rw_20ep_analysis_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_discovered_edges",
+      "filename": "test_final_eval_rw_20ep_analysis_slot_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_slot_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_lcc_ratio",
+      "filename": "test_final_eval_rw_20ep_analysis_slot_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rw_20ep_analysis_slot_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_rw_20ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovery_rate",
+      "filename": "test_final_eval_rwp_10ep_analysis_discovery_rate.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_discovery_rate.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "empty_scan_ratio",
+      "filename": "test_final_eval_rwp_10ep_analysis_empty_scan_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_empty_scan_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "mean_discovery_delay",
+      "filename": "test_final_eval_rwp_10ep_analysis_mean_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_mean_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p90_discovery_delay",
+      "filename": "test_final_eval_rwp_10ep_analysis_p90_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_p90_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p95_discovery_delay",
+      "filename": "test_final_eval_rwp_10ep_analysis_p95_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_p95_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "p99_discovery_delay",
+      "filename": "test_final_eval_rwp_10ep_analysis_p99_discovery_delay.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_p99_discovery_delay.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lcc_ratio",
+      "filename": "test_final_eval_rwp_10ep_analysis_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "lambda2",
+      "filename": "test_final_eval_rwp_10ep_analysis_lambda2.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_lambda2.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "collision_count",
+      "filename": "test_final_eval_rwp_10ep_analysis_collision_count.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_collision_count.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "discovered_edges",
+      "filename": "test_final_eval_rwp_10ep_analysis_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 5,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_discovered_edges",
+      "filename": "test_final_eval_rwp_10ep_analysis_slot_discovered_edges.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_slot_discovered_edges.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "test",
+      "metric": "slot_lcc_ratio",
+      "filename": "test_final_eval_rwp_10ep_analysis_slot_lcc_ratio.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\test_final_eval_rwp_10ep_analysis_slot_lcc_ratio.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 1500,
+      "source_label": "final_eval_rwp_10ep_analysis"
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "score_curve",
+      "filename": "train_score_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\train_score_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 130
+    },
+    {
+      "status": "skipped",
+      "category": "training",
+      "metric": "reward_curve",
+      "filename": "train_reward_curve.png",
+      "reason": "missing metric aliases: mean_reward, avg_reward, episode_reward, reward, reward_mean",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ]
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "discovery_rate_curve",
+      "filename": "train_discovery_rate_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\train_discovery_rate_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 130
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "empty_scan_ratio_curve",
+      "filename": "train_empty_scan_ratio_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\train_empty_scan_ratio_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 130
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "delay_curve",
+      "filename": "train_delay_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\train_delay_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 130
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "collision_curve",
+      "filename": "train_collision_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\train_collision_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 130
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "connectivity_curve",
+      "filename": "train_connectivity_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\final_round1\\train_connectivity_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 260
+    },
+    {
+      "status": "skipped",
+      "category": "training",
+      "metric": "loss_curve",
+      "filename": "train_loss_curve.png",
+      "reason": "missing metric aliases: loss, actor_loss, critic_loss, policy_loss, value_loss",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ]
+    }
+  ]
+}

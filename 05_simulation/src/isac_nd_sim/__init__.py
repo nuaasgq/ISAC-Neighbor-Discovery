@@ -7,4 +7,5 @@ __all__ = [
     "mobility",
     "simulator",
     "sweep",
+    "training",
 ]

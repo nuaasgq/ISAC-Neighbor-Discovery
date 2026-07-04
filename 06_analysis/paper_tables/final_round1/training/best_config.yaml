@@ -1,0 +1,85 @@
+base_config_path: 05_simulation\configs\paper_core_d1.yaml
+trained_protocol: improved_rl_isac
+best_score: 123.90195957977188
+best_generation: 8
+best_candidate: 2
+training:
+  generations: 10
+  population: 10
+  episodes: 2
+  slots_per_episode: 300
+  seeds:
+  - 20260704
+  - 20261713
+  - 20262722
+  test_seeds:
+  - 20270704
+  - 20271713
+  - 20272722
+  test_episodes: 2
+  elite_fraction: 0.25
+  learning_rate: 0.7
+  min_std: 0.03
+  training_seed: 20260704
+shared_policy_parameters:
+  alpha_occupancy: 1.9833346811183463
+  softmax_beta: 3.23374412453593
+  exploration_floor: 0.056678327612762154
+  confidence_decay: 0.9937361998464305
+  piggyback_sensing_period_multiplier: 0.5
+resolved_simulation_config:
+  name: paper_core_d1
+  seed: 20260704
+  episodes: 2
+  slots_per_episode: 300
+  slot_duration_s: 0.1
+  n_nodes: 12
+  area_size_m:
+  - 560.0
+  - 560.0
+  - 180.0
+  communication_range_m: 340.0
+  sensing_range_m: 440.0
+  mobility:
+    model: gauss_markov
+    speed_min_mps: 5.0
+    speed_max_mps: 20.0
+    mean_speed_mps: 11.0
+    gauss_markov_alpha: 0.85
+    random_walk_step_std_m: 2.0
+    waypoint_threshold_m: 20.0
+    speed_mean_mps: 11.0
+    min_speed_mps: 5.0
+    max_speed_mps: 20.0
+    alpha: 0.85
+    speed_std_mps: 3.0
+    direction_update_period_slots: 25
+    waypoint_pause_slots: 0
+    boundary: reflect
+  azimuth_cells: 12
+  elevation_cells: 4
+  alignment_tolerance_cells: 1
+  p_sense: 0.15
+  p_tx: 0.425
+  p_rx: 0.425
+  p_idle: 0.0
+  false_alarm_rate: 0.01
+  miss_detection_rate: 0.05
+  angular_cell_offset_std: 0.5
+  sensing_period_slots: 5
+  belief_update_rho: 0.55
+  exploration_floor: 0.056678327612762154
+  softmax_beta: 3.23374412453593
+  target_degree: 4
+  alpha_occupancy: 1.9833346811183463
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.9937361998464305
+  piggyback_sensing_period_multiplier: 0.5
+  baselines:
+  - skyorbs_like_skip_scan
+  - uniform_random
+  - rl_no_isac
+  - improved_rl_no_isac
+  - improved_rl_isac

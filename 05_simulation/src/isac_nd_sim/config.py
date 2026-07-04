@@ -43,6 +43,7 @@ class SimulationConfig:
     gamma_degree_need: float
     eta_staleness: float
     confidence_decay: float
+    piggyback_sensing_period_multiplier: float
     baselines: tuple[str, ...]
 
     @property
@@ -123,5 +124,6 @@ def load_config(path: str | Path) -> SimulationConfig:
         gamma_degree_need=float(protocol["gamma_degree_need"]),
         eta_staleness=float(protocol["eta_staleness"]),
         confidence_decay=float(protocol["confidence_decay"]),
+        piggyback_sensing_period_multiplier=float(protocol.get("piggyback_sensing_period_multiplier", 1.0)),
         baselines=tuple(str(v) for v in raw["baselines"]),
     )

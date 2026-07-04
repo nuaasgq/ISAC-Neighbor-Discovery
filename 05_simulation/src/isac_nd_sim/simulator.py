@@ -368,6 +368,8 @@ class NeighborDiscoverySimulator:
                 continue
             if slot is not None:
                 period = max(1, self.cfg.sensing_period_slots)
+                if piggyback_isac:
+                    period = max(1, int(round(period * self.cfg.piggyback_sensing_period_multiplier)))
                 if slot - int(self.last_sense_slot[node]) < period:
                     continue
                 self.last_sense_slot[node] = slot
