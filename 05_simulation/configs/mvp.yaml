@@ -1,5 +1,5 @@
 experiment:
-  name: "mvp_001_static_pruning"
+  name: "mvp_002_dynamic_pruning"
   seed: 20260704
   episodes: 50
   slots_per_episode: 3000
@@ -11,11 +11,26 @@ network:
   area_size_m: [1000, 1000, 300]
   communication_range_m: 300
   sensing_range_m: 350
-  mobility: "static"
+  mobility: "gauss_markov"
   self_localization_available: true
   self_attitude_available: true
   localization_error_std_m: 0.0
   attitude_error_std_deg: 0.0
+
+mobility:
+  default_model: "gauss_markov"
+  model_sweep: ["gauss_markov", "random_direction", "random_walk", "random_waypoint"]
+  boundary: "reflect"
+  min_speed_mps: 3.0
+  max_speed_mps: 30.0
+  mean_speed_mps: 15.0
+  speed_std_mps: 2.0
+  gauss_markov_alpha: 0.85
+  random_walk_step_std_m: 0.25
+  direction_update_interval_slots: 50
+  waypoint_threshold_m: 5.0
+  waypoint_pause_slots: 0
+  max_pitch_deg: 25.0
 
 beam:
   azimuth_cells: [24]

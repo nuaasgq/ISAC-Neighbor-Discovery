@@ -4,6 +4,8 @@
 
 建立离散 beam-cell 级仿真，验证 I-TAP-ND 是否在不使用 oracle 信息的前提下，相比盲扫和 ISAC-only 方法获得发现效率与拓扑质量收益；随后验证 MARL-I-TAP-ND 是否能在小规模训练后迁移到大规模 UAV 集群。
 
+从 Sprint 5 起，MVP 主场景采用动态 UAV。`static` 仅作为调试模式，不作为主实验设定。
+
 ## MVP 问题
 
 第一版只回答三个问题：
@@ -33,10 +35,21 @@
 - 节点数：MVP `N=30`；扫描 `N in {10, 20, 30, 50, 80}`
 - 空间：三维长方体，例如 `1000m x 1000m x 300m`
 - 位置：每个 episode 随机生成
-- 移动：MVP-1 静态；MVP-2 恒速随机方向 / 边界反弹
+- 移动：MVP 主场景采用高斯马尔可夫运动；随机方向、随机游走、随机航点用于鲁棒性扫描；边界默认反弹
 - 真实邻居图：节点距离 `d_ij <= R_comm`
 - 协议可见信息：本地 belief、已发现邻居、握手后局部信息
 - 节点自状态：自身位置、速度、航向和姿态可用
+
+### 三维运动模型
+
+| 模型 | 用途 | 最小更新形式 |
+|---|---|---|
+| Gauss-Markov | 主场景，模拟平滑且时间相关的 UAV 运动 | `v(t+1)=alpha v(t)+(1-alpha) v_bar+sqrt(1-alpha^2) sigma_v w(t)`，`x(t+1)=x(t)+v(t+1) Delta t` |
+| Random Walk | 局部抖动和强随机压力测试 | `x(t+1)=x(t)+eta(t)`，`eta(t) ~ N(0, sigma_step^2 I)` |
+| Random Direction | 分段恒速随机方向运动 | 每 `T_dir` 个 slot 重采样三维方向和速度，其余时隙保持速度 |
+| Random Waypoint | 任务式航点运动 | 随机选择三维航点，按速度飞向航点，到达后可短暂停留并重采样 |
+
+姿态采用简化运动学映射：`yaw=atan2(v_y,v_x)`，`pitch=atan2(v_z,sqrt(v_x^2+v_y^2))`，`roll` 默认慢衰减到 0。后续如需要更真实机动，可加入基于转弯率的 bank angle 模型。
 
 ### 波束
 
@@ -131,7 +144,7 @@
 
 ```text
 05_simulation/results_raw/
-  mvp_001_static_pruning_<timestamp>/
+  mvp_002_dynamic_pruning_<timestamp>/
     config.yaml
     seed_manifest.json
     per_slot_metrics.csv
@@ -153,14 +166,16 @@
 
 ## 首个 MVP 实验路径
 
-首个实验：`mvp_001_static_pruning`
+首个动态实验：`mvp_002_dynamic_pruning`
 
 固定设置：
 
 - `N = 30`
 - `A = 24, E = 8`
 - `T_budget = 3000`
-- 静态节点
+- 高斯马尔可夫三维运动，边界反弹
+- `v_min=3 m/s, v_mean=15 m/s, v_max=30 m/s`
+- `alpha=0.85, sigma_v=2 m/s`
 - `p_fa = 0.02`
 - `p_md = 0.15`
 - `sigma_cell = 0.5`
@@ -196,6 +211,32 @@
 8. I-TAP-ND expert trajectory 生成。
 9. IPPO/MAPPO 训练和小到大迁移评估。
 10. 参数扫描和绘图。
+
+## Sprint 5 动态仿真底座
+
+当前代码入口：
+
+```text
+05_simulation/src/isac_nd_sim/
+  config.py
+  mobility.py
+  beam.py
+  simulator.py
+  runner.py
+```
+
+运行 smoke 级实验：
+
+```powershell
+$env:PYTHONPATH='05_simulation/src'
+python -m isac_nd_sim.runner --config 05_simulation/configs/mvp.yaml --output 05_simulation/results_raw/smoke_dynamic --episodes 2 --slots 100 --protocols uniform_random,isac_only,itap_nd
+```
+
+运行测试：
+
+```powershell
+python -m pytest 05_simulation/tests -q
+```
 
 ## Sprint 4 MARL 算法筛选顺序
 

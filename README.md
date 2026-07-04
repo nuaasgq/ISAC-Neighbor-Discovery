@@ -8,6 +8,8 @@
 
 当前设定允许 UAV 知道自身位置、速度、航向和姿态，但不假设其在对准前知道未发现邻居的身份、实时位置、波束状态或全局拓扑。
 
+从 Sprint 5 起，MVP 主场景采用三维动态 UAV 运动模型。默认运动模型为高斯马尔可夫，随机方向、随机游走和随机航点模型用于鲁棒性扫描；静态节点仅作为调试模式。
+
 ## Workflow
 
 主控工作流见：
@@ -16,14 +18,19 @@
 
 当前阶段：
 
-- P3-P5 过渡：系统模型、规则协议、MARL 算法族筛选、网络结构创新和可扩展仿真实验设计
+- P3-P5 过渡：系统模型、规则协议、动态三维仿真底座、MARL 算法族筛选、网络结构创新和可扩展仿真实验设计
 
 当前新增任务线：
 
 - `00_workflow/sprint_4_marl_algorithm_exploration.md`
+- `00_workflow/sprint_5_dynamic_simulation_task_breakdown.md`
 - `04_protocol/marl_algorithm_suite.md`
 - `04_protocol/neural_architecture_innovation.md`
 - `05_simulation/configs/marl_algorithm_sweep.yaml`
+- `05_simulation/src/isac_nd_sim/mobility.py`
+- `05_simulation/src/isac_nd_sim/simulator.py`
+- `05_simulation/tests/test_mobility.py`
+- `05_simulation/tests/test_simulator_smoke.py`
 
 ## Repository Rules
 

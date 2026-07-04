@@ -7,6 +7,13 @@ experiment:
 environment:
   base_config: "05_simulation/configs/mvp.yaml"
   observation_contract: "self-localized-neighbor-unknown"
+  mobility_contract:
+    default_model: "gauss_markov"
+    train_model_sweep: ["gauss_markov", "random_direction"]
+    robustness_model_sweep: ["gauss_markov", "random_direction", "random_walk", "random_waypoint"]
+    boundary: "reflect"
+    actor_observes_self_motion: true
+    actor_observes_undiscovered_neighbor_motion: false
   action_space:
     mode_actions: ["sense", "tx", "rx", "idle"]
     beam_selection: "hierarchical_discrete_cell"
@@ -35,6 +42,7 @@ phase_0_rule_expert:
 phase_1_sanity:
   train_episodes: 500
   eval_episodes: 50
+  mobility_models: ["gauss_markov"]
   algorithms:
     - "IQL-DRQN"
     - "VDN"
@@ -54,6 +62,7 @@ phase_1_sanity:
 phase_2_algorithm_families:
   train_episodes: 2000
   eval_episodes: 100
+  mobility_models: ["gauss_markov", "random_direction"]
   algorithms:
     value_based:
       - "WQMIX"
@@ -87,6 +96,7 @@ phase_2_algorithm_families:
 phase_3_architecture_innovation:
   train_episodes: 5000
   eval_episodes: 200
+  mobility_models: ["gauss_markov", "random_direction", "random_walk", "random_waypoint"]
   candidate_architectures:
     - name: "PABR-Net"
       full_name: "Pose-aware Action-memory Beam Risk Network"

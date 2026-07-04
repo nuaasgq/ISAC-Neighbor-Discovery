@@ -6,7 +6,7 @@ experiment:
   slots_per_episode: 3000
 
 training:
-  algorithm: "MAPPO"
+  algorithm: "algorithm_family_sweep"
   parameter_sharing: true
   ctde: true
   imitation_pretraining: true
@@ -15,14 +15,14 @@ training:
   validation_node_counts: [10, 20, 30]
   zero_shot_test_node_counts: [30, 50, 100, 200]
   curriculum:
-    - name: "static_low_noise"
+    - name: "smooth_low_noise"
       node_range: [5, 10]
-      mobility: "static"
+      mobility: "gauss_markov"
       false_alarm_range: [0.0, 0.02]
       miss_detection_range: [0.0, 0.05]
-    - name: "static_noisy"
+    - name: "smooth_noisy"
       node_range: [8, 15]
-      mobility: "static"
+      mobility: "gauss_markov"
       false_alarm_range: [0.0, 0.10]
       miss_detection_range: [0.0, 0.20]
     - name: "mobile_collision"
@@ -30,6 +30,22 @@ training:
       mobility: "random_direction"
       false_alarm_range: [0.0, 0.10]
       miss_detection_range: [0.0, 0.30]
+
+mobility:
+  default_model: "gauss_markov"
+  training_model_sweep: ["gauss_markov", "random_direction"]
+  robustness_model_sweep: ["gauss_markov", "random_direction", "random_walk", "random_waypoint"]
+  boundary: "reflect"
+  min_speed_mps: 3.0
+  max_speed_mps: 30.0
+  mean_speed_mps: 15.0
+  speed_std_mps: 2.0
+  gauss_markov_alpha: 0.85
+  random_walk_step_std_m: 0.25
+  direction_update_interval_slots: 50
+  waypoint_threshold_m: 5.0
+  waypoint_pause_slots: 0
+  max_pitch_deg: 25.0
 
 observation:
   include_self_position: true

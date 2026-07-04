@@ -1,0 +1,78 @@
+experiment:
+  name: "mobile_smoke"
+  seed: 20260704
+  episodes: 2
+  slots_per_episode: 60
+  slot_duration_ms: 100
+
+network:
+  node_count: 12
+  area_shape: "cube"
+  area_size_m: [600, 600, 180]
+  communication_range_m: 260
+  sensing_range_m: 320
+  self_localization_available: true
+  self_attitude_available: true
+  localization_error_std_m: 0.0
+  attitude_error_std_deg: 0.0
+  mobility:
+    model: "gauss_markov"
+    speed_min_mps: 5.0
+    speed_max_mps: 22.0
+    mean_speed_mps: 12.0
+    gauss_markov_alpha: 0.85
+    random_walk_step_std_m: 2.0
+    waypoint_threshold_m: 20.0
+
+beam:
+  azimuth_cells: [12]
+  elevation_cells: [4]
+  alignment_tolerance_cells: 0
+  main_lobe_model: "ideal_cell_coverage"
+  sidelobe_model: "none"
+
+slot:
+  synchronized: true
+  p_sense: 0.15
+  p_tx: 0.425
+  p_rx: 0.425
+  p_idle: 0.0
+
+isac_error:
+  false_alarm_rates: [0.02]
+  miss_detection_rates: [0.15]
+  angular_cell_offsets: [0.5]
+  sensing_periods: [5]
+  belief_update_rho: 0.5
+
+protocol:
+  exploration_floor: 0.10
+  softmax_beta: 2.0
+  target_degree: 4
+  alpha_occupancy: 1.0
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.95
+
+baselines:
+  - "uniform_random"
+  - "deterministic_scan"
+  - "isac_only"
+  - "itap_nd"
+
+metrics:
+  discovery:
+    - "mean_discovery_delay"
+    - "p90_discovery_delay"
+    - "p95_discovery_delay"
+    - "p99_discovery_delay"
+    - "finite_time_discovery_rate"
+    - "empty_scan_ratio"
+  topology:
+    - "discovered_edges"
+    - "num_components"
+    - "largest_component_size"
+    - "lcc_ratio"
+    - "isolated_node_ratio"
+    - "lambda2"
