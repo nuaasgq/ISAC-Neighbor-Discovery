@@ -15,6 +15,7 @@ Generated during the long-run goal window ending at 2026-07-05 11:00 (Asia/Shang
 | `round3_error_robustness` | Auxiliary full-factor small ISAC error grid | complete | `05_simulation/results_raw/round3_error_robustness` | `06_analysis/paper_tables/round3_robustness/error_robustness` | `06_analysis/paper_figures/round3_robustness` |
 | `round4_delay_ablation` | Implementation-boundary ablation for one-slot delayed candidate-set use plus efficiency metrics | complete | `05_simulation/results_raw/round4_delay_ablation` | `06_analysis/paper_tables/round4_delay_ablation` | `06_analysis/paper_figures/round4_delay_ablation` |
 | `round5_mobility_transfer` | Mobility-model transfer beyond the Gauss-Markov training/evaluation default | complete | `05_simulation/results_raw/round5_mobility_transfer` | `06_analysis/paper_tables/round5_mobility_transfer` | `06_analysis/paper_figures/round5_mobility_transfer` |
+| `round6_slot_duration_sensitivity` | Slot-duration sensitivity around the 5 ms ISAC-feedback timescale assumption | complete | `05_simulation/results_raw/round6_slot_duration_sensitivity` | `06_analysis/paper_tables/round6_slot_duration_sensitivity` | `06_analysis/paper_figures/round6_slot_duration_sensitivity` |
 
 ## Completed Results Snapshot
 
@@ -130,6 +131,17 @@ Interpretation: noisy ISAC degrades discovery and increases empty scans, but the
 
 Interpretation: the learned policy transfers best to smooth or locally diffusive mobility. Random direction and random waypoint are stress regimes under the current 600-slot horizon, likely because abrupt heading changes and concentrated collision opportunities make stale ISAC priors less reliable. This should be written as an applicability boundary, not hidden.
 
+### Slot-Duration Sensitivity, N=100, 10-degree Beam, Gauss-Markov
+
+| Slot duration | No-ISAC discovery | One-slot discovery | Full ISAC discovery | Full ISAC lambda2 | Mean moved distance |
+|---:|---:|---:|---:|---:|---:|
+| 1 ms | 0.0009 | 0.2918 | 0.3564 | 12.8690 | 0.7773 m |
+| 5 ms | 0.0007 | 0.2989 | 0.3655 | 12.9222 | 3.8742 m |
+| 10 ms | 0.0007 | 0.2933 | 0.3696 | 12.7059 | 7.7247 m |
+| 20 ms | 0.0007 | 0.2916 | 0.3644 | 13.2361 | 15.3224 m |
+
+Interpretation: the 5 ms slot-duration assumption is not a fragile point in this Gauss-Markov range. The proposed policy remains stable from 1 ms to 20 ms, while the no-ISAC baseline remains ineffective. This supports treating 5 ms as a modeling timescale rather than a tuned performance knob.
+
 ## Figure Inventory
 
 - `06_analysis/paper_figures/round3_robustness/ablation_discovery_n100_b10.png`
@@ -159,12 +171,15 @@ Interpretation: the learned policy transfers best to smooth or locally diffusive
 - `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b15.png`
 - `06_analysis/paper_figures/round5_mobility_transfer/mobility_collision_penalized_n100_b10.png`
 - `06_analysis/paper_figures/round5_mobility_transfer/mobility_collision_penalized_n100_b15.png`
+- `06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_discovery_n100_b10.png`
+- `06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_collision_penalized_n100_b10.png`
 
 ## Paper-Writing Implications
 
 - Strong claim: ISAC feedback is useful mainly because it creates a candidate beam set after blind probing, not because it directly discovers neighbors.
 - Strong claim: a one-slot delayed candidate-set variant remains far above no-ISAC baselines, so the mechanism is not wholly dependent on same-slot sensing-to-handshake reuse.
 - Strong claim: the learned small-scale policy transfers to N=100 for 10-30 degree beams under both density-preserving and fixed-area scaling.
+- Strong claim: the 5 ms slot-duration assumption is not a tuned single point in the tested 1-20 ms Gauss-Markov range.
 - Conservative claim: mobility transfer is strong for Gauss-Markov and random-walk tests but weak for random-direction and random-waypoint tests under the current horizon.
 - Conservative claim: 3-5 degree beams are still a stress region under the current finite-time horizon.
 - Conservative claim: current learning is shared-policy parameter optimization, not yet a full neural MARL implementation.

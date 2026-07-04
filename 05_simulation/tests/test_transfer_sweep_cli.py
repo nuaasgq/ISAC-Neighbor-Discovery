@@ -34,3 +34,29 @@ def test_parse_isac_error_profiles_rejects_non_triples() -> None:
     with pytest.raises(ValueError, match="triples"):
         module.parse_isac_error_profiles("0.01:0.05")
 
+
+def test_configure_case_overrides_slot_duration_ms() -> None:
+    module = load_transfer_sweep_module()
+    base = module.load_config(ROOT / "05_simulation" / "configs" / "mvp.yaml")
+
+    class Args:
+        episodes_per_seed = 1
+        slots = 12
+        slot_metric_period = 0
+        train_node_count = 10
+        area_scale = "density"
+        range_mode = "singlehop"
+        alignment_tolerance_cells = 0
+
+    cfg = module.configure_case(
+        base,
+        params={},
+        seed=1,
+        mobility="gauss_markov",
+        node_count=10,
+        beamwidth_deg=10.0,
+        args=Args(),
+        slot_duration_ms=20.0,
+    )
+
+    assert cfg.slot_duration_s == pytest.approx(0.02)

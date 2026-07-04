@@ -41,6 +41,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seeds", default="20290704")
     parser.add_argument("--episodes-per-seed", type=int, default=1)
     parser.add_argument("--slots", type=int, default=200)
+    parser.add_argument(
+        "--slot-duration-ms-list",
+        default="",
+        help="Optional comma-separated slot durations in milliseconds. Defaults to the base config value.",
+    )
     parser.add_argument("--slot-metric-period", type=int, default=0)
     parser.add_argument("--protocols", default=",".join(DEFAULT_PROTOCOLS))
     parser.add_argument("--area-scale", choices=("density", "fixed"), default="density")
@@ -138,6 +143,7 @@ def configure_case(
     false_alarm_rate: float | None = None,
     miss_detection_rate: float | None = None,
     angular_cell_offset: float | None = None,
+    slot_duration_ms: float | None = None,
 ) -> SimulationConfig:
     azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth_deg)
     mobility_cfg = dict(base.mobility)
@@ -158,6 +164,7 @@ def configure_case(
         seed=int(seed),
         episodes=int(args.episodes_per_seed),
         slots_per_episode=int(args.slots),
+        slot_duration_s=float(base.slot_duration_s if slot_duration_ms is None else slot_duration_ms / 1000.0),
         slot_metric_period=int(args.slot_metric_period),
         n_nodes=int(node_count),
         area_size_m=area,
@@ -192,6 +199,7 @@ def aggregate_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "azimuth_cells",
         "elevation_cells",
         "beam_count",
+        "slot_duration_ms",
         "communication_range_to_diagonal_ratio",
         "sensing_to_comm_range_ratio",
         "false_alarm_rate",
@@ -256,6 +264,7 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
     seeds = parse_csv_numbers(args.seeds, int)
     communication_range_ratios = parse_optional_csv_numbers(args.communication_range_ratios, float)
     sensing_to_comm_ratios = parse_optional_csv_numbers(args.sensing_to_comm_ratios, float)
+    slot_duration_ms_values = parse_optional_csv_numbers(args.slot_duration_ms_list, float)
     false_alarm_rates = parse_optional_csv_numbers(args.false_alarm_rates, float)
     miss_detection_rates = parse_optional_csv_numbers(args.miss_detection_rates, float)
     angular_cell_offsets = parse_optional_csv_numbers(args.angular_cell_offsets, float)
@@ -279,59 +288,66 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
         for mobility in mobilities:
             for node_count in node_counts:
                 for beamwidth in beamwidths:
-                    for communication_range_ratio in communication_range_ratios:
-                        for sensing_to_comm_ratio in sensing_to_comm_ratios:
-                            for false_alarm_rate, miss_detection_rate, angular_cell_offset in error_profiles:
-                                case_count += 1
-                                cfg = configure_case(
-                                    base,
-                                    params,
-                                    seed,
-                                    mobility,
-                                    node_count,
-                                    beamwidth,
-                                    args,
-                                    communication_range_ratio,
-                                    sensing_to_comm_ratio,
-                                    false_alarm_rate,
-                                    miss_detection_rate,
-                                    angular_cell_offset,
-                                )
-                                azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth)
-                                area_diagonal = math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m))
-                                case = {
-                                    "case_id": case_count - 1,
-                                    "base_seed": int(seed),
-                                    "node_count": int(node_count),
-                                    "beamwidth_deg": float(beamwidth),
-                                    "azimuth_cells": azimuth_cells,
-                                    "elevation_cells": elevation_cells,
-                                    "beam_count": azimuth_cells * elevation_cells,
-                                    "area_diagonal_m": float(area_diagonal),
-                                    "communication_range_m": float(cfg.communication_range_m),
-                                    "sensing_range_m": float(cfg.sensing_range_m),
-                                    "communication_range_to_diagonal_ratio": float(
-                                        cfg.communication_range_m / max(area_diagonal, 1e-9)
-                                    ),
-                                    "sensing_range_to_diagonal_ratio": float(cfg.sensing_range_m / max(area_diagonal, 1e-9)),
-                                    "sensing_to_comm_range_ratio": float(cfg.sensing_range_m / max(cfg.communication_range_m, 1e-9)),
-                                    "false_alarm_rate": float(cfg.false_alarm_rate),
-                                    "miss_detection_rate": float(cfg.miss_detection_rate),
-                                    "angular_cell_offset_std": float(cfg.angular_cell_offset_std),
-                                    "area_scale": args.area_scale,
-                                    "range_mode": args.range_mode,
-                                    "range_sweep_enabled": communication_range_ratio is not None,
-                                    "isac_error_sweep_enabled": any(
-                                        value is not None
-                                        for value in (false_alarm_rate, miss_detection_rate, angular_cell_offset)
-                                    ),
-                                    "train_node_count": int(args.train_node_count),
-                                    "train_beamwidth_deg": float(args.train_beamwidth_deg),
-                                }
-                                rows, slots, edges = run_detailed(cfg, protocols)
-                                episode_rows.extend(enrich_row(row, case) for row in rows)
-                                slot_rows.extend(enrich_row(row, case) for row in slots)
-                                edge_rows.extend(enrich_row(row, case) for row in edges)
+                    for slot_duration_ms in slot_duration_ms_values:
+                        for communication_range_ratio in communication_range_ratios:
+                            for sensing_to_comm_ratio in sensing_to_comm_ratios:
+                                for false_alarm_rate, miss_detection_rate, angular_cell_offset in error_profiles:
+                                    case_count += 1
+                                    cfg = configure_case(
+                                        base,
+                                        params,
+                                        seed,
+                                        mobility,
+                                        node_count,
+                                        beamwidth,
+                                        args,
+                                        communication_range_ratio,
+                                        sensing_to_comm_ratio,
+                                        false_alarm_rate,
+                                        miss_detection_rate,
+                                        angular_cell_offset,
+                                        slot_duration_ms,
+                                    )
+                                    azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth)
+                                    area_diagonal = math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m))
+                                    case = {
+                                        "case_id": case_count - 1,
+                                        "base_seed": int(seed),
+                                        "node_count": int(node_count),
+                                        "beamwidth_deg": float(beamwidth),
+                                        "azimuth_cells": azimuth_cells,
+                                        "elevation_cells": elevation_cells,
+                                        "beam_count": azimuth_cells * elevation_cells,
+                                        "slot_duration_ms": float(cfg.slot_duration_s * 1000.0),
+                                        "area_diagonal_m": float(area_diagonal),
+                                        "communication_range_m": float(cfg.communication_range_m),
+                                        "sensing_range_m": float(cfg.sensing_range_m),
+                                        "communication_range_to_diagonal_ratio": float(
+                                            cfg.communication_range_m / max(area_diagonal, 1e-9)
+                                        ),
+                                        "sensing_range_to_diagonal_ratio": float(
+                                            cfg.sensing_range_m / max(area_diagonal, 1e-9)
+                                        ),
+                                        "sensing_to_comm_range_ratio": float(
+                                            cfg.sensing_range_m / max(cfg.communication_range_m, 1e-9)
+                                        ),
+                                        "false_alarm_rate": float(cfg.false_alarm_rate),
+                                        "miss_detection_rate": float(cfg.miss_detection_rate),
+                                        "angular_cell_offset_std": float(cfg.angular_cell_offset_std),
+                                        "area_scale": args.area_scale,
+                                        "range_mode": args.range_mode,
+                                        "range_sweep_enabled": communication_range_ratio is not None,
+                                        "isac_error_sweep_enabled": any(
+                                            value is not None
+                                            for value in (false_alarm_rate, miss_detection_rate, angular_cell_offset)
+                                        ),
+                                        "train_node_count": int(args.train_node_count),
+                                        "train_beamwidth_deg": float(args.train_beamwidth_deg),
+                                    }
+                                    rows, slots, edges = run_detailed(cfg, protocols)
+                                    episode_rows.extend(enrich_row(row, case) for row in rows)
+                                    slot_rows.extend(enrich_row(row, case) for row in slots)
+                                    edge_rows.extend(enrich_row(row, case) for row in edges)
 
     aggregate = aggregate_rows(episode_rows)
     write_rows(output_dir / "per_episode_summary.csv", episode_rows)
@@ -350,6 +366,7 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "seeds": seeds,
         "communication_range_ratios": communication_range_ratios,
         "sensing_to_comm_ratios": sensing_to_comm_ratios,
+        "slot_duration_ms_values": slot_duration_ms_values,
         "false_alarm_rates": false_alarm_rates,
         "miss_detection_rates": miss_detection_rates,
         "angular_cell_offsets": angular_cell_offsets,
@@ -381,6 +398,7 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 f"- Range mode: `{args.range_mode}`",
                 f"- Communication range ratios Rc/D: {', '.join('base' if v is None else f'{v:g}' for v in communication_range_ratios)}",
                 f"- Sensing/communication range ratios Rs/Rc: {', '.join('base' if v is None else f'{v:g}' for v in sensing_to_comm_ratios)}",
+                f"- Slot durations: {', '.join('base' if v is None else f'{v:g} ms' for v in slot_duration_ms_values)}",
                 f"- False alarm rates: {', '.join('base' if v is None else f'{v:g}' for v in false_alarm_rates)}",
                 f"- Miss detection rates: {', '.join('base' if v is None else f'{v:g}' for v in miss_detection_rates)}",
                 f"- Angular cell offsets: {', '.join('base' if v is None else f'{v:g}' for v in angular_cell_offsets)}",
