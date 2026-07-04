@@ -1,0 +1,44 @@
+# Python and analysis caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build and editor artifacts
+build/
+dist/
+*.egg-info/
+.DS_Store
+Thumbs.db
+
+# Large or generated research artifacts
+*.pdf
+*.docx
+*.pptx
+*.xlsx
+*.zip
+*.rar
+*.7z
+
+# Simulation outputs
+05_simulation/results_raw/*
+!05_simulation/results_raw/.gitkeep
+06_analysis/figures/*
+!06_analysis/figures/.gitkeep
+06_analysis/tables/*
+!06_analysis/tables/.gitkeep
+
+# Paper build outputs
+07_paper/**/*.aux
+07_paper/**/*.bbl
+07_paper/**/*.blg
+07_paper/**/*.log
+07_paper/**/*.out
+07_paper/**/*.synctex.gz
