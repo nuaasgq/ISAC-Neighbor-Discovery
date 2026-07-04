@@ -159,6 +159,29 @@ Mechanism ablations remove candidate-set refinement, beam-lock refinement, or to
 We report finite-time discovery rate, discovered edge count, mean discovery delay, empty-scan ratio, collision count, largest connected component ratio, and algebraic connectivity $\lambda_2$ of the discovered graph.
 Because high-percentile discovery delays can be censored by a finite simulation horizon, the main claims emphasize discovery rate, empty-scan ratio, edge count, and connectivity metrics.
 
+\begin{table}[!t]
+  \centering
+  \caption{Protocol Information Boundary and Main Evaluation Settings}
+  \label{tab:settings}
+  \scriptsize
+  \begin{tabular}{p{0.34\linewidth}p{0.56\linewidth}}
+    \toprule
+    Item & Setting \\
+    \midrule
+    Execution model & Fully distributed UAV-UAV discovery \\
+    Local state & Own position, velocity, attitude, beam codebook \\
+    Unknown before discovery & Neighbor identity, pose, beam state, global topology \\
+    Link confirmation & Bidirectional narrow-beam handshake only \\
+    ISAC abstraction & Imperfect beam-cell occupancy prior \\
+    Main training scale & $N=10$, 10-degree beams \\
+    Transfer tests & $N=10$--100, 3--30 degree beams \\
+    Mobility models & Gauss-Markov, random walk, random direction, random waypoint \\
+    Range variables & $\Rc/D$ and $\Rs/\Rc$ swept separately \\
+    Error variables & False alarm, missed detection, angular-cell offset \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \section{Results and Discussion}
 \subsection{Training Convergence}
 Fig.~\ref{fig:training_reward} will show the reward/score convergence curve.
@@ -170,6 +193,28 @@ Additional training plots report discovery rate, empty-scan ratio, collision cou
   \caption{Training reward convergence for the small-scale shared-policy optimization.}
   \label{fig:training_reward}
 \end{figure}
+
+\subsection{Dynamic Protocol Comparison}
+Table~\ref{tab:dynamic_comparison} summarizes the held-out dynamic tests used as the first evidence layer before large-scale transfer.
+Across the four mobility models, the ISAC-assisted policy consistently reduces empty scans and improves the finite-time discovery rate over uniform random scanning and the improved no-ISAC learning baseline.
+These results support the central mechanism claim in small dynamic swarms, while the following subsections test whether the same trained policy transfers to larger swarms and different beamwidths.
+
+\begin{table}[!t]
+  \centering
+  \caption{Held-Out Dynamic Comparison in the Small-Scale Evaluation}
+  \label{tab:dynamic_comparison}
+  \tiny
+  \begin{tabular}{lcccc}
+    \toprule
+    Mobility & Rand. & No-ISAC & ISAC & Empty \\
+    \midrule
+    Gauss-Markov & 0.8351 & 0.8608 & 0.9558 & 0.1698 \\
+    Random walk & 0.9077 & 0.9171 & 0.9569 & 0.3914 \\
+    Random direction & 0.8469 & 0.8843 & 0.9599 & 0.1625 \\
+    Random waypoint & 0.8866 & 0.8601 & 0.9844 & 0.0878 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Main Transfer Results}
 Current round2 results show that the ISAC-assisted improved policy can transfer from $N=10$ and 10-degree beams to larger swarms without fine-tuning.
