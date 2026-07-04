@@ -197,6 +197,76 @@ The key observation is that B=15 retains high raw discovery under Gauss-Markov b
   \label{fig:supp_b15_error}
 \end{figure*}
 
+\section{Finite-Horizon Discovery Trajectories and Tradeoffs}
+
+Fig.~\ref{fig:supp_cumulative_discovery} reports cumulative discovery trajectories for the N=100, B=10 and B=15 extra-seed backup block.
+These trajectories complement endpoint tables by showing how discovered links accumulate across the 600-slot horizon.
+The curves are supplementary robustness evidence and should not replace the main round3 transfer table because they use a separate seed block.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b10.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b15.png}
+  \caption{Cumulative finite-horizon discovery trajectories in the N=100 extra-seed backup block. Left: B=10 degrees. Right: B=15 degrees. The proposed ISAC-assisted policy accumulates discovered links over the full horizon, while the implemented communication-only baselines remain close to zero in these stress settings.}
+  \label{fig:supp_cumulative_discovery}
+\end{figure*}
+
+Fig.~\ref{fig:supp_tradeoff} places raw discovery, collision-penalized discovery, connectivity, and empty-scan behavior side by side.
+The comparison highlights the main tradeoff: ISAC candidate refinement greatly improves discovery and connectivity, but dense finite-horizon operation can increase collision attempts, especially at wider beams.
+This is why the manuscript interprets collision-penalized discovery together with raw discovery and $\lambda_2$.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_tradeoff_discovery_rate.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_tradeoff_collision_penalized.png}
+  \vspace{0.4em}
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_tradeoff_lambda2.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_tradeoff_empty_scan.png}
+  \caption{Endpoint tradeoffs in the N=100 extra-seed backup block. Top left: raw discovery. Top right: collision-penalized discovery. Bottom left: algebraic connectivity. Bottom right: empty-scan ratio.}
+  \label{fig:supp_tradeoff}
+\end{figure*}
+
+\clearpage
+
+\section{Structured Neural MARL Probe}
+
+The main manuscript intentionally does not claim a complete neural MARL method.
+Nevertheless, we implemented a structured shared actor-critic probe to test whether the ISAC candidate-set mechanism can be exposed to a neural policy without violating decentralized execution.
+The actor observes only local belief, beam memory, candidate masks, candidate scores, local discovered-degree deficit, and rule-prior logits.
+The centralized truth interface remains separate and is not used by the actor.
+
+In a N=10, B=72, 80-slot behavior-cloning probe with three training seeds and five held-out evaluation episodes per seed, stochastic evaluation is nonzero for all evaluated variants.
+The flat stochastic actor reaches a mean discovery rate of 0.632, while the full candidate-score/topology/rule-residual actor reaches 0.557.
+Thus the structured neural probe does not yet outperform the flat stochastic student.
+However, the full structured actor improves deterministic execution from 0.0015 discovery for the flat actor to 0.0643 and makes 14 out of 15 deterministic evaluations nonzero.
+It also reduces stochastic empty-scan ratio from 0.690 for the flat actor to 0.111, at the cost of unresolved collision coordination.
+This supports using the structured actor as a feasible neural extension, not as the current main method.
+A short 10-episode actor-critic fine-tuning follow-up increases the full structured stochastic discovery rate to 0.586 and leaves deterministic discovery near 0.066, but it still does not overtake the flat stochastic student.
+A no-ISAC-label follow-up is treated only as a label-sensitivity sanity check because the evaluation environment still exposes ISAC candidate observations; it is therefore not used as a clean no-ISAC neural baseline.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_eval_discovery_rate.png}
+  \hfill
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_eval_empty_scan_ratio.png}
+  \hfill
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_empty_collision_tradeoff.png}
+  \caption{Structured neural MARL probe. Left: deterministic and stochastic discovery. Middle: empty-scan ratio. Right: stochastic empty-scan/collision tradeoff with marker size proportional to discovery. These probe results show feasibility and remaining coordination limitations, not final main-method performance.}
+  \label{fig:supp_structured_marl}
+\end{figure*}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_bc_loss_curve.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_reward_curve.png}
+  \caption{Structured neural MARL probe training traces. Left: behavior-cloning loss. Right: mean reward during teacher-forced training episodes.}
+  \label{fig:supp_structured_marl_training}
+\end{figure*}
+
 \section{Reproducibility Notes}
 
 All compact multi-seed summaries are archived under the repository paper-table directory.

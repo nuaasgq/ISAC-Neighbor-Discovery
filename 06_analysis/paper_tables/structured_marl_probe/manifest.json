@@ -1,10 +1,10 @@
 {
-  "created_at": "2026-07-05T07:29:49",
+  "created_at": "2026-07-05T07:33:57",
   "input_root": "05_simulation\\results_raw\\pre11_marl_probe_20260705_072514",
   "output_dir": "06_analysis\\paper_tables\\structured_marl_probe",
   "figure_dir": "06_analysis\\paper_figures\\structured_marl_probe",
-  "rows": 600,
-  "runs": 12,
+  "rows": 930,
+  "runs": 18,
   "figures": [
     {
       "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_eval_discovery_rate.png",
