@@ -29,6 +29,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 ## Morning Manuscript Checkpoint
 
 - Added `Table~\ref{tab:n100_transfer}` to `07_paper/ieee_twc_isac_nd/main.tex`, summarizing `N=100` zero-shot transfer for 5, 10, 15, and 30 degree beams under density-preserving and fixed-area scaling.
+- Added an explicit `N=100`, 10-degree baseline table covering uniform random, SkyOrbs-like, RL without ISAC, improved RL without ISAC, and improved RL with ISAC.
 - Clarified the small-scale dynamic comparison table header from `Empty` to `Empty (ISAC)` so the column is not misread as a multi-protocol comparison.
 - Recompiled the IEEE LaTeX manuscript with `pdflatex` twice after the edit. The final log has no undefined references/citations and no overfull warnings; only normal underfull warnings remain.
 - Generated round7 training figures in `06_analysis/paper_figures/round7_long_cem_training`; this includes reward, score, discovery, empty-scan, delay, collision, and connectivity curves.
