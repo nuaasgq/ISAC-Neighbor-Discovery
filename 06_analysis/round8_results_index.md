@@ -29,6 +29,14 @@ The missing-baseline sweep confirms that the mobility-boundary result is not cau
 | Random waypoint | 10 deg | RL no-ISAC | 0.0007 | 0.9032 | 0.0000 |
 
 The compact merged table for all protocols is generated at `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`.
+The corresponding full-baseline supplement figures are generated under `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/`:
+
+- `full_baseline_discovery_n100_b10.png`
+- `full_baseline_discovery_n100_b15.png`
+- `full_baseline_lambda2_n100_b10.png`
+- `full_baseline_lambda2_n100_b15.png`
+- `full_baseline_collision_penalized_n100_b10.png`
+- `full_baseline_collision_penalized_n100_b15.png`
 
 ## Promotion Decision
 

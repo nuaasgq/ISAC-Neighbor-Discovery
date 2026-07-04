@@ -11,7 +11,11 @@ Purpose: keep the main IEEE draft compact while preserving the full experiment e
   - `06_analysis/scripts/plot_round3_results.py`
   - `06_analysis/scripts/plot_transfer_results.py`
   - `06_analysis/scripts/plot_mobility_results.py`
+  - `06_analysis/scripts/plot_mobility_full_baselines.py`
+  - `06_analysis/scripts/plot_slot_duration_results.py`
+  - `06_analysis/scripts/draw_concept_figures.py`
   - `06_analysis/scripts/build_statistical_summary.py`
+  - `06_analysis/scripts/build_mobility_full_baseline_table.py`
 - Statistical summary table:
   - `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`
 
@@ -51,6 +55,7 @@ Use:
 - `06_analysis/paper_tables/round7_n100_multimobility_600slot/aggregate_metrics.csv`
 - `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`
 - `06_analysis/paper_figures/round7_n100_multimobility_600slot/`
+- `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/`
 
 Recommended focus:
 
@@ -96,6 +101,6 @@ Use:
 
 Recommended focus:
 
-- Candidate-set refinement is the dominant mechanism.
+- Candidate-set refinement is the largest observed mechanism contributor at the main `N=100`, 10-degree operating point.
 - One-slot delay preserves much of the benefit and reduces collisions.
 - Topology-aware and beam-lock refinements are secondary contributors under current evidence.

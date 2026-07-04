@@ -4,7 +4,7 @@ Date: 2026-07-05
 
 ## Readiness Verdict
 
-The current data package is sufficient for a bounded IEEE TWC/TCOM-style manuscript if the paper is framed as:
+The current data package is potentially sufficient for a bounded IEEE TWC/TCOM-style draft if the paper is framed as:
 
 > ISAC-assisted link-layer beam-cell occupancy priors improve fully distributed narrow-beam UAV-UAV neighbor discovery and finite-time topology formation in tested dynamic regimes.
 
@@ -14,13 +14,13 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 
 | Claim | Primary artifacts | Current status |
 |---|---|---|
-| ISAC candidate-beam refinement is the dominant mechanism. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`, `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | Strong main claim. |
-| Proposed ISAC policy beats random, SkyOrbs-like, RL-no-ISAC, and improved no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong main claim. |
+| ISAC candidate-beam refinement is the largest observed contributor at the main `N=100`, 10-degree operating point. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`, `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | Strong but operating-point-specific main claim. |
+| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, RL-no-ISAC, and improved no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong main comparison, with SkyOrbs-like non-reproduction caveat. |
 | Small-scale training transfers to `N=100` for 10--30 degree beams in tested regimes. | `06_analysis/paper_tables/round3_robustness/n100_*_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_transfer}` | Strong but bounded; 3/5 degrees remain stress regimes. |
 | Collision-aware metrics change the preferred beamwidth. | `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv` | Supplementary but important for reviewer discussion. |
 | Moderate ISAC errors degrade but do not collapse the gain. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`, `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv` | Strong bounded robustness claim. |
 | B=15 remains strong under Gauss-Markov error profiles but random-walk is more sensitive. | `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot/aggregate_metrics.csv` | Supplementary evidence for operating-region nuance. |
-| Mobility-boundary results are not caused by missing SkyOrbs-like or vanilla RL baselines. | `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv` | Supplementary baseline-completeness evidence. |
+| Mobility-boundary results are not caused by missing SkyOrbs-like or vanilla RL baselines. | `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`, `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/` | Supplementary baseline-completeness evidence. |
 
 ## Recommended Main-Text Figures
 
@@ -43,7 +43,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 
 - `pdflatex -interaction=nonstopmode main.tex`: passed; no undefined references/citations and no overfull warnings in the final checked log.
 - `python -m pytest 05_simulation\tests`: 25 passed.
-- `06_analysis/paper_figures`: 346 PNG figures, all checked at 4:3 aspect ratio.
+- `06_analysis/paper_figures`: 354 PNG figures, all checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
 
 ## Literature Boundary Notes

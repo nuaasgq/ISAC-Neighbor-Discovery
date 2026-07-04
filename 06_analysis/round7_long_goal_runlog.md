@@ -20,12 +20,12 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 
 ## Strong Current Evidence
 
-- ISAC-assisted candidate-beam refinement is the dominant mechanism. Removing the candidate set collapses `N=100`, 10-degree discovery from about 0.3655 to about 0.0313.
+- ISAC-assisted candidate-beam refinement is the largest observed mechanism contributor at the main `N=100`, 10-degree operating point. Removing the candidate set collapses `N=100`, 10-degree discovery from about 0.3655 to about 0.0313.
 - A one-slot delayed candidate-set variant keeps most of the ISAC gain while reducing collisions, which makes the mechanism more defensible as a data-link-layer protocol abstraction.
 - Small-scale shared-policy tuning at `N=10`, `10 deg` transfers to `N=100` for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - The sensing range benefit saturates around the communication range in the current communication-neighbor-discovery model.
 - Slot duration from 1 ms to 20 ms does not materially change the Gauss-Markov `N=100`, 10-degree conclusion.
-- The current figure archive contains 346 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft exist on disk.
+- The current figure archive contains 354 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft exist on disk.
 
 ## Morning Manuscript Checkpoint
 
@@ -34,13 +34,14 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Clarified the small-scale dynamic comparison table header from `Empty` to `Empty (ISAC)` so the column is not misread as a multi-protocol comparison.
 - Recompiled the IEEE LaTeX manuscript with `pdflatex` twice after the edit. The final log has no undefined references/citations and no overfull warnings; only normal underfull warnings remain.
 - Generated round7 training figures in `06_analysis/paper_figures/round7_long_cem_training`; this includes reward, score, discovery, empty-scan, delay, collision, and connectivity curves.
-- Rechecked the full `06_analysis/paper_figures` archive after round8 additions: 346 PNG files, zero aspect-ratio violations under the 4:3 tolerance check.
+- Rechecked the full `06_analysis/paper_figures` archive after round8 additions: 354 PNG files, zero aspect-ratio violations under the 4:3 tolerance check.
 - The round7 small-scale held-out score is lower than the earlier round2 candidate training result under a different 1200-slot setup, so round7 is not promoted to the main result unless the transfer/evaluation jobs show stronger large-scale robustness.
 - The completed round7 scale/beam grid gives a useful caution: at `N=100`, raw discovery peaks around 15 degrees, but collision-penalized discovery is strongest around 10 degrees. This supports reporting collision-aware efficiency alongside raw discovery.
 - The completed round7 mobility sweep slightly improves abrupt-mobility stress cases but does not remove the applicability boundary: random-direction and random-waypoint remain weak compared with Gauss-Markov and random walk.
 - A quick one-seed round7 error-profile backup completed and was archived under `06_analysis/paper_tables/round7_error_profiles_quick` with one 4:3 figure in `06_analysis/paper_figures/round7_error_profiles_quick`. It is superseded by the full three-seed round7 error-profile archive for quantitative reporting.
 - The full three-seed round7 error-profile job completed and was archived under `06_analysis/paper_tables/round7_error_profiles_light`, with figures in `06_analysis/paper_figures/round7_error_profiles_light`. It confirms the moderate-error robustness trend without replacing the existing round3 main evidence chain.
 - The round8 missing-baseline mobility job adds SkyOrbs-like and vanilla RL without ISAC for `N=100`, 10/15-degree beams, and four mobility models. The merged full-baseline table is archived under `06_analysis/paper_tables/round8_n100_multimobility_full_baseline`.
+- Generated 8 full-baseline mobility supplement figures under `06_analysis/paper_figures/round8_n100_multimobility_full_baseline` from the merged round7/round8 table.
 - A quick B=15 error-profile fallback completed for Gauss-Markov and random-walk mobility and is archived under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_quick`; it is superseded by the full three-seed archive under `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot`.
 
 ## Conservative Boundaries
@@ -58,7 +59,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 
 1. Continue polishing the IEEE manuscript around related work, limitations, and result-story continuity.
 2. Keep the current learning claim conservative: shared-parameter policy optimization is the main result; neural MARL remains a probe.
-3. Do not launch additional heavy sweeps unless a specific paper gap appears. The current evidence is sufficient for a bounded paper draft.
+3. Do not launch additional heavy sweeps unless a specific paper gap appears. The current evidence is potentially sufficient for a bounded paper draft if the claim boundaries remain conservative.
 4. If adding tables or figures, prefer supplement/readiness artifacts over overcrowding the 7-page main draft.
 5. Before any local commit, run `git status`, stage only compact scripts/docs/tables/figures, and keep raw `results_raw` outputs local.
 

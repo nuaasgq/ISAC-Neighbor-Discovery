@@ -14,6 +14,7 @@ Current status:
 - The current draft compiles to a 7-page PDF with `pdflatex`; the final checked log has no undefined references/citations and no overfull warnings.
 - Main figures are selected in `../../06_analysis/manuscript_figure_selection.md`; all figure paths referenced by `main.tex` have been checked on disk.
 - Mean/std/95% CI summaries for archived multi-seed sweeps are in `../../06_analysis/paper_tables/statistical_stability_summary/`.
+- Experiment coverage against the requested variables is tracked in `../../06_analysis/experiment_coverage_matrix_20260705.md`.
 - Round7 outputs are treated as robustness and audit support unless explicitly promoted in `../../06_analysis/round7_results_index.md`.
 
 Build command, if a LaTeX toolchain is installed:
