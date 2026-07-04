@@ -5,9 +5,9 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit before this draft: `d437871` (`Add pre-11am task board`)
+- Latest synced commit: `e14a9d6` (`Add clean no-ISAC MARL probe baseline`)
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
-- Working tree after last push: clean
+- Working tree at last check: clean
 
 ## Manuscript Package
 
@@ -19,32 +19,34 @@ This draft is intended for the 11:00 handoff.
 
 Current compiled state:
 
-- Main: 8 pages, texcount `3669+62+294`.
-- Supplement: 7 pages, texcount `483+40+275`.
-- Compile status: clean LaTeX log, no unresolved citation/reference, no overfull hbox.
+- Main: 8 pages.
+- Supplement: 9 pages.
+- Compile status: no unresolved citation/reference and no overfull warnings in the checked final logs.
+- Remaining LaTeX messages are narrow-column underfull warnings only.
 
 ## Verification
 
 Latest checks completed:
 
 ```powershell
-pdflatex -interaction=nonstopmode -halt-on-error main.tex
-bibtex main
-pdflatex -interaction=nonstopmode -halt-on-error main.tex
-pdflatex -interaction=nonstopmode -halt-on-error main.tex
-pdflatex -interaction=nonstopmode -halt-on-error supplement.tex
-pdflatex -interaction=nonstopmode -halt-on-error supplement.tex
 python -m pytest 05_simulation\tests
-python 06_analysis\scripts\build_paired_delta_summary.py
-python 06_analysis\scripts\build_statistical_summary.py
+python -m py_compile 05_simulation\run_actor_critic_imitation_probe.py `
+  06_analysis\scripts\analyze_structured_marl_probe.py `
+  06_analysis\scripts\plot_pre11_evidence.py
+pdflatex -interaction=nonstopmode main.tex
+bibtex main
+pdflatex -interaction=nonstopmode main.tex
+pdflatex -interaction=nonstopmode main.tex
+pdflatex -interaction=nonstopmode supplement.tex
+pdflatex -interaction=nonstopmode supplement.tex
 ```
 
 Results:
 
-- Unit tests: 25 passed.
-- Paper figures: 358 PNG files checked, all 4:3.
+- Unit tests: 27 passed.
 - Main PDF pages: 8.
-- Supplement PDF pages: 7.
+- Supplement PDF pages: 9.
+- New pre-11 evidence figures: 12 PNGs, all checked at 1920x1440 (4:3).
 
 ## Main Evidence
 
@@ -66,11 +68,48 @@ Paired deltas:
 - Candidate-set ablation: discovery +0.3341 vs removing candidate-set refinement.
 - One-slot delayed ISAC vs enhanced no-ISAC: discovery +0.2982.
 
-Round10 extra seeds:
+Round10 extra-seed backup:
 
 - Extra N=100/B=10 proposed discovery: 0.1739 vs enhanced no-ISAC 0.0008.
 - Extra N=100/B=15 proposed discovery: 0.4181 vs enhanced no-ISAC 0.0045.
 - Interpretation: qualitative ordering is stable, but absolute discovery is scenario-seed sensitive.
+
+## Structured Neural MARL Probe
+
+Implemented:
+
+- Local `candidate_mask`, `candidate_score`, `topology_deficit`, and `rule_mode_logits`.
+- Optional actor flags for candidate masking, candidate-score features, topology-deficit context, and rule-residual logits.
+- `--eval-both` for deterministic and stochastic evaluation of the same trained policy.
+- `--env-protocol` for a clean no-ISAC neural baseline.
+
+Core N=10/B=72/80-slot probe:
+
+- Flat stochastic discovery: 0.6322.
+- Full structured residual stochastic discovery: 0.5571.
+- Flat deterministic discovery: 0.0015.
+- Full structured residual deterministic discovery: 0.0643, with 14/15 deterministic evaluations nonzero.
+- Full structured residual stochastic empty-scan ratio: 0.1112 vs flat stochastic 0.6901.
+
+Follow-up:
+
+- RL10 fine-tune improves full structured stochastic discovery to 0.5865 but still does not beat flat stochastic.
+- Clean no-ISAC neural baseline gives deterministic discovery 0 and stochastic discovery 0.0044.
+- Interpretation: ISAC-enabled local candidate observations are necessary for the neural probe's nonzero behavior, but collision coordination and stochastic dominance are not solved.
+
+## New Artifacts
+
+- Pre-11 evidence figures/tables:
+  - `06_analysis/paper_figures/pre11_evidence`
+  - `06_analysis/paper_tables/pre11_evidence`
+- Structured MARL figures/tables:
+  - `06_analysis/paper_figures/structured_marl_probe`
+  - `06_analysis/paper_tables/structured_marl_probe`
+- Progress report:
+  - `06_analysis/pre11_morning_progress_report_20260705.md`
+- MARL scripts:
+  - `06_analysis/scripts/run_marl_probe_task.ps1`
+  - `06_analysis/scripts/analyze_structured_marl_probe.py`
 
 ## Claim Boundaries
 
@@ -80,36 +119,16 @@ Use these boundaries consistently:
 - ISAC is an imperfect beam-cell occupancy prior, not an oracle.
 - Edges are created only by bidirectional narrow-beam handshake.
 - The topology metric is for the finite-horizon discovered-neighbor graph/cache, not arbitrary active-link connectivity.
-- The current learning evidence is shared-parameter protocol tuning, not full MAPPO/QMIX/GNN-MARL.
+- The main method remains the rule-driven ISAC-assisted protocol.
+- Neural MARL is currently a structured method probe, not the main result.
 - SkyOrbs-like is an inspired deterministic 3-D skip-scan reference, not a strict reproduction.
 - 3--5 degree beams and abrupt mobility are stress regimes.
 
-## Key Artifacts
-
-- Claim map: `06_analysis/claim_evidence_matrix.md`
-- Figure map: `06_analysis/figure_to_claim_map_20260705.md`
-- Reviewer Q&A: `06_analysis/reviewer_question_response_map_20260705.md`
-- Novelty/evidence summary: `06_analysis/novelty_evidence_summary_20260705.md`
-- Submission readiness audit: `06_analysis/submission_readiness_audit_20260705.md`
-- Pre-11 task board: `06_analysis/pre_11am_task_board_20260705.md`
-- Round10 extra-seed index: `06_analysis/round10_extra_seed_stability_index.md`
-- Candidate-constrained MARL roadmap: `06_analysis/marl_architecture_roadmap_20260705.md`
-
 ## Readiness Judgment
 
-Current package is strong enough for an internal paper draft and advisor discussion.
-It is not yet final TWC/TCOM submission-ready because a reviewer could still request:
-
-- more seeds for main N=100/B=10/B=15 results,
-- a stricter SkyOrbs reproduction or clearer de-emphasis,
-- collision-aware protocol optimization,
-- Joule-level energy model,
-- calibrated physical-layer mapping for ISAC error parameters.
-
-Next neural-method direction is documented in `06_analysis/marl_architecture_roadmap_20260705.md`.
-The recommended route is not a flat categorical beam policy, but a candidate-constrained shared actor-critic with ISAC mask/top-k beam proposal, rule-residual logits, topology-deficit conditioning, and centralized critic only during training.
-The first code interface for this route has been added: `MarlNeighborDiscoveryEnv` now exposes a local `candidate_mask`, and `SharedBeamActorCritic(..., use_candidate_mask=True)` can apply it without changing existing default behavior.
-
-The most defensible paper angle is:
+The package is now strong for advisor discussion and an internal paper draft.
+The central paper angle is defensible:
 
 > ISAC-assisted candidate-beam refinement is a viable cross-layer mechanism for narrowing the search space of distributed UAV-UAV narrow-beam neighbor discovery, with clear gains over blind/no-ISAC baselines and explicit boundaries under extreme beamwidths, abrupt mobility, and collision-heavy regimes.
+
+It is still not final TWC/TCOM submission-ready because a reviewer could request more main-result seeds, a strict SkyOrbs reproduction, collision-aware protocol optimization, a Joule-level energy model, or a calibrated PHY mapping for ISAC error parameters.
