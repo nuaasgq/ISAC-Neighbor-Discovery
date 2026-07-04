@@ -54,6 +54,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--miss-detection-rate", type=float, default=None)
     parser.add_argument("--angular-cell-offset-std", type=float, default=None)
     parser.add_argument("--sensing-period-slots", type=int, default=None)
+    parser.add_argument("--env-protocol", default="isac_structured_marl")
     parser.add_argument("--expert-protocol", default="improved_rl_isac")
     parser.add_argument("--hidden-dim", type=int, default=96)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
@@ -190,7 +191,7 @@ def run_behavior_cloning_episode(
     episode: int,
 ) -> dict[str, Any]:
     seed = int(args.seed) + episode
-    env = MarlNeighborDiscoveryEnv(cfg, seed=seed)
+    env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=str(args.env_protocol))
     observations, _info = env.reset(seed=seed)
     expert = NeighborDiscoverySimulator(
         cfg,
@@ -261,6 +262,7 @@ def run_behavior_cloning_episode(
         "phase": "bc",
         "episode": episode,
         "seed": seed,
+        "env_protocol": str(args.env_protocol),
         "expert_protocol": str(args.expert_protocol),
         "slots": cfg.slots_per_episode,
         "loss": float(loss.item()),
@@ -347,7 +349,7 @@ def run_actor_critic_episode(
     episode: int,
     seed: int,
 ) -> dict[str, Any]:
-    env = MarlNeighborDiscoveryEnv(cfg, seed=seed)
+    env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=str(args.env_protocol))
     observations, _info = env.reset(seed=seed)
     log_probs = []
     values = []
@@ -384,6 +386,7 @@ def run_actor_critic_episode(
         "phase": "rl",
         "episode": episode,
         "seed": seed,
+        "env_protocol": str(args.env_protocol),
         "expert_protocol": str(args.expert_protocol),
         "slots": cfg.slots_per_episode,
         "loss": float(loss.item()),
@@ -409,7 +412,7 @@ def evaluate_policy(
     with torch_module.no_grad():
         for offset in range(int(args.eval_episodes)):
             seed = seed_start + offset
-            env = MarlNeighborDiscoveryEnv(cfg, seed=seed)
+            env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=str(args.env_protocol))
             observations, _info = env.reset(seed=seed)
             truncated = False
             rewards = []
@@ -423,6 +426,7 @@ def evaluate_policy(
                     "phase": "eval_stochastic" if stochastic_eval else "eval_deterministic",
                     "episode": start_episode + offset,
                     "seed": seed,
+                    "env_protocol": str(args.env_protocol),
                     "expert_protocol": str(args.expert_protocol),
                     "slots": cfg.slots_per_episode,
                     "reward_mean": float(torch_module.stack(rewards).mean().item()),
@@ -541,6 +545,7 @@ def build_manifest(args: argparse.Namespace, cfg: SimulationConfig, history: lis
         "config": str(args.config),
         "output": str(args.output),
         "expert_protocol": str(args.expert_protocol),
+        "env_protocol": str(args.env_protocol),
         "bc_episodes": int(args.bc_episodes),
         "rl_episodes": int(args.rl_episodes),
         "eval_episodes": int(args.eval_episodes),

@@ -40,11 +40,16 @@
   - Full structured residual stochastic discovery improves from 0.5571 to 0.5865.
   - Deterministic discovery remains about 0.0658.
   - Still not enough to promote neural MARL to the main method.
+- Clean no-ISAC neural baseline:
+  - Environment and expert protocol both use no-ISAC behavior.
+  - Full structured residual deterministic discovery = 0.
+  - Full structured residual stochastic discovery = 0.0044.
+  - This is the useful negative control: neural nonzero behavior depends on ISAC-enabled local observations, not only random stochastic alignment.
 
 ## Interpretation Boundary
 
 The rule-driven ISAC-assisted protocol remains the paper's main method.
-The neural MARL result is useful as feasibility evidence for a future structured neural extension: candidate constraints and rule residuals reduce deterministic collapse and empty scanning, but collision coordination and stochastic-performance dominance are not solved yet.
+The neural MARL result is useful as feasibility evidence for a future structured neural extension: candidate constraints and rule residuals reduce deterministic collapse and empty scanning, and the clean no-ISAC neural baseline stays near zero, but collision coordination and stochastic-performance dominance are not solved yet.
 
 ## Verification
 

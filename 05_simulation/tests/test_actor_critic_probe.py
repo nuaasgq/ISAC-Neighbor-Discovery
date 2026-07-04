@@ -132,6 +132,7 @@ def test_actor_critic_imitation_probe_writes_history(tmp_path: Path) -> None:
             miss_detection_rate=0.0,
             angular_cell_offset_std=0.0,
             sensing_period_slots=1,
+            env_protocol="isac_structured_marl",
             expert_protocol="improved_rl_isac",
             hidden_dim=16,
             learning_rate=1e-3,

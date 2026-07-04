@@ -87,6 +87,8 @@ def load_probe_rows(input_root: Path, pd):
         frame = pd.read_csv(history_path)
         frame["run"] = run_dir.name
         frame["probe_group"] = infer_probe_group(run_dir.name)
+        if "env_protocol" not in frame.columns:
+            frame["env_protocol"] = str(manifest.get("env_protocol", "isac_structured_marl"))
         frame["variant"] = infer_variant(run_dir.name, manifest)
         frame["train_seed"] = int(manifest.get("seed", 0))
         frame["candidate_mask"] = bool(manifest.get("candidate_mask", False))
@@ -98,7 +100,7 @@ def load_probe_rows(input_root: Path, pd):
         return pd.DataFrame()
     rows = pd.concat(frames, ignore_index=True)
     for column in rows.columns:
-        if column in {"phase", "expert_protocol", "run", "probe_group", "variant"}:
+        if column in {"phase", "env_protocol", "expert_protocol", "run", "probe_group", "variant"}:
             continue
         try:
             rows[column] = pd.to_numeric(rows[column], errors="raise")
@@ -127,6 +129,8 @@ def infer_variant(run_name: str, manifest: dict) -> str:
 
 
 def infer_probe_group(run_name: str) -> str:
+    if run_name.startswith("no_isac_env"):
+        return "no_isac_env"
     if run_name.startswith("no_isac_label"):
         return "no_isac_label"
     if run_name.startswith("rl10"):

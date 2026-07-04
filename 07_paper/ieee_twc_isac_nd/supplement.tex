@@ -245,7 +245,9 @@ However, the full structured actor improves deterministic execution from 0.0015 
 It also reduces stochastic empty-scan ratio from 0.690 for the flat actor to 0.111, at the cost of unresolved collision coordination.
 This supports using the structured actor as a feasible neural extension, not as the current main method.
 A short 10-episode actor-critic fine-tuning follow-up increases the full structured stochastic discovery rate to 0.586 and leaves deterministic discovery near 0.066, but it still does not overtake the flat stochastic student.
-A no-ISAC-label follow-up is treated only as a label-sensitivity sanity check because the evaluation environment still exposes ISAC candidate observations; it is therefore not used as a clean no-ISAC neural baseline.
+A clean no-ISAC neural baseline, with both the environment and expert protocol set to the no-ISAC variant, reduces deterministic discovery to 0 and stochastic discovery to 0.0044.
+This indicates that the neural probe's nonzero behavior is driven by the ISAC-enabled local candidate observations rather than by blind stochastic alignment alone.
+A label-only no-ISAC follow-up is treated only as a label-sensitivity sanity check because its evaluation environment still exposes ISAC candidate observations.
 
 \begin{figure*}[!t]
   \centering
