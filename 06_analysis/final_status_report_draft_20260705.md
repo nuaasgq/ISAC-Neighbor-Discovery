@@ -108,6 +108,7 @@ It is not yet final TWC/TCOM submission-ready because a reviewer could still req
 
 Next neural-method direction is documented in `06_analysis/marl_architecture_roadmap_20260705.md`.
 The recommended route is not a flat categorical beam policy, but a candidate-constrained shared actor-critic with ISAC mask/top-k beam proposal, rule-residual logits, topology-deficit conditioning, and centralized critic only during training.
+The first code interface for this route has been added: `MarlNeighborDiscoveryEnv` now exposes a local `candidate_mask`, and `SharedBeamActorCritic(..., use_candidate_mask=True)` can apply it without changing existing default behavior.
 
 The most defensible paper angle is:
 

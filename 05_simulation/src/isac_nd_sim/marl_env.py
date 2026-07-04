@@ -179,10 +179,34 @@ class MarlNeighborDiscoveryEnv:
             "beam_age": (self._sim.age[node] / max(1, self.cfg.slots_per_episode)).astype(np.float32).copy(),
             "beam_success": self._sim.success_count[node].astype(np.float32).copy(),
             "beam_fail": self._sim.fail_count[node].astype(np.float32).copy(),
+            "candidate_mask": self._candidate_mask_for(node),
             "last_mode": mode_one_hot,
             "last_beam": np.asarray([last_action.beam / max(1, self.n_beams - 1)], dtype=np.float32),
             "local_summary": local_summary,
         }
+
+    def _candidate_mask_for(self, node: int) -> np.ndarray:
+        """Local beam proposal mask for candidate-constrained neural policies.
+
+        The mask is derived only from local belief/memory variables exposed to
+        the actor. It does not use true neighbor positions or undiscovered
+        topology. Existing policies may ignore this optional observation key.
+        """
+
+        belief = self._sim.belief[node]
+        success = np.log1p(self._sim.success_count[node])
+        fail = np.log1p(self._sim.fail_count[node])
+        age = self._sim.age[node] / max(1.0, float(self.cfg.slots_per_episode))
+        score = belief + 0.10 * success - 0.05 * fail + 0.01 * age
+        top_k = min(self.n_beams, max(4, int(np.ceil(np.sqrt(max(1, self.n_beams))))))
+        top_indices = np.argpartition(score, -top_k)[-top_k:]
+        threshold = max(float(self.cfg.exploration_floor), float(np.quantile(belief, 0.90)) if self.n_beams > 1 else 0.0)
+        mask = (belief >= threshold).astype(np.float32)
+        mask[top_indices] = 1.0
+        last_beam = int(self._last_actions[node].beam)
+        if 0 <= last_beam < self.n_beams:
+            mask[last_beam] = 1.0
+        return mask.astype(np.float32, copy=False)
 
     def _normalize_actions(
         self,

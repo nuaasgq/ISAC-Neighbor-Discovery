@@ -24,7 +24,7 @@ class SharedBeamActorCritic:
     MarlNeighborDiscoveryEnv. Centralized truth is not used by the actor.
     """
 
-    def __init__(self, n_beams: int, hidden_dim: int = 96, device: str = "cpu"):
+    def __init__(self, n_beams: int, hidden_dim: int = 96, device: str = "cpu", use_candidate_mask: bool = False):
         try:
             import torch
             import torch.nn as nn
@@ -36,6 +36,7 @@ class SharedBeamActorCritic:
         self.n_beams = int(n_beams)
         self.hidden_dim = int(hidden_dim)
         self.device = torch.device(device)
+        self.use_candidate_mask = bool(use_candidate_mask)
         self.model = _SharedBeamActorCriticModule(self.n_beams, self.hidden_dim).to(self.device)
 
     def parameters(self):
@@ -58,6 +59,10 @@ class SharedBeamActorCritic:
         for observation in observations:
             tensors = observation_to_tensors(observation, self.device, torch)
             mode_logits, beam_logits, value = self.model(tensors)
+            if self.use_candidate_mask and "candidate_mask" in tensors:
+                mask = tensors["candidate_mask"] > 0.5
+                if bool(mask.any().item()):
+                    beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
             mode_dist = Categorical(logits=mode_logits)
             beam_dist = Categorical(logits=beam_logits)
             if deterministic:
@@ -146,10 +151,15 @@ def observation_to_tensors(observation: dict, device, torch_module) -> dict:
         ],
         axis=1,
     )
-    return {
+    tensors = {
         "self_state": torch_module.as_tensor(observation["self_state"], dtype=torch_module.float32, device=device),
         "local_summary": torch_module.as_tensor(observation["local_summary"], dtype=torch_module.float32, device=device),
         "last_mode": torch_module.as_tensor(observation["last_mode"], dtype=torch_module.float32, device=device),
         "last_beam": torch_module.as_tensor(observation["last_beam"], dtype=torch_module.float32, device=device),
         "beam_features": torch_module.as_tensor(beam_features, dtype=torch_module.float32, device=device),
     }
+    if "candidate_mask" in observation:
+        tensors["candidate_mask"] = torch_module.as_tensor(
+            observation["candidate_mask"], dtype=torch_module.float32, device=device
+        )
+    return tensors

@@ -13,6 +13,7 @@ The repository already has the minimum scaffolding for a neural MARL extension:
 - `05_simulation/src/isac_nd_sim/neural_shared_actor_critic.py`
   - `SharedBeamActorCritic` already implements a shared decentralized actor with a mode head and flat beam head.
   - Beam tokens are built from belief, age, success, and fail features.
+  - After the 2026-07-05 morning update, the actor can optionally apply a local candidate mask to beam logits via `use_candidate_mask=True`.
 
 - `05_simulation/run_actor_critic_imitation_probe.py`
   - Provides behavior cloning from the rule expert and optional actor-critic fine-tuning.
@@ -45,11 +46,13 @@ The next neural method should be an ISAC-candidate-constrained shared actor-crit
      - recent beam-lock / near-miss beams,
      - a small exploration subset.
    - Enforce at least one random exploration beam so sensing errors cannot permanently prune cells.
+   - Current implementation status: `MarlNeighborDiscoveryEnv` now exposes a local `candidate_mask` observation derived only from belief, age, success/fail memory, and last beam; it does not use undiscovered-neighbor truth.
 
 3. **Masked beam head**
    - Compute logits for all beams, then set non-candidate logits to a large negative value before sampling.
    - Keep a separate exploration probability that samples outside the mask.
    - Report the mask size as a protocol overhead metric.
+   - Current implementation status: `SharedBeamActorCritic(..., use_candidate_mask=True)` applies this mask during action sampling; default remains `False` to preserve existing probes.
 
 4. **Rule-residual logits**
    - Add learned logits to normalized rule scores:
@@ -78,10 +81,12 @@ Target: produce a method-probe result, not a main manuscript result.
    - `candidate_mask`
    - `candidate_rank`
    - `candidate_count`
+   - Status: `candidate_mask` implemented; `candidate_rank` and `candidate_count` remain optional extensions.
 
 2. Add optional masking to `SharedBeamActorCritic.act()`:
    - `mask_mode="none|topk|threshold|hybrid"`
    - `top_k=8` for B=10/N=10 probe.
+   - Status: optional mask path implemented and covered by tests.
 
 3. Re-run behavior cloning:
 

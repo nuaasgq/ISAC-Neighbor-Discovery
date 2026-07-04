@@ -34,6 +34,23 @@ def test_shared_actor_critic_samples_valid_actions() -> None:
         assert 0 <= action.beam < cfg.n_beams
 
 
+def test_shared_actor_critic_candidate_mask_samples_valid_actions() -> None:
+    pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=123)
+    policy = SharedBeamActorCritic(cfg.n_beams, hidden_dim=16, use_candidate_mask=True)
+
+    step = policy.act(observations)
+
+    assert len(step.actions) == cfg.n_nodes
+    for observation, action in zip(observations, step.actions, strict=True):
+        assert action.mode in env.modes
+        assert 0 <= action.beam < cfg.n_beams
+        if action.mode != "idle":
+            assert observation["candidate_mask"][action.beam] > 0.5
+
+
 def test_actor_critic_probe_writes_history(tmp_path: Path) -> None:
     pytest.importorskip("torch")
     module = load_probe_module(SCRIPT, "run_actor_critic_probe")
