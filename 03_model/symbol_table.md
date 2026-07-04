@@ -5,6 +5,13 @@
 | `N` | UAV 节点数量 |
 | `i, j` | 节点索引 |
 | `t` | 离散时隙索引 |
+| `x_i(t)` | UAV `i` 自身三维位置，协议可用 |
+| `v_i(t)` | UAV `i` 自身速度，协议可用 |
+| `psi_i(t)` | UAV `i` 航向角 |
+| `theta_i(t)` | UAV `i` 俯仰角 |
+| `phi_i(t)` | UAV `i` 横滚角 |
+| `R_i(t)` | body-frame 到 global-frame 的姿态旋转矩阵 |
+| `Sigma_i^loc(t)` | 自定位误差协方差 |
 | `A` | 本地水平扫描维度 beam cell 数 |
 | `E` | 本地垂直扫描维度 beam cell 数 |
 | `M` | 单节点 beam cell 总数，`M = A * E` |
@@ -16,6 +23,8 @@
 | `O_i(t)` | 节点 `i` 在时隙 `t` 的 ISAC 观测 |
 | `z_i(t)` | 节点 `i` 的原始或抽象感知观测 |
 | `p_i^m(t)` | 节点 `i` 对本地 beam cell `b_i^m` 的 occupancy prior |
+| `rhat_i^m(t)` | `b_i^m` 中候选目标的粗距离估计 |
+| `vhat_i^m(t)` | `b_i^m` 中候选目标的径向速度或 Doppler 粗估计 |
 | `q_i,b(t)` | `p_i^m(t)` 的等价通用写法 |
 | `u_i^m(t)` | 节点 `i` 对 `b_i^m` 的不确定性 |
 | `tau_i^m(t)` | `b_i^m` 最近一次观测时间 |
@@ -48,3 +57,9 @@
 | `lambda_2(t)` | 已发现图 Laplacian 的代数连通度，评估用 |
 | `T_consensus` | 一致性误差达到阈值所需时间 |
 | `T_budget` | 邻居发现时间预算 |
+| `o_i(t)` | MARL actor 的本地观测 |
+| `pi_theta` | 参数共享 actor 策略 |
+| `V_phi` | CTDE centralized critic 或 pooled critic |
+| `K` | 固定维邻居/候选集合编码中的 top-K 上限 |
+| `N_train` | MARL 训练节点数集合 |
+| `N_test` | MARL 零微调测试节点数集合 |

@@ -12,6 +12,10 @@ network:
   communication_range_m: 300
   sensing_range_m: 350
   mobility: "static"
+  self_localization_available: true
+  self_attitude_available: true
+  localization_error_std_m: 0.0
+  attitude_error_std_deg: 0.0
 
 beam:
   azimuth_cells: [24]

@@ -2,7 +2,7 @@
 
 ## 目标
 
-建立离散 beam-cell 级仿真，验证 I-TAP-ND 是否在不使用 oracle 信息的前提下，相比盲扫和 ISAC-only 方法获得发现效率与拓扑质量收益。
+建立离散 beam-cell 级仿真，验证 I-TAP-ND 是否在不使用 oracle 信息的前提下，相比盲扫和 ISAC-only 方法获得发现效率与拓扑质量收益；随后验证 MARL-I-TAP-ND 是否能在小规模训练后迁移到大规模 UAV 集群。
 
 ## MVP 问题
 
@@ -11,6 +11,7 @@
 1. ISAC occupancy prior 是否减少空扫和平均发现时延？
 2. 探索下界是否能缓解漏检导致的长尾问题？
 3. topology-aware priority 是否在有限时隙内提升已发现拓扑质量？
+4. MARL 策略是否能在 `N_train={10,20}` 训练后零微调迁移到 `N_test={30,50,100}`？
 
 ## 任务拆解
 
@@ -21,7 +22,9 @@
 | T3 指标模块 | 时延、空扫、连通性、lambda2、一致性收敛 | 是 | T1 |
 | T4 参数扫描 | 节点数、波束宽度、误差、速度 | 是 | T1 |
 | T5 MVP 跑通 | 固定场景 + 多 seed + 所有 baselines | 否 | T2/T3 |
-| T6 结果判定 | 是否继续推进、是否调整创新点 | 否 | T5 |
+| T6 MARL 训练接口 | MAPPO/IPPO 环境接口和规则专家轨迹 | 是 | T1/T2/T3 |
+| T7 规模迁移评估 | 小规模训练，大规模零微调测试 | 否 | T6 |
+| T8 结果判定 | 是否继续推进、是否调整创新点 | 否 | T5/T7 |
 
 ## 仿真对象
 
@@ -33,6 +36,7 @@
 - 移动：MVP-1 静态；MVP-2 恒速随机方向 / 边界反弹
 - 真实邻居图：节点距离 `d_ij <= R_comm`
 - 协议可见信息：本地 belief、已发现邻居、握手后局部信息
+- 节点自状态：自身位置、速度、航向和姿态可用
 
 ### 波束
 
@@ -67,6 +71,9 @@
 | ISAC-only ND | 使用 occupancy prior，不用 topology proxy | 验证 ISAC 剪枝收益 |
 | Topology-only ND | 使用方向稀缺/度数代理，不用 ISAC prior | 验证 topology proxy 独立收益 |
 | I-TAP-ND | 完整方法 | 主方法 |
+| IPPO-I-TAP | 参数共享 IPPO 学习 mode/beam | 轻量 MARL baseline |
+| MAPPO-I-TAP | CTDE + 参数共享 MAPPO | MARL 主方法 |
+| MAPPO-I-TAP-GNN | MAPPO + neighbor/beam attention pooling | 规模迁移候选主方法 |
 | Oracle ND | 已知真实 occupied beam cells | 上界，不参与公平协议比较 |
 
 ## Metrics
@@ -101,6 +108,15 @@
 - 对 `sigma_cell` 的敏感性
 - 对 beam 数 `M` 的敏感性
 - 对移动速度 `v in {0, 5, 15, 30}` m/s 的敏感性
+
+### MARL 迁移性
+
+- Zero-shot Gain
+- Scale Retention
+- 大规模每节点推理时间
+- 最差 10% 节点发现率
+- 孤立节点比例
+- 固定密度扩展与固定区域压力测试
 
 ## 输出文件
 
@@ -163,10 +179,13 @@
 
 ## Sprint 3 实现顺序
 
-1. 数据结构：nodes、beam cells、true topology、observations。
+1. 数据结构：nodes、self state、beam cells、true topology、ISAC observations。
 2. 基线：Uniform Random、Deterministic Scan、ISAC-only。
-3. 主方法：I-TAP-ND。
+3. 规则主方法：I-TAP-ND。
 4. 指标统计：delay、empty scan、discovery rate。
 5. 拓扑指标：components、largest component、lambda_2。
 6. 一致性仿真：基于已发现图运行简单平均一致性。
-7. 参数扫描和绘图。
+7. MARL 环境接口：observation、action、reward、done、info。
+8. I-TAP-ND expert trajectory 生成。
+9. IPPO/MAPPO 训练和小到大迁移评估。
+10. 参数扫描和绘图。

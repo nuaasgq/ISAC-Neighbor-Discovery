@@ -1,0 +1,63 @@
+experiment:
+  name: "marl_small_to_large_transfer"
+  seed: 20260704
+  train_episodes: 2000
+  eval_episodes: 100
+  slots_per_episode: 3000
+
+training:
+  algorithm: "MAPPO"
+  parameter_sharing: true
+  ctde: true
+  imitation_pretraining: true
+  expert_policy: "itap_nd"
+  train_node_range: [8, 20]
+  validation_node_counts: [10, 20, 30]
+  zero_shot_test_node_counts: [30, 50, 100, 200]
+  curriculum:
+    - name: "static_low_noise"
+      node_range: [5, 10]
+      mobility: "static"
+      false_alarm_range: [0.0, 0.02]
+      miss_detection_range: [0.0, 0.05]
+    - name: "static_noisy"
+      node_range: [8, 15]
+      mobility: "static"
+      false_alarm_range: [0.0, 0.10]
+      miss_detection_range: [0.0, 0.20]
+    - name: "mobile_collision"
+      node_range: [8, 20]
+      mobility: "random_direction"
+      false_alarm_range: [0.0, 0.10]
+      miss_detection_range: [0.0, 0.30]
+
+observation:
+  include_self_position: true
+  include_self_velocity: true
+  include_self_attitude: true
+  beam_prior_encoding: "top_k_plus_summary"
+  top_k_beams: 16
+  neighbor_pooling: "attention"
+  max_neighbors_encoded: 8
+  use_gru_memory: true
+
+action:
+  mode_actions: ["sense", "tx", "rx", "idle"]
+  beam_selection: "discrete_cell"
+  include_power: false
+  include_sensing_budget: false
+
+reward:
+  discovery: 1.0
+  empty_scan_penalty: 0.05
+  collision_penalty: 0.10
+  sensing_cost: 0.02
+  topology_delta_lcc: 0.50
+  topology_delta_lambda2: 0.20
+  delay_decay: 0.001
+
+scalability:
+  fixed_density_tests: true
+  fixed_area_stress_tests: true
+  zero_shot_only_for_main_results: true
+  scale_retention_threshold: 0.5

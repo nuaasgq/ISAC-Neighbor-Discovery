@@ -21,6 +21,9 @@
 | Radar/context-assisted beam probing | CommRad 2024 / Orimogunje 2026 | High | “感知先验缩小 beam probing 集合”思想接近。 | 非 U2U、非邻居发现、非拓扑形成；本文需要处理双向发现、身份确认、随机 TX/RX 和拓扑质量。 |
 | Learning-based DND | Wang et al., IEEE TVT 2024 | Medium | 已用 PFL/DDPG/MAML 改进方向邻居发现。 | 学习来自历史交互/训练，不是 ISAC 对准前感知；未解决三维空波位爆炸和拓扑优先。 |
 | ISAC UAV-BS beam management | Cui et al., China Communications 2024; Xu et al., TWC 2026 | Medium-High | UAV + ISAC + beam management/beamforming 已有强工作。 | 它们是 BS 主导、已知服务关系或 IA/tracking；不是分布式 U2U neighbor discovery。 |
+| Scalable wireless MARL | Naderializadeh et al., IEEE TWC 2021; Wang et al., IEEE TSP 2022 | High | 已明确讨论无线网络中小规模训练、不同规模迁移和 GNN 可迁移资源分配。 | 本文不能声称“首次可迁移无线 MARL”，应聚焦 ISAC prior 驱动的对准前 U2U 邻居发现。 |
+| MARL MAC / access | Guo et al., IEEE JSAC 2022; MAPPO-MAC 2023 | High | 已将 MARL/MAPPO/QMIX 用于分布式链路层接入。 | 本文动作包含窄波束 sensing/Tx/Rx/beam 选择，目标是 neighbor discovery 和拓扑形成，不是通用 MAC。 |
+| RL directional neighbor discovery | Enhanced RL two-way DND, Ad Hoc Networks 2024/2025 | High | 已用 RL 改进 two-way directional antenna neighbor discovery。 | 本文新增 ISAC beam-cell prior、自定位辅助、UAV-UAV 三维场景、拓扑优先和小到大迁移。 |
 
 ---
 
@@ -46,6 +49,10 @@
 
 ISAC 感知角度不一定等于最佳通信方向，multipath、遮挡、虚警和漏检都会影响波位剪枝。本文不能把感知输出当作 oracle，而应引入置信度衰减、探索概率和链路层握手确认。
 
+### G6. 从通用可迁移 MARL 转向 ISAC prior 驱动的可迁移邻居发现
+
+无线网络中的可迁移 MARL、GNN 资源分配和分布式 MAC 已有较强工作。因此本文不能把“可迁移 MARL”本身作为唯一创新点。更稳妥的表述是：将可扩展 MARL 作为实现机制，服务于 ISAC-assisted pre-alignment narrow-beam neighbor discovery，并通过 topology-aware reward 和 beam-cell prior 融合体现领域特异性。
+
 ---
 
 ## 建议论文主张
@@ -67,3 +74,5 @@ ISAC 感知角度不一定等于最佳通信方向，multipath、遮挡、虚警
 3. Orimogunje 2026 adaptive beam probing 的 uncertainty-aware scheduling 是否可迁移为我们的主要算法基础，还是只是 baseline？
 4. 拓扑质量指标是否能在完全分布式且未发现邻居前合理估计？
 5. TWC/TCOM 审稿视角下，ISAC 抽象层是否足够具体，是否需要给出最小物理层感知误差模型？
+6. MARL-I-TAP-ND 是否能在不借助大规模微调的情况下超过 I-TAP-ND 规则基线？
+7. 可迁移 MARL 的新意是否足够依托 ISAC prior 和 neighbor discovery，而不是泛泛重复无线资源分配中的 GNN/MARL 迁移思想？

@@ -82,3 +82,23 @@ The direction remains viable if positioned as:
 The direction becomes weak if positioned only as:
 
 > ISAC-assisted beam alignment or sensing-assisted beam search.
+
+### Track D: Scalable MARL and Wireless Protocol Threats
+
+Representative queries:
+
+- `"Resource Management in Wireless Networks via Multi-Agent Deep Reinforcement Learning" TWC 2021`
+- `"Learning Decentralized Wireless Resource Allocations with Graph Neural Networks" IEEE TSP 2022`
+- `"Multi-Agent Reinforcement Learning-Based Distributed Channel Access" JSAC 2022`
+- `"Enhanced reinforcement learning-based two-way transmit-receive directional antennas neighbor discovery" 2024`
+
+Early included sources:
+
+- Naderializadeh et al., IEEE TWC 2021.
+- Wang, Eisen, and Ribeiro, IEEE TSP 2022.
+- Guo et al., IEEE JSAC 2022.
+- Wei et al., Ad Hoc Networks 2024/2025.
+
+Interpretation:
+
+Transferable MARL and GNN-based wireless resource allocation are not blank areas. The defensible gap is the combination of ISAC beam-cell prior, pre-alignment U2U narrow-beam neighbor discovery, topology-aware reward, and zero-shot small-to-large UAV swarm deployment.
