@@ -1,0 +1,74 @@
+experiment:
+  name: "mvp_001_static_pruning"
+  seed: 20260704
+  episodes: 50
+  slots_per_episode: 3000
+  slot_duration_ms: 10
+
+network:
+  node_counts: [30]
+  area_shape: "cube"
+  area_size_m: [1000, 1000, 300]
+  communication_range_m: 300
+  sensing_range_m: 350
+  mobility: "static"
+
+beam:
+  azimuth_cells: [24]
+  elevation_cells: [8]
+  alignment_tolerance_cells: 0
+  main_lobe_model: "ideal_cell_coverage"
+  sidelobe_model: "none"
+
+slot:
+  synchronized: true
+  p_sense: 0.10
+  p_tx: 0.45
+  p_rx: 0.45
+  p_idle: 0.00
+
+isac_error:
+  false_alarm_rates: [0.02]
+  miss_detection_rates: [0.15]
+  angular_cell_offsets: [0.5]
+  sensing_periods: [5]
+  belief_update_rho: 0.5
+
+protocol:
+  exploration_floor: 0.10
+  softmax_beta: 2.0
+  target_degree: 4
+  alpha_occupancy: 1.0
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.95
+
+baselines:
+  - "uniform_random"
+  - "deterministic_scan"
+  - "crt_oblivious_like"
+  - "skyorbs_like_skip_scan"
+  - "isac_only"
+  - "topology_only"
+  - "itap_nd"
+  - "oracle"
+
+metrics:
+  censored_delay_value: "slots_per_episode"
+  consensus_error_threshold: 1.0e-3
+  discovery:
+    - "mean_delay"
+    - "p90_delay"
+    - "p95_delay"
+    - "p99_delay"
+    - "finite_time_discovery_rate"
+    - "empty_scan_ratio"
+  topology:
+    - "discovered_edges"
+    - "connected_components"
+    - "largest_component_size"
+    - "algebraic_connectivity"
+  consensus:
+    - "consensus_error_curve"
+    - "time_to_error_threshold"

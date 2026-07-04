@@ -1,0 +1,172 @@
+# MVP 仿真实验计划 v0
+
+## 目标
+
+建立离散 beam-cell 级仿真，验证 I-TAP-ND 是否在不使用 oracle 信息的前提下，相比盲扫和 ISAC-only 方法获得发现效率与拓扑质量收益。
+
+## MVP 问题
+
+第一版只回答三个问题：
+
+1. ISAC occupancy prior 是否减少空扫和平均发现时延？
+2. 探索下界是否能缓解漏检导致的长尾问题？
+3. topology-aware priority 是否在有限时隙内提升已发现拓扑质量？
+
+## 任务拆解
+
+| 任务 | 内容 | 是否可并行 | 依赖 |
+|---|---|---:|---|
+| T1 模型定义 | 网络、波束、时隙、ISAC 误差、发现条件 | 否 | 无 |
+| T2 协议基线 | 统一实现 7 类协议接口 | 是 | T1 |
+| T3 指标模块 | 时延、空扫、连通性、lambda2、一致性收敛 | 是 | T1 |
+| T4 参数扫描 | 节点数、波束宽度、误差、速度 | 是 | T1 |
+| T5 MVP 跑通 | 固定场景 + 多 seed + 所有 baselines | 否 | T2/T3 |
+| T6 结果判定 | 是否继续推进、是否调整创新点 | 否 | T5 |
+
+## 仿真对象
+
+### 网络
+
+- 节点数：MVP `N=30`；扫描 `N in {10, 20, 30, 50, 80}`
+- 空间：三维长方体，例如 `1000m x 1000m x 300m`
+- 位置：每个 episode 随机生成
+- 移动：MVP-1 静态；MVP-2 恒速随机方向 / 边界反弹
+- 真实邻居图：节点距离 `d_ij <= R_comm`
+- 协议可见信息：本地 belief、已发现邻居、握手后局部信息
+
+### 波束
+
+- 本地水平 beam 数：`A in {12, 24, 36, 72}`
+- 本地垂直 beam 数：`E in {4, 8, 12}`
+- beam cell 总数：`M = A * E`
+- 对准条件：TX 选择覆盖目标的本地 cell，RX 选择覆盖发送方的本地 cell
+- 碰撞：MVP 默认同一 RX beam 内多个 TX 则失败
+
+### 时隙
+
+- 每个 episode `T` 个 discovery slots
+- 每个节点独立选择 `SENSE / TX / RX / IDLE`
+- MVP 使用同步时隙但无中心调度
+
+### ISAC 误差
+
+- 虚警率：MVP `0.02`；扫描 `p_fa in {0.00, 0.01, 0.05, 0.10}`
+- 漏检率：MVP `0.15`；扫描 `p_md in {0.00, 0.10, 0.30, 0.50}`
+- beam-cell 角度偏移：MVP `0.5 cell`；扫描 `sigma_cell in {0, 0.25, 0.5, 1.0, 2.0}`
+- 感知刷新周期：MVP `5 slots`
+- belief 更新：`q_i,b(t+1) = (1-rho) q_i,b(t) + rho * y_i,b(t)`
+
+## Baselines
+
+| 方法 | 说明 | 用途 |
+|---|---|---|
+| Uniform Random ND | 均匀随机选择模式和 beam cell | 随机盲扫基线 |
+| Deterministic Scan ND | 固定顺序扫描 beam cells | 确定性扫描基线 |
+| CRT/Oblivious-like ND | 简化 CRT/周期序列近似 | 无先验有界扫描基线 |
+| SkyOrbs-like Skip Scan | 简化 3D 有序 skip-scan，先粗扫再细扫，不用 ISAC prior | 3D UAV DND 强基线近似 |
+| ISAC-only ND | 使用 occupancy prior，不用 topology proxy | 验证 ISAC 剪枝收益 |
+| Topology-only ND | 使用方向稀缺/度数代理，不用 ISAC prior | 验证 topology proxy 独立收益 |
+| I-TAP-ND | 完整方法 | 主方法 |
+| Oracle ND | 已知真实 occupied beam cells | 上界，不参与公平协议比较 |
+
+## Metrics
+
+### 发现效率
+
+- 平均发现时延
+- P90 / P95 / P99 发现时延
+- 有限时间发现率
+- 空扫比例
+- 每发现一条链路所需时隙数
+
+### 拓扑质量
+
+- 已发现链路数
+- 连通分量数
+- 最大连通子图规模
+- 代数连通度 `lambda_2`，仅评估用
+- 关键链路发现率，后续定义
+
+### 协同一致性
+
+- 一致性误差曲线
+- 达到误差阈值所需时间
+- 相同 discovery budget 下的收敛速度
+- 未发现链路时延采用 censor penalty：记为 `T_budget`，并单独报告发现率
+
+### 鲁棒性
+
+- 对 `p_fa` 的敏感性
+- 对 `p_md` 的敏感性
+- 对 `sigma_cell` 的敏感性
+- 对 beam 数 `M` 的敏感性
+- 对移动速度 `v in {0, 5, 15, 30}` m/s 的敏感性
+
+## 输出文件
+
+建议每次运行输出：
+
+```text
+05_simulation/results_raw/
+  mvp_001_static_pruning_<timestamp>/
+    config.yaml
+    seed_manifest.json
+    per_slot_metrics.csv
+    per_episode_summary.csv
+    discovered_edges.csv
+    README.md
+```
+
+图表输出：
+
+```text
+06_analysis/figures/
+  delay_mean_vs_beams.png
+  delay_tail_vs_error.png
+  empty_scan_ratio.png
+  topology_quality_vs_time.png
+  consensus_error_vs_time.png
+```
+
+## 首个 MVP 实验路径
+
+首个实验：`mvp_001_static_pruning`
+
+固定设置：
+
+- `N = 30`
+- `A = 24, E = 8`
+- `T_budget = 3000`
+- 静态节点
+- `p_fa = 0.02`
+- `p_md = 0.15`
+- `sigma_cell = 0.5`
+- `50 seeds`
+- 所有 baselines 同场景对比
+
+第一轮只看四个结果：
+
+1. `ISAC-only` 是否低于非 ISAC 基线的空扫比例。
+2. `ISAC-only` 是否降低平均时延和 P95/P99。
+3. `I-TAP-ND` 是否在发现率相近时提升 LCC、连通分量、lambda2 proxy。
+4. `I-TAP-ND` 是否降低一致性收敛时间，且没有明显牺牲发现时延。
+
+## MVP 判定标准
+
+继续推进的最低标准：
+
+1. `ISAC-only` 相比最佳非 ISAC 基线，平均时延下降不少于 30%，P95 下降不少于 25%，空扫比例下降不少于 40%。
+2. `I-TAP-ND` 相比 `ISAC-only`，lambda2 proxy 或 LCC 提升不少于 10%，一致性收敛时间下降不少于 15%，平均时延损失不超过 10%。
+3. Oracle ND 明显优于 I-TAP-ND，说明协议没有偷用 oracle。
+4. 若只有 ISAC 有收益而 topology-aware 无收益，应收缩论文贡献。
+5. 若只在 oracle 或极低误差下有效，应暂停进入复杂智能协议设计。
+
+## Sprint 3 实现顺序
+
+1. 数据结构：nodes、beam cells、true topology、observations。
+2. 基线：Uniform Random、Deterministic Scan、ISAC-only。
+3. 主方法：I-TAP-ND。
+4. 指标统计：delay、empty scan、discovery rate。
+5. 拓扑指标：components、largest component、lambda_2。
+6. 一致性仿真：基于已发现图运行简单平均一致性。
+7. 参数扫描和绘图。
