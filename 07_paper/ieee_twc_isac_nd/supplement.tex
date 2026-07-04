@@ -1,0 +1,131 @@
+\documentclass[journal]{IEEEtran}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+
+\newcommand{\Rc}{R_{\mathrm{c}}}
+\newcommand{\Rs}{R_{\mathrm{s}}}
+
+\begin{document}
+
+\title{Supplementary Material for ``ISAC-Assisted Topology-Aware Narrow-Beam Neighbor Discovery for Fully Distributed UAV Swarms''}
+
+\author{Author~Names~Omitted~for~Anonymous~Review}
+
+\maketitle
+
+\section{Scope of This Supplement}
+
+This supplement records the experiment coverage and stress evidence supporting the bounded claims in the main manuscript.
+The main paper should be read as a cross-layer link-layer neighbor-discovery study: ISAC provides an imperfect beam-cell occupancy prior, and neighbor edges are created only by bidirectional narrow-beam handshakes.
+The additional figures and tables below are used to bound the claims rather than to assert universal robustness.
+
+\section{Experiment Coverage}
+
+Table~\ref{tab:supp_coverage} maps the main reviewer-facing experiment requirements to archived artifacts.
+The complete evidence map is maintained in the repository coverage matrix.
+
+\begin{table*}[!t]
+  \centering
+  \caption{Coverage of Requested Experiment Dimensions}
+  \label{tab:supp_coverage}
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{p{0.17\textwidth}p{0.12\textwidth}p{0.38\textwidth}p{0.16\textwidth}}
+    \toprule
+    Requirement & Status & Primary artifacts & Boundary \\
+    \midrule
+    Beamwidths 3--30 deg & Covered & Main 5/10/15/30 deg: round3 robustness tables; stress 3/5/10/15/30 deg: round7 scale-beam grid; full 3 deg five-baseline check: round9. & 3 and 5 deg are stress regimes. \\
+    Node counts 10--100 & Covered & Round7 scale-beam grid and round3 N=100 density/fixed scaling. & Not a full Cartesian cross with every mobility and error setting. \\
+    Small-to-large transfer & Covered & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter policy optimization. \\
+    Baselines & Covered & Uniform random, SkyOrbs-like, RL without ISAC, improved no-ISAC, improved ISAC. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
+    Mobility models & Covered & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
+    Range and timing & Covered & Range grid and slot-duration sensitivity. & Protocol-level abstraction, not calibrated RF range law. \\
+    ISAC errors & Covered & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
+    Training curves & Covered & Round2 and round7 reward/score histories. & Empirical training-score evolution only. \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\section{Beamwidth Stress}
+
+The main paper reports 5--30 degree transfer values in the compact N=100 table.
+Fig.~\ref{fig:supp_beam_stress} shows the broader N=100 stress sweep including 3 degrees.
+The 3-degree case is intentionally treated as a failure-boundary regime.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_discovery_rate_n100.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_collision_penalized_discovery_n100.png}
+  \caption{N=100 beamwidth stress evidence. Left: raw discovery rate. Right: collision-penalized discovery. The 3-degree and 5-degree points are stress regimes, while the 10--30 degree region provides the main useful operating range in the current finite horizon.}
+  \label{fig:supp_beam_stress}
+\end{figure*}
+
+Table~\ref{tab:supp_b3} gives the targeted five-baseline check at $N=100$, 3-degree beams.
+All baselines remain near zero, and the ISAC-assisted policy only reaches a small nonzero discovery rate.
+This supports writing ``evaluated over 3--30 degrees,'' not ``effective over 3--30 degrees.''
+
+\begin{table}[!t]
+  \centering
+  \caption{N=100, 3-Degree Five-Baseline Stress Check}
+  \label{tab:supp_b3}
+  \scriptsize
+  \begin{tabular}{lcccc}
+    \toprule
+    Protocol & Disc. & Std. & Empty & $\lambda_2$ \\
+    \midrule
+    Uniform random & 0.0000 & 0.0000 & 0.9870 & 0.0000 \\
+    SkyOrbs-like & 0.0000 & 0.0000 & 0.9865 & 0.0000 \\
+    RL no-ISAC & 0.0001 & 0.0001 & 0.9868 & 0.0000 \\
+    Improved no-ISAC & 0.0000 & 0.0000 & 0.9871 & 0.0000 \\
+    Improved ISAC & 0.0131 & 0.0007 & 0.9418 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/n100_b3_full_baselines_discovery.png}
+  \caption{Full five-baseline comparison in the N=100, 3-degree stress case. The plot is used as boundary evidence rather than main performance evidence.}
+  \label{fig:supp_b3}
+\end{figure}
+
+\section{Mobility Boundary and Missing Baselines}
+
+Fig.~\ref{fig:supp_mobility_full} visualizes the merged round7/round8 mobility table.
+It confirms that the mobility-boundary interpretation is not caused by omitting the SkyOrbs-like or vanilla no-ISAC learning baselines.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round8_n100_multimobility_full_baseline/full_baseline_discovery_n100_b10.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round8_n100_multimobility_full_baseline/full_baseline_discovery_n100_b15.png}
+  \caption{Full-baseline mobility comparison at N=100. Left: 10-degree beams. Right: 15-degree beams. The proposed ISAC-assisted policy is strongest under Gauss-Markov and random-walk mobility, while random-direction and random-waypoint remain stress regimes.}
+  \label{fig:supp_mobility_full}
+\end{figure*}
+
+\section{B=15 Error Profiles}
+
+The main paper reports B=10 sensing-error robustness.
+Fig.~\ref{fig:supp_b15_error} extends the error-profile check to 15-degree beams and separates Gauss-Markov from random-walk mobility.
+The key observation is that B=15 remains strong under Gauss-Markov but becomes more sensitive under random-walk mobility.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/error_profile_discovery_n100_b15.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/ablation_collision_penalized_discovery_n100_b15.png}
+  \caption{B=15 sensing-error extension. Left: raw discovery under configured ISAC error profiles. Right: collision-penalized discovery.}
+  \label{fig:supp_b15_error}
+\end{figure*}
+
+\section{Reproducibility Notes}
+
+All compact multi-seed summaries are archived under the repository paper-table directory.
+The normalized statistical table is the \texttt{statistical\_stability\_summary.csv} artifact.
+Rows tagged \texttt{main} support the manuscript tables and figures; rows tagged \texttt{main\_boundary}, \texttt{supplement}, or \texttt{supplement\_stress} should be used to bound claims and answer reviewer questions.
+
+\end{document}

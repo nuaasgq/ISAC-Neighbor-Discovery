@@ -10,8 +10,10 @@ Template basis:
 Current status:
 
 - `main.tex` is a conservative IEEE journal draft with explicit claim boundaries; it is not yet a final submission manuscript.
+- `supplement.tex` is a compact supplementary-material draft for coverage, stress, mobility-baseline, and error-profile evidence.
 - `references.bib` only includes references that were locally noted or web-verified during the workflow.
 - The current draft compiles to a 7-page PDF with `pdflatex`; the final checked log has no undefined references/citations and no overfull warnings.
+- The supplement compiles to a 3-page PDF with `pdflatex`; the final checked log has no undefined references and no overfull warnings.
 - Main figures are selected in `../../06_analysis/manuscript_figure_selection.md`; all figure paths referenced by `main.tex` have been checked on disk.
 - Mean/std/95% CI summaries for archived multi-seed sweeps are in `../../06_analysis/paper_tables/statistical_stability_summary/`.
 - Experiment coverage against the requested variables is tracked in `../../06_analysis/experiment_coverage_matrix_20260705.md`.
@@ -24,4 +26,6 @@ pdflatex main.tex
 bibtex main
 pdflatex main.tex
 pdflatex main.tex
+pdflatex supplement.tex
+pdflatex supplement.tex
 ```
