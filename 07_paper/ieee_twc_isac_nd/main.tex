@@ -28,7 +28,7 @@ Deterministic directional neighbor discovery protocols can provide bounded delay
 This paper studies a fully distributed UAV-UAV setting where each UAV knows its own pose and position but has no prior information about undiscovered neighbors.
 We abstract integrated sensing and communication (ISAC) as a link-layer beam-cell occupancy prior, rather than as an oracle position estimator, and propose \method{}, an ISAC-assisted topology-aware protocol that uses sensing feedback to suppress empty beam cells, preserve exploration under sensing errors, and prioritize beam choices that are more likely to improve local connectivity.
 We further develop \learnedmethod{}, a shared-parameter policy-optimization variant trained at a small scale and tested for transfer to larger swarms and different beamwidths within the evaluated regimes.
-Simulation results in the tested dynamic UAV scenarios show that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learning baselines.
+Simulation results in the tested dynamic UAV scenarios indicate that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learning baselines.
 Additional robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, angular-cell errors, and mechanism ablations.
 \end{abstract}
 
@@ -45,7 +45,7 @@ As the beamwidth decreases, the number of beam cells grows rapidly, and the prob
 Existing directional ND protocols can be broadly categorized as deterministic and random methods.
 Deterministic methods design scan schedules to improve coverage and sometimes provide worst-case delay guarantees, but their performance often depends on schedule synchronization, network scale, topology assumptions, or beam-codebook structure.
 Random methods require less coordination and adapt naturally to distributed deployments, but the resulting discovery process can have a long tail: some important links remain undiscovered for many slots, slowing the formation of a connected swarm graph.
-Recent UAV-specific work, such as SkyOrbs, further shows the importance of three-dimensional directional discovery in aerial networks, but it remains primarily a directional scan-scheduling problem \cite{SkyOrbs2024TMC}.
+Recent UAV-specific work, such as SkyOrbs, further highlights the importance of three-dimensional directional discovery in aerial networks, but it remains primarily a directional scan-scheduling problem \cite{SkyOrbs2024TMC}.
 Recent UAV ND studies also optimize delay-power tradeoffs for directional UAV networks \cite{Fan2026DelayPowerND}, highlighting that discovery latency, collision behavior, and radio activity should eventually be evaluated jointly.
 
 Integrated sensing and communication (ISAC) provides a new cross-layer opportunity.
@@ -107,9 +107,10 @@ We represent this physical-layer service as a link-layer occupancy observation
 \begin{equation}
   z_i^t(b) \in \{0,1\},
 \end{equation}
-where $z_i^t(b)=1$ indicates that beam cell $b$ is likely occupied by at least one communication-range candidate.
+where $z_i^t(b)=1$ indicates that beam cell $b$ is likely occupied by at least one candidate within the sensing observation support.
 The observation may contain false alarms, missed detections, angular-cell offsets, and staleness.
-The sensing range $\Rs$ is evaluated separately from $\Rc$; when $\Rs > \Rc$, sensing beyond the communication range is not assumed to create immediate discoverable neighbors.
+The sensing range $\Rs$ denotes the support of the coarse occupancy observation, whereas $\Rc$ defines the link-confirmation range for a discoverable communication edge.
+Only UAV pairs within $\Rc$ can enter the communication-neighbor set and be confirmed by handshake; therefore, $\Rs>\Rc$ may provide additional occupancy evidence but does not create immediately discoverable links in this model.
 
 Each node maintains a local belief $q_i^t(b)$ for every beam cell.
 The belief is updated from ISAC observations using a smoothing factor and decays over time to avoid over-trusting stale evidence.
@@ -127,7 +128,7 @@ For evaluation, we use the finite-time objective
   - w_{\mathrm{c}} C^T ,
   \label{eq:finite_objective}
 \end{equation}
-where $\hat{\mathcal{G}}^T=(\mathcal{V},\hat{\mathcal{E}}^T)$, $\lambda_2(\cdot)$ is the algebraic connectivity of the discovered graph, $\rho_{\mathrm{empty}}^T$ is the empty-scan ratio, and $C^T$ is the collision count or its normalized variant.
+where $\hat{\mathcal{G}}^T=(\mathcal{V},\hat{\mathcal{E}}^T)$, $\lambda_2(\cdot)$ is the algebraic connectivity of the discovered graph, $\rho_{\mathrm{empty}}^T$ is the empty-scan ratio, and $C^T$ is the normalized collision penalty used for policy scoring.
 Equation~\eqref{eq:finite_objective} is not solved by a central controller; it is an offline evaluation criterion and a design guide for local proxies.
 Each UAV must choose actions from its local information history
 \begin{equation}
@@ -198,11 +199,13 @@ The primary training configuration uses $N=10$ UAVs and 10-degree beams, and eva
 
 \subsection{Baselines}
 The comparison set includes uniform random scanning, a SkyOrbs-like directional baseline, learning without ISAC, improved learning without ISAC, and the proposed improved learning with ISAC.
+The SkyOrbs-like baseline implements a deterministic three-dimensional skip-scan schedule inspired by SkyOrbs, but it is not a strict reproduction of the complete SkyOrbs protocol.
 Mechanism ablations remove candidate-set refinement, beam-lock refinement, or topology-aware scoring from the proposed protocol.
 
 \subsection{Metrics}
 We report finite-time discovery rate, discovered edge count, mean discovery delay, empty-scan ratio, collision count, largest connected component ratio, and algebraic connectivity $\lambda_2$ of the discovered graph.
 Because high-percentile discovery delays can be censored by a finite simulation horizon, the main claims emphasize discovery rate, empty-scan ratio, edge count, and connectivity metrics.
+For range sweeps, $D$ denotes the region diagonal.
 Table~\ref{tab:settings} summarizes the main information boundary and evaluation settings.
 
 \begin{table}[!t]
@@ -263,11 +266,12 @@ These results support the central mechanism claim in small dynamic swarms, while
 \end{table}
 
 \subsection{Main Transfer Results}
-The multi-seed transfer results show that the ISAC-assisted improved policy can transfer from $N=10$ and 10-degree beams to larger swarms without fine-tuning in the tested operating regimes.
+The multi-seed transfer results indicate that the ISAC-assisted improved policy can transfer from $N=10$ and 10-degree beams to larger swarms without fine-tuning in the tested operating regimes.
 For example, in the single-hop density-scaled setting at $N=100$ and 10-degree beams, the discovered graph remains connected within the finite horizon, although the finite-time discovery rate is far from complete.
 This supports the claim that ISAC priors help form a useful connected topology, but it does not imply that extremely narrow beams are solved.
-The multi-seed transfer check confirms this trend at $N=100$, as summarized in Table~\ref{tab:n100_transfer}.
+This trend is consistent across the $N=100$ multi-seed checks, as summarized in Table~\ref{tab:n100_transfer}.
 Under density-preserving scaling, the proposed policy reaches discovery rates of 0.3655, 0.5440, and 0.4568 for 10-, 15-, and 30-degree beams, respectively, while the 5-degree case remains much weaker at 0.0814.
+The 30-degree setting reduces empty scans but also creates many more collision attempts, so the current best discovery-connectivity balance is around 15 degrees rather than the widest beam tested.
 Fixed-area scaling gives a similar trend, indicating that the conclusion is not an artifact of one area-scaling convention.
 Figs.~\ref{fig:n100_transfer_density} and \ref{fig:n100_area_scale} visualize these transfer trends.
 
@@ -277,18 +281,18 @@ Figs.~\ref{fig:n100_transfer_density} and \ref{fig:n100_area_scale} visualize th
   \label{tab:n100_transfer}
   \tiny
   \setlength{\tabcolsep}{3pt}
-  \begin{tabular}{lccccc}
+  \begin{tabular}{lcccccc}
     \toprule
-    Scale & Beam & Disc. & Empty & $\lambda_2$ & Delay \\
+    Scale & Beam & Disc. & Empty & $\lambda_2$ & Delay & Coll. \\
     \midrule
-    Density & 5$^\circ$  & 0.0814 & 0.8161 & 0.8430  & 576.64 \\
-    Density & 10$^\circ$ & 0.3655 & 0.4986 & 12.9222 & 477.99 \\
-    Density & 15$^\circ$ & 0.5440 & 0.3293 & 26.8413 & 406.74 \\
-    Density & 30$^\circ$ & 0.4568 & 0.1815 & 25.9812 & 438.66 \\
-    Fixed   & 5$^\circ$  & 0.0822 & 0.8152 & 1.0800  & 576.21 \\
-    Fixed   & 10$^\circ$ & 0.3615 & 0.5021 & 11.0417 & 479.00 \\
-    Fixed   & 15$^\circ$ & 0.5352 & 0.3315 & 23.2957 & 410.82 \\
-    Fixed   & 30$^\circ$ & 0.4487 & 0.1816 & 25.0550 & 442.39 \\
+    Density & 5$^\circ$  & 0.0814 & 0.8161 & 0.8430  & 576.64 & 13.0 \\
+    Density & 10$^\circ$ & 0.3655 & 0.4986 & 12.9222 & 477.99 & 1050.0 \\
+    Density & 15$^\circ$ & 0.5440 & 0.3293 & 26.8413 & 406.74 & 8285.0 \\
+    Density & 30$^\circ$ & 0.4568 & 0.1815 & 25.9812 & 438.66 & 82742.3 \\
+    Fixed   & 5$^\circ$  & 0.0822 & 0.8152 & 1.0800  & 576.21 & 24.7 \\
+    Fixed   & 10$^\circ$ & 0.3615 & 0.5021 & 11.0417 & 479.00 & 1019.7 \\
+    Fixed   & 15$^\circ$ & 0.5352 & 0.3315 & 23.2957 & 410.82 & 8141.7 \\
+    Fixed   & 30$^\circ$ & 0.4487 & 0.1816 & 25.0550 & 442.39 & 82978.0 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -310,7 +314,7 @@ Figs.~\ref{fig:n100_transfer_density} and \ref{fig:n100_area_scale} visualize th
 Mobility-model transfer is more nuanced.
 When the N=10, 10-degree policy is evaluated at N=100, it remains effective under Gauss-Markov and random-walk mobility, but degrades under random-direction and random-waypoint mobility.
 At 10-degree beams, the proposed policy reaches discovery rates of 0.3655 under Gauss-Markov and 0.2024 under random walk, but only 0.0627 under random direction and 0.0154 under random waypoint.
-This result identifies a useful applicability boundary: ISAC-assisted candidate refinement is most reliable when beam-cell occupancy evolves smoothly relative to the discovery horizon.
+This result identifies a useful applicability boundary: ISAC-assisted candidate refinement appears most reliable in the tested regimes when beam-cell occupancy evolves smoothly relative to the discovery horizon.
 Fig.~\ref{fig:mobility_transfer} reports this mobility sensitivity.
 
 \begin{figure}[!t]
@@ -328,10 +332,10 @@ The robustness experiments evaluate three implementation-critical checks:
   \item Mechanism ablations for candidate-set refinement, beam-lock refinement, topology-aware scoring, and implementation-delay sensitivity.
 \end{itemize}
 These results are used to separate supported robustness claims from remaining implementation and physical-layer caveats.
-The range sweep shows that sensing range is most useful when it approaches the communication range.
+In the evaluated communication-neighbor-discovery abstraction, the marginal discovery gain saturates once $\Rs$ reaches $\Rc$, because handshakes can only confirm communication-range neighbors.
 At $\Rc/D=0.65$, increasing $\Rs/\Rc$ from 0.5 to 0.75 improves the proposed policy's discovery rate from 0.2628 to 0.3569.
 Increasing $\Rs$ beyond $\Rc$ does not provide additional gain for communication-range neighbor discovery, which is consistent with the model assumption that only communication-range neighbors can be immediately confirmed by handshake.
-The slot-duration sweep further shows that the 5 ms slot assumption is not a tuned single point: at N=100 and 10-degree beams, the proposed policy's discovery rate remains between 0.3564 and 0.3696 when the slot duration varies from 1 ms to 20 ms under Gauss-Markov mobility.
+The slot-duration sweep further indicates that the 5 ms slot assumption is not a tuned single point: at N=100 and 10-degree beams, the proposed policy's discovery rate remains between 0.3564 and 0.3696 when the slot duration varies from 1 ms to 20 ms under Gauss-Markov mobility.
 Fig.~\ref{fig:range_gain_heatmap} summarizes the range sensitivity.
 
 \begin{figure}[!t]
@@ -341,7 +345,7 @@ Fig.~\ref{fig:range_gain_heatmap} summarizes the range sensitivity.
   \label{fig:range_gain_heatmap}
 \end{figure}
 
-The sensing-error experiments show a bounded degradation rather than a collapse.
+The sensing-error experiments indicate a bounded degradation rather than a collapse.
 In the paired 600-slot profile sweep, the proposed policy's discovery rate decreases from 0.3655 under ideal sensing to 0.3357 under $(P_{\mathrm{fa}},P_{\mathrm{md}},\sigma_b)=(0.01,0.05,0.5)$ and to 0.2854 under $(0.05,0.15,1.0)$.
 The severe $(0.10,0.30,1.5)$ profile remains around 0.2935 in this stochastic run.
 These results support the weaker but important claim that the ISAC prior remains useful under moderate sensing errors; they do not imply immunity to severe sensing faults.
@@ -378,8 +382,9 @@ Second, the SkyOrbs comparison is a SkyOrbs-like baseline rather than a strict r
 Third, ISAC is represented by an abstract beam-cell occupancy prior; physical waveform design and estimator implementation are outside the scope.
 Fourth, candidate-set refinement abstracts sub-slot or readiness behavior; the one-slot delayed candidate-set ablation bounds this implementation assumption but does not replace a hardware-specific timing study.
 Fifth, extremely narrow beams at 3 and 5 degrees and abrupt mobility models remain stress regions and should be discussed as such.
-Sixth, the efficiency metrics are scan-action and collision normalized; a delay-power product comparison would require an explicit radio-state energy model.
-Finally, the proposed ISAC-assisted policy creates more collision attempts than the no-ISAC baseline in dense finite-horizon tests; collision-penalized discovery should be reported alongside raw discovery rate before a submission-ready version.
+Sixth, the efficiency metrics are scan-action and collision normalized; a Joule-level delay-power comparison would require an explicit radio-state energy model.
+Finally, the proposed ISAC-assisted policy creates more collision attempts than the no-ISAC baseline in dense finite-horizon tests.
+Therefore, collision-penalized discovery should be interpreted together with raw discovery rate in dense finite-horizon settings.
 
 \section{Conclusion}
 This paper studies ISAC-assisted narrow-beam neighbor discovery for fully distributed UAV swarms.
