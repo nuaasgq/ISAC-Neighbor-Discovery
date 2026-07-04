@@ -93,6 +93,7 @@ Use these boundaries consistently:
 - Submission readiness audit: `06_analysis/submission_readiness_audit_20260705.md`
 - Pre-11 task board: `06_analysis/pre_11am_task_board_20260705.md`
 - Round10 extra-seed index: `06_analysis/round10_extra_seed_stability_index.md`
+- Candidate-constrained MARL roadmap: `06_analysis/marl_architecture_roadmap_20260705.md`
 
 ## Readiness Judgment
 
@@ -104,6 +105,9 @@ It is not yet final TWC/TCOM submission-ready because a reviewer could still req
 - collision-aware protocol optimization,
 - Joule-level energy model,
 - calibrated physical-layer mapping for ISAC error parameters.
+
+Next neural-method direction is documented in `06_analysis/marl_architecture_roadmap_20260705.md`.
+The recommended route is not a flat categorical beam policy, but a candidate-constrained shared actor-critic with ISAC mask/top-k beam proposal, rule-residual logits, topology-deficit conditioning, and centralized critic only during training.
 
 The most defensible paper angle is:
 
