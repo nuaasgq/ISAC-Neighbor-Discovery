@@ -225,13 +225,13 @@ The statistical summary includes the N=10/20/50/100 scale-grid rows where archiv
 
 \begin{table*}[!t]
   \centering
-  \caption{Representative Paired Treatment-Control Deltas from Identical Scenario Seeds}
+  \caption{Representative Paired Treatment-Control Deltas from Identical Scenario Seeds (n=3 Paired Seeds; Descriptive Bootstrap CI)}
   \label{tab:supp_paired_delta}
   \scriptsize
   \setlength{\tabcolsep}{3pt}
   \begin{tabular}{p{0.36\textwidth}ccc}
     \toprule
-    Scenario and comparison & $\Delta$ discovery (95\% bootstrap CI) & $\Delta$ empty or efficiency & $\Delta\lambda_2$ \\
+    Scenario and comparison & $\Delta$ discovery (descr. 95\% CI) & $\Delta$ empty or efficiency & $\Delta\lambda_2$ \\
     \midrule
     N=100, B=10, proposed vs enhanced no-ISAC & +0.3648 (0.3608, 0.3699) & Empty: -0.4025 & +12.92 \\
     N=100, B=15, proposed vs enhanced no-ISAC & +0.5403 (0.5370, 0.5428) & Empty: -0.5052 & +26.84 \\
@@ -254,6 +254,7 @@ The statistical summary includes the N=10/20/50/100 scale-grid rows where archiv
     \texttt{main} & 126 & 378 & Manuscript tables, range, error, and ablation claims. \\
     \texttt{main\_boundary} & 24 & 72 & Mobility-boundary evidence in the main paper. \\
     \texttt{supplement} & 156 & 408 & Scale-grid, beamwidth, mobility, and error extensions. \\
+    \texttt{supplement\_backup} & 10 & 30 & Extra seed-sensitivity checks that bound, but do not replace, the main evidence. \\
     \texttt{supplement\_sanity} & 24 & 24 & Quick screens before full multi-seed checks. \\
     \texttt{supplement\_stress} & 5 & 15 & Targeted 3-degree full-baseline stress case. \\
     \bottomrule

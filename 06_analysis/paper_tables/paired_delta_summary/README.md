@@ -1,6 +1,6 @@
 # Paired Delta Summary
 
-Generated: 2026-07-04T22:44:21.228556+00:00
+Generated: 2026-07-04T23:01:50.336841+00:00
 
 This directory contains paired treatment-control deltas computed from archived `per_episode_summary.csv` files. Pairing uses identical scenario seeds and scenario parameters, so each delta compares protocols on the same simulated geometry/mobility draw.
 
@@ -14,6 +14,6 @@ Interpretation notes:
 - Positive deltas are beneficial for discovery rate, collision-penalized discovery, and lambda2; negative deltas are beneficial for empty-scan ratio, delay, and collision count.
 - The SkyOrbs-like comparison is a deterministic 3-D skip-scan reference under this simulator's information boundary, not a strict reproduction of the full SkyOrbs protocol.
 
-Rows: 115
+Rows: 125
 
-Metric rows: {"collision_count": 23, "collision_penalized_discovery_rate": 19, "discovery_rate": 23, "empty_scan_ratio": 23, "lambda2": 23, "mean_discovery_delay": 4}
+Metric rows: {"collision_count": 25, "collision_penalized_discovery_rate": 19, "discovery_rate": 25, "empty_scan_ratio": 25, "lambda2": 25, "mean_discovery_delay": 6}

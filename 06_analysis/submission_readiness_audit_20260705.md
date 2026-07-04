@@ -1,16 +1,17 @@
 # Submission Readiness Audit - 2026-07-05 Morning
 
-This note records the post-commit readiness state after commit `6fa250c` (`Add protocol definitions and submission evidence`).
+This note records the post-commit readiness state after commit `bf2fb23` (`Strengthen model clarity and paired statistics`) plus the current round10 backup stability run.
 
 ## Current Manuscript Package
 
 | Artifact | Status | Notes |
 |---|---:|---|
-| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, texcount `3654+62+294`, 10 figures, 4 tables. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 7-page IEEEtran supplement, texcount `483+40+268`, 8 figure blocks, 6 tables. |
+| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, texcount `3669+62+294`, 10 figures, 4 tables. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 7-page IEEEtran supplement, texcount `483+40+275`, 8 figure blocks, 6 tables. |
 | `06_analysis/paper_figures/` | Verified | 358 PNG figures, all within 4:3 aspect tolerance. |
-| `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 335 normalized rows, mapped by evidence tier in the supplement. |
-| `06_analysis/paper_tables/paired_delta_summary/` | Verified | 115 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
+| `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
+| `06_analysis/paper_tables/paired_delta_summary/` | Verified | 125 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
+| `06_analysis/paper_tables/round10_n100_b10_b15_extra_seeds/` | Backup | Extra three-seed N=100/B=10/B=15 stability check; preserves qualitative ordering but shows absolute discovery-rate seed sensitivity. |
 
 ## Verification Snapshot
 
@@ -45,7 +46,7 @@ Result: no log errors, no unresolved references or citations, no overfull warnin
 
 The main manuscript now carries the concise evidence chain: training evolution, dynamic protocol comparison, N=100 transfer, area scaling, mobility boundary, range sensitivity, error robustness, and mechanism ablation.
 
-The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, and statistical evidence-tier index.
+The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, and statistical evidence-tier index. Round10 extra seeds are archived as backup stability evidence and should not be used to strengthen the main claim without a larger seed campaign.
 
 ## Remaining Risks Before External Submission
 
@@ -54,6 +55,7 @@ The supplement now carries the reviewer-facing evidence chain: coverage matrix, 
 3. The SkyOrbs-like baseline is only an inspired communication-only baseline. A complete SkyOrbs reproduction remains future work.
 4. The physical-layer ISAC service is abstracted. A TWC/TCOM reviewer may still ask for a stronger mapping from sensing parameters to waveform/estimator assumptions.
 5. The 3-degree and 5-degree cases are not success regimes under the current 600-slot horizon.
+6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive.
 
 ## Next High-Value Work
 

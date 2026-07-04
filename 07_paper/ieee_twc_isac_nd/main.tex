@@ -45,7 +45,7 @@ As the beamwidth decreases, the number of beam cells grows rapidly, and the prob
 
 Existing directional ND protocols can be broadly categorized as deterministic and random methods.
 Deterministic methods design scan schedules to improve coverage and sometimes provide worst-case delay guarantees, but their performance often depends on schedule synchronization, network scale, topology assumptions, or beam-codebook structure.
-Random methods require less coordination and adapt naturally to distributed deployments, but the resulting discovery process can have a long tail: some important links remain undiscovered for many slots, slowing the formation of a connected swarm graph.
+Random methods require less coordination and adapt naturally to distributed deployments, but the resulting discovery process can have a long tail: some important links remain undiscovered for many slots, slowing the formation of a connected discovered-neighbor graph.
 Recent UAV-specific work, such as SkyOrbs, further highlights the importance of three-dimensional directional discovery in aerial networks, but it remains primarily a directional scan-scheduling problem \cite{SkyOrbs2024TMC}.
 Recent UAV ND studies also optimize delay-power tradeoffs for directional UAV networks \cite{Fan2026DelayPowerND}, highlighting that discovery latency, collision behavior, and radio activity should eventually be evaluated jointly.
 
@@ -120,7 +120,8 @@ The abstract ISAC service is generated as
   \end{aligned}
   \label{eq:isac_detection}
 \end{equation}
-followed by a discrete angular-cell offset $\Delta b\sim K_{\sigma_b}$ for positive detections, so that $z_i^t(b)=\tilde z_i^t(b-\Delta b)$ after quantization.
+followed by a zero-mean discrete angular-cell offset $\Delta b\sim K_{\sigma_b}$ for positive detections, so that $z_i^t(b)=\tilde z_i^t(b-\Delta b)$ after quantization.
+The kernel is truncated or wrapped at the codebook boundary in the simulator implementation.
 The observation may therefore contain false alarms, missed detections, angular-cell offsets, and staleness.
 The sensing range $\Rs$ denotes the support of the coarse occupancy observation, whereas $\Rc$ defines the link-confirmation range for a discoverable communication edge.
 They are modeled as separate abstraction parameters because radar-like sensing and packet decoding are governed by different detection and decoding thresholds, and radar range depends on waveform, aperture, target scattering, range, and medium parameters \cite{Liu2022ISAC6G,Skolnik2001Radar}.
