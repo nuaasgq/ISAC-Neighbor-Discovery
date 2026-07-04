@@ -40,13 +40,17 @@ def parse_args() -> argparse.Namespace:
 
 def load_frame(paths: Iterable[str | Path]):
     import pandas as pd
+    from pandas.errors import PerformanceWarning
+    import warnings
+
+    warnings.filterwarnings("ignore", category=PerformanceWarning)
 
     frames = []
     for path in paths:
         root = Path(path)
         csv_path = root / "aggregate_metrics.csv" if root.is_dir() else root
         frame = pd.read_csv(csv_path)
-        frame["source"] = root.name if root.is_dir() else csv_path.parent.name
+        frame = frame.assign(source=root.name if root.is_dir() else csv_path.parent.name)
         frames.append(frame)
     if not frames:
         raise ValueError("No sweep tables supplied.")

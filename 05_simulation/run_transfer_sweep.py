@@ -55,6 +55,17 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Optional comma-separated Rs/Rc ratios. Use with --communication-range-ratios for range-relation sweeps.",
     )
+    parser.add_argument("--false-alarm-rates", default="", help="Optional comma-separated ISAC false-alarm rates.")
+    parser.add_argument("--miss-detection-rates", default="", help="Optional comma-separated ISAC miss-detection rates.")
+    parser.add_argument("--angular-cell-offsets", default="", help="Optional comma-separated ISAC angular error std in beam cells.")
+    parser.add_argument(
+        "--isac-error-profiles",
+        default="",
+        help=(
+            "Optional semicolon-separated Pfa:Pmd:sigma_cell triples. "
+            "When set, this paired profile list overrides the individual ISAC error lists."
+        ),
+    )
     parser.add_argument("--train-node-count", type=int, default=10)
     parser.add_argument("--train-beamwidth-deg", type=float, default=10.0)
     parser.add_argument("--alignment-tolerance-cells", type=int, default=0)
@@ -77,6 +88,26 @@ def parse_csv_numbers(value: str, cast: type = int) -> list[Any]:
 def parse_optional_csv_numbers(value: str, cast: type = float) -> list[Any | None]:
     parsed = parse_csv_numbers(value, cast)
     return parsed if parsed else [None]
+
+
+def parse_isac_error_profiles(value: str) -> list[tuple[float | None, float | None, float | None]] | None:
+    if not value.strip():
+        return None
+    profiles: list[tuple[float | None, float | None, float | None]] = []
+    for raw_profile in value.split(";"):
+        raw_profile = raw_profile.strip()
+        if not raw_profile:
+            continue
+        parts = [part.strip() for part in raw_profile.split(":")]
+        if len(parts) != 3:
+            raise ValueError(
+                "--isac-error-profiles entries must be Pfa:Pmd:sigma_cell triples, "
+                f"got {raw_profile!r}."
+            )
+        profiles.append(tuple(float(part) for part in parts))
+    if not profiles:
+        raise ValueError("--isac-error-profiles was set but contained no valid triples.")
+    return profiles
 
 
 def beam_cells_from_width(width_deg: float) -> tuple[int, int]:
@@ -104,6 +135,9 @@ def configure_case(
     args: argparse.Namespace,
     communication_range_ratio: float | None = None,
     sensing_to_comm_ratio: float | None = None,
+    false_alarm_rate: float | None = None,
+    miss_detection_rate: float | None = None,
+    angular_cell_offset: float | None = None,
 ) -> SimulationConfig:
     azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth_deg)
     mobility_cfg = dict(base.mobility)
@@ -133,6 +167,9 @@ def configure_case(
         azimuth_cells=azimuth_cells,
         elevation_cells=elevation_cells,
         alignment_tolerance_cells=int(args.alignment_tolerance_cells),
+        false_alarm_rate=float(base.false_alarm_rate if false_alarm_rate is None else false_alarm_rate),
+        miss_detection_rate=float(base.miss_detection_rate if miss_detection_rate is None else miss_detection_rate),
+        angular_cell_offset_std=float(base.angular_cell_offset_std if angular_cell_offset is None else angular_cell_offset),
         **params,
     )
 
@@ -157,6 +194,9 @@ def aggregate_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "beam_count",
         "communication_range_to_diagonal_ratio",
         "sensing_to_comm_range_ratio",
+        "false_alarm_rate",
+        "miss_detection_rate",
+        "angular_cell_offset_std",
     )
     groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for row in rows:
@@ -216,6 +256,19 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
     seeds = parse_csv_numbers(args.seeds, int)
     communication_range_ratios = parse_optional_csv_numbers(args.communication_range_ratios, float)
     sensing_to_comm_ratios = parse_optional_csv_numbers(args.sensing_to_comm_ratios, float)
+    false_alarm_rates = parse_optional_csv_numbers(args.false_alarm_rates, float)
+    miss_detection_rates = parse_optional_csv_numbers(args.miss_detection_rates, float)
+    angular_cell_offsets = parse_optional_csv_numbers(args.angular_cell_offsets, float)
+    paired_error_profiles = parse_isac_error_profiles(args.isac_error_profiles)
+    if paired_error_profiles is None:
+        error_profiles = [
+            (false_alarm_rate, miss_detection_rate, angular_cell_offset)
+            for false_alarm_rate in false_alarm_rates
+            for miss_detection_rate in miss_detection_rates
+            for angular_cell_offset in angular_cell_offsets
+        ]
+    else:
+        error_profiles = paired_error_profiles
 
     output_dir.mkdir(parents=True, exist_ok=True)
     episode_rows: list[dict[str, Any]] = []
@@ -228,46 +281,57 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 for beamwidth in beamwidths:
                     for communication_range_ratio in communication_range_ratios:
                         for sensing_to_comm_ratio in sensing_to_comm_ratios:
-                            case_count += 1
-                            cfg = configure_case(
-                                base,
-                                params,
-                                seed,
-                                mobility,
-                                node_count,
-                                beamwidth,
-                                args,
-                                communication_range_ratio,
-                                sensing_to_comm_ratio,
-                            )
-                            azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth)
-                            area_diagonal = math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m))
-                            case = {
-                                "case_id": case_count - 1,
-                                "base_seed": int(seed),
-                                "node_count": int(node_count),
-                                "beamwidth_deg": float(beamwidth),
-                                "azimuth_cells": azimuth_cells,
-                                "elevation_cells": elevation_cells,
-                                "beam_count": azimuth_cells * elevation_cells,
-                                "area_diagonal_m": float(area_diagonal),
-                                "communication_range_m": float(cfg.communication_range_m),
-                                "sensing_range_m": float(cfg.sensing_range_m),
-                                "communication_range_to_diagonal_ratio": float(
-                                    cfg.communication_range_m / max(area_diagonal, 1e-9)
-                                ),
-                                "sensing_range_to_diagonal_ratio": float(cfg.sensing_range_m / max(area_diagonal, 1e-9)),
-                                "sensing_to_comm_range_ratio": float(cfg.sensing_range_m / max(cfg.communication_range_m, 1e-9)),
-                                "area_scale": args.area_scale,
-                                "range_mode": args.range_mode,
-                                "range_sweep_enabled": communication_range_ratio is not None,
-                                "train_node_count": int(args.train_node_count),
-                                "train_beamwidth_deg": float(args.train_beamwidth_deg),
-                            }
-                            rows, slots, edges = run_detailed(cfg, protocols)
-                            episode_rows.extend(enrich_row(row, case) for row in rows)
-                            slot_rows.extend(enrich_row(row, case) for row in slots)
-                            edge_rows.extend(enrich_row(row, case) for row in edges)
+                            for false_alarm_rate, miss_detection_rate, angular_cell_offset in error_profiles:
+                                case_count += 1
+                                cfg = configure_case(
+                                    base,
+                                    params,
+                                    seed,
+                                    mobility,
+                                    node_count,
+                                    beamwidth,
+                                    args,
+                                    communication_range_ratio,
+                                    sensing_to_comm_ratio,
+                                    false_alarm_rate,
+                                    miss_detection_rate,
+                                    angular_cell_offset,
+                                )
+                                azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth)
+                                area_diagonal = math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m))
+                                case = {
+                                    "case_id": case_count - 1,
+                                    "base_seed": int(seed),
+                                    "node_count": int(node_count),
+                                    "beamwidth_deg": float(beamwidth),
+                                    "azimuth_cells": azimuth_cells,
+                                    "elevation_cells": elevation_cells,
+                                    "beam_count": azimuth_cells * elevation_cells,
+                                    "area_diagonal_m": float(area_diagonal),
+                                    "communication_range_m": float(cfg.communication_range_m),
+                                    "sensing_range_m": float(cfg.sensing_range_m),
+                                    "communication_range_to_diagonal_ratio": float(
+                                        cfg.communication_range_m / max(area_diagonal, 1e-9)
+                                    ),
+                                    "sensing_range_to_diagonal_ratio": float(cfg.sensing_range_m / max(area_diagonal, 1e-9)),
+                                    "sensing_to_comm_range_ratio": float(cfg.sensing_range_m / max(cfg.communication_range_m, 1e-9)),
+                                    "false_alarm_rate": float(cfg.false_alarm_rate),
+                                    "miss_detection_rate": float(cfg.miss_detection_rate),
+                                    "angular_cell_offset_std": float(cfg.angular_cell_offset_std),
+                                    "area_scale": args.area_scale,
+                                    "range_mode": args.range_mode,
+                                    "range_sweep_enabled": communication_range_ratio is not None,
+                                    "isac_error_sweep_enabled": any(
+                                        value is not None
+                                        for value in (false_alarm_rate, miss_detection_rate, angular_cell_offset)
+                                    ),
+                                    "train_node_count": int(args.train_node_count),
+                                    "train_beamwidth_deg": float(args.train_beamwidth_deg),
+                                }
+                                rows, slots, edges = run_detailed(cfg, protocols)
+                                episode_rows.extend(enrich_row(row, case) for row in rows)
+                                slot_rows.extend(enrich_row(row, case) for row in slots)
+                                edge_rows.extend(enrich_row(row, case) for row in edges)
 
     aggregate = aggregate_rows(episode_rows)
     write_rows(output_dir / "per_episode_summary.csv", episode_rows)
@@ -286,6 +350,10 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "seeds": seeds,
         "communication_range_ratios": communication_range_ratios,
         "sensing_to_comm_ratios": sensing_to_comm_ratios,
+        "false_alarm_rates": false_alarm_rates,
+        "miss_detection_rates": miss_detection_rates,
+        "angular_cell_offsets": angular_cell_offsets,
+        "isac_error_profiles": paired_error_profiles,
         "episodes_per_seed": args.episodes_per_seed,
         "slots": args.slots,
         "slot_metric_period": args.slot_metric_period,
@@ -313,6 +381,10 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 f"- Range mode: `{args.range_mode}`",
                 f"- Communication range ratios Rc/D: {', '.join('base' if v is None else f'{v:g}' for v in communication_range_ratios)}",
                 f"- Sensing/communication range ratios Rs/Rc: {', '.join('base' if v is None else f'{v:g}' for v in sensing_to_comm_ratios)}",
+                f"- False alarm rates: {', '.join('base' if v is None else f'{v:g}' for v in false_alarm_rates)}",
+                f"- Miss detection rates: {', '.join('base' if v is None else f'{v:g}' for v in miss_detection_rates)}",
+                f"- Angular cell offsets: {', '.join('base' if v is None else f'{v:g}' for v in angular_cell_offsets)}",
+                f"- ISAC error profiles: {format_error_profiles(error_profiles)}",
                 f"- Aggregate rows: {len(aggregate)}",
                 "",
                 "Generated by `05_simulation/run_transfer_sweep.py`.",
@@ -322,6 +394,17 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
         encoding="utf-8",
     )
     return manifest
+
+
+def format_error_profiles(profiles: Iterable[tuple[float | None, float | None, float | None]]) -> str:
+    tokens = []
+    for false_alarm_rate, miss_detection_rate, angular_cell_offset in profiles:
+        if false_alarm_rate is None and miss_detection_rate is None and angular_cell_offset is None:
+            tokens.append("base")
+        else:
+            values = [false_alarm_rate, miss_detection_rate, angular_cell_offset]
+            tokens.append("(" + ", ".join("base" if value is None else f"{value:g}" for value in values) + ")")
+    return ", ".join(tokens)
 
 
 def main() -> None:

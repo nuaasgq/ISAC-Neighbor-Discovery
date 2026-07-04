@@ -1,0 +1,260 @@
+{
+  "created_at_utc": "2026-07-04T16:43:32.668673+00:00",
+  "style": {
+    "figsize_inches": [
+      6.4,
+      4.8
+    ],
+    "aspect_ratio": "4:3",
+    "font_family": "Times New Roman with serif fallback",
+    "dpi": 300,
+    "palette": {
+      "skyorbs_like_skip_scan": "#0072B2",
+      "uniform_random": "#D55E00",
+      "rl_no_isac": "#009E73",
+      "improved_rl_no_isac": "#CC79A7",
+      "improved_rl_isac": "#E69F00"
+    }
+  },
+  "inputs": [
+    "05_simulation\\results_raw\\round3_n100_density_multiseed",
+    "05_simulation\\results_raw\\round3_n100_fixed_multiseed"
+  ],
+  "counts": {
+    "generated": 15,
+    "skipped": 0,
+    "total": 15
+  },
+  "figures": [
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\density_beamwidth_discovery_rate_n100.png",
+      "metric": "discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\density_beamwidth_mean_delay_n100.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\density_beamwidth_p95_delay_n100.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\density_beamwidth_empty_scan_n100.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\density_beamwidth_lambda2_n100.png",
+      "metric": "lambda2_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\fixed_beamwidth_discovery_rate_n100.png",
+      "metric": "discovery_rate_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\fixed_beamwidth_mean_delay_n100.png",
+      "metric": "mean_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\fixed_beamwidth_p95_delay_n100.png",
+      "metric": "p95_discovery_delay_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\fixed_beamwidth_empty_scan_n100.png",
+      "metric": "empty_scan_ratio_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\fixed_beamwidth_lambda2_n100.png",
+      "metric": "lambda2_mean",
+      "x": "beamwidth_deg",
+      "fixed": "node_count",
+      "fixed_value": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\area_scale_n100_discovery_rate.png",
+      "metric": "discovery_rate_mean",
+      "node_count": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\area_scale_n100_mean_delay.png",
+      "metric": "mean_discovery_delay_mean",
+      "node_count": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\area_scale_n100_p95_delay.png",
+      "metric": "p95_discovery_delay_mean",
+      "node_count": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\area_scale_n100_empty_scan.png",
+      "metric": "empty_scan_ratio_mean",
+      "node_count": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "path": "06_analysis\\paper_figures\\round3_n100_transfer\\area_scale_n100_lambda2.png",
+      "metric": "lambda2_mean",
+      "node_count": 100,
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "generated_at_utc": "2026-07-04T16:42:00.483371+00:00",
+  "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\draw_concept_figures.py",
+  "style": {
+    "figsize_inches": [
+      6.4,
+      4.8
+    ],
+    "aspect_ratio": "4:3",
+    "font_family": "Times New Roman with serif fallback",
+    "dpi": 300,
+    "palette": [
+      "#1f77b4",
+      "#009E73",
+      "#E69F00",
+      "#8a94a6",
+      "#2b2f38"
+    ]
+  },
+  "figures": [
+    {
+      "status": "generated",
+      "role": "system_model",
+      "filename": "system_model_isac_uav_swarm.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\concept\\system_model_isac_uav_swarm.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "role": "protocol_mechanism",
+      "filename": "protocol_mechanism_itap_nd.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\concept\\protocol_mechanism_itap_nd.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    },
+    {
+      "status": "generated",
+      "role": "policy_architecture",
+      "filename": "policy_architecture_shared_agent.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\concept\\policy_architecture_shared_agent.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ]
+    }
+  ]
+}

@@ -14,6 +14,14 @@ MODE_TX = "tx"
 MODE_RX = "rx"
 MODE_IDLE = "idle"
 
+ISAC_PROTOCOLS = (
+    "improved_rl_isac",
+    "isac_structured_marl",
+    "ablation_isac_no_candidate_set",
+    "ablation_isac_no_beam_lock",
+    "ablation_isac_no_topology",
+)
+
 
 @dataclass(frozen=True)
 class Action:
@@ -269,7 +277,7 @@ class NeighborDiscoverySimulator:
             probs = np.asarray([tx_prob, rx_prob, idle_prob], dtype=float)
             probs = probs / probs.sum()
             return str(self.rng.choice([MODE_TX, MODE_RX, MODE_IDLE], p=probs))
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol in ISAC_PROTOCOLS:
             degree = sum(1 for edge in self.discovered_edges if node in edge)
             degree_need = max(0.0, self.cfg.target_degree - degree) / max(1, self.cfg.target_degree)
             idle_prob = 0.01 + 0.03 * (1.0 - degree_need)
@@ -290,14 +298,14 @@ class NeighborDiscoverySimulator:
         if self.protocol == "topology_only":
             return False
         period = max(1, self.cfg.sensing_period_slots)
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol in ISAC_PROTOCOLS:
             period = max(1, 2 * period)
         staggered_periodic_sense = slot % period == node % period
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol in ISAC_PROTOCOLS:
             staggered_periodic_sense = slot % period == (2 * node) % period
         stale_belief = float(np.mean(self.age[node])) >= 2.0 * period
         weak_belief = float(np.max(self.belief[node])) < 0.2
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol in ISAC_PROTOCOLS:
             return bool(staggered_periodic_sense)
         return bool(staggered_periodic_sense or stale_belief or weak_belief)
 
@@ -321,17 +329,21 @@ class NeighborDiscoverySimulator:
             return self.skyorbs_like_beam(node, slot)
         if self.protocol == "oracle" and oracle_occupied:
             return int(self.rng.choice(tuple(oracle_occupied)))
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl") and mode == MODE_SENSE:
+        if self.protocol in ISAC_PROTOCOLS and mode == MODE_SENSE:
             return self.isac_sensing_beam(node, slot)
         if self.protocol in ("rl_no_isac", "basic_marl_no_isac"):
             return self.memory_guided_beam(node, use_isac=False, topology=False)
         if self.protocol in ("improved_rl_no_isac", "structured_marl_no_isac"):
             return self.memory_guided_beam(node, use_isac=False, topology=True)
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol in ISAC_PROTOCOLS:
             isac_beam = self.isac_candidate_cycle_beam(node, slot)
             if isac_beam is not None:
                 return isac_beam
-            return self.memory_guided_beam(node, use_isac=True, topology=True)
+            return self.memory_guided_beam(
+                node,
+                use_isac=True,
+                topology=self.protocol != "ablation_isac_no_topology",
+            )
 
         weights = np.ones(self.cfg.n_beams, dtype=float) * self.cfg.exploration_floor
         if self.protocol in ("isac_only", "itap_nd", "oracle"):
@@ -369,7 +381,7 @@ class NeighborDiscoverySimulator:
 
     def isac_sensing_beam(self, node: int, slot: int) -> int:
         period = max(1, self.cfg.sensing_period_slots)
-        if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol in ISAC_PROTOCOLS:
             period = max(1, 2 * period)
         sense_round = slot // period
         prime_stride = self.near_coprime_stride(self.cfg.n_beams)
@@ -381,6 +393,14 @@ class NeighborDiscoverySimulator:
             return None
         if self.rng.random() < self.cfg.exploration_floor:
             return None
+        if self.protocol == "ablation_isac_no_beam_lock":
+            success = self.success_count[node, selected]
+            fail = self.fail_count[node, selected]
+            score = self.belief[node, selected] + 0.15 * np.log1p(success) - 0.20 * np.log1p(fail)
+            logits = self.cfg.softmax_beta * (score - np.max(score)) if self.cfg.softmax_beta > 0 else score
+            probs = np.exp(logits)
+            probs = probs / probs.sum()
+            return int(self.rng.choice(selected, p=probs))
         lock_period = max(2, int(round(0.04 / max(self.cfg.slot_duration_s, 1e-6))))
         selected_index = int((slot // lock_period + node) % len(selected))
         return int(selected[selected_index])
@@ -414,7 +434,9 @@ class NeighborDiscoverySimulator:
     def handshake_beam_ready(self, node: int, selected_beam: int, expected_beam: int, slot: int) -> bool:
         if beam_matches(selected_beam, expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
             return True
-        if self.protocol not in ("improved_rl_isac", "isac_structured_marl"):
+        if self.protocol not in ISAC_PROTOCOLS:
+            return False
+        if self.protocol == "ablation_isac_no_candidate_set":
             return False
         for candidate in self.isac_candidate_pool(node, slot):
             if beam_matches(int(candidate), expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
@@ -484,7 +506,7 @@ class NeighborDiscoverySimulator:
     def update_sensing(self, actions: list[Action], slot: int | None = None) -> None:
         eligible_nodes: list[tuple[int, Action]] = []
         for node, action in enumerate(actions):
-            piggyback_isac = self.protocol in ("improved_rl_isac", "isac_structured_marl") and action.mode in (
+            piggyback_isac = self.protocol in ISAC_PROTOCOLS and action.mode in (
                 MODE_TX,
                 MODE_RX,
             )
@@ -510,7 +532,7 @@ class NeighborDiscoverySimulator:
             if slot is not None:
                 self.last_sense_slot[node] = slot
             observation = self.belief[node].copy()
-            piggyback_isac = self.protocol in ("improved_rl_isac", "isac_structured_marl") and action.mode in (
+            piggyback_isac = self.protocol in ISAC_PROTOCOLS and action.mode in (
                 MODE_TX,
                 MODE_RX,
             )
@@ -626,7 +648,7 @@ class NeighborDiscoverySimulator:
             if not active_mask[node]:
                 continue
             ready_mask[node, action.beam] = True
-            if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+            if self.protocol in ISAC_PROTOCOLS and self.protocol != "ablation_isac_no_candidate_set":
                 pool = self.isac_candidate_pool(node, slot)
                 if len(pool) > 0:
                     ready_mask[node, pool] = True
