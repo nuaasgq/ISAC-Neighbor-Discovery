@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Sample from the learned policy during evaluation instead of using argmax actions.",
     )
+    parser.add_argument(
+        "--eval-both",
+        action="store_true",
+        help="Evaluate the same trained policy with both deterministic and stochastic action selection.",
+    )
     parser.add_argument("--slots", type=int, default=40)
     parser.add_argument("--node-count", type=int, default=None)
     parser.add_argument("--azimuth-cells", type=int, default=None)
@@ -120,14 +125,20 @@ def run_probe(args: argparse.Namespace) -> dict[str, Any]:
         )
         history.append(row)
 
-    eval_rows = evaluate_policy(
-        cfg=cfg,
-        policy=policy,
-        torch_module=torch,
-        args=args,
-        start_episode=len(history),
-        seed_start=int(args.seed) + 200_000,
-    )
+    eval_rows: list[dict[str, Any]] = []
+    eval_modes = (False, True) if bool(args.eval_both) else (bool(args.stochastic_eval),)
+    for stochastic_eval in eval_modes:
+        eval_rows.extend(
+            evaluate_policy(
+                cfg=cfg,
+                policy=policy,
+                torch_module=torch,
+                args=args,
+                start_episode=len(history) + len(eval_rows),
+                seed_start=int(args.seed) + 200_000,
+                stochastic_eval=stochastic_eval,
+            )
+        )
     history.extend(eval_rows)
 
     write_rows(output / "training_history.csv", history)
@@ -391,6 +402,7 @@ def evaluate_policy(
     args: argparse.Namespace,
     start_episode: int,
     seed_start: int,
+    stochastic_eval: bool,
 ) -> list[dict[str, Any]]:
     rows = []
     policy.eval()
@@ -402,13 +414,13 @@ def evaluate_policy(
             truncated = False
             rewards = []
             while not truncated:
-                step = policy.act(observations, deterministic=not bool(args.stochastic_eval))
+                step = policy.act(observations, deterministic=not stochastic_eval)
                 observations, reward, _terminated, truncated, _step_info = env.step(step.actions)
                 rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
             summary = env._sim.summarize(start_episode + offset).as_dict()
             rows.append(
                 {
-                    "phase": "eval_stochastic" if bool(args.stochastic_eval) else "eval_deterministic",
+                    "phase": "eval_stochastic" if stochastic_eval else "eval_deterministic",
                     "episode": start_episode + offset,
                     "seed": seed,
                     "expert_protocol": str(args.expert_protocol),
@@ -539,6 +551,7 @@ def build_manifest(args: argparse.Namespace, cfg: SimulationConfig, history: lis
         "learning_rate": float(args.learning_rate),
         "seed": int(args.seed),
         "stochastic_eval": bool(args.stochastic_eval),
+        "eval_both": bool(args.eval_both),
         "candidate_mask": bool(args.candidate_mask),
         "candidate_score": bool(args.candidate_score),
         "topology_deficit": bool(args.topology_deficit),

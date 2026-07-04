@@ -14,6 +14,7 @@
   - `--topology-deficit`
   - `--rule-residual`
   - `--rule-residual-scale`
+  - `--eval-both`
 
 ## Verification
 
