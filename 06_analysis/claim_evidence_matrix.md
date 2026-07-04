@@ -1,0 +1,34 @@
+# Claim-Evidence Matrix
+
+Date: 2026-07-05
+
+This matrix tracks which manuscript claims are directly supported by archived experiments and which claims must remain bounded.
+
+## Supported Main Claims
+
+| Claim | Evidence | Manuscript use |
+|---|---|---|
+| ISAC should be treated as an imperfect link-layer occupancy prior, not as an oracle position estimator. | System model and mechanism figures in `06_analysis/paper_figures/concept/`; model text in `07_paper/ieee_twc_isac_nd/main.tex`. | Core system-model and contribution claim. |
+| ISAC-assisted candidate-set refinement is the dominant mechanism behind the large-scale gain. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`; candidate-set removal drops `N=100`, 10-degree discovery from 0.3655 to 0.0313 and collapses connectivity. | Main mechanism ablation paragraph and `ablation_discovery_n100_b10.png`. |
+| The proposed policy outperforms random, SkyOrbs-like, RL-no-ISAC, and improved-RL-no-ISAC baselines in the hardest main comparison at `N=100`, 10 degrees, density scaling. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`; main table added in `main.tex` with discovery 0.3655 versus near-zero baselines. | Main baseline comparison table. |
+| A policy trained at `N=10`, 10-degree beams can transfer to `N=100` for 10-30 degree beams in the tested finite horizon. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv` and `n100_fixed_multiseed/aggregate_metrics.csv`; transfer table in `main.tex`. | Transfer result, but not a universal scalability guarantee. |
+| Density-preserving and fixed-area `N=100` scaling produce similar trends. | Same `round3_robustness/n100_*_multiseed` tables and `area_scale_n100_lambda2.png`. | Supports reporting both scaling conventions. |
+| The 5 ms slot duration is not a single tuned point in the Gauss-Markov setting. | `06_analysis/paper_tables/round6_slot_duration_sensitivity/aggregate_metrics.csv`; discovery remains about 0.3564-0.3696 from 1 ms to 20 ms. | Modeling-timescale defense. |
+| Moderate sensing errors degrade but do not collapse the ISAC benefit in the tested settings. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`; paired 600-slot profile sweep. | Robustness claim with moderate-error wording. |
+| One-slot delayed candidate-set use retains much of the benefit while reducing collisions. | `06_analysis/paper_tables/round4_delay_ablation/aggregate_metrics.csv`; discovery 0.2989, lambda2 8.4709, collisions 697.0 versus full ISAC 1050.0. | Implementation-boundary claim. |
+
+## Bounded or Negative Claims
+
+| Claim boundary | Reason | Required wording |
+|---|---|---|
+| The current learning result is not full neural MARL. | The main method is shared-parameter/CEM policy optimization; actor-critic imitation is still a method probe. | Use "shared-parameter policy optimization" and keep MAPPO/QMIX/GNN as future work or extension. |
+| 3-degree and 5-degree beams are not solved. | `N=100` 5-degree discovery is about 0.081; 3-degree regimes are stress cases. | Describe as stress regimes, not successful transfer. |
+| Random-direction and random-waypoint mobility are applicability boundaries. | `round5_mobility_transfer` shows weak discovery under abrupt mobility at `N=100`, 10 degrees. | State that smoother occupancy evolution appears more favorable. |
+| `Rs/Rc` saturation is model-internal, not a physical sensing law. | Only communication-range neighbors can be confirmed by handshake in the simulator. | Say "in the evaluated communication-neighbor-discovery abstraction." |
+| SkyOrbs-like is not a strict SkyOrbs reproduction. | The baseline implements a deterministic 3-D skip-scan schedule inspired by SkyOrbs, not the full original protocol. | Always write "SkyOrbs-like" and explicitly state non-reproduction. |
+| Energy efficiency is not yet Joule-level. | No radio-state energy model has been implemented. | Report scan-action and collision-normalized efficiency only. |
+| Wider beams are not automatically better. | 30-degree beams reduce empty scans but create very high collision counts. | Treat 15 degrees as the current best discovery-connectivity balance in tested `N=100` results. |
+
+## Current Promotion Decision
+
+Round7 long CEM training has been archived as a candidate run, but it is not promoted to the main result unless downstream transfer/evaluation jobs improve large-scale robustness. The existing main evidence remains the round3/round4/round5/round6 chain.
