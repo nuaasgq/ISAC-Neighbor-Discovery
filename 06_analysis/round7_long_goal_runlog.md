@@ -24,7 +24,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Small-scale shared-policy tuning at `N=10`, `10 deg` transfers to `N=100` for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - The sensing range benefit saturates around the communication range in the current communication-neighbor-discovery model.
 - Slot duration from 1 ms to 20 ms does not materially change the Gauss-Markov `N=100`, 10-degree conclusion.
-- The current figure archive contains 228 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training reward convergence curve.
+- The current figure archive contains 326 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft exist on disk.
 
 ## Morning Manuscript Checkpoint
 
@@ -33,6 +33,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Clarified the small-scale dynamic comparison table header from `Empty` to `Empty (ISAC)` so the column is not misread as a multi-protocol comparison.
 - Recompiled the IEEE LaTeX manuscript with `pdflatex` twice after the edit. The final log has no undefined references/citations and no overfull warnings; only normal underfull warnings remain.
 - Generated round7 training figures in `06_analysis/paper_figures/round7_long_cem_training`; this includes reward, score, discovery, empty-scan, delay, collision, and connectivity curves.
+- Rechecked the full `06_analysis/paper_figures` archive after round7 additions: 326 PNG files, zero aspect-ratio violations under the 4:3 tolerance check.
 - The round7 small-scale held-out score is lower than the earlier round2 candidate training result under a different 1200-slot setup, so round7 is not promoted to the main result unless the transfer/evaluation jobs show stronger large-scale robustness.
 - The completed round7 scale/beam grid gives a useful caution: at `N=100`, raw discovery peaks around 15 degrees, but collision-penalized discovery is strongest around 10 degrees. This supports reporting collision-aware efficiency alongside raw discovery.
 - The completed round7 mobility sweep slightly improves abrupt-mobility stress cases but does not remove the applicability boundary: random-direction and random-waypoint remain weak compared with Gauss-Markov and random walk.

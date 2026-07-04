@@ -9,7 +9,7 @@ Date: 2026-07-05
 | Long CEM training | complete | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | `06_analysis/paper_tables/round7_long_cem_training` | `06_analysis/paper_figures/round7_long_cem_training` |
 | Scale/beam grid | complete | `05_simulation/results_raw/round7_scale_beam_grid_light` | `06_analysis/paper_tables/round7_scale_beam_grid_light` | `06_analysis/paper_figures/round7_scale_beam_grid_light` |
 | N=100 multi-mobility | complete | `05_simulation/results_raw/round7_n100_multimobility_600slot` | `06_analysis/paper_tables/round7_n100_multimobility_600slot` | `06_analysis/paper_figures/round7_n100_multimobility_600slot` |
-| Error profiles | running | `05_simulation/results_raw/round7_error_profiles_light` | pending | pending |
+| Error profiles | running | `05_simulation/results_raw/round7_error_profiles_light`; backup quick run: `05_simulation/results_raw/round7_error_profiles_quick` | pending | pending |
 
 ## Training Summary
 
@@ -47,8 +47,6 @@ Interpretation:
 - 3- and 5-degree beams remain stress regimes.
 - Round7 reinforces the need to report raw discovery together with collision-aware efficiency metrics.
 
-## Promotion Decision
-
 ## N=100 Mobility Snapshot
 
 The completed mobility sweep evaluates `N=100`, 10- and 15-degree beams, four mobility models, 600 slots, and three seeds.
@@ -75,3 +73,10 @@ Interpretation:
 ## Promotion Decision
 
 Do not replace the existing main manuscript tables with round7 values yet. Use round7 as robustness and convergence support unless the pending error-profile job provides a clearly stronger result than the current round3/round4 evidence chain.
+
+## Use Before 11:00
+
+- Treat round7 as a robustness and audit layer, not as a replacement for the current round3/round4/round5/round6 main evidence chain.
+- Use the scale/beam grid to strengthen the reviewer-facing claim that the method was tested across 3--30 degrees, while keeping 3 and 5 degrees as stress regimes.
+- Use the mobility sweep to show that 15-degree beams can improve random-walk transfer, but abrupt random-direction and random-waypoint mobility remain outside the strongest operating region.
+- If the pending error-profile job finishes before 11:00, archive it and compare it against `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`. Only promote it if the paired multi-seed trend is at least as stable as the existing round3 error-profile evidence.
