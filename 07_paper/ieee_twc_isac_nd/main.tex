@@ -252,7 +252,7 @@ These results support the central mechanism claim in small dynamic swarms, while
   \tiny
   \begin{tabular}{lcccc}
     \toprule
-    Mobility & Rand. & No-ISAC & ISAC & Empty \\
+    Mobility & Rand. & No-ISAC & ISAC & Empty (ISAC) \\
     \midrule
     Gauss-Markov & 0.8351 & 0.8608 & 0.9558 & 0.1698 \\
     Random walk & 0.9077 & 0.9171 & 0.9569 & 0.3914 \\
@@ -266,10 +266,32 @@ These results support the central mechanism claim in small dynamic swarms, while
 The multi-seed transfer results show that the ISAC-assisted improved policy can transfer from $N=10$ and 10-degree beams to larger swarms without fine-tuning in the tested operating regimes.
 For example, in the single-hop density-scaled setting at $N=100$ and 10-degree beams, the discovered graph remains connected within the finite horizon, although the finite-time discovery rate is far from complete.
 This supports the claim that ISAC priors help form a useful connected topology, but it does not imply that extremely narrow beams are solved.
-The multi-seed transfer check confirms this trend at $N=100$.
+The multi-seed transfer check confirms this trend at $N=100$, as summarized in Table~\ref{tab:n100_transfer}.
 Under density-preserving scaling, the proposed policy reaches discovery rates of 0.3655, 0.5440, and 0.4568 for 10-, 15-, and 30-degree beams, respectively, while the 5-degree case remains much weaker at 0.0814.
 Fixed-area scaling gives a similar trend, indicating that the conclusion is not an artifact of one area-scaling convention.
 Figs.~\ref{fig:n100_transfer_density} and \ref{fig:n100_area_scale} visualize these transfer trends.
+
+\begin{table}[!t]
+  \centering
+  \caption{Zero-Shot N=100 Transfer of the Proposed Policy}
+  \label{tab:n100_transfer}
+  \tiny
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Scale & Beam & Disc. & Empty & $\lambda_2$ & Delay \\
+    \midrule
+    Density & 5$^\circ$  & 0.0814 & 0.8161 & 0.8430  & 576.64 \\
+    Density & 10$^\circ$ & 0.3655 & 0.4986 & 12.9222 & 477.99 \\
+    Density & 15$^\circ$ & 0.5440 & 0.3293 & 26.8413 & 406.74 \\
+    Density & 30$^\circ$ & 0.4568 & 0.1815 & 25.9812 & 438.66 \\
+    Fixed   & 5$^\circ$  & 0.0822 & 0.8152 & 1.0800  & 576.21 \\
+    Fixed   & 10$^\circ$ & 0.3615 & 0.5021 & 11.0417 & 479.00 \\
+    Fixed   & 15$^\circ$ & 0.5352 & 0.3315 & 23.2957 & 410.82 \\
+    Fixed   & 30$^\circ$ & 0.4487 & 0.1816 & 25.0550 & 442.39 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \begin{figure}[!t]
   \centering

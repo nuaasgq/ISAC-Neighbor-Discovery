@@ -14,7 +14,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 | Long CEM training | running | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | Trains at `N=10`, `10 deg`, 600-slot horizon with 3 training seeds and 3 held-out seeds. Raw output is local-only. |
 | Neural MARL probe | method probe completed | `05_simulation/run_actor_critic_imitation_probe.py` | Rule-assisted BC works in teacher-forced mode. After fixing the MARL env to expose ISAC piggyback belief updates, stochastic autonomous eval became nonzero but remains a method probe. |
 | Experiment-matrix audit | running in parallel agent | analysis summary | Checks whether current figures cover the dimensions commonly expected in TWC/TCOM-style ISAC/beam-management papers. |
-| Paper evidence audit | active | `07_paper/ieee_twc_isac_nd/main.tex` and result indexes | Main risk is wording: supported claims must be separated from stress-regime and limitation claims. |
+| Paper evidence audit | active | `07_paper/ieee_twc_isac_nd/main.tex` and result indexes | Added a compact `N=100` transfer table and clarified the dynamic-table empty-scan column. Main risk remains wording: supported claims must be separated from stress-regime and limitation claims. |
 
 ## Strong Current Evidence
 
@@ -23,6 +23,13 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Small-scale shared-policy tuning at `N=10`, `10 deg` transfers to `N=100` for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - The sensing range benefit saturates around the communication range in the current communication-neighbor-discovery model.
 - Slot duration from 1 ms to 20 ms does not materially change the Gauss-Markov `N=100`, 10-degree conclusion.
+- The current figure archive contains 228 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training reward convergence curve.
+
+## Morning Manuscript Checkpoint
+
+- Added `Table~\ref{tab:n100_transfer}` to `07_paper/ieee_twc_isac_nd/main.tex`, summarizing `N=100` zero-shot transfer for 5, 10, 15, and 30 degree beams under density-preserving and fixed-area scaling.
+- Clarified the small-scale dynamic comparison table header from `Empty` to `Empty (ISAC)` so the column is not misread as a multi-protocol comparison.
+- Recompiled the IEEE LaTeX manuscript with `pdflatex` twice after the edit. The final log has no undefined references/citations and no overfull warnings; only normal underfull warnings remain.
 
 ## Conservative Boundaries
 
