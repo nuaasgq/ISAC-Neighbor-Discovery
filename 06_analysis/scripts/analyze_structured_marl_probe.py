@@ -91,6 +91,7 @@ def load_probe_rows(input_root: Path, pd):
             frame["env_protocol"] = str(manifest.get("env_protocol", "isac_structured_marl"))
         frame["variant"] = infer_variant(run_dir.name, manifest)
         frame["train_seed"] = int(manifest.get("seed", 0))
+        frame["rule_residual_scale"] = float(manifest.get("rule_residual_scale", 1.0))
         frame["candidate_mask"] = bool(manifest.get("candidate_mask", False))
         frame["candidate_score"] = bool(manifest.get("candidate_score", False))
         frame["topology_deficit"] = bool(manifest.get("topology_deficit", False))
@@ -107,7 +108,7 @@ def load_probe_rows(input_root: Path, pd):
         except (TypeError, ValueError):
             pass
     rows["variant"] = pd.Categorical(rows["variant"], categories=VARIANT_ORDER, ordered=True)
-    return rows.sort_values(["probe_group", "variant", "train_seed", "episode"]).reset_index(drop=True)
+    return rows.sort_values(["probe_group", "variant", "rule_residual_scale", "train_seed", "episode"]).reset_index(drop=True)
 
 
 def infer_variant(run_name: str, manifest: dict) -> str:
@@ -129,6 +130,8 @@ def infer_variant(run_name: str, manifest: dict) -> str:
 
 
 def infer_probe_group(run_name: str) -> str:
+    if run_name.startswith("scale_"):
+        return "scale_sweep"
     if run_name.startswith("no_isac_env"):
         return "no_isac_env"
     if run_name.startswith("no_isac_label"):
@@ -149,10 +152,13 @@ def summarize_eval(rows, pd):
         "reward_mean",
     ]
     grouped = []
-    for (probe_group, variant, phase), group in eval_rows.groupby(["probe_group", "variant", "phase"], observed=True):
+    for (probe_group, variant, rule_residual_scale, phase), group in eval_rows.groupby(
+        ["probe_group", "variant", "rule_residual_scale", "phase"], observed=True
+    ):
         row = {
             "probe_group": probe_group,
             "variant": str(variant),
+            "rule_residual_scale": float(rule_residual_scale),
             "phase": phase,
             "eval_n": int(len(group)),
             "seed_n": int(group["train_seed"].nunique()),
@@ -171,12 +177,13 @@ def summarize_training(rows, pd):
     train_rows = rows[rows["phase"].isin(["bc", "rl"])].copy()
     metrics = ["loss", "bc_mode_loss", "bc_beam_loss", "value_loss", "reward_mean", "mode_accuracy", "active_beam_accuracy"]
     grouped = []
-    for (probe_group, variant, phase, episode), group in train_rows.groupby(
-        ["probe_group", "variant", "phase", "episode"], observed=True
+    for (probe_group, variant, rule_residual_scale, phase, episode), group in train_rows.groupby(
+        ["probe_group", "variant", "rule_residual_scale", "phase", "episode"], observed=True
     ):
         row = {
             "probe_group": probe_group,
             "variant": str(variant),
+            "rule_residual_scale": float(rule_residual_scale),
             "phase": phase,
             "episode": int(episode),
             "n": int(len(group)),
@@ -228,6 +235,8 @@ def write_figures(rows, summary, figure_dir: Path) -> list[dict]:
     figures.append(plot_training_curve(plot_rows, "loss", "BC loss", figure_dir / "marl_bc_loss_curve.png", plt))
     figures.append(plot_training_curve(plot_rows, "reward_mean", "Mean reward", figure_dir / "marl_reward_curve.png", plt))
     figures.append(plot_efficiency_scatter(plot_summary, figure_dir / "marl_empty_collision_tradeoff.png", plt))
+    if not summary[summary["probe_group"] == "scale_sweep"].empty:
+        figures.append(plot_scale_sweep(summary, figure_dir / "marl_rule_residual_scale_sweep.png", plt))
     return figures
 
 
@@ -305,6 +314,37 @@ def plot_efficiency_scatter(summary, path: Path, plt) -> dict:
     fig.savefig(path)
     plt.close(fig)
     return {"path": str(path), "type": "scatter", "metric": "empty_collision"}
+
+
+def plot_scale_sweep(summary, path: Path, plt) -> dict:
+    fig, ax = plt.subplots(figsize=FIGSIZE)
+    subset = summary[
+        (summary["probe_group"] == "scale_sweep")
+        & (summary["variant"].astype(str) == "mask_score_topo_rule")
+    ].copy()
+    for phase, label, color, marker in [
+        ("eval_deterministic", "Det.", "#0072B2", "o"),
+        ("eval_stochastic", "Stoch.", "#E69F00", "s"),
+    ]:
+        rows = subset[subset["phase"] == phase].sort_values("rule_residual_scale")
+        if rows.empty:
+            continue
+        ax.errorbar(
+            rows["rule_residual_scale"],
+            rows["env_discovery_rate_mean"],
+            yerr=rows["env_discovery_rate_ci95"],
+            label=label,
+            color=color,
+            marker=marker,
+            capsize=3,
+        )
+    ax.set_xlabel("Rule residual scale")
+    ax.set_ylabel("Discovery rate")
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+    return {"path": str(path), "type": "scale_sweep", "metric": "env_discovery_rate"}
 
 
 def write_readme(output_dir: Path, manifest: dict, summary) -> None:

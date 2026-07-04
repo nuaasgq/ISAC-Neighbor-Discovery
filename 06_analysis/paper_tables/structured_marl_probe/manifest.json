@@ -1,10 +1,10 @@
 {
-  "created_at": "2026-07-05T07:40:41",
+  "created_at": "2026-07-05T07:52:07",
   "input_root": "05_simulation\\results_raw\\pre11_marl_probe_20260705_072514",
   "output_dir": "06_analysis\\paper_tables\\structured_marl_probe",
   "figure_dir": "06_analysis\\paper_figures\\structured_marl_probe",
-  "rows": 1080,
-  "runs": 21,
+  "rows": 1830,
+  "runs": 36,
   "figures": [
     {
       "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_eval_discovery_rate.png",
@@ -35,6 +35,11 @@
       "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_empty_collision_tradeoff.png",
       "type": "scatter",
       "metric": "empty_collision"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\structured_marl_probe\\marl_rule_residual_scale_sweep.png",
+      "type": "scale_sweep",
+      "metric": "env_discovery_rate"
     }
   ]
 }

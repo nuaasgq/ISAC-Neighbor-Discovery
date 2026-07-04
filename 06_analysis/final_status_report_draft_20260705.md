@@ -94,6 +94,7 @@ Core N=10/B=72/80-slot probe:
 Follow-up:
 
 - RL10 fine-tune improves full structured stochastic discovery to 0.5865 but still does not beat flat stochastic.
+- Residual-strength sweep finds `rule_residual_scale=0.25` as the best balanced tested setting: stochastic discovery 0.5978 and deterministic discovery 0.0837 with 15/15 deterministic evaluations nonzero.
 - Clean no-ISAC neural baseline gives deterministic discovery 0 and stochastic discovery 0.0044.
 - Interpretation: ISAC-enabled local candidate observations are necessary for the neural probe's nonzero behavior, but collision coordination and stochastic dominance are not solved.
 

@@ -245,6 +245,7 @@ However, the full structured actor improves deterministic execution from 0.0015 
 It also reduces stochastic empty-scan ratio from 0.690 for the flat actor to 0.111, at the cost of unresolved collision coordination.
 This supports using the structured actor as a feasible neural extension, not as the current main method.
 A short 10-episode actor-critic fine-tuning follow-up increases the full structured stochastic discovery rate to 0.586 and leaves deterministic discovery near 0.066, but it still does not overtake the flat stochastic student.
+A residual-strength sweep identifies $\lambda_{\mathrm{rule}}=0.25$ as a better balanced setting in this probe, with stochastic discovery 0.598 and deterministic discovery 0.084 with all 15 deterministic evaluations nonzero.
 A clean no-ISAC neural baseline, with both the environment and expert protocol set to the no-ISAC variant, reduces deterministic discovery to 0 and stochastic discovery to 0.0044.
 This indicates that the neural probe's nonzero behavior is driven by the ISAC-enabled local candidate observations rather than by blind stochastic alignment alone.
 A label-only no-ISAC follow-up is treated only as a label-sensitivity sanity check because its evaluation environment still exposes ISAC candidate observations.
@@ -262,10 +263,12 @@ A label-only no-ISAC follow-up is treated only as a label-sensitivity sanity che
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_bc_loss_curve.png}
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_bc_loss_curve.png}
   \hfill
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_reward_curve.png}
-  \caption{Structured neural MARL probe training traces. Left: behavior-cloning loss. Right: mean reward during teacher-forced training episodes.}
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_reward_curve.png}
+  \hfill
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/structured_marl_probe/marl_rule_residual_scale_sweep.png}
+  \caption{Structured neural MARL probe training and tuning traces. Left: behavior-cloning loss. Middle: mean reward during teacher-forced training episodes. Right: rule-residual scale sweep.}
   \label{fig:supp_structured_marl_training}
 \end{figure*}
 
