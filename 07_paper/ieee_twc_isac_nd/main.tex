@@ -143,6 +143,26 @@ In every slot, each UAV chooses among sensing, transmitting, receiving, and idli
 For transmission and reception, the node samples a beam according to a score that combines ISAC occupancy belief, exploration, beam diversity, staleness, and a local topology-value proxy.
 The exploration floor prevents permanent exclusion of beam cells that were incorrectly marked empty.
 
+For UAV $i$, the score of beam $b$ is written as
+\begin{equation}
+  s_i^t(b)=
+  \alpha q_i^t(b)
+  + \beta d_i^t(b)
+  + \gamma u_i^t
+  + \eta a_i^t(b),
+  \label{eq:beam_score}
+\end{equation}
+where $q_i^t(b)$ is the ISAC occupancy belief, $d_i^t(b)$ encourages beam diversity, $u_i^t$ is a local degree-need term, and $a_i^t(b)$ is a staleness term.
+The beam sampling probability is
+\begin{equation}
+  P_i^t(b) =
+  (1-\epsilon)\frac{\exp(\kappa s_i^t(b))}{\sum_{b'\in\beamset}\exp(\kappa s_i^t(b'))}
+  + \frac{\epsilon}{|\beamset|},
+  \label{eq:beam_probability}
+\end{equation}
+where $\epsilon$ is the exploration floor and $\kappa$ is the softmax sharpness.
+This form makes ISAC feedback useful without permanently pruning beams that may have been affected by sensing errors.
+
 The local topology-value proxy gives larger priority to beams that may establish links for nodes whose discovered degree is below a target degree.
 This is not an online computation of global algebraic connectivity.
 It is a local rule designed to encourage finite-time formation of a well-connected discovered graph.
