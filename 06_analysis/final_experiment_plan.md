@@ -14,6 +14,16 @@ H2：仅依赖随机或无 ISAC 学习策略不足以稳定解决三维高维窄
 
 H3：共享策略参数可以从小规模训练迁移到不同动态运动模型，性能退化可控。
 
+H4：训练在小规模场景完成后，应能零样本迁移到更大节点数和不同波束宽度。主训练规模固定为 `N=10`、`beamwidth=10 deg`，测试覆盖 `N=10/20/50/100` 和 `beamwidth=3/5/10/15/30 deg`。
+
+H5：通信距离与感知距离不应无依据地绑定为同一数值。通信链路的自由空间预算可由 Friis 传输公式近似为一跳传播损耗；单站雷达/ISAC 感知包含目标反射和往返传播，典型雷达方程含 `R^4` 项。因此，首轮 `singlehop` 实验仅把 `R_c` 和 `R_s` 都设置为大于区域对角线的非瓶颈上界，用来验证邻居发现机制；论文主实验需要再扫 `R_s/R_c`。
+
+参考依据：
+
+- Harald T. Friis, "A Note on a Simple Transmission Formula," Proceedings of the I.R.E., 1946. `https://capmimo.ece.wisc.edu/capmimo_papers/friis_original_1946.pdf`
+- MIT Lincoln Laboratory, "The Radar Equation." `https://www.ll.mit.edu/media/6946`
+- R. Bomfin, K. S. Ali, and M. Chafii, "A System Level Analysis for Integrated Sensing and Communication," arXiv:2402.00750, 2024. `https://arxiv.org/abs/2402.00750`
+
 ## 方法矩阵
 
 1. `skyorbs_like_skip_scan`：参考文献近似基线，模拟三维确定性 skip-scan。
@@ -42,6 +52,32 @@ python 05_simulation/run_training.py --config 05_simulation/configs/paper_core_d
 | D1-RWP | `random_waypoint` | 10 | 航点型集群运动鲁棒性 |
 
 所有测试统一使用五类协议、300 slots、相同 trained config，并固定 seed `20280704` 作为本轮可复现测试切分。
+
+## 迁移与距离实验补充
+
+### 规模与波束迁移
+
+训练仅使用 `N=10`、`beamwidth=10 deg`。测试矩阵覆盖：
+
+| 变量 | 取值 | 目的 |
+|---|---|---|
+| 节点数 | `10, 20, 50, 100` | 小规模训练到大规模集群迁移 |
+| 波束宽度 | `3, 5, 10, 15, 30 deg` | 窄波束维度变化迁移 |
+| 区域缩放 | `density`, `fixed` | 区分等密度扩展与固定区域高密度扩展 |
+| 运动模型 | `gauss_markov`, `random_walk`, `random_direction`, `random_waypoint` | 覆盖参考论文常见动态测试 |
+
+### 通信/感知距离
+
+首轮 sanity 使用 `range_mode=singlehop`：对每个区域尺寸计算对角线 `D`，令 `R_c=R_s=1.05D`。此处二者相等只是为了同时消除通信距离和感知距离瓶颈，不代表物理层默认假设。
+
+后续距离敏感性使用 `run_transfer_sweep.py` 的两个参数：
+
+```powershell
+--communication-range-ratios 0.45,0.65,0.85,1.05
+--sensing-to-comm-ratios 0.5,0.75,1.0,1.25
+```
+
+其中 `communication-range-ratios` 表示 `R_c/D`，`sensing-to-comm-ratios` 表示 `R_s/R_c`。论文中重点报告 `R_s<R_c`、`R_s=R_c` 和 `R_s>R_c` 三类情形下 proposed 方法的收益变化。
 
 ## 性能指标
 

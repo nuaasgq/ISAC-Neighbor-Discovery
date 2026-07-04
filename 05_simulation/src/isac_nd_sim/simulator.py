@@ -5,7 +5,7 @@ from typing import Iterable
 
 import numpy as np
 
-from .beam import beam_for_target, beam_matches, shift_beam
+from .beam import beam_for_target, beam_matches, rotation_body_to_global, shift_beam
 from .config import SimulationConfig
 from .mobility import NodeState, initialize_states, step_states
 
@@ -63,6 +63,8 @@ class NeighborDiscoverySimulator:
         self.age = np.zeros_like(self.belief)
         self.success_count = np.zeros_like(self.belief)
         self.fail_count = np.zeros_like(self.belief)
+        self.empty_beam_count = np.zeros_like(self.belief)
+        self.last_positive_slot = np.full_like(self.belief, -10**9)
         self.discovered_edges: set[tuple[int, int]] = set()
         self.first_true_slot: dict[tuple[int, int], int] = {}
         self.discovery_slot: dict[tuple[int, int], int] = {}
@@ -72,6 +74,10 @@ class NeighborDiscoverySimulator:
         self.last_sense_slot = np.full(self.cfg.n_nodes, -10**9, dtype=int)
         self.per_slot_rows: list[dict] = []
         self.edge_rows: list[dict] = []
+        self._candidate_pool_cache: dict[tuple[int, int], np.ndarray] = {}
+        self._beam_matrix_cache: np.ndarray | None = None
+        self._distance_matrix_cache: np.ndarray | None = None
+        self._complete_edges_cache: set[tuple[int, int]] | None = None
 
     def reset(self) -> None:
         self.states = initialize_states(self.cfg.n_nodes, self.cfg.area_size_m, self.cfg.mobility, self.mobility_rng)
@@ -80,6 +86,8 @@ class NeighborDiscoverySimulator:
         self.age.fill(0.0)
         self.success_count.fill(0.0)
         self.fail_count.fill(0.0)
+        self.empty_beam_count.fill(0.0)
+        self.last_positive_slot.fill(-10**9)
         self.discovered_edges.clear()
         self.first_true_slot.clear()
         self.discovery_slot.clear()
@@ -89,20 +97,29 @@ class NeighborDiscoverySimulator:
         self.last_sense_slot.fill(-10**9)
         self.per_slot_rows = []
         self.edge_rows = []
+        self._candidate_pool_cache.clear()
+        self._beam_matrix_cache = None
+        self._distance_matrix_cache = None
+        self._complete_edges_cache = None
 
     def run_episode(self, episode: int) -> EpisodeResult:
         self.reset()
         for slot in range(self.cfg.slots_per_episode):
+            self._beam_matrix_cache = None
+            self._distance_matrix_cache = None
             true_comm_edges = self.true_edges(self.cfg.communication_range_m)
             for edge in true_comm_edges:
                 self.first_true_slot.setdefault(edge, slot)
             self.age += 1.0
             self.belief *= self.cfg.confidence_decay
+            self._candidate_pool_cache.clear()
             actions = self.select_actions(slot, true_comm_edges)
             self.update_empty_scan_counts(actions, true_comm_edges)
             self.update_sensing(actions, slot)
+            self._candidate_pool_cache.clear()
             new_edges = self.resolve_discoveries(slot, actions, true_comm_edges)
-            self.per_slot_rows.append(self.slot_metrics(episode, slot, true_comm_edges, new_edges))
+            if self.cfg.slot_metric_period > 0 and slot % self.cfg.slot_metric_period == 0:
+                self.per_slot_rows.append(self.slot_metrics(episode, slot, true_comm_edges, new_edges))
             step_states(
                 self.states,
                 self.cfg.area_size_m,
@@ -111,6 +128,8 @@ class NeighborDiscoverySimulator:
                 slot,
                 self.mobility_rng,
             )
+            self._beam_matrix_cache = None
+            self._distance_matrix_cache = None
         return self.summarize(episode)
 
     def slot_metrics(
@@ -144,24 +163,72 @@ class NeighborDiscoverySimulator:
     def positions(self) -> np.ndarray:
         return np.asarray([state.position for state in self.states])
 
-    def true_edges(self, radius: float) -> set[tuple[int, int]]:
+    def area_diagonal(self) -> float:
+        return float(np.sqrt(sum(float(value) ** 2 for value in self.cfg.area_size_m)))
+
+    def complete_edges(self) -> set[tuple[int, int]]:
+        if self._complete_edges_cache is None:
+            self._complete_edges_cache = {
+                (i, j) for i in range(self.cfg.n_nodes) for j in range(i + 1, self.cfg.n_nodes)
+            }
+        return self._complete_edges_cache
+
+    def distance_matrix(self) -> np.ndarray:
+        if self._distance_matrix_cache is None:
+            pos = self.positions()
+            delta = pos[:, None, :] - pos[None, :, :]
+            self._distance_matrix_cache = np.einsum("ijk,ijk->ij", delta, delta)
+        return self._distance_matrix_cache
+
+    def beam_matrix(self) -> np.ndarray:
+        if self._beam_matrix_cache is not None:
+            return self._beam_matrix_cache
         pos = self.positions()
-        edges: set[tuple[int, int]] = set()
-        for i in range(self.cfg.n_nodes):
-            for j in range(i + 1, self.cfg.n_nodes):
-                if float(np.linalg.norm(pos[i] - pos[j])) <= radius:
-                    edges.add((i, j))
-        return edges
+        n_nodes = self.cfg.n_nodes
+        beams = np.zeros((n_nodes, n_nodes), dtype=int)
+        for source, state in enumerate(self.states):
+            delta = pos - pos[source]
+            norm = np.linalg.norm(delta, axis=1, keepdims=True)
+            norm[norm <= 1e-12] = 1.0
+            direction_global = delta / norm
+            direction_global[source] = np.asarray([1.0, 0.0, 0.0])
+            rotation = rotation_body_to_global(state.yaw, state.pitch, state.roll)
+            direction_body = direction_global @ rotation
+            direction_norm = np.linalg.norm(direction_body, axis=1)
+            direction_norm[direction_norm <= 1e-12] = 1.0
+            unit = direction_body / direction_norm[:, None]
+            azimuth = np.arctan2(unit[:, 1], unit[:, 0])
+            elevation = np.arcsin(np.clip(unit[:, 2], -1.0, 1.0))
+            az_idx = np.floor((azimuth + np.pi) / (2.0 * np.pi) * self.cfg.azimuth_cells).astype(int)
+            az_idx %= self.cfg.azimuth_cells
+            el_idx = np.floor((elevation + np.pi / 2.0) / np.pi * self.cfg.elevation_cells).astype(int)
+            el_idx = np.clip(el_idx, 0, self.cfg.elevation_cells - 1)
+            beams[source] = el_idx * self.cfg.azimuth_cells + az_idx
+        self._beam_matrix_cache = beams
+        return beams
+
+    def true_edges(self, radius: float) -> set[tuple[int, int]]:
+        if self.cfg.n_nodes < 2:
+            return set()
+        if float(radius) >= self.area_diagonal():
+            return self.complete_edges()
+        dist2 = self.distance_matrix()
+        mask = np.triu(dist2 <= float(radius) ** 2, k=1)
+        rows, cols = np.nonzero(mask)
+        return set(zip(rows.astype(int).tolist(), cols.astype(int).tolist()))
 
     def occupied_beams(self, radius: float) -> list[set[int]]:
         occupied = [set() for _ in range(self.cfg.n_nodes)]
-        pos = self.positions()
+        beams = self.beam_matrix()
+        if float(radius) >= self.area_diagonal():
+            for i in range(self.cfg.n_nodes):
+                occupied[i].update(int(value) for value in np.delete(beams[i], i))
+            return occupied
+        dist2 = self.distance_matrix()
+        within = dist2 <= float(radius) ** 2
+        np.fill_diagonal(within, False)
         for i in range(self.cfg.n_nodes):
-            for j in range(self.cfg.n_nodes):
-                if i == j:
-                    continue
-                if float(np.linalg.norm(pos[i] - pos[j])) <= radius:
-                    occupied[i].add(self.beam_from_to(i, j))
+            occupied[i].update(int(value) for value in beams[i, within[i]])
         return occupied
 
     def beam_from_to(self, source: int, target: int) -> int:
@@ -261,6 +328,9 @@ class NeighborDiscoverySimulator:
         if self.protocol in ("improved_rl_no_isac", "structured_marl_no_isac"):
             return self.memory_guided_beam(node, use_isac=False, topology=True)
         if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+            isac_beam = self.isac_candidate_cycle_beam(node, slot)
+            if isac_beam is not None:
+                return isac_beam
             return self.memory_guided_beam(node, use_isac=True, topology=True)
 
         weights = np.ones(self.cfg.n_beams, dtype=float) * self.cfg.exploration_floor
@@ -305,6 +375,52 @@ class NeighborDiscoverySimulator:
         prime_stride = self.near_coprime_stride(self.cfg.n_beams)
         return int((node * prime_stride + sense_round * prime_stride) % self.cfg.n_beams)
 
+    def isac_candidate_cycle_beam(self, node: int, slot: int) -> int | None:
+        selected = self.isac_candidate_pool(node, slot)
+        if len(selected) == 0:
+            return None
+        if self.rng.random() < self.cfg.exploration_floor:
+            return None
+        lock_period = max(2, int(round(0.04 / max(self.cfg.slot_duration_s, 1e-6))))
+        selected_index = int((slot // lock_period + node) % len(selected))
+        return int(selected[selected_index])
+
+    def isac_candidate_pool(self, node: int, slot: int) -> np.ndarray:
+        cache_key = (int(slot), int(node))
+        cached = self._candidate_pool_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        belief = self.belief[node]
+        positive_ttl = max(50, min(300, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
+        recent_positive = (slot - self.last_positive_slot[node]) <= positive_ttl
+        candidate_mask = (belief >= 0.55) | (
+            (self.success_count[node] > 0.05) & (self.empty_beam_count[node] < 1.0) & recent_positive
+        )
+        if not np.any(candidate_mask):
+            empty = np.asarray([], dtype=int)
+            self._candidate_pool_cache[cache_key] = empty
+            return empty
+        candidates = np.flatnonzero(candidate_mask)
+        success = self.success_count[node, candidates]
+        fail = self.fail_count[node, candidates]
+        recency = np.maximum(0.0, slot - self.last_positive_slot[node, candidates])
+        score = belief[candidates] + 0.35 * np.log1p(success) - 0.25 * np.log1p(fail) - 0.002 * recency
+        order = np.lexsort((candidates, -score))
+        max_candidates = max(1, min(len(candidates), max(2, self.cfg.target_degree)))
+        selected = candidates[order[:max_candidates]]
+        self._candidate_pool_cache[cache_key] = selected
+        return selected
+
+    def handshake_beam_ready(self, node: int, selected_beam: int, expected_beam: int, slot: int) -> bool:
+        if beam_matches(selected_beam, expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+            return True
+        if self.protocol not in ("improved_rl_isac", "isac_structured_marl"):
+            return False
+        for candidate in self.isac_candidate_pool(node, slot):
+            if beam_matches(int(candidate), expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+                return True
+        return False
+
     def near_coprime_stride(self, modulus: int) -> int:
         stride = max(1, int(round(np.sqrt(modulus))))
         while np.gcd(stride, modulus) != 1:
@@ -317,6 +433,14 @@ class NeighborDiscoverySimulator:
         age = self.age[node] / max(1.0, self.age[node].max())
         success = self.success_count[node]
         fail = self.fail_count[node]
+        if use_isac:
+            belief = self.belief[node]
+            non_rejected = np.flatnonzero((self.empty_beam_count[node] < 1.0) | (self.success_count[node] > 0.0))
+            if len(non_rejected) > 0:
+                oldest = self.age[node, non_rejected]
+                max_age = float(np.max(oldest)) if len(oldest) else 0.0
+                old_enough = non_rejected[oldest >= max_age]
+                return int(self.rng.choice(old_enough))
         uncertainty = 1.0 / np.sqrt(1.0 + success + fail)
         weights = np.ones(self.cfg.n_beams, dtype=float) * self.cfg.exploration_floor
         weights += 0.25 * age
@@ -358,7 +482,7 @@ class NeighborDiscoverySimulator:
         return int(self.rng.choice(candidate_indices, p=probs))
 
     def update_sensing(self, actions: list[Action], slot: int | None = None) -> None:
-        true_occupied = self.occupied_beams(self.cfg.sensing_range_m)
+        eligible_nodes: list[tuple[int, Action]] = []
         for node, action in enumerate(actions):
             piggyback_isac = self.protocol in ("improved_rl_isac", "isac_structured_marl") and action.mode in (
                 MODE_TX,
@@ -372,23 +496,76 @@ class NeighborDiscoverySimulator:
                     period = max(1, int(round(period * self.cfg.piggyback_sensing_period_multiplier)))
                 if slot - int(self.last_sense_slot[node]) < period:
                     continue
+            eligible_nodes.append((node, action))
+        if not eligible_nodes:
+            return
+        useful_sensing_range = min(self.cfg.sensing_range_m, self.cfg.communication_range_m)
+        true_occupied = self.occupied_beams(useful_sensing_range)
+        ideal_sensing = (
+            self.cfg.false_alarm_rate <= 0.0
+            and self.cfg.miss_detection_rate <= 0.0
+            and self.cfg.angular_cell_offset_std <= 0.0
+        )
+        for node, action in eligible_nodes:
+            if slot is not None:
                 self.last_sense_slot[node] = slot
             observation = self.belief[node].copy()
+            piggyback_isac = self.protocol in ("improved_rl_isac", "isac_structured_marl") and action.mode in (
+                MODE_TX,
+                MODE_RX,
+            )
+            if piggyback_isac:
+                sensed_beams = self.sensing_sector(action.beam)
+                for sensed_beam in sensed_beams:
+                    if ideal_sensing:
+                        observed_value = 1.0 if int(sensed_beam) in true_occupied[node] else 0.0
+                    else:
+                        observed_value = 0.0
+                        for beam_idx in true_occupied[node]:
+                            if self.rng.random() < self.cfg.miss_detection_rate:
+                                continue
+                            az_shift = int(np.rint(self.rng.normal(0.0, self.cfg.angular_cell_offset_std)))
+                            el_shift = int(np.rint(self.rng.normal(0.0, self.cfg.angular_cell_offset_std)))
+                            observed = shift_beam(beam_idx, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
+                            if beam_matches(sensed_beam, observed, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+                                observed_value = 1.0
+                                break
+                        if self.rng.random() < self.cfg.false_alarm_rate:
+                            observed_value = 1.0
+                    observation[sensed_beam] = observed_value
+                    if observed_value <= 0.0:
+                        self.fail_count[node, sensed_beam] += 0.10
+                        self.success_count[node, sensed_beam] *= 0.90
+                        if self.success_count[node, sensed_beam] <= 0.05:
+                            self.empty_beam_count[node, sensed_beam] += 1.0
+                    else:
+                        self.success_count[node, sensed_beam] += 0.25
+                        self.fail_count[node, sensed_beam] *= 0.5
+                        self.empty_beam_count[node, sensed_beam] = 0.0
+                        if slot is not None:
+                            self.last_positive_slot[node, sensed_beam] = slot
+                rho = self.cfg.belief_update_rho
+                self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
+                self.age[node, sensed_beams] = 0.0
+                continue
             sensed_beams = self.sensing_sector(action.beam)
             for sensed_beam in sensed_beams:
-                observed_value = 0.0
-                for beam_idx in true_occupied[node]:
-                    if self.rng.random() < self.cfg.miss_detection_rate:
-                        continue
-                    offset_std = self.cfg.angular_cell_offset_std
-                    az_shift = int(np.rint(self.rng.normal(0.0, offset_std)))
-                    el_shift = int(np.rint(self.rng.normal(0.0, offset_std)))
-                    observed = shift_beam(beam_idx, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
-                    if beam_matches(sensed_beam, observed, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+                if ideal_sensing:
+                    observed_value = 1.0 if int(sensed_beam) in true_occupied[node] else 0.0
+                else:
+                    observed_value = 0.0
+                    for beam_idx in true_occupied[node]:
+                        if self.rng.random() < self.cfg.miss_detection_rate:
+                            continue
+                        offset_std = self.cfg.angular_cell_offset_std
+                        az_shift = int(np.rint(self.rng.normal(0.0, offset_std)))
+                        el_shift = int(np.rint(self.rng.normal(0.0, offset_std)))
+                        observed = shift_beam(beam_idx, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
+                        if beam_matches(sensed_beam, observed, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+                            observed_value = 1.0
+                            break
+                    if self.rng.random() < self.cfg.false_alarm_rate:
                         observed_value = 1.0
-                        break
-                if self.rng.random() < self.cfg.false_alarm_rate:
-                    observed_value = 1.0
                 observation[sensed_beam] = observed_value
             rho = self.cfg.belief_update_rho
             self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
@@ -408,11 +585,15 @@ class NeighborDiscoverySimulator:
         return np.asarray(sorted(set(beams)), dtype=int)
 
     def update_empty_scan_counts(self, actions: list[Action], true_comm_edges: set[tuple[int, int]]) -> None:
+        occupied = self.occupied_beams(self.cfg.communication_range_m)
         for node, action in enumerate(actions):
             if action.mode not in (MODE_TX, MODE_RX):
                 continue
             self.scan_actions += 1
-            if not self.beam_has_comm_neighbor(node, action.beam, true_comm_edges):
+            if not any(
+                beam_matches(action.beam, beam_idx, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
+                for beam_idx in occupied[node]
+            ):
                 self.empty_scans += 1
 
     def beam_has_comm_neighbor(self, node: int, selected_beam: int, true_comm_edges: set[tuple[int, int]]) -> bool:
@@ -427,27 +608,48 @@ class NeighborDiscoverySimulator:
 
     def resolve_discoveries(self, slot: int, actions: list[Action], true_comm_edges: set[tuple[int, int]]) -> list[tuple[int, int]]:
         new_edges: list[tuple[int, int]] = []
-        for rx_node, rx_action in enumerate(actions):
-            if rx_action.mode != MODE_RX:
+        n_nodes = self.cfg.n_nodes
+        beams = self.beam_matrix()
+        true_mask = np.zeros((n_nodes, n_nodes), dtype=bool)
+        if len(true_comm_edges) == n_nodes * (n_nodes - 1) // 2:
+            true_mask[:, :] = True
+            np.fill_diagonal(true_mask, False)
+        else:
+            for node_a, node_b in true_comm_edges:
+                true_mask[node_a, node_b] = True
+                true_mask[node_b, node_a] = True
+
+        ready_mask = np.zeros((n_nodes, self.cfg.n_beams), dtype=bool)
+        modes = np.asarray([action.mode for action in actions], dtype=object)
+        active_mask = (modes == MODE_TX) | (modes == MODE_RX)
+        for node, action in enumerate(actions):
+            if not active_mask[node]:
                 continue
-            candidates: list[int] = []
-            for tx_node, tx_action in enumerate(actions):
-                if tx_node == rx_node or tx_action.mode != MODE_TX:
-                    continue
-                edge = canonical_edge(tx_node, rx_node)
-                if edge not in true_comm_edges:
-                    continue
-                tx_expected = self.beam_from_to(tx_node, rx_node)
-                rx_expected = self.beam_from_to(rx_node, tx_node)
-                tx_ok = beam_matches(tx_action.beam, tx_expected, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
-                rx_ok = beam_matches(rx_action.beam, rx_expected, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
-                if tx_ok and rx_ok:
-                    candidates.append(tx_node)
+            ready_mask[node, action.beam] = True
+            if self.protocol in ("improved_rl_isac", "isac_structured_marl"):
+                pool = self.isac_candidate_pool(node, slot)
+                if len(pool) > 0:
+                    ready_mask[node, pool] = True
+
+        node_idx = np.arange(n_nodes)[:, None]
+        ready_forward = ready_mask[node_idx, beams]
+        tx_mask = modes == MODE_TX
+        rx_mask = modes == MODE_RX
+        candidate_matrix = (
+            true_mask
+            & tx_mask[:, None]
+            & rx_mask[None, :]
+            & ready_forward
+            & ready_forward.T
+        )
+
+        for rx_node in np.flatnonzero(np.any(candidate_matrix, axis=0)):
+            candidates = np.flatnonzero(candidate_matrix[:, rx_node]).astype(int).tolist()
             if len(candidates) > 1:
                 self.collision_count += len(candidates)
                 for tx_node in candidates:
                     self.fail_count[tx_node, actions[tx_node].beam] += 1.0
-                self.fail_count[rx_node, rx_action.beam] += 1.0
+                self.fail_count[rx_node, actions[rx_node].beam] += 1.0
                 continue
             if len(candidates) == 1:
                 tx_node = candidates[0]
@@ -469,7 +671,7 @@ class NeighborDiscoverySimulator:
                     )
                     new_edges.append(edge)
                 self.success_count[tx_node, actions[tx_node].beam] += 1.0
-                self.success_count[rx_node, rx_action.beam] += 1.0
+                self.success_count[rx_node, actions[rx_node].beam] += 1.0
         return new_edges
 
     def summarize(self, episode: int) -> EpisodeResult:

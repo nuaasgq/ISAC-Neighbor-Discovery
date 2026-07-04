@@ -370,6 +370,8 @@ def candidate_row(
         "rank": rank,
         "is_elite": int(is_elite),
         "score": evaluation.score,
+        "reward_mean": evaluation.score,
+        "objective_reward_mean": evaluation.score,
         "protocol": TRAINED_PROTOCOL,
         "seed_count": len(settings.seeds),
         "episodes_per_seed": settings.episodes,
@@ -413,6 +415,8 @@ def test_summary_row(
         "slots_per_episode": slots_per_episode,
         "score": objective_score(summary),
     }
+    row["reward_mean"] = row["score"]
+    row["objective_reward_mean"] = row["score"]
     row.update(parameters)
     row.update(summary)
     return row

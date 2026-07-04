@@ -231,7 +231,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "table_dirs",
-        nargs="+",
+        nargs="*",
         help="One or more analysis table directories containing protocol_summary.csv and slot_protocol_summary.csv.",
     )
     parser.add_argument(
@@ -263,10 +263,10 @@ def generate_paper_figures(
     dpi: int = DEFAULT_DPI,
 ) -> dict:
     table_sets = discover_table_sets([Path(item) for item in table_dirs])
-    if not table_sets:
-        raise FileNotFoundError("No table directories with protocol_summary.csv were found.")
-
     training_sources = discover_training_sources([Path(item) for item in training_dirs or []])
+    if not table_sets and not training_sources:
+        raise FileNotFoundError("No table directories or training histories were found.")
+
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 

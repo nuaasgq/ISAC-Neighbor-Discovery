@@ -1,0 +1,82 @@
+experiment:
+  name: "paper_transfer_train_n10_b10"
+  seed: 20260704
+  episodes: 4
+  slots_per_episode: 300
+  slot_metric_period: 1
+  slot_duration_ms: 5
+
+network:
+  node_count: 10
+  area_shape: "cube"
+  area_size_m: [560, 560, 180]
+  communication_range_m: 340
+  sensing_range_m: 440
+  self_localization_available: true
+  self_attitude_available: true
+  localization_error_std_m: 0.0
+  attitude_error_std_deg: 0.0
+  mobility:
+    model: "gauss_markov"
+    speed_min_mps: 1.0
+    speed_max_mps: 5.0
+    mean_speed_mps: 3.0
+    speed_std_mps: 0.8
+    gauss_markov_alpha: 0.85
+    random_walk_step_std_m: 2.0
+    direction_update_period_slots: 25
+    waypoint_threshold_m: 20.0
+
+beam:
+  azimuth_cells: [36]
+  elevation_cells: [18]
+  alignment_tolerance_cells: 0
+  main_lobe_model: "ideal_cell_coverage"
+  sidelobe_model: "none"
+
+slot:
+  synchronized: true
+  p_sense: 0.15
+  p_tx: 0.425
+  p_rx: 0.425
+  p_idle: 0.0
+
+isac_error:
+  false_alarm_rates: [0.002]
+  miss_detection_rates: [0.02]
+  angular_cell_offsets: [0.1]
+  sensing_periods: [1]
+  belief_update_rho: 0.55
+
+protocol:
+  exploration_floor: 0.08
+  softmax_beta: 3.0
+  target_degree: 4
+  alpha_occupancy: 2.2
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.98
+  piggyback_sensing_period_multiplier: 1.0
+
+baselines:
+  - "skyorbs_like_skip_scan"
+  - "uniform_random"
+  - "rl_no_isac"
+  - "improved_rl_no_isac"
+  - "improved_rl_isac"
+
+metrics:
+  discovery:
+    - "mean_discovery_delay"
+    - "p90_discovery_delay"
+    - "p95_discovery_delay"
+    - "p99_discovery_delay"
+    - "finite_time_discovery_rate"
+    - "empty_scan_ratio"
+  topology:
+    - "discovered_edges"
+    - "largest_component_size"
+    - "lcc_ratio"
+    - "isolated_node_ratio"
+    - "lambda2"

@@ -1,0 +1,178 @@
+{
+  "generated_at_utc": "2026-07-04T16:06:55.050751+00:00",
+  "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_paper_results.py",
+  "style": {
+    "figsize_inches": [
+      6.4,
+      4.8
+    ],
+    "aspect_ratio": "4:3",
+    "font_family": "Times New Roman with serif fallback",
+    "dpi": 300,
+    "palette": [
+      "#0072B2",
+      "#D55E00",
+      "#009E73",
+      "#CC79A7",
+      "#E69F00",
+      "#56B4E9",
+      "#000000",
+      "#F0E442"
+    ]
+  },
+  "capability": {
+    "training_figure_specs": 8,
+    "test_figure_specs_per_table_dir": 12,
+    "maximum_figures_for_this_input": 8
+  },
+  "inputs": {
+    "table_dirs": [],
+    "training_files": [
+      {
+        "label": "transfer_train_n10_b10_singlehop_candidate_g5_p8",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\transfer_train_n10_b10_singlehop_candidate_g5_p8\\elite_history.csv"
+      },
+      {
+        "label": "transfer_train_n10_b10_singlehop_candidate_g5_p8_2",
+        "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\transfer_train_n10_b10_singlehop_candidate_g5_p8\\training_history.csv"
+      }
+    ]
+  },
+  "counts": {
+    "generated": 7,
+    "skipped": 1,
+    "total_manifest_entries": 8
+  },
+  "figures": [
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "score_curve",
+      "filename": "train_score_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_score_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 50
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "reward_curve",
+      "filename": "train_reward_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_reward_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 50
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "discovery_rate_curve",
+      "filename": "train_discovery_rate_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_discovery_rate_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 50
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "empty_scan_ratio_curve",
+      "filename": "train_empty_scan_ratio_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_empty_scan_ratio_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 50
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "delay_curve",
+      "filename": "train_delay_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_delay_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 50
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "collision_curve",
+      "filename": "train_collision_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_collision_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 50
+    },
+    {
+      "status": "generated",
+      "category": "training",
+      "metric": "connectivity_curve",
+      "filename": "train_connectivity_curve.png",
+      "path": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\training_round2_candidate\\train_connectivity_curve.png",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ],
+      "pixel_size": [
+        1920,
+        1440
+      ],
+      "dpi": 300,
+      "data_rows": 100
+    },
+    {
+      "status": "skipped",
+      "category": "training",
+      "metric": "loss_curve",
+      "filename": "train_loss_curve.png",
+      "reason": "missing metric aliases: loss, actor_loss, critic_loss, policy_loss, value_loss",
+      "figsize_inches": [
+        6.4,
+        4.8
+      ]
+    }
+  ]
+}

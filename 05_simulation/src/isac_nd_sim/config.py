@@ -17,6 +17,7 @@ class SimulationConfig:
     seed: int
     episodes: int
     slots_per_episode: int
+    slot_metric_period: int
     slot_duration_s: float
     n_nodes: int
     area_size_m: tuple[float, float, float]
@@ -96,6 +97,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         seed=int(experiment["seed"]),
         episodes=int(experiment["episodes"]),
         slots_per_episode=int(experiment["slots_per_episode"]),
+        slot_metric_period=int(experiment.get("slot_metric_period", 1)),
         slot_duration_s=float(experiment["slot_duration_ms"]) / 1000.0,
         n_nodes=int(first(network.get("node_counts", network.get("node_count", 30)))),
         area_size_m=tuple(float(v) for v in network["area_size_m"]),
