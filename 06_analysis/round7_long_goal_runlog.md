@@ -31,6 +31,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - The SkyOrbs comparison is a SkyOrbs-like baseline, not a strict reproduction of the full original protocol.
 - 3-5 degree beams and abrupt mobility models remain stress regimes under the current finite horizon.
 - Energy-normalized discovery is not yet available because a Joule-level action-energy model has not been added.
+  See `06_analysis/energy_efficiency_extension_plan.md` for the required radio-state model and implementation touch points.
 
 ## Trigger Conditions Before 11:00
 
