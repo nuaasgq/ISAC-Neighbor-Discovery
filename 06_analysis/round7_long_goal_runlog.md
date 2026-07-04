@@ -37,6 +37,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - The round7 small-scale held-out score is lower than the earlier round2 candidate training result under a different 1200-slot setup, so round7 is not promoted to the main result unless the transfer/evaluation jobs show stronger large-scale robustness.
 - The completed round7 scale/beam grid gives a useful caution: at `N=100`, raw discovery peaks around 15 degrees, but collision-penalized discovery is strongest around 10 degrees. This supports reporting collision-aware efficiency alongside raw discovery.
 - The completed round7 mobility sweep slightly improves abrupt-mobility stress cases but does not remove the applicability boundary: random-direction and random-waypoint remain weak compared with Gauss-Markov and random walk.
+- A quick one-seed round7 error-profile backup completed and was archived under `06_analysis/paper_tables/round7_error_profiles_quick` with one 4:3 figure in `06_analysis/paper_figures/round7_error_profiles_quick`. It remains sanity evidence only while the full error-profile job continues.
 
 ## Conservative Boundaries
 
