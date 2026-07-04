@@ -196,7 +196,7 @@ Neural actor-critic and value-decomposition variants can be built on the same en
 The simulation uses dynamic UAV mobility, including Gauss-Markov, random-walk, and random-direction/waypoint variants.
 The slot duration is set to 5 ms so that ISAC observations remain meaningful within the mobility timescale.
 The primary training configuration uses $N=10$ UAVs and 10-degree beams, and evaluates transfer to larger swarms. The 5 ms slot duration is an explicit modeling assumption rather than a physical-layer timing result.
-Unless otherwise noted, the multi-seed large-scale tables report means over three independent random seeds; standard-deviation and confidence-interval summaries are kept in the reproducibility package.
+Unless otherwise noted, the multi-seed large-scale tables report means over three independent random seeds; standard-deviation and confidence-interval summaries are kept in supplementary reproducibility tables.
 
 \subsection{Baselines}
 The comparison set includes uniform random scanning, a SkyOrbs-like directional baseline, learning without ISAC, improved learning without ISAC, and the proposed improved learning with ISAC.
@@ -281,7 +281,7 @@ In this narrow-beam large-swarm setting, all communication-only or deterministic
 
 \begin{table}[!t]
   \centering
-  \caption{Zero-Shot N=100 Transfer of the Proposed Policy}
+  \caption{Zero-Shot N=100 Transfer of the Proposed Policy (Mean over Three Seeds)}
   \label{tab:n100_transfer}
   \tiny
   \setlength{\tabcolsep}{3pt}
@@ -303,7 +303,7 @@ In this narrow-beam large-swarm setting, all communication-only or deterministic
 
 \begin{table}[!t]
   \centering
-  \caption{N=100 Baseline Comparison at 10-Degree Beams}
+  \caption{N=100 Baseline Comparison at 10-Degree Beams (Mean over Three Seeds)}
   \label{tab:n100_baseline}
   \tiny
   \setlength{\tabcolsep}{3pt}
