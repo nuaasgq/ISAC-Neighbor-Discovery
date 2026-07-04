@@ -114,6 +114,28 @@ Each node maintains a local belief $q_i^t(b)$ for every beam cell.
 The belief is updated from ISAC observations using a smoothing factor and decays over time to avoid over-trusting stale evidence.
 The belief only biases future beam selection and never bypasses the link-layer handshake.
 
+\subsection{Problem Formulation}
+Let $\mathcal{E}_{\mathrm{c}}^t$ denote the set of communication-range UAV pairs that exist at slot $t$, and let $\hat{\mathcal{E}}^t$ denote the set of discovered links confirmed by handshakes up to slot $t$.
+Within a finite discovery horizon $T$, the protocol aims to build a useful discovered graph rather than to maximize only the number of random handshakes.
+For evaluation, we use the finite-time objective
+\begin{equation}
+  J_T =
+  w_{\mathrm{d}} \frac{|\hat{\mathcal{E}}^T|}{|\cup_{t=1}^{T}\mathcal{E}_{\mathrm{c}}^t|}
+  + w_{\lambda}\lambda_2(\hat{\mathcal{G}}^T)
+  - w_{\mathrm{e}}\rho_{\mathrm{empty}}^T
+  - w_{\mathrm{c}} C^T ,
+  \label{eq:finite_objective}
+\end{equation}
+where $\hat{\mathcal{G}}^T=(\mathcal{V},\hat{\mathcal{E}}^T)$, $\lambda_2(\cdot)$ is the algebraic connectivity of the discovered graph, $\rho_{\mathrm{empty}}^T$ is the empty-scan ratio, and $C^T$ is the collision count or its normalized variant.
+Equation~\eqref{eq:finite_objective} is not solved by a central controller; it is an offline evaluation criterion and a design guide for local proxies.
+Each UAV must choose actions from its local information history
+\begin{equation}
+  a_i^t \sim \pi_\theta(\mathcal{H}_i^t), \quad
+  \mathcal{H}_i^t = \{\mathbf{x}_i^\tau, q_i^\tau(b), \hat{\mathcal{N}}_i^\tau\}_{\tau \le t, b\in\beamset},
+\end{equation}
+where $\mathbf{x}_i^\tau$ is the self-state, $q_i^\tau(b)$ is the ISAC belief, and $\hat{\mathcal{N}}_i^\tau$ is the discovered-neighbor state available after confirmed handshakes.
+This information constraint rules out protocols that require undiscovered-neighbor positions, global topology, or a centralized scheduler.
+
 \section{Protocol Design}
 \subsection{\method{}}
 \method{} is a distributed slot-level protocol.
