@@ -93,8 +93,12 @@ class MarlNeighborDiscoveryEnv:
         fail_before = self._sim.fail_count.sum(axis=1).copy()
         success_before = self._sim.success_count.sum(axis=1).copy()
 
+        self._sim._candidate_pool_cache.clear()
+        self._sim.snapshot_pre_sensing_candidates(self._slot)
+        self._sim.update_action_counts(parsed_actions, self._slot)
         self._sim.update_empty_scan_counts(parsed_actions, true_comm_edges)
         self._sim.update_sensing(parsed_actions, self._slot)
+        self._sim._candidate_pool_cache.clear()
         new_edges = self._sim.resolve_discoveries(self._slot, parsed_actions, true_comm_edges)
         metric_row = self._sim.slot_metrics(episode=0, slot=self._slot, true_comm_edges=true_comm_edges, new_edges=new_edges)
         self._sim.per_slot_rows.append(metric_row)
@@ -256,6 +260,8 @@ class MarlNeighborDiscoveryEnv:
             "mode_names": MODE_NAMES,
             "new_edges_count": int(new_edges_count),
             "discovered_edges_count": len(self._sim.discovered_edges),
+            "scan_actions": self._sim.scan_actions,
+            "discovery_per_scan_action": len(self._sim.discovered_edges) / max(1, self._sim.scan_actions),
             "empty_scan_ratio": self._sim.empty_scans / max(1, self._sim.scan_actions),
             "collision_count": self._sim.collision_count,
             "largest_component_size": largest,

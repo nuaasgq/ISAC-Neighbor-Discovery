@@ -92,6 +92,8 @@ def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     assert truncated is False
     assert info["slot"] == 1
     assert "new_edges_count" in info
+    assert info["scan_actions"] == 4
+    assert "discovery_per_scan_action" in info
     _assert_no_forbidden_keys(info)
     _assert_no_forbidden_keys(next_observations)
 

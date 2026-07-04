@@ -14,6 +14,7 @@ Generated during the long-run goal window ending at 2026-07-05 11:00 (Asia/Shang
 | `round3_error_profiles` | Paired ISAC false-alarm, miss-detection, angular-error profiles | complete | `05_simulation/results_raw/round3_error_profiles` | `06_analysis/paper_tables/round3_robustness/error_profiles` | `06_analysis/paper_figures/round3_robustness` |
 | `round3_error_robustness` | Auxiliary full-factor small ISAC error grid | complete | `05_simulation/results_raw/round3_error_robustness` | `06_analysis/paper_tables/round3_robustness/error_robustness` | `06_analysis/paper_figures/round3_robustness` |
 | `round4_delay_ablation` | Implementation-boundary ablation for one-slot delayed candidate-set use plus efficiency metrics | complete | `05_simulation/results_raw/round4_delay_ablation` | `06_analysis/paper_tables/round4_delay_ablation` | `06_analysis/paper_figures/round4_delay_ablation` |
+| `round5_mobility_transfer` | Mobility-model transfer beyond the Gauss-Markov training/evaluation default | complete | `05_simulation/results_raw/round5_mobility_transfer` | `06_analysis/paper_tables/round5_mobility_transfer` | `06_analysis/paper_figures/round5_mobility_transfer` |
 
 ## Completed Results Snapshot
 
@@ -114,6 +115,21 @@ The paired 600-slot profile sweep further includes angular error:
 
 Interpretation: noisy ISAC degrades discovery and increases empty scans, but the proposed protocol remains far above the no-ISAC baseline in these tested regimes. The result supports a bounded robustness claim, not a claim of immunity to sensing errors.
 
+### Mobility-Model Transfer, N=100
+
+| Mobility | Beamwidth | No-ISAC discovery | One-slot discovery | Full ISAC discovery | Full ISAC lambda2 |
+|---|---:|---:|---:|---:|---:|
+| Gauss-Markov | 10 deg | 0.0007 | 0.2989 | 0.3655 | 12.9222 |
+| Gauss-Markov | 15 deg | 0.0038 | 0.5072 | 0.5440 | 26.8413 |
+| Random walk | 10 deg | 0.0003 | 0.0968 | 0.2024 | 5.9536 |
+| Random walk | 15 deg | 0.0041 | 0.2953 | 0.4513 | 24.1830 |
+| Random direction | 10 deg | 0.0009 | 0.0624 | 0.0627 | 0.2197 |
+| Random direction | 15 deg | 0.0037 | 0.1405 | 0.1358 | 3.7231 |
+| Random waypoint | 10 deg | 0.0003 | 0.0140 | 0.0154 | 0.0000 |
+| Random waypoint | 15 deg | 0.0037 | 0.0387 | 0.0389 | 0.1238 |
+
+Interpretation: the learned policy transfers best to smooth or locally diffusive mobility. Random direction and random waypoint are stress regimes under the current 600-slot horizon, likely because abrupt heading changes and concentrated collision opportunities make stale ISAC priors less reliable. This should be written as an applicability boundary, not hidden.
+
 ## Figure Inventory
 
 - `06_analysis/paper_figures/round3_robustness/ablation_discovery_n100_b10.png`
@@ -139,12 +155,17 @@ Interpretation: noisy ISAC degrades discovery and increases empty scans, but the
 - `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png`
 - `06_analysis/paper_figures/round4_delay_ablation/ablation_collision_penalized_discovery_n100_b10.png`
 - `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_per_scan_n100_b10.png`
+- `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png`
+- `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b15.png`
+- `06_analysis/paper_figures/round5_mobility_transfer/mobility_collision_penalized_n100_b10.png`
+- `06_analysis/paper_figures/round5_mobility_transfer/mobility_collision_penalized_n100_b15.png`
 
 ## Paper-Writing Implications
 
 - Strong claim: ISAC feedback is useful mainly because it creates a candidate beam set after blind probing, not because it directly discovers neighbors.
 - Strong claim: a one-slot delayed candidate-set variant remains far above no-ISAC baselines, so the mechanism is not wholly dependent on same-slot sensing-to-handshake reuse.
 - Strong claim: the learned small-scale policy transfers to N=100 for 10-30 degree beams under both density-preserving and fixed-area scaling.
+- Conservative claim: mobility transfer is strong for Gauss-Markov and random-walk tests but weak for random-direction and random-waypoint tests under the current horizon.
 - Conservative claim: 3-5 degree beams are still a stress region under the current finite-time horizon.
 - Conservative claim: current learning is shared-policy parameter optimization, not yet a full neural MARL implementation.
 - Remaining gap: energy-normalized efficiency still requires an explicit action-energy model; current efficiency results are scan-action and collision normalized, not Joule normalized.
