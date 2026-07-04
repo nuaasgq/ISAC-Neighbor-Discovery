@@ -9,7 +9,7 @@ Date: 2026-07-05
 | Long CEM training | complete | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | `06_analysis/paper_tables/round7_long_cem_training` | `06_analysis/paper_figures/round7_long_cem_training` |
 | Scale/beam grid | complete | `05_simulation/results_raw/round7_scale_beam_grid_light` | `06_analysis/paper_tables/round7_scale_beam_grid_light` | `06_analysis/paper_figures/round7_scale_beam_grid_light` |
 | N=100 multi-mobility | complete | `05_simulation/results_raw/round7_n100_multimobility_600slot` | `06_analysis/paper_tables/round7_n100_multimobility_600slot` | `06_analysis/paper_figures/round7_n100_multimobility_600slot` |
-| Error profiles | quick complete; full run still running | full: `05_simulation/results_raw/round7_error_profiles_light`; quick: `05_simulation/results_raw/round7_error_profiles_quick` | quick: `06_analysis/paper_tables/round7_error_profiles_quick` | quick: `06_analysis/paper_figures/round7_error_profiles_quick` |
+| Error profiles | complete | full: `05_simulation/results_raw/round7_error_profiles_light`; quick: `05_simulation/results_raw/round7_error_profiles_quick` | full: `06_analysis/paper_tables/round7_error_profiles_light`; quick: `06_analysis/paper_tables/round7_error_profiles_quick` | full: `06_analysis/paper_figures/round7_error_profiles_light`; quick: `06_analysis/paper_figures/round7_error_profiles_quick` |
 
 ## Training Summary
 
@@ -74,6 +74,20 @@ Interpretation:
 
 Do not replace the existing main manuscript tables with round7 values yet. Use round7 as robustness and convergence support unless the pending error-profile job provides a clearly stronger result than the current round3/round4 evidence chain.
 
+## Error-Profile Full Snapshot
+
+The full round7 error-profile job completed with three seeds at `N=100`, 10-degree beams, Gauss-Markov mobility, and 600 slots.
+It confirms the main round3 interpretation: moderate configured sensing errors degrade discovery but do not collapse the ISAC advantage over the no-ISAC baseline.
+
+| Protocol | Pfa | Pmd | Offset | Discovery | Std. | Empty scan | Lambda2 | Collisions | Collision-penalized |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| ISAC | 0.00 | 0.00 | 0.0 | 0.3700 | 0.0192 | 0.5427 | 12.7548 | 1127.0 | 0.3013 |
+| ISAC | 0.01 | 0.05 | 0.5 | 0.3534 | 0.0096 | 0.5872 | 12.2588 | 716.3 | 0.3087 |
+| ISAC | 0.05 | 0.15 | 1.0 | 0.2887 | 0.0064 | 0.6400 | 11.4877 | 397.7 | 0.2672 |
+| ISAC | 0.10 | 0.30 | 1.5 | 0.2907 | 0.0063 | 0.6559 | 11.1733 | 340.3 | 0.2720 |
+| one-slot delay | 0.00 | 0.00 | 0.0 | 0.3192 | 0.0070 | 0.5370 | 10.5512 | 733.0 | 0.2780 |
+| no-ISAC | 0.00 | 0.00 | 0.0 | 0.0006 | 0.0002 | 0.9013 | 0.0000 | 0.0 | 0.0006 |
+
 ## Error-Profile Quick Snapshot
 
 The quick backup error-profile job completed with one seed at `N=100`, 10-degree beams, Gauss-Markov mobility, and 600 slots.
@@ -92,4 +106,4 @@ It is useful as a sanity check for the pending full run but not as a replacement
 - Treat round7 as a robustness and audit layer, not as a replacement for the current round3/round4/round5/round6 main evidence chain.
 - Use the scale/beam grid to strengthen the reviewer-facing claim that the method was tested across 3--30 degrees, while keeping 3 and 5 degrees as stress regimes.
 - Use the mobility sweep to show that 15-degree beams can improve random-walk transfer, but abrupt random-direction and random-waypoint mobility remain outside the strongest operating region.
-- If the pending full error-profile job finishes before 11:00, archive it and compare it against `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`. Only promote it if the paired multi-seed trend is at least as stable as the existing round3 error-profile evidence.
+- The full round7 error-profile run is now archived and can be used as supplementary confirmation of the round3 error-profile trend.

@@ -17,6 +17,7 @@ This matrix tracks which manuscript claims are directly supported by archived ex
 | Density-preserving and fixed-area `N=100` scaling produce similar trends. | Same `round3_robustness/n100_*_multiseed` tables and `area_scale_n100_lambda2.png`. | Supports reporting both scaling conventions. |
 | The 5 ms slot duration is not a single tuned point in the Gauss-Markov setting. | `06_analysis/paper_tables/round6_slot_duration_sensitivity/aggregate_metrics.csv`; discovery remains about 0.3564-0.3696 from 1 ms to 20 ms. | Modeling-timescale defense. |
 | Moderate sensing errors degrade but do not collapse the ISAC benefit in the tested settings. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`; paired 600-slot profile sweep. | Robustness claim with moderate-error wording. |
+| The round7 three-seed error-profile rerun confirms the moderate-error trend. | `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv`; full ISAC remains around 0.3534 under mild error and 0.2887 under moderate error, while no-ISAC remains near zero. | Supplementary confirmation; keep round3 as the main manuscript source unless promoted. |
 | One-slot delayed candidate-set use retains much of the benefit while reducing collisions. | `06_analysis/paper_tables/round4_delay_ablation/aggregate_metrics.csv`; discovery 0.2989, lambda2 8.4709, collisions 697.0 versus full ISAC 1050.0. | Implementation-boundary claim. |
 
 ## Bounded or Negative Claims

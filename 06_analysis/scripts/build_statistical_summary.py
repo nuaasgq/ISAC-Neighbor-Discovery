@@ -59,6 +59,11 @@ SOURCE_DEFS = (
         "06_analysis/paper_tables/round7_error_profiles_quick/aggregate_metrics.csv",
     ),
     (
+        "round7_error_profiles_light",
+        "supplement",
+        "06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv",
+    ),
+    (
         "round8_mobility_missing_baselines",
         "supplement",
         "06_analysis/paper_tables/round8_n100_multimobility_missing_baselines_600slot/aggregate_metrics.csv",
