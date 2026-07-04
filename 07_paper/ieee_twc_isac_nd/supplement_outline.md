@@ -29,7 +29,7 @@ Use:
 
 Recommended figures:
 
-- Reward/score evolution.
+- Reward and selection-score evolution.
 - Discovery-rate evolution.
 - Empty-scan evolution.
 - Collision and connectivity evolution.
@@ -65,7 +65,7 @@ Recommended focus:
 
 - Gauss-Markov and random-walk are favorable tested regimes.
 - Random-direction and random-waypoint remain stress regimes.
-- SkyOrbs-like and vanilla learned policy without ISAC remain near zero in the evaluated large-scale mobility settings.
+- SkyOrbs-like and learned policy without ISAC remain near zero in the evaluated large-scale mobility settings.
 
 ## S5. ISAC Error Robustness
 

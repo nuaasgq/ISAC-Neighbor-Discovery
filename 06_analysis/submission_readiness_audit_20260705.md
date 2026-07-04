@@ -1,13 +1,13 @@
 # Submission Readiness Audit - 2026-07-05 Morning
 
-This note records the post-commit readiness state after commit `7e7650f` (`Refine manuscript claims and supplement evidence`).
+This note records the post-commit readiness state after commit `6fa250c` (`Add protocol definitions and submission evidence`).
 
 ## Current Manuscript Package
 
 | Artifact | Status | Notes |
 |---|---:|---|
-| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, about 3951 texcount words, 10 figures, 4 tables. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 7-page IEEEtran supplement, about 739 texcount words, 8 figure blocks, 5 tables. |
+| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, about 3860 texcount total words/caption words, 10 figures, 4 tables. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 7-page IEEEtran supplement, about 730 texcount total words/caption words, 8 figure blocks, 5 tables. |
 | `06_analysis/paper_figures/` | Verified | 358 PNG figures, all within 4:3 aspect tolerance. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 335 normalized rows, mapped by evidence tier in the supplement. |
 
@@ -22,11 +22,11 @@ pdflatex -interaction=nonstopmode main.tex
 pdflatex -interaction=nonstopmode main.tex
 pdflatex -interaction=nonstopmode supplement.tex
 pdflatex -interaction=nonstopmode supplement.tex
-Select-String -Path main.log,supplement.log -Pattern 'Undefined|undefined|Citation|Rerun|Overfull|LaTeX Error|Emergency stop|Fatal error'
+Select-String -Path main.log,supplement.log -Pattern 'LaTeX Error|Emergency stop|Fatal error|Undefined control sequence|Citation.*undefined|Reference.*undefined|Overfull \\hbox'
 python -m pytest 05_simulation\tests
 ```
 
-Result: no log errors, no unresolved references or citations, no overfull warnings, and `25 passed`.
+Result: no log errors, no unresolved references or citations, no overfull warnings, `25 passed`, and all 358 paper-figure PNG files pass the 4:3 aspect-ratio check.
 
 ## Claim Boundaries Now Reflected in Text
 

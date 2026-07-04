@@ -212,7 +212,7 @@ The one-slot delayed ablation uses the same updates but applies $\mathcal{C}_i^{
 \learnedmethod{} uses the same information boundary as \method{} but tunes the decision weights with a shared policy.
 Fig.~\ref{fig:policy_architecture} shows the shared-policy execution structure.
 The implemented training loop uses cross-entropy style shared-parameter search over distributed policy parameters.
-This design keeps deployment fully decentralized: all UAVs reuse the same parameters and act only on their local histories.
+This design keeps deployment distributed at execution time: all UAVs reuse the same parameters and act only on their local histories.
 Neural actor-critic and value-decomposition variants can be built on the same environment, but they are not used as the main performance evidence in this paper.
 
 \begin{figure}[!t]
@@ -255,7 +255,7 @@ Table~\ref{tab:settings} summarizes the main information boundary and evaluation
     Link confirmation & Bidirectional narrow-beam handshake only \\
     ISAC abstraction & Imperfect beam-cell occupancy prior \\
     Main training scale & $N=10$, 10-degree beams \\
-    Transfer tests & Main: 5--30 degree beams; stress sweep: 3-degree beams \\
+    Transfer tests & Evaluated: 3, 5, 10, 15, and 30 degree beams; main useful region: 10--30 degrees; 3--5 degrees as stress cases \\
     Mobility models & Gauss-Markov, random walk, random direction, random waypoint \\
     Range variables & $\Rc/D$ and $\Rs/\Rc$ swept separately \\
     Error variables & False alarm, missed detection, angular-cell offset \\
@@ -371,7 +371,7 @@ Mobility-model transfer is more nuanced.
 When the N=10, 10-degree policy is evaluated at N=100, it retains useful discovery rates under Gauss-Markov and random-walk mobility, but degrades under random-direction and random-waypoint mobility.
 At 10-degree beams, the proposed policy reaches discovery rates of 0.3655 under Gauss-Markov and 0.2024 under random walk, but only 0.0627 under random direction and 0.0154 under random waypoint.
 This result identifies a useful applicability boundary: ISAC-assisted candidate refinement appears most reliable in the tested regimes when beam-cell occupancy evolves smoothly relative to the 600-slot discovery horizon.
-Additional mobility-baseline checks show that the SkyOrbs-like skip-scan and vanilla no-ISAC learned policies remain near zero discovery in the same large-scale mobility settings, so the boundary is not caused by omitting these communication-only baselines.
+Additional mobility-baseline checks show that the SkyOrbs-like skip-scan and learned no-ISAC policies remain near zero discovery in the same large-scale mobility settings, so the boundary is not caused by omitting these communication-only baselines.
 Fig.~\ref{fig:mobility_transfer} reports this mobility sensitivity.
 
 \begin{figure}[!t]

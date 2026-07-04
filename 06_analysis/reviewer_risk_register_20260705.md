@@ -28,5 +28,5 @@ Date: 2026-07-05
 - The paper is not claiming oracle sensing: every edge still requires bidirectional handshake.
 - Candidate-set refinement ablation is decisive and directly tied to the ISAC mechanism.
 - Zero-shot transfer is demonstrated at `N=100` under density-preserving and fixed-area scaling.
-- Missing mobility baselines have been filled; SkyOrbs-like and vanilla no-ISAC remain near zero in the same mobility settings.
+- Missing mobility baselines have been filled; SkyOrbs-like and learned no-ISAC policies remain near zero in the same mobility settings.
 - Round7/round8 stress tests strengthen the claim boundaries rather than hiding failure modes.
