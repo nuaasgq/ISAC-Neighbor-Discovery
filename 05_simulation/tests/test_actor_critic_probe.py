@@ -51,6 +51,37 @@ def test_shared_actor_critic_candidate_mask_samples_valid_actions() -> None:
             assert observation["candidate_mask"][action.beam] > 0.5
 
 
+def test_shared_actor_critic_rule_residual_can_force_candidate_action() -> None:
+    pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=1, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=123)
+    observation = dict(observations[0])
+    target_beam = 3
+    observation["candidate_mask"] = observation["candidate_mask"].copy()
+    observation["candidate_mask"][:] = 0.0
+    observation["candidate_mask"][target_beam] = 1.0
+    observation["candidate_score"] = observation["candidate_score"].copy()
+    observation["candidate_score"][:] = 0.0
+    observation["candidate_score"][target_beam] = 1.0
+    observation["rule_mode_logits"] = observation["rule_mode_logits"].copy()
+    observation["rule_mode_logits"][:] = -2.0
+    observation["rule_mode_logits"][1] = 2.0
+    policy = SharedBeamActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_rule_residual=True,
+        rule_residual_scale=10.0,
+    )
+
+    step = policy.act([observation], deterministic=True)
+
+    assert step.actions[0].mode == "tx"
+    assert step.actions[0].beam == target_beam
+
+
 def test_actor_critic_probe_writes_history(tmp_path: Path) -> None:
     pytest.importorskip("torch")
     module = load_probe_module(SCRIPT, "run_actor_critic_probe")
@@ -108,6 +139,11 @@ def test_actor_critic_imitation_probe_writes_history(tmp_path: Path) -> None:
             beam_bc_coef=1.0,
             value_coef=0.25,
             entropy_coef=0.001,
+            candidate_mask=False,
+            candidate_score=False,
+            topology_deficit=False,
+            rule_residual=False,
+            rule_residual_scale=1.0,
             seed=78,
             expert_seed_offset=7919,
         )

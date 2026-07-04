@@ -24,7 +24,17 @@ class SharedBeamActorCritic:
     MarlNeighborDiscoveryEnv. Centralized truth is not used by the actor.
     """
 
-    def __init__(self, n_beams: int, hidden_dim: int = 96, device: str = "cpu", use_candidate_mask: bool = False):
+    def __init__(
+        self,
+        n_beams: int,
+        hidden_dim: int = 96,
+        device: str = "cpu",
+        use_candidate_mask: bool = False,
+        use_candidate_score: bool = False,
+        use_topology_deficit: bool = False,
+        use_rule_residual: bool = False,
+        rule_residual_scale: float = 1.0,
+    ):
         try:
             import torch
             import torch.nn as nn
@@ -37,6 +47,10 @@ class SharedBeamActorCritic:
         self.hidden_dim = int(hidden_dim)
         self.device = torch.device(device)
         self.use_candidate_mask = bool(use_candidate_mask)
+        self.use_candidate_score = bool(use_candidate_score)
+        self.use_topology_deficit = bool(use_topology_deficit)
+        self.use_rule_residual = bool(use_rule_residual)
+        self.rule_residual_scale = float(rule_residual_scale)
         self.model = _SharedBeamActorCriticModule(self.n_beams, self.hidden_dim).to(self.device)
 
     def parameters(self):
@@ -48,6 +62,34 @@ class SharedBeamActorCritic:
     def eval(self) -> None:
         self.model.eval()
 
+    def logits_value(self, observation: dict, hard_mask: bool = False):
+        torch = self.torch
+        tensors = observation_to_tensors(observation, self.device, torch)
+        tensors = self._prepare_tensors(tensors)
+        mode_logits, beam_logits, value = self.model(tensors)
+        if self.use_rule_residual:
+            if "rule_mode_logits" in tensors:
+                mode_logits = mode_logits + self.rule_residual_scale * tensors["rule_mode_logits"]
+            if "candidate_score" in tensors:
+                beam_logits = beam_logits + self.rule_residual_scale * tensors["candidate_score"]
+        if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
+            mask = tensors["candidate_mask"] > 0.5
+            if bool(mask.any().item()):
+                beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
+        return mode_logits, beam_logits, value
+
+    def _prepare_tensors(self, tensors: dict):
+        torch = self.torch
+        if not self.use_candidate_score and "candidate_score" in tensors:
+            tensors = dict(tensors)
+            tensors["candidate_score"] = torch.zeros_like(tensors["candidate_score"])
+            tensors["beam_features"] = tensors["beam_features"].clone()
+            tensors["beam_features"][:, 4] = 0.0
+        if not self.use_topology_deficit and "topology_deficit" in tensors:
+            tensors = dict(tensors)
+            tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
+        return tensors
+
     def act(self, observations: Sequence[dict], deterministic: bool = False) -> PolicyStep:
         torch = self.torch
         from torch.distributions import Categorical
@@ -57,12 +99,7 @@ class SharedBeamActorCritic:
         values = []
         entropies = []
         for observation in observations:
-            tensors = observation_to_tensors(observation, self.device, torch)
-            mode_logits, beam_logits, value = self.model(tensors)
-            if self.use_candidate_mask and "candidate_mask" in tensors:
-                mask = tensors["candidate_mask"] > 0.5
-                if bool(mask.any().item()):
-                    beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
+            mode_logits, beam_logits, value = self.logits_value(observation, hard_mask=True)
             mode_dist = Categorical(logits=mode_logits)
             beam_dist = Categorical(logits=beam_logits)
             if deterministic:
@@ -99,12 +136,12 @@ class _SharedBeamActorCriticModule:
                 self.n_beams = int(n_beams)
                 self.hidden_dim = int(hidden_dim)
                 self.beam_encoder = nn.Sequential(
-                    nn.Linear(4, hidden_dim),
+                    nn.Linear(5, hidden_dim),
                     nn.Tanh(),
                     nn.Linear(hidden_dim, hidden_dim),
                     nn.Tanh(),
                 )
-                context_dim = 9 + 4 + 4 + 1 + hidden_dim
+                context_dim = 9 + 4 + 4 + 1 + 1 + hidden_dim
                 self.context_encoder = nn.Sequential(
                     nn.Linear(context_dim, hidden_dim),
                     nn.Tanh(),
@@ -126,6 +163,7 @@ class _SharedBeamActorCriticModule:
                         tensors["local_summary"],
                         tensors["last_mode"],
                         tensors["last_beam"],
+                        tensors["topology_deficit"],
                         beam_context,
                     ],
                     dim=0,
@@ -142,12 +180,15 @@ class _SharedBeamActorCriticModule:
 
 
 def observation_to_tensors(observation: dict, device, torch_module) -> dict:
+    n_beams = len(observation["beam_belief"])
+    candidate_score = np.asarray(observation.get("candidate_score", np.zeros(n_beams)), dtype=np.float32)
     beam_features = np.stack(
         [
             np.asarray(observation["beam_belief"], dtype=np.float32),
             np.asarray(observation["beam_age"], dtype=np.float32),
             np.log1p(np.asarray(observation["beam_success"], dtype=np.float32)),
             np.log1p(np.asarray(observation["beam_fail"], dtype=np.float32)),
+            candidate_score,
         ],
         axis=1,
     )
@@ -156,10 +197,20 @@ def observation_to_tensors(observation: dict, device, torch_module) -> dict:
         "local_summary": torch_module.as_tensor(observation["local_summary"], dtype=torch_module.float32, device=device),
         "last_mode": torch_module.as_tensor(observation["last_mode"], dtype=torch_module.float32, device=device),
         "last_beam": torch_module.as_tensor(observation["last_beam"], dtype=torch_module.float32, device=device),
+        "topology_deficit": torch_module.as_tensor(
+            observation.get("topology_deficit", np.zeros(1, dtype=np.float32)),
+            dtype=torch_module.float32,
+            device=device,
+        ),
         "beam_features": torch_module.as_tensor(beam_features, dtype=torch_module.float32, device=device),
     }
+    tensors["candidate_score"] = torch_module.as_tensor(candidate_score, dtype=torch_module.float32, device=device)
     if "candidate_mask" in observation:
         tensors["candidate_mask"] = torch_module.as_tensor(
             observation["candidate_mask"], dtype=torch_module.float32, device=device
+        )
+    if "rule_mode_logits" in observation:
+        tensors["rule_mode_logits"] = torch_module.as_tensor(
+            observation["rule_mode_logits"], dtype=torch_module.float32, device=device
         )
     return tensors

@@ -21,7 +21,6 @@ from isac_nd_sim.marl_env import MODE_NAMES, MODE_TO_INDEX, MarlNeighborDiscover
 from isac_nd_sim.mobility import step_states  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import (  # noqa: E402
     SharedBeamActorCritic,
-    observation_to_tensors,
 )
 from isac_nd_sim.simulator import Action, NeighborDiscoverySimulator  # noqa: E402
 
@@ -58,6 +57,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--beam-bc-coef", type=float, default=1.0)
     parser.add_argument("--value-coef", type=float, default=0.25)
     parser.add_argument("--entropy-coef", type=float, default=0.001)
+    parser.add_argument("--candidate-mask", action="store_true", help="Use local ISAC candidate masks during execution.")
+    parser.add_argument("--candidate-score", action="store_true", help="Expose local candidate scores to the beam encoder.")
+    parser.add_argument("--topology-deficit", action="store_true", help="Expose local discovered-degree deficit to the actor.")
+    parser.add_argument("--rule-residual", action="store_true", help="Add local rule priors as residual logits.")
+    parser.add_argument("--rule-residual-scale", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--expert-seed-offset", type=int, default=7919)
     return parser.parse_args()
@@ -78,7 +82,16 @@ def run_probe(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
 
-    policy = SharedBeamActorCritic(cfg.n_beams, hidden_dim=int(args.hidden_dim), device="cpu")
+    policy = SharedBeamActorCritic(
+        cfg.n_beams,
+        hidden_dim=int(args.hidden_dim),
+        device="cpu",
+        use_candidate_mask=bool(args.candidate_mask),
+        use_candidate_score=bool(args.candidate_score),
+        use_topology_deficit=bool(args.topology_deficit),
+        use_rule_residual=bool(args.rule_residual),
+        rule_residual_scale=float(args.rule_residual_scale),
+    )
     optimizer = torch.optim.Adam(policy.parameters(), lr=float(args.learning_rate))
     history: list[dict[str, Any]] = []
 
@@ -269,8 +282,7 @@ def behavior_cloning_loss(
     active_mask = []
 
     for observation, action in zip(observations, expert_actions, strict=True):
-        tensors = observation_to_tensors(observation, policy.device, torch_module)
-        mode_logits, beam_logits, value = policy.model(tensors)
+        mode_logits, beam_logits, value = policy.logits_value(observation, hard_mask=False)
         mode_logits_rows.append(mode_logits)
         beam_logits_rows.append(beam_logits)
         value_rows.append(value.squeeze(-1))
@@ -527,6 +539,11 @@ def build_manifest(args: argparse.Namespace, cfg: SimulationConfig, history: lis
         "learning_rate": float(args.learning_rate),
         "seed": int(args.seed),
         "stochastic_eval": bool(args.stochastic_eval),
+        "candidate_mask": bool(args.candidate_mask),
+        "candidate_score": bool(args.candidate_score),
+        "topology_deficit": bool(args.topology_deficit),
+        "rule_residual": bool(args.rule_residual),
+        "rule_residual_scale": float(args.rule_residual_scale),
         "uses_marl_env": True,
         "uses_shared_actor_critic": True,
         "teacher_forced_env_final": final_bc,

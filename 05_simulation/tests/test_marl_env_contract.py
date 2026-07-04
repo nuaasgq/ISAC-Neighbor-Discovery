@@ -65,6 +65,9 @@ def test_marl_env_reset_observation_contract_has_no_neighbor_truth() -> None:
     assert first["beam_success"].shape == (cfg.n_beams,)
     assert first["beam_fail"].shape == (cfg.n_beams,)
     assert first["candidate_mask"].shape == (cfg.n_beams,)
+    assert first["candidate_score"].shape == (cfg.n_beams,)
+    assert first["topology_deficit"].shape == (1,)
+    assert first["rule_mode_logits"].shape == (4,)
     assert np.count_nonzero(first["candidate_mask"]) >= 1
     assert first["last_mode"].shape == (4,)
     assert first["last_beam"].shape == (1,)

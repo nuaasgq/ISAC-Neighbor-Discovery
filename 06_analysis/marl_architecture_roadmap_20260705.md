@@ -12,8 +12,9 @@ The repository already has the minimum scaffolding for a neural MARL extension:
 
 - `05_simulation/src/isac_nd_sim/neural_shared_actor_critic.py`
   - `SharedBeamActorCritic` already implements a shared decentralized actor with a mode head and flat beam head.
-  - Beam tokens are built from belief, age, success, and fail features.
+  - Beam tokens are built from belief, age, success, fail, and optional candidate-score features.
   - After the 2026-07-05 morning update, the actor can optionally apply a local candidate mask to beam logits via `use_candidate_mask=True`.
+  - The actor also supports optional local candidate scores, topology-deficit conditioning, and rule-residual logits via `use_candidate_score=True`, `use_topology_deficit=True`, and `use_rule_residual=True`.
 
 - `05_simulation/run_actor_critic_imitation_probe.py`
   - Provides behavior cloning from the rule expert and optional actor-critic fine-tuning.
@@ -46,7 +47,7 @@ The next neural method should be an ISAC-candidate-constrained shared actor-crit
      - recent beam-lock / near-miss beams,
      - a small exploration subset.
    - Enforce at least one random exploration beam so sensing errors cannot permanently prune cells.
-   - Current implementation status: `MarlNeighborDiscoveryEnv` now exposes a local `candidate_mask` observation derived only from belief, age, success/fail memory, and last beam; it does not use undiscovered-neighbor truth.
+   - Current implementation status: `MarlNeighborDiscoveryEnv` now exposes local `candidate_mask` and `candidate_score` observations derived only from belief, age, success/fail memory, recency, and last beam; it does not use undiscovered-neighbor truth.
 
 3. **Masked beam head**
    - Compute logits for all beams, then set non-candidate logits to a large negative value before sampling.
@@ -60,10 +61,12 @@ The next neural method should be an ISAC-candidate-constrained shared actor-crit
        \ell_i(b)=\ell_i^{rule}(b)+\ell_i^{nn}(b)
      \]
    - This keeps the neural method close to the mechanism that already works while allowing data-driven corrections.
+   - Current implementation status: `rule_mode_logits` are exposed by the environment and can be added to the neural logits with `use_rule_residual=True`.
 
 5. **Topology-deficit conditioning**
    - Include discovered degree, target-degree deficit, component-local summaries, and recent discovery count in the context encoder.
    - Do not claim global lambda2 optimization unless a centralized critic or graph estimator is actually trained.
+   - Current implementation status: a scalar local `topology_deficit` is exposed and can be included in the actor context with `use_topology_deficit=True`.
 
 6. **Centralized critic**
    - During training only, consume `training_state()`:
@@ -79,14 +82,15 @@ Target: produce a method-probe result, not a main manuscript result.
 
 1. Add candidate mask generation to `MarlNeighborDiscoveryEnv._observation_for()` or a helper:
    - `candidate_mask`
-   - `candidate_rank`
-   - `candidate_count`
-   - Status: `candidate_mask` implemented; `candidate_rank` and `candidate_count` remain optional extensions.
+   - `candidate_score`
+   - `topology_deficit`
+   - `rule_mode_logits`
+   - Status: implemented and covered by MARL contract tests. `candidate_rank` and `candidate_count` remain optional extensions.
 
 2. Add optional masking to `SharedBeamActorCritic.act()`:
    - `mask_mode="none|topk|threshold|hybrid"`
    - `top_k=8` for B=10/N=10 probe.
-   - Status: optional mask path implemented and covered by tests.
+   - Status: optional mask path, candidate score, topology-deficit context, and rule-residual path are implemented and covered by tests.
 
 3. Re-run behavior cloning:
 
@@ -110,8 +114,14 @@ python 05_simulation/run_actor_critic_imitation_probe.py `
   --sensing-period-slots 1 `
   --hidden-dim 64 `
   --learning-rate 0.001 `
+  --candidate-mask `
+  --candidate-score `
+  --topology-deficit `
+  --rule-residual `
   --seed 20260705
 ```
+
+Smoke status: `05_simulation/results_raw/structured_imitation_smoke_20260705` verified the structured path with 2 BC episodes, 1 RL episode, and 1 stochastic evaluation episode. The held-out stochastic student reached nonzero discovery (`env_discovery_rate=0.3571`) in a very small N=6/B=18/12-slot smoke. This is a wiring and feasibility signal only, not a manuscript result.
 
 4. Compare against:
    - rule expert,

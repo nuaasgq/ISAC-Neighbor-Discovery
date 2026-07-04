@@ -149,9 +149,11 @@ class MarlNeighborDiscoveryEnv:
         area = np.asarray(self.cfg.area_size_m, dtype=float)
         speed_scale = _speed_scale(self.cfg.mobility)
         degree = sum(1 for edge in self._sim.discovered_edges if node in edge)
+        topology_deficit = max(0.0, self.cfg.target_degree - degree) / max(1, self.cfg.target_degree)
         last_action = self._last_actions[node]
         mode_one_hot = np.zeros(len(MODE_NAMES), dtype=np.float32)
         mode_one_hot[MODE_TO_INDEX[last_action.mode]] = 1.0
+        candidate = self._candidate_features_for(node)
 
         self_state = np.asarray(
             [
@@ -179,34 +181,66 @@ class MarlNeighborDiscoveryEnv:
             "beam_age": (self._sim.age[node] / max(1, self.cfg.slots_per_episode)).astype(np.float32).copy(),
             "beam_success": self._sim.success_count[node].astype(np.float32).copy(),
             "beam_fail": self._sim.fail_count[node].astype(np.float32).copy(),
-            "candidate_mask": self._candidate_mask_for(node),
+            "candidate_mask": candidate["mask"],
+            "candidate_score": candidate["score"],
+            "topology_deficit": np.asarray([topology_deficit], dtype=np.float32),
+            "rule_mode_logits": self._rule_mode_logits_for(node, topology_deficit, int(np.count_nonzero(candidate["mask"]))),
             "last_mode": mode_one_hot,
             "last_beam": np.asarray([last_action.beam / max(1, self.n_beams - 1)], dtype=np.float32),
             "local_summary": local_summary,
         }
 
-    def _candidate_mask_for(self, node: int) -> np.ndarray:
-        """Local beam proposal mask for candidate-constrained neural policies.
+    def _candidate_features_for(self, node: int) -> dict[str, np.ndarray]:
+        """Local beam proposal features for candidate-constrained policies.
 
-        The mask is derived only from local belief/memory variables exposed to
-        the actor. It does not use true neighbor positions or undiscovered
-        topology. Existing policies may ignore this optional observation key.
+        These features are derived only from local belief/memory variables
+        exposed to the actor. They do not use true neighbor positions or
+        undiscovered topology. Existing policies may ignore these optional keys.
         """
 
         belief = self._sim.belief[node]
         success = np.log1p(self._sim.success_count[node])
         fail = np.log1p(self._sim.fail_count[node])
         age = self._sim.age[node] / max(1.0, float(self.cfg.slots_per_episode))
-        score = belief + 0.10 * success - 0.05 * fail + 0.01 * age
+        positive_ttl = max(50, min(300, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
+        recency_slots = np.maximum(0.0, self._slot - self._sim.last_positive_slot[node])
+        bounded_recency = np.minimum(recency_slots, float(positive_ttl)) / max(1.0, float(positive_ttl))
+        raw_score = belief + 0.35 * success - 0.25 * fail - 0.05 * bounded_recency + 0.02 * age
+        score_min = float(raw_score.min()) if raw_score.size else 0.0
+        score_span = float(raw_score.max() - score_min) if raw_score.size else 0.0
+        if score_span > 1e-9:
+            score = (raw_score - score_min) / score_span
+        else:
+            score = np.full_like(raw_score, 0.5, dtype=float)
         top_k = min(self.n_beams, max(4, int(np.ceil(np.sqrt(max(1, self.n_beams))))))
-        top_indices = np.argpartition(score, -top_k)[-top_k:]
+        top_indices = np.argpartition(raw_score, -top_k)[-top_k:]
         threshold = max(float(self.cfg.exploration_floor), float(np.quantile(belief, 0.90)) if self.n_beams > 1 else 0.0)
         mask = (belief >= threshold).astype(np.float32)
         mask[top_indices] = 1.0
         last_beam = int(self._last_actions[node].beam)
         if 0 <= last_beam < self.n_beams:
             mask[last_beam] = 1.0
-        return mask.astype(np.float32, copy=False)
+        return {
+            "mask": mask.astype(np.float32, copy=False),
+            "score": score.astype(np.float32, copy=False),
+        }
+
+    def _rule_mode_logits_for(self, node: int, topology_deficit: float, candidate_count: int) -> np.ndarray:
+        """Local coordination prior used as an optional neural residual input."""
+
+        sparse_candidates = candidate_count <= max(2, int(np.ceil(np.sqrt(max(1, self.n_beams)))))
+        tx_phase = (node + self._slot) % 2 == 0
+        active_bias = 0.25 + 0.75 * float(topology_deficit)
+        logits = np.asarray(
+            [
+                0.10 + 0.40 * float(topology_deficit) + (0.20 if sparse_candidates else 0.0),
+                active_bias if tx_phase else 0.15 * float(topology_deficit),
+                0.15 * float(topology_deficit) if tx_phase else active_bias,
+                -0.60 - 0.40 * float(topology_deficit),
+            ],
+            dtype=np.float32,
+        )
+        return logits
 
     def _normalize_actions(
         self,
