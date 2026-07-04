@@ -58,6 +58,11 @@ SOURCE_DEFS = (
         "supplement_sanity",
         "06_analysis/paper_tables/round7_error_profiles_quick/aggregate_metrics.csv",
     ),
+    (
+        "round8_mobility_missing_baselines",
+        "supplement",
+        "06_analysis/paper_tables/round8_n100_multimobility_missing_baselines_600slot/aggregate_metrics.csv",
+    ),
 )
 
 CONTEXT_COLUMNS = (
@@ -167,6 +172,7 @@ Interpretation notes:
 - Rows tagged `main` support current manuscript tables and figures.
 - Rows tagged `main_boundary` support applicability-boundary claims.
 - Rows tagged `supplement` are useful for reviewer-facing robustness evidence but should not replace the current main evidence chain without a separate promotion decision.
+- Rows tagged `supplement_sanity` are quick or one-seed checks; use them only to track trends while waiting for fuller multi-seed results.
 - Total rows: {row_count}
 """
     (output_dir / "README.md").write_text(text, encoding="utf-8")
