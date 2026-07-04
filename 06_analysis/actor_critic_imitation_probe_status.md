@@ -53,3 +53,42 @@ python -m pytest 05_simulation/tests/test_actor_critic_probe.py 05_simulation/te
 ```
 
 Result: `6 passed`.
+
+## Round7 Medium Probe
+
+A larger local probe was also run to test whether the autonomous student policy has a usable signal beyond the tiny smoke test.
+
+Deterministic eval after BC+short actor-critic fine-tuning:
+
+```powershell
+python 05_simulation/run_actor_critic_imitation_probe.py --config 05_simulation/configs/mvp.yaml --output 05_simulation/results_raw/actor_critic_imitation_probe_round7 --bc-episodes 20 --rl-episodes 20 --eval-episodes 3 --slots 80 --node-count 10 --azimuth-cells 12 --elevation-cells 6 --communication-range 1200 --sensing-range 1200 --false-alarm-rate 0 --miss-detection-rate 0 --angular-cell-offset-std 0 --sensing-period-slots 1 --hidden-dim 64 --learning-rate 0.001 --seed 20260705
+```
+
+Result: teacher-forced expert actions still produced discovery, but deterministic student evaluation collapsed to one dominant mode and achieved zero discovery.
+
+BC-only deterministic eval:
+
+```powershell
+python 05_simulation/run_actor_critic_imitation_probe.py --config 05_simulation/configs/mvp.yaml --output 05_simulation/results_raw/actor_critic_imitation_probe_round7_bc_only --bc-episodes 40 --rl-episodes 0 --eval-episodes 3 --slots 80 --node-count 10 --azimuth-cells 12 --elevation-cells 6 --communication-range 1200 --sensing-range 1200 --false-alarm-rate 0 --miss-detection-rate 0 --angular-cell-offset-std 0 --sensing-period-slots 1 --hidden-dim 64 --learning-rate 0.001 --seed 20260705
+```
+
+Result: deterministic student evaluation again achieved zero discovery, with all agents selecting the same communication mode.
+
+Stochastic eval after BC-only training:
+
+```powershell
+python 05_simulation/run_actor_critic_imitation_probe.py --config 05_simulation/configs/mvp.yaml --output 05_simulation/results_raw/actor_critic_imitation_probe_round7_stochastic --bc-episodes 40 --rl-episodes 0 --eval-episodes 5 --stochastic-eval --slots 80 --node-count 10 --azimuth-cells 12 --elevation-cells 6 --communication-range 1200 --sensing-range 1200 --false-alarm-rate 0 --miss-detection-rate 0 --angular-cell-offset-std 0 --sensing-period-slots 1 --hidden-dim 64 --learning-rate 0.001 --seed 20260705
+```
+
+Result summary:
+
+| Eval mode | Episodes | Mean discovery rate | Mean discovered edges | Mean empty-scan ratio | Nonzero episodes |
+|---|---:|---:|---:|---:|---:|
+| Stochastic student | 5 | 0.0140 | 0.6 | 0.9009 | 2 |
+
+Interpretation: stochastic execution avoids pure mode collapse in some episodes, but beam selection remains too weak for a paper-result neural MARL claim. The next neural architecture should not rely on a flat categorical over all 3D beam cells. It should use at least one of:
+
+- ISAC top-k beam masking or candidate-set constrained beam heads.
+- Rule-residual logits added to learned logits.
+- Separate mode coordination prior to avoid all-TX/all-RX deterministic collapse.
+- Graph/local-neighborhood pooling once discovered neighbors exist.

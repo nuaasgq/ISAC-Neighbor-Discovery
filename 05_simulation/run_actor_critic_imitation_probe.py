@@ -35,6 +35,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bc-episodes", type=int, default=8)
     parser.add_argument("--rl-episodes", type=int, default=0)
     parser.add_argument("--eval-episodes", type=int, default=1)
+    parser.add_argument(
+        "--stochastic-eval",
+        action="store_true",
+        help="Sample from the learned policy during evaluation instead of using argmax actions.",
+    )
     parser.add_argument("--slots", type=int, default=40)
     parser.add_argument("--node-count", type=int, default=None)
     parser.add_argument("--azimuth-cells", type=int, default=None)
@@ -385,13 +390,13 @@ def evaluate_policy(
             truncated = False
             rewards = []
             while not truncated:
-                step = policy.act(observations, deterministic=True)
+                step = policy.act(observations, deterministic=not bool(args.stochastic_eval))
                 observations, reward, _terminated, truncated, _step_info = env.step(step.actions)
                 rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
             summary = env._sim.summarize(start_episode + offset).as_dict()
             rows.append(
                 {
-                    "phase": "eval_deterministic",
+                    "phase": "eval_stochastic" if bool(args.stochastic_eval) else "eval_deterministic",
                     "episode": start_episode + offset,
                     "seed": seed,
                     "expert_protocol": str(args.expert_protocol),
@@ -499,7 +504,7 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def build_manifest(args: argparse.Namespace, cfg: SimulationConfig, history: list[dict[str, Any]]) -> dict[str, Any]:
     final_bc = next((row for row in reversed(history) if row.get("phase") == "bc"), {})
-    final_eval = next((row for row in reversed(history) if row.get("phase") == "eval_deterministic"), {})
+    final_eval = next((row for row in reversed(history) if str(row.get("phase", "")).startswith("eval_")), {})
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "algorithm": "shared_actor_critic_imitation_probe",
@@ -521,6 +526,7 @@ def build_manifest(args: argparse.Namespace, cfg: SimulationConfig, history: lis
         "hidden_dim": int(args.hidden_dim),
         "learning_rate": float(args.learning_rate),
         "seed": int(args.seed),
+        "stochastic_eval": bool(args.stochastic_eval),
         "uses_marl_env": True,
         "uses_shared_actor_critic": True,
         "teacher_forced_env_final": final_bc,

@@ -72,6 +72,7 @@ def test_actor_critic_imitation_probe_writes_history(tmp_path: Path) -> None:
             bc_episodes=1,
             rl_episodes=0,
             eval_episodes=0,
+            stochastic_eval=False,
             slots=2,
             node_count=4,
             azimuth_cells=4,

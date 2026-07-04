@@ -12,7 +12,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 | Stream | Status | Artifact target | Notes |
 |---|---|---|---|
 | Long CEM training | running | `05_simulation/results_raw/round7_long_cem_train_n10_b10_600slot` | Trains at `N=10`, `10 deg`, 600-slot horizon with 3 training seeds and 3 held-out seeds. Raw output is local-only. |
-| Neural MARL probe | infrastructure committed | `05_simulation/run_actor_critic_probe.py` | Current actor-critic smoke run is a method scaffold, not a paper result. A rule-assisted/imitation probe is being explored separately. |
+| Neural MARL probe | method probe completed | `05_simulation/run_actor_critic_imitation_probe.py` | Rule-assisted BC works in teacher-forced mode, but autonomous student discovery remains weak. Treat as method scaffolding, not a paper result. |
 | Experiment-matrix audit | running in parallel agent | analysis summary | Checks whether current figures cover the dimensions commonly expected in TWC/TCOM-style ISAC/beam-management papers. |
 | Paper evidence audit | active | `07_paper/ieee_twc_isac_nd/main.tex` and result indexes | Main risk is wording: supported claims must be separated from stress-regime and limitation claims. |
 
@@ -28,6 +28,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 
 - The current main learning result is CEM/shared-policy parameter optimization, not a full MAPPO, QMIX, or GNN-MARL algorithm.
 - The actor-critic implementation is currently a probe. It should only become a paper result if it produces stable nonzero discovery and meaningful reward convergence.
+- Round7 imitation probes show that flat neural beam selection is the current bottleneck: stochastic student evaluation produced only about 0.014 mean discovery rate over five short episodes.
 - The SkyOrbs comparison is a SkyOrbs-like baseline, not a strict reproduction of the full original protocol.
 - 3-5 degree beams and abrupt mobility models remain stress regimes under the current finite horizon.
 - Energy-normalized discovery is not yet available because a Joule-level action-energy model has not been added.
