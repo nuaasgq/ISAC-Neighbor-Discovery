@@ -12,7 +12,7 @@ Make the current ISAC-assisted UAV-UAV narrow-beam neighbor-discovery study defe
 1. Claim boundary and citation cleanup.
    - Keep the contribution as a cross-layer link-layer neighbor-discovery protocol.
    - Use `SkyOrbs-like`, not `SkyOrbs reproduction`.
-   - Use `shared-parameter policy optimization`, not full MAPPO/QMIX/GNN MARL.
+   - Use `shared-parameter protocol tuning`, not full MAPPO/QMIX/GNN MARL.
    - Treat 3/5-degree beams and random-direction/waypoint mobility as stress regimes.
 
 2. Evidence completeness.

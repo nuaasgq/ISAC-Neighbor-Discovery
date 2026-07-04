@@ -6,10 +6,11 @@ This note records the post-commit readiness state after commit `6fa250c` (`Add p
 
 | Artifact | Status | Notes |
 |---|---:|---|
-| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, about 3860 texcount total words/caption words, 10 figures, 4 tables. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 7-page IEEEtran supplement, about 730 texcount total words/caption words, 8 figure blocks, 5 tables. |
+| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, texcount `3654+62+294`, 10 figures, 4 tables. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 7-page IEEEtran supplement, texcount `483+40+268`, 8 figure blocks, 6 tables. |
 | `06_analysis/paper_figures/` | Verified | 358 PNG figures, all within 4:3 aspect tolerance. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 335 normalized rows, mapped by evidence tier in the supplement. |
+| `06_analysis/paper_tables/paired_delta_summary/` | Verified | 115 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
 
 ## Verification Snapshot
 
@@ -24,6 +25,7 @@ pdflatex -interaction=nonstopmode supplement.tex
 pdflatex -interaction=nonstopmode supplement.tex
 Select-String -Path main.log,supplement.log -Pattern 'LaTeX Error|Emergency stop|Fatal error|Undefined control sequence|Citation.*undefined|Reference.*undefined|Overfull \\hbox'
 python -m pytest 05_simulation\tests
+python 06_analysis\scripts\build_paired_delta_summary.py
 ```
 
 Result: no log errors, no unresolved references or citations, no overfull warnings, `25 passed`, and all 358 paper-figure PNG files pass the 4:3 aspect-ratio check.
@@ -32,7 +34,7 @@ Result: no log errors, no unresolved references or citations, no overfull warnin
 
 | Claim area | Current wording discipline |
 |---|---|
-| Learning method | Use "shared-parameter policy optimization" and "learned/shared policy"; do not call the current evidence full MAPPO/QMIX/GNN MARL. |
+| Learning method | Use "shared-parameter protocol tuning" and "learned/shared policy"; do not call the current evidence full MAPPO/QMIX/GNN MARL. |
 | SkyOrbs comparison | Use "SkyOrbs-like" or "SkyOrbs-inspired"; the main text explicitly says it is not a strict reproduction. |
 | Beamwidth coverage | Write "evaluated over 3--30 degrees"; 10--30 degrees are the main useful operating region, while 3--5 degrees are stress cases. |
 | ISAC abstraction | Treat `Rs`, false alarms, missed detections, and angular-cell errors as protocol-level abstraction parameters, not a calibrated radar equation. |
@@ -43,7 +45,7 @@ Result: no log errors, no unresolved references or citations, no overfull warnin
 
 The main manuscript now carries the concise evidence chain: training evolution, dynamic protocol comparison, N=100 transfer, area scaling, mobility boundary, range sensitivity, error robustness, and mechanism ablation.
 
-The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, and statistical evidence-tier index.
+The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, and statistical evidence-tier index.
 
 ## Remaining Risks Before External Submission
 

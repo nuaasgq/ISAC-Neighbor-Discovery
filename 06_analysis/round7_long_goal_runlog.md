@@ -48,7 +48,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 
 ## Conservative Boundaries
 
-- The current main learning result is CEM/shared-policy parameter optimization, not a full MAPPO, QMIX, or GNN-MARL algorithm.
+- The current main learning result is CEM-style shared-parameter protocol tuning, not a full MAPPO, QMIX, or GNN-MARL algorithm.
 - The actor-critic implementation is currently a probe. It should only become a paper result after multi-seed baseline comparisons and transfer tests.
 - Round7 imitation probes show that the MARL environment must preserve ISAC piggyback belief updates. With the corrected ISAC-capable env, stochastic student evaluation reached about 0.647 mean discovery rate over five short episodes, but this is not yet a paper main result.
 - The SkyOrbs-like comparison is an inspired baseline, not a strict reproduction of the full original protocol.
@@ -60,7 +60,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 ## Remaining Work Before 11:00
 
 1. Continue polishing the IEEE manuscript around related work, limitations, and result-story continuity.
-2. Keep the current learning claim conservative: shared-parameter policy optimization is the main result; neural MARL remains a probe.
+2. Keep the current learning claim conservative: shared-parameter protocol tuning is the main result; neural MARL remains a probe.
 3. Do not launch additional heavy sweeps unless a specific paper gap appears. The current evidence is potentially sufficient for a bounded paper draft if the claim boundaries remain conservative.
 4. If adding tables or figures, prefer supplement/readiness artifacts over overcrowding the 7-page main draft.
 5. Before any local commit, run `git status`, stage only compact scripts/docs/tables/figures, and keep raw `results_raw` outputs local.

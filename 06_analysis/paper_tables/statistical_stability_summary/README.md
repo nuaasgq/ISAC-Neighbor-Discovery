@@ -11,6 +11,7 @@ Files:
 Interpretation notes:
 
 - The CI columns use `1.96 * std / sqrt(n_episodes)` and are intended as a concise reporting aid, not a replacement for paired statistical testing.
+- Paired treatment-control deltas are provided separately in `../paired_delta_summary/paired_delta_summary.csv`.
 - Rows tagged `main` support current manuscript tables and figures.
 - Rows tagged `main_boundary` support applicability-boundary claims.
 - Rows tagged `supplement` are useful for reviewer-facing robustness evidence but should not replace the current main evidence chain without a separate promotion decision.

@@ -39,7 +39,7 @@ The complete evidence map is maintained in the repository coverage matrix.
     \midrule
     Beamwidths 3--30 deg & Main+stress & Main 5/10/15/30 deg: round3 N=100 transfer/robustness tables; stress 3/5/10/15/30 deg: round7 scale-beam grid; full 3 deg five-baseline check: round9. & 3 and 5 deg are stress regimes. \\
     Node counts 10--100 & Partially crossed & Round7 scale-beam grid and round3 N=100 density/fixed scaling. & Not a full Cartesian cross with every mobility and error setting. \\
-    Small-to-large transfer & Bounded & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter policy optimization. \\
+    Small-to-large transfer & Bounded & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter protocol tuning. \\
     Baselines & Main+stress & Uniform random, SkyOrbs-like, learned no-ISAC, enhanced no-ISAC, enhanced ISAC. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
     Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
     Range and timing & Sensitivity & Range grid and slot-duration sensitivity. & Protocol-level abstraction, not calibrated RF range law. \\
@@ -154,7 +154,7 @@ This supports writing ``evaluated over 3--30 degrees,'' not ``effective over 3--
 \section{Mobility Boundary and Missing Baselines}
 
 Fig.~\ref{fig:supp_mobility_full} visualizes the merged round7/round8 mobility table.
-It confirms that the mobility-boundary interpretation is not caused by omitting the SkyOrbs-like or vanilla learned no-ISAC baseline.
+It supports the mobility-boundary interpretation and indicates that the observed boundary is not caused by omitting the SkyOrbs-like or learned no-ISAC baseline.
 
 \begin{figure*}[!t]
   \centering
@@ -225,6 +225,25 @@ The statistical summary includes the N=10/20/50/100 scale-grid rows where archiv
 
 \begin{table*}[!t]
   \centering
+  \caption{Representative Paired Treatment-Control Deltas from Identical Scenario Seeds}
+  \label{tab:supp_paired_delta}
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{p{0.36\textwidth}ccc}
+    \toprule
+    Scenario and comparison & $\Delta$ discovery (95\% bootstrap CI) & $\Delta$ empty or efficiency & $\Delta\lambda_2$ \\
+    \midrule
+    N=100, B=10, proposed vs enhanced no-ISAC & +0.3648 (0.3608, 0.3699) & Empty: -0.4025 & +12.92 \\
+    N=100, B=15, proposed vs enhanced no-ISAC & +0.5403 (0.5370, 0.5428) & Empty: -0.5052 & +26.84 \\
+    N=100, B=10, proposed vs candidate-set removal & +0.3341 (0.3297, 0.3416) & Coll.-penalized: +0.2702 & +12.92 \\
+    N=100, B=10, one-slot delayed vs enhanced no-ISAC & +0.2982 (0.2891, 0.3133) & Coll.-penalized: +0.2613 & +8.47 \\
+    N=100, B=10, random-walk proposed vs enhanced no-ISAC & +0.2021 (0.1899, 0.2101) & Empty: -0.1392 & +5.95 \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+  \centering
   \caption{Normalized Statistical Evidence Index}
   \label{tab:supp_stats_index}
   \scriptsize
@@ -240,5 +259,8 @@ The statistical summary includes the N=10/20/50/100 scale-grid rows where archiv
     \bottomrule
   \end{tabular}
 \end{table*}
+
+The paired-delta table is generated from \texttt{paired\_delta\_summary.csv}; every row pairs protocols by identical scenario seeds and matching scenario parameters.
+The intervals are descriptive bootstrap percentile intervals over paired seed-level deltas and should be interpreted together with the small number of seeds.
 
 \end{document}

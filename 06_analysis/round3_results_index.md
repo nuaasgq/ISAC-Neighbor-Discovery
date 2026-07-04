@@ -182,5 +182,5 @@ Interpretation: the 5 ms slot-duration assumption is not a fragile point in this
 - Strong claim: the 5 ms slot-duration assumption is not a tuned single point in the tested 1-20 ms Gauss-Markov range.
 - Conservative claim: mobility transfer is strong for Gauss-Markov and random-walk tests but weak for random-direction and random-waypoint tests under the current horizon.
 - Conservative claim: 3-5 degree beams are still a stress region under the current finite-time horizon.
-- Conservative claim: current learning is shared-policy parameter optimization, not yet a full neural MARL implementation.
+- Conservative claim: current learning is shared-parameter protocol tuning, not yet a full neural MARL implementation.
 - Remaining gap: energy-normalized efficiency still requires an explicit action-energy model; current efficiency results are scan-action and collision normalized, not Joule normalized.

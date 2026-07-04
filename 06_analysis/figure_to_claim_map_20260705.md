@@ -13,7 +13,7 @@ This map records why each selected paper figure is in the manuscript package.
 | Table I information boundary | `main.tex` | Own state is available; undiscovered neighbor state and global topology are not. |
 | Table II dynamic comparison | `main.tex` | ISAC-assisted protocol improves finite-time discovery over random scanning in small dynamic swarms. |
 | Table III N=100 transfer | `main.tex` | 10--30 degree beams are useful transfer regimes; 5 degrees is weak. |
-| Table IV N=100 baselines | `main.tex` | At N=100/B=10, implemented communication-only baselines remain near zero, while ISAC-assisted policy forms useful topology. |
+| Table IV N=100 baselines | `main.tex` | At N=100/B=10, implemented communication-only baselines remain near zero, while ISAC-assisted policy forms a useful discovered-neighbor graph. |
 | Fig. 5 N=100 density transfer | `round3_n100_transfer/density_beamwidth_discovery_rate_n100.png` | Beamwidth transfer trend under density-preserving scaling. |
 | Fig. 6 N=100 area scaling | `round3_n100_transfer/area_scale_n100_lambda2.png` | Transfer trend is not solely an area-scaling artifact. |
 | Fig. 7 mobility | `round5_mobility_transfer/mobility_discovery_n100_b10.png` | Gauss-Markov/random-walk are favorable; abrupt mobility is a boundary. |

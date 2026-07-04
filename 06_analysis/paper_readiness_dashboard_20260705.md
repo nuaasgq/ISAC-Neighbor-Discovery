@@ -6,7 +6,7 @@ Date: 2026-07-05
 
 The current data package is potentially sufficient for a bounded IEEE TWC/TCOM-style draft if the paper is framed as:
 
-> ISAC-assisted link-layer beam-cell occupancy priors improve distributed-execution narrow-beam UAV-UAV neighbor discovery and finite-time topology formation in tested dynamic regimes.
+> ISAC-assisted link-layer beam-cell occupancy priors improve distributed-execution narrow-beam UAV-UAV neighbor discovery and finite-time discovered-neighbor graph formation in tested dynamic regimes.
 
 The data do not yet support a claim of full neural MARL superiority, strict SkyOrbs reproduction, Joule-level energy efficiency, or universal robustness across all extremely narrow beams and abrupt mobility models.
 
@@ -57,7 +57,7 @@ Recent checks support the current scope:
 
 ## Remaining Risks
 
-- Full neural MARL is not yet a main contribution.
+- Full neural MARL is not yet a main contribution; the current learning evidence is shared-parameter protocol tuning.
 - Energy efficiency is collision/scan normalized only.
 - 3-degree and 5-degree beams are not solved.
 - Random-direction and random-waypoint mobility remain stress regimes.

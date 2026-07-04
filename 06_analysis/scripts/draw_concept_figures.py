@@ -28,7 +28,7 @@ def setup_matplotlib():
             "savefig.dpi": DPI,
             "font.family": "serif",
             "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
-            "font.size": 10,
+            "font.size": 9.5,
             "axes.linewidth": 0.8,
         }
     )
@@ -73,8 +73,6 @@ def draw_system_model(plt, path: Path) -> dict:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.set_title("Self-localized UAV swarm with unknown neighbors", pad=8)
-
     positions = np.array(
         [
             [0.16, 0.68],
@@ -91,16 +89,21 @@ def draw_system_model(plt, path: Path) -> dict:
         ax.plot([positions[i, 0], positions[j, 0]], [positions[i, 1], positions[j, 1]], "--", color="#b7c2d0", lw=0.9)
     for idx, (x, y) in enumerate(positions):
         draw_uav(ax, x, y, scale=0.025)
-        ax.text(x, y - 0.055, f"UAV {idx+1}", ha="center", va="top", fontsize=8, color=DARK)
+        label_y = y - 0.055
+        label_x = x
+        if idx == 2:
+            label_y = y - 0.075
+            label_x = x - 0.015
+        ax.text(label_x, label_y, f"UAV {idx+1}", ha="center", va="top", fontsize=8, color=DARK)
         color = ORANGE if idx in occupied_pair else BLUE
         wedge = Wedge((x, y), 0.18, 300 if idx % 2 else 25, 345 if idx % 2 else 70, facecolor=color, alpha=0.13, edgecolor=color, lw=1.0)
         ax.add_patch(wedge)
     ax.add_patch(Circle((0.52, 0.55), 0.43, fill=False, ls=":", lw=1.0, ec=GREY))
     ax.add_patch(Circle((0.52, 0.55), 0.31, fill=False, ls="-.", lw=0.9, ec="#9db4c7"))
-    ax.text(0.06, 0.08, "Own pose known", color=DARK, fontsize=9)
-    ax.text(0.06, 0.035, "Neighbor state unknown before handshake", color=DARK, fontsize=9)
+    ax.text(0.06, 0.09, "Own pose known", color=DARK, fontsize=8.8)
+    ax.text(0.06, 0.045, "Neighbor state unknown before handshake", color=DARK, fontsize=8.8)
     ax.add_patch(FancyArrowPatch((0.58, 0.62), (0.53, 0.34), arrowstyle="<->", mutation_scale=12, lw=1.3, color=ORANGE))
-    ax.text(0.60, 0.49, "candidate beam", color=ORANGE, fontsize=9, rotation=80)
+    ax.text(0.61, 0.49, "candidate beam cell", color=ORANGE, fontsize=8.8, rotation=80)
     add_range_legend(ax)
     fig.tight_layout()
     fig.savefig(path)
@@ -115,37 +118,38 @@ def draw_protocol_mechanism(plt, path: Path) -> dict:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.set_title("ISAC-prior guided link-layer discovery mechanism", pad=8)
-
     stages = [
-        (0.10, "Blind narrow-beam\nhandshake attempt"),
-        (0.34, "ISAC occupancy\nbelief update"),
-        (0.58, "Candidate beam\nrefinement"),
-        (0.82, "Bidirectional\nhandshake confirm"),
+        (0.12, "Blind beam\nhandshake attempt", "slot t"),
+        (0.37, "ISAC occupancy\nbelief update", r"$z_i^t(b)$"),
+        (0.62, "Candidate beam\nrefinement", r"$\mathcal{C}_i^t$"),
+        (0.87, "Bidirectional\nhandshake confirm", r"edge $(i,j)$"),
     ]
-    for x, label in stages:
-        ax.add_patch(Rectangle((x - 0.09, 0.57), 0.18, 0.22, fc=LIGHT, ec=BLUE, lw=1.2))
-        ax.text(x, 0.68, label, ha="center", va="center", fontsize=9)
+    for x, label, tag in stages:
+        ax.add_patch(Rectangle((x - 0.10, 0.62), 0.20, 0.20, fc=LIGHT, ec=BLUE, lw=1.2))
+        ax.text(x, 0.72, label, ha="center", va="center", fontsize=8.8)
+        ax.text(x, 0.855, tag, ha="center", va="center", fontsize=8.2, color=GREY)
     for left, right in zip(stages, stages[1:]):
-        ax.add_patch(FancyArrowPatch((left[0] + 0.10, 0.68), (right[0] - 0.10, 0.68), arrowstyle="-|>", mutation_scale=14, color=DARK, lw=1.2))
+        ax.add_patch(FancyArrowPatch((left[0] + 0.105, 0.72), (right[0] - 0.105, 0.72), arrowstyle="-|>", mutation_scale=14, color=DARK, lw=1.2))
 
-    draw_beam_grid(ax, 0.08, 0.38, active=[2], empty=[0, 1, 4, 5])
-    draw_beam_grid(ax, 0.32, 0.38, active=[2, 6], empty=[0, 1, 3, 4, 5, 7])
-    draw_beam_grid(ax, 0.56, 0.38, active=[2, 6], empty=[0, 1])
-    draw_beam_grid(ax, 0.80, 0.38, active=[6], empty=[])
-    ax.text(0.08, 0.28, "random first probe", ha="center", fontsize=8, color=GREY)
-    ax.text(0.32, 0.28, "empty cells suppressed", ha="center", fontsize=8, color=GREY)
-    ax.text(0.56, 0.28, "belief + exploration", ha="center", fontsize=8, color=GREY)
-    ax.text(0.80, 0.28, "edge added only here", ha="center", fontsize=8, color=GREY)
+    draw_beam_grid(ax, 0.075, 0.41, active=[2], empty=[0, 1, 4, 5])
+    draw_beam_grid(ax, 0.325, 0.41, active=[2, 6], empty=[0, 1, 3, 4, 5, 7])
+    draw_beam_grid(ax, 0.575, 0.41, active=[2, 6], empty=[0, 1])
+    draw_beam_grid(ax, 0.825, 0.41, active=[6], empty=[])
+    ax.text(0.12, 0.32, "random first probe", ha="center", fontsize=7.8, color=GREY)
+    ax.text(0.37, 0.32, "empty cells suppressed", ha="center", fontsize=7.8, color=GREY)
+    ax.text(0.62, 0.32, "belief + exploration", ha="center", fontsize=7.8, color=GREY)
+    ax.text(0.87, 0.32, "edge added only here", ha="center", fontsize=7.8, color=GREY)
+    ax.add_patch(FancyArrowPatch((0.62, 0.61), (0.38, 0.51), connectionstyle="arc3,rad=-0.35", arrowstyle="-|>", mutation_scale=12, color=TEAL, lw=1.1, alpha=0.9))
+    ax.text(0.50, 0.53, "local memory", ha="center", va="center", fontsize=7.8, color=TEAL)
 
-    ax.add_patch(Rectangle((0.12, 0.10), 0.76, 0.10, fc="#fff8ec", ec=ORANGE, lw=1.0))
+    ax.add_patch(Rectangle((0.08, 0.10), 0.84, 0.10, fc="#fff8ec", ec=ORANGE, lw=1.0))
     ax.text(
         0.50,
         0.15,
         "ISAC changes beam-selection probabilities; it never creates a neighbor edge without handshake.",
         ha="center",
         va="center",
-        fontsize=9,
+        fontsize=8.5,
         color=DARK,
     )
     fig.tight_layout()
@@ -161,16 +165,14 @@ def draw_policy_architecture(plt, path: Path) -> dict:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.set_title("Shared local policy for scalable distributed deployment", pad=8)
-
     block_specs = [
-        (0.08, 0.68, 0.20, 0.13, "Self pose\nand beam index", BLUE),
-        (0.08, 0.48, 0.20, 0.13, "ISAC belief\nmemory", TEAL),
-        (0.08, 0.28, 0.20, 0.13, "Discovered\nneighbor summary", ORANGE),
-        (0.40, 0.58, 0.24, 0.18, "Rule residual\nshared policy", DARK),
-        (0.72, 0.68, 0.20, 0.13, "Mode choice\nSense/Tx/Rx", BLUE),
-        (0.72, 0.48, 0.20, 0.13, "Beam choice\ncandidate set", TEAL),
-        (0.72, 0.28, 0.20, 0.13, "Topology-aware\npriority", ORANGE),
+        (0.08, 0.67, 0.20, 0.13, "Self pose\nand beam index", BLUE),
+        (0.08, 0.47, 0.20, 0.13, "ISAC belief\nmemory", TEAL),
+        (0.08, 0.27, 0.20, 0.13, "Discovered\nneighbor summary", ORANGE),
+        (0.40, 0.57, 0.24, 0.18, "Rule residual\nshared policy", DARK),
+        (0.72, 0.67, 0.20, 0.13, "Mode choice\nSense/Tx/Rx", BLUE),
+        (0.72, 0.47, 0.20, 0.13, "Beam choice\ncandidate set", TEAL),
+        (0.72, 0.27, 0.20, 0.13, "Topology-deficit\npriority", ORANGE),
     ]
     for x, y, w, h, label, color in block_specs:
         ax.add_patch(Rectangle((x, y), w, h, fc="white", ec=color, lw=1.3))
@@ -182,8 +184,8 @@ def draw_policy_architecture(plt, path: Path) -> dict:
     ax.add_patch(Rectangle((0.30, 0.12), 0.40, 0.12, fc=LIGHT, ec=GREY, lw=1.0, ls="--"))
     ax.text(0.50, 0.18, "same parameters reused by every UAV", ha="center", va="center", fontsize=9, color=DARK)
     for x in (0.20, 0.50, 0.80):
-        draw_uav(ax, x, 0.90, scale=0.02)
-        ax.add_patch(FancyArrowPatch((x, 0.86), (0.50, 0.76), arrowstyle="-", mutation_scale=8, color="#b7c2d0", lw=0.9))
+        draw_uav(ax, x, 0.89, scale=0.02)
+        ax.add_patch(FancyArrowPatch((x, 0.85), (0.50, 0.75), arrowstyle="-", mutation_scale=8, color="#b7c2d0", lw=0.9))
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
