@@ -40,10 +40,11 @@ class MarlNeighborDiscoveryEnv:
     is available through training_state() only.
     """
 
-    def __init__(self, config: SimulationConfig, seed: int | None = None):
+    def __init__(self, config: SimulationConfig, seed: int | None = None, protocol: str = "isac_structured_marl"):
         self.cfg = config
         self.seed = int(config.seed if seed is None else seed)
-        self._sim = NeighborDiscoverySimulator(config, protocol="marl_env", seed=self.seed)
+        self.protocol = str(protocol)
+        self._sim = NeighborDiscoverySimulator(config, protocol=self.protocol, seed=self.seed)
         self._slot = 0
         self._last_actions: list[Action] = [Action(MODE_IDLE, 0) for _ in range(config.n_nodes)]
 
@@ -62,7 +63,7 @@ class MarlNeighborDiscoveryEnv:
     def reset(self, seed: int | None = None) -> tuple[list[dict[str, np.ndarray | int]], dict[str, Any]]:
         if seed is not None:
             self.seed = int(seed)
-        self._sim = NeighborDiscoverySimulator(self.cfg, protocol="marl_env", seed=self.seed)
+        self._sim = NeighborDiscoverySimulator(self.cfg, protocol=self.protocol, seed=self.seed)
         self._sim.reset()
         self._slot = 0
         self._last_actions = [Action(MODE_IDLE, 0) for _ in range(self.n_agents)]
@@ -261,6 +262,11 @@ class MarlNeighborDiscoveryEnv:
             "new_edges_count": int(new_edges_count),
             "discovered_edges_count": len(self._sim.discovered_edges),
             "scan_actions": self._sim.scan_actions,
+            "tx_actions": self._sim.tx_actions,
+            "rx_actions": self._sim.rx_actions,
+            "sense_actions": self._sim.sense_actions,
+            "idle_actions": self._sim.idle_actions,
+            "piggyback_sense_actions": self._sim.piggyback_sense_actions,
             "discovery_per_scan_action": len(self._sim.discovered_edges) / max(1, self._sim.scan_actions),
             "empty_scan_ratio": self._sim.empty_scans / max(1, self._sim.scan_actions),
             "collision_count": self._sim.collision_count,

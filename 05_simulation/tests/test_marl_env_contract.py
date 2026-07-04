@@ -72,6 +72,7 @@ def test_marl_env_reset_observation_contract_has_no_neighbor_truth() -> None:
 def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg)
+    assert env.protocol == "isac_structured_marl"
     observations, _ = env.reset(seed=7)
     assert len(observations) == cfg.n_nodes
 
@@ -93,6 +94,11 @@ def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     assert info["slot"] == 1
     assert "new_edges_count" in info
     assert info["scan_actions"] == 4
+    assert info["tx_actions"] == 2
+    assert info["rx_actions"] == 2
+    assert info["sense_actions"] == 1
+    assert info["idle_actions"] == 1
+    assert info["piggyback_sense_actions"] == 4
     assert "discovery_per_scan_action" in info
     _assert_no_forbidden_keys(info)
     _assert_no_forbidden_keys(next_observations)

@@ -58,6 +58,8 @@ Result: `6 passed`.
 
 A larger local probe was also run to test whether the autonomous student policy has a usable signal beyond the tiny smoke test.
 
+Important correction: the first medium probes used `MarlNeighborDiscoveryEnv` before the environment default was changed to the ISAC-capable `isac_structured_marl` simulator protocol. Those early probes were useful for detecting deterministic mode collapse, but they understated the neural policy path because TX/RX piggyback ISAC did not update the MARL environment belief.
+
 Deterministic eval after BC+short actor-critic fine-tuning:
 
 ```powershell
@@ -86,7 +88,19 @@ Result summary:
 |---|---:|---:|---:|---:|---:|
 | Stochastic student | 5 | 0.0140 | 0.6 | 0.9009 | 2 |
 
-Interpretation: stochastic execution avoids pure mode collapse in some episodes, but beam selection remains too weak for a paper-result neural MARL claim. The next neural architecture should not rely on a flat categorical over all 3D beam cells. It should use at least one of:
+After fixing `MarlNeighborDiscoveryEnv` to use the ISAC-capable simulator protocol by default, the same stochastic BC-only probe was rerun:
+
+```powershell
+python 05_simulation/run_actor_critic_imitation_probe.py --config 05_simulation/configs/mvp.yaml --output 05_simulation/results_raw/actor_critic_imitation_probe_round7_stochastic_isacenv --bc-episodes 40 --rl-episodes 0 --eval-episodes 5 --stochastic-eval --slots 80 --node-count 10 --azimuth-cells 12 --elevation-cells 6 --communication-range 1200 --sensing-range 1200 --false-alarm-rate 0 --miss-detection-rate 0 --angular-cell-offset-std 0 --sensing-period-slots 1 --hidden-dim 64 --learning-rate 0.001 --seed 20260705
+```
+
+Result summary:
+
+| Eval mode | Episodes | Mean discovery rate | Mean discovered edges | Mean lambda2 | Mean empty-scan ratio | Nonzero episodes |
+|---|---:|---:|---:|---:|---:|---:|
+| Stochastic student with ISAC env | 5 | 0.6469 | 28.6 | 3.2474 | 0.6883 | 5 |
+
+Interpretation: the neural path is viable only when the MARL environment exposes the same ISAC piggyback belief updates used by the proposed protocol. This remains a method probe because it lacks multi-seed baselines and transfer tests, but it is no longer a zero-signal path. The next neural architecture should not rely on a flat categorical over all 3D beam cells. It should use at least one of:
 
 - ISAC top-k beam masking or candidate-set constrained beam heads.
 - Rule-residual logits added to learned logits.
