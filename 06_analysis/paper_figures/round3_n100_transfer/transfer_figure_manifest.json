@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-07-04T22:16:02.300108+00:00",
+  "created_at_utc": "2026-07-04T22:27:25.647060+00:00",
   "style": {
     "figsize_inches": [
       6.4,
@@ -11,10 +11,14 @@
     "palette": {
       "skyorbs_like_skip_scan": "#0072B2",
       "uniform_random": "#D55E00",
-      "rl_no_isac": "#009E73",
-      "improved_rl_no_isac": "#CC79A7",
+      "rl_no_isac": "#999999",
+      "improved_rl_no_isac": "#009E73",
       "improved_rl_isac": "#E69F00",
       "ablation_isac_one_slot_delay": "#8A6BBE"
+    },
+    "continuous_cmap": {
+      "sequential": "viridis",
+      "diverging": "coolwarm"
     }
   },
   "inputs": [

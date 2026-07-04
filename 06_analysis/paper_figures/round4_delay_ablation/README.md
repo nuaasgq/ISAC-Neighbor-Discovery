@@ -1,6 +1,6 @@
-# Round3 Robustness Figures
+# Round4 Delay Ablation Figures
 
-Generated at: 2026-07-04T22:16:43.417100+00:00
+Generated at: 2026-07-04T22:30:40.211492+00:00
 Generated figures: 8
 
 ## Generated

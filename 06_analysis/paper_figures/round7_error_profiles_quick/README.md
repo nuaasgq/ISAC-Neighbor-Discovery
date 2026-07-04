@@ -1,4 +1,4 @@
-# Round3 Robustness Figures
+# Round7 Error Profiles Quick Figures
 
 Generated at: 2026-07-04T19:53:49.623721+00:00
 Generated figures: 1

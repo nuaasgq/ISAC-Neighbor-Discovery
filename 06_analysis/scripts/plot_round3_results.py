@@ -20,6 +20,9 @@ COLORS = {
     "ablation_isac_no_beam_lock": "#CC79A7",
     "ablation_isac_no_topology": "#0072B2",
 }
+CONTINUOUS_CMAPS = {
+    "diverging": "coolwarm",
+}
 PROTOCOL_ORDER = (
     "uniform_random",
     "improved_rl_no_isac",
@@ -212,6 +215,7 @@ def generate_round3_figures(
             "font_family": "Times New Roman with serif fallback",
             "dpi": DPI,
             "palette": COLORS,
+            "continuous_cmap": CONTINUOUS_CMAPS,
         },
         "inputs": [str(Path(path)) for path in sweep_dirs],
         "selection": {"node_count": node_count, "beamwidth_deg": beamwidth_deg},
@@ -545,8 +549,8 @@ def protocol_sort_key(protocol: str) -> tuple[int, str]:
 def label_protocol(protocol: str) -> str:
     labels = {
         "uniform_random": "Random",
-        "improved_rl_no_isac": "Enhanced-NoISAC",
-        "improved_rl_isac": "Enhanced+ISAC",
+        "improved_rl_no_isac": "Enhanced no-ISAC",
+        "improved_rl_isac": "Enhanced ISAC",
         "ablation_isac_one_slot_delay": "One-slot delay",
         "ablation_isac_no_candidate_set": "No candidate set",
         "ablation_isac_no_beam_lock": "No beam lock",
@@ -583,8 +587,9 @@ def skipped(path: Path, metric: str, reason: str) -> dict:
 
 
 def write_readme(output: Path, payload: dict) -> None:
+    title = output.name.replace("_", " ").title()
     lines = [
-        "# Round3 Robustness Figures",
+        f"# {title} Figures",
         "",
         f"Generated at: {payload['generated_at_utc']}",
         f"Generated figures: {payload['counts']['generated']}",

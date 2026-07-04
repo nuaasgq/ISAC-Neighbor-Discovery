@@ -11,10 +11,14 @@ DPI = 300
 COLORS = {
     "skyorbs_like_skip_scan": "#0072B2",
     "uniform_random": "#D55E00",
-    "rl_no_isac": "#009E73",
-    "improved_rl_no_isac": "#CC79A7",
+    "rl_no_isac": "#999999",
+    "improved_rl_no_isac": "#009E73",
     "improved_rl_isac": "#E69F00",
     "ablation_isac_one_slot_delay": "#8A6BBE",
+}
+CONTINUOUS_CMAPS = {
+    "sequential": "viridis",
+    "diverging": "coolwarm",
 }
 PROTOCOL_ORDER = (
     "skyorbs_like_skip_scan",
@@ -243,10 +247,10 @@ def label_protocol(protocol: str) -> str:
     labels = {
         "skyorbs_like_skip_scan": "SkyOrbs-like",
         "uniform_random": "Random",
-        "rl_no_isac": "Learned-NoISAC",
-        "improved_rl_no_isac": "Enhanced-NoISAC",
+        "rl_no_isac": "Learned no-ISAC",
+        "improved_rl_no_isac": "Enhanced no-ISAC",
         "ablation_isac_one_slot_delay": "One-slot delay",
-        "improved_rl_isac": "Enhanced+ISAC",
+        "improved_rl_isac": "Enhanced ISAC",
     }
     return labels.get(protocol, protocol)
 
@@ -322,6 +326,7 @@ def generate_transfer_figures(sweep_dirs: Iterable[str | Path], output: str | Pa
             "font_family": "Times New Roman with serif fallback",
             "dpi": DPI,
             "palette": COLORS,
+            "continuous_cmap": CONTINUOUS_CMAPS,
         },
         "inputs": [str(Path(path)) for path in sweep_dirs],
         "counts": {

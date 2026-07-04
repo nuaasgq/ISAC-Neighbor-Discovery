@@ -6,7 +6,7 @@ Date: 2026-07-05
 
 The current data package is potentially sufficient for a bounded IEEE TWC/TCOM-style draft if the paper is framed as:
 
-> ISAC-assisted link-layer beam-cell occupancy priors improve fully distributed narrow-beam UAV-UAV neighbor discovery and finite-time topology formation in tested dynamic regimes.
+> ISAC-assisted link-layer beam-cell occupancy priors improve distributed-execution narrow-beam UAV-UAV neighbor discovery and finite-time topology formation in tested dynamic regimes.
 
 The data do not yet support a claim of full neural MARL superiority, strict SkyOrbs reproduction, Joule-level energy efficiency, or universal robustness across all extremely narrow beams and abrupt mobility models.
 
@@ -15,7 +15,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Claim | Primary artifacts | Current status |
 |---|---|---|
 | ISAC candidate-beam refinement is the largest observed contributor at the main `N=100`, 10-degree operating point. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`, `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | Strong but operating-point-specific main claim. |
-| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, RL-no-ISAC, and improved no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong main comparison, with SkyOrbs-like non-reproduction caveat. |
+| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong main comparison, with SkyOrbs-like non-reproduction caveat. |
 | Small-scale training transfers to `N=100` for 10--30 degree beams in tested regimes. | `06_analysis/paper_tables/round3_robustness/n100_*_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_transfer}` | Strong but bounded; 3/5 degrees remain stress regimes. |
 | Collision-aware metrics change the preferred beamwidth. | `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv` | Supplementary but important for reviewer discussion. |
 | Moderate ISAC errors degrade but do not collapse the gain. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`, `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv` | Strong bounded robustness claim. |

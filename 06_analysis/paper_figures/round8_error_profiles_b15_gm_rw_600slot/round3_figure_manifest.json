@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-04T21:37:20.878330+00:00",
+  "generated_at_utc": "2026-07-04T22:30:40.222369+00:00",
   "script": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\scripts\\plot_round3_results.py",
   "style": {
     "figsize_inches": [
@@ -17,10 +17,13 @@
       "ablation_isac_no_candidate_set": "#56B4E9",
       "ablation_isac_no_beam_lock": "#CC79A7",
       "ablation_isac_no_topology": "#0072B2"
+    },
+    "continuous_cmap": {
+      "diverging": "coolwarm"
     }
   },
   "inputs": [
-    "05_simulation\\results_raw\\round8_error_profiles_b15_gm_rw_600slot"
+    "06_analysis\\paper_tables\\round8_error_profiles_b15_gm_rw_600slot"
   ],
   "selection": {
     "node_count": 100,

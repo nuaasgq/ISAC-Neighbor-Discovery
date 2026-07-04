@@ -99,7 +99,7 @@
 
 ## 论文图
 
-本轮生成 54 张 PNG，全部为 4:3 比例、1920x1440 像素、300 dpi。字体校验结果：Times New Roman 可用，字体文件为 `C:\Windows\Fonts\times.ttf`。配色统一为 Okabe-Ito 系列，协议顺序固定为：SkyOrbs-like、Random、Learned-NoISAC、Enhanced-NoISAC、Enhanced+ISAC。
+本轮生成 54 张 PNG，全部为 4:3 比例、1920x1440 像素、300 dpi。字体校验结果：Times New Roman 可用，字体文件为 `C:\Windows\Fonts\times.ttf`。配色统一为 Okabe-Ito 系列，协议顺序固定为：SkyOrbs-like、Random、Learned no-ISAC、Enhanced no-ISAC、Enhanced ISAC。
 
 训练图包括：`train_score_curve.png`、`train_discovery_rate_curve.png`、`train_empty_scan_ratio_curve.png`、`train_delay_curve.png`、`train_collision_curve.png`、`train_connectivity_curve.png`。
 

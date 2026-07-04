@@ -1,6 +1,6 @@
 # N=100 Mobility Full-Baseline Figures
 
-Generated at: 2026-07-04T22:16:13.660186+00:00
+Generated at: 2026-07-04T22:27:37.518061+00:00
 Generated figures: 8
 
 These figures visualize the combined round7/round8 table used to check whether the mobility-boundary result is caused by missing SkyOrbs-like or no-ISAC baselines.

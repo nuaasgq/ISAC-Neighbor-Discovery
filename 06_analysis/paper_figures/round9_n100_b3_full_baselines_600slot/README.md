@@ -1,6 +1,6 @@
 # Baseline Stress Figures
 
-Generated at: 2026-07-04T22:16:13.243415+00:00
+Generated at: 2026-07-04T22:27:37.014435+00:00
 Generated figures: 4
 
 ## Generated

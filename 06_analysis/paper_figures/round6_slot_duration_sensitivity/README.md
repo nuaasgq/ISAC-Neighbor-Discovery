@@ -1,6 +1,6 @@
 # Slot-Duration Sensitivity Figures
 
-Generated at: 2026-07-04T22:16:13.171097+00:00
+Generated at: 2026-07-04T22:27:36.959115+00:00
 Generated figures: 4
 
 ## Generated

@@ -20,7 +20,7 @@ These figures should carry the main paper narrative.
 | System model | `06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png` | Defines the distributed UAV swarm and information boundary. |
 | Protocol mechanism | `06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png` | Shows how ISAC feedback enters link-layer discovery without creating edges directly. |
 | Policy architecture | `06_analysis/paper_figures/concept/policy_architecture_shared_agent.png` | Clarifies shared-parameter execution and the current learning boundary. |
-| Training-score evolution | `06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png` | Provides empirical reward/score stabilization evidence without implying a theoretical convergence guarantee. |
+| Training reward evolution | `06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png` | Provides empirical training-reward evidence without implying a theoretical convergence guarantee; score evolution is shown in the supplement. |
 | N=100 beamwidth transfer | `06_analysis/paper_figures/round3_n100_transfer/density_beamwidth_discovery_rate_n100.png` | Directly supports zero-shot transfer from `N=10`, 10-degree training to `N=100`. |
 | Area-scaling check | `06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_lambda2.png` | Shows density-preserving and fixed-area scaling give similar connectivity trends. |
 | Mobility transfer | `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png` | Separates smooth/diffusive mobility support from abrupt-mobility stress regimes. |

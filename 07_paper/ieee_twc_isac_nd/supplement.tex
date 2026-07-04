@@ -37,14 +37,14 @@ The complete evidence map is maintained in the repository coverage matrix.
     \toprule
     Requirement & Status & Primary artifacts & Boundary \\
     \midrule
-    Beamwidths 3--30 deg & Covered & Main 5/10/15/30 deg: round3 robustness tables; stress 3/5/10/15/30 deg: round7 scale-beam grid; full 3 deg five-baseline check: round9. & 3 and 5 deg are stress regimes. \\
-    Node counts 10--100 & Covered & Round7 scale-beam grid and round3 N=100 density/fixed scaling. & Not a full Cartesian cross with every mobility and error setting. \\
-    Small-to-large transfer & Covered & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter policy optimization. \\
-    Baselines & Covered & Uniform random, SkyOrbs-like, learned policy without ISAC, enhanced learned policy without ISAC, enhanced learned policy with ISAC. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
-    Mobility models & Covered & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
-    Range and timing & Covered & Range grid and slot-duration sensitivity. & Protocol-level abstraction, not calibrated RF range law. \\
-    ISAC errors & Covered & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
-    Training curves & Covered & Round2 and round7 reward/score histories. & Empirical training-score evolution only. \\
+    Beamwidths 3--30 deg & Main+stress & Main 5/10/15/30 deg: round3 N=100 transfer/robustness tables; stress 3/5/10/15/30 deg: round7 scale-beam grid; full 3 deg five-baseline check: round9. & 3 and 5 deg are stress regimes. \\
+    Node counts 10--100 & Partially crossed & Round7 scale-beam grid and round3 N=100 density/fixed scaling. & Not a full Cartesian cross with every mobility and error setting. \\
+    Small-to-large transfer & Bounded & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter policy optimization. \\
+    Baselines & Main+stress & Uniform random, SkyOrbs-like, learned no-ISAC, enhanced no-ISAC, enhanced ISAC. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
+    Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
+    Range and timing & Sensitivity & Range grid and slot-duration sensitivity. & Protocol-level abstraction, not calibrated RF range law. \\
+    ISAC errors & Configured & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
+    Training curves & Trace & Round2 and round7 reward and score histories. & Empirical training-score evolution only. \\
     \bottomrule
   \end{tabular}
 \end{table*}
@@ -59,7 +59,7 @@ The curves are not used as a proof of convergence; they document that the select
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png}
   \hfill
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_score_curve.png}
-  \caption{Training-history evidence for the shared-parameter policy-search run. Left: reward evolution. Right: selection score evolution. These curves support empirical stabilization only, not theoretical convergence.}
+  \caption{Training-history evidence for the selected shared-parameter policy-search run. Left: reward evolution. Right: selection score evolution. These single-run curves support empirical stabilization only, not theoretical convergence.}
   \label{fig:supp_training}
 \end{figure*}
 
@@ -95,7 +95,11 @@ The range sweep treats $\Rc$ and $\Rs$ as protocol-level support parameters; the
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png}
   \hfill
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_discovery_n100_b10.png}
-  \caption{Range and timing sensitivity. Left: discovery gain over the no-ISAC counterpart as $\Rc/D$ and $\Rs/\Rc$ vary. Right: discovery rate under slot durations from 1 ms to 20 ms.}
+  \vspace{0.4em}
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_lambda2_n100_b10.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_collision_penalized_n100_b10.png}
+  \caption{Range and timing sensitivity. Top left: discovery gain over the no-ISAC counterpart as $\Rc/D$ and $\Rs/\Rc$ vary. Top right: discovery rate under slot durations from 1 ms to 20 ms. Bottom left: corresponding algebraic-connectivity gain. Bottom right: collision-penalized discovery under slot-duration variation.}
   \label{fig:supp_range_timing}
 \end{figure*}
 
@@ -107,10 +111,12 @@ The 3-degree case is intentionally treated as a failure-boundary regime.
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_discovery_rate_n100.png}
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_discovery_rate_n100.png}
   \hfill
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_collision_penalized_discovery_n100.png}
-  \caption{N=100 beamwidth stress evidence. Left: raw discovery rate. Right: collision-penalized discovery. The 3-degree and 5-degree points are stress regimes, while the 10--30 degree region provides the main useful operating range in the current finite horizon.}
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_collision_penalized_discovery_n100.png}
+  \hfill
+  \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_lambda2_n100.png}
+  \caption{N=100 beamwidth stress evidence. Left: raw discovery rate. Middle: collision-penalized discovery. Right: algebraic connectivity. The 3-degree and 5-degree points are stress regimes, while the 10--30 degree region provides the main useful operating range in the current finite horizon.}
   \label{fig:supp_beam_stress}
 \end{figure*}
 
@@ -148,7 +154,7 @@ This supports writing ``evaluated over 3--30 degrees,'' not ``effective over 3--
 \section{Mobility Boundary and Missing Baselines}
 
 Fig.~\ref{fig:supp_mobility_full} visualizes the merged round7/round8 mobility table.
-It confirms that the mobility-boundary interpretation is not caused by omitting the SkyOrbs-like or vanilla no-ISAC learning baselines.
+It confirms that the mobility-boundary interpretation is not caused by omitting the SkyOrbs-like or vanilla learned no-ISAC baseline.
 
 \begin{figure*}[!t]
   \centering
@@ -165,6 +171,23 @@ The main paper reports B=10 sensing-error robustness.
 Fig.~\ref{fig:supp_b15_error} extends the error-profile check to 15-degree beams and separates Gauss-Markov from random-walk mobility.
 The key observation is that B=15 retains high raw discovery under Gauss-Markov but becomes more sensitive under random-walk mobility.
 
+\begin{table}[!t]
+  \centering
+  \caption{Configured Protocol-Level ISAC Error Profiles}
+  \label{tab:supp_error_profiles}
+  \scriptsize
+  \begin{tabular}{lccc}
+    \toprule
+    Profile & $P_{\mathrm{fa}}$ & $P_{\mathrm{md}}$ & Cell-offset std. \\
+    \midrule
+    Nominal & 0.00 & 0.00 & 0.0 \\
+    Mild & 0.01 & 0.05 & 0.5 \\
+    Moderate & 0.05 & 0.15 & 1.0 \\
+    Severe & 0.10 & 0.30 & 1.5 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/error_profile_discovery_n100_b15.png}
@@ -179,6 +202,26 @@ The key observation is that B=15 retains high raw discovery under Gauss-Markov b
 All compact multi-seed summaries are archived under the repository paper-table directory.
 The normalized statistical table is the \texttt{statistical\_stability\_summary.csv} artifact.
 Rows tagged \texttt{main} support the manuscript tables and figures; rows tagged \texttt{main\_boundary}, \texttt{supplement}, or \texttt{supplement\_stress} should be used to bound claims and answer reviewer questions.
+The statistical summary includes the N=10/20/50/100 scale-grid rows where archived, but many robustness and baseline-completeness checks are intentionally N=100-only.
+
+\begin{table*}[!t]
+  \centering
+  \caption{Representative Multi-Seed Statistical Stability Checks}
+  \label{tab:supp_stat_examples}
+  \scriptsize
+  \begin{tabular}{p{0.31\textwidth}cc}
+    \toprule
+    Scenario & Discovery mean$\pm$std (95\% CI) & $\lambda_2$ mean$\pm$std (95\% CI) \\
+    \midrule
+    N=100, B=10, density-scaled & 0.3655$\pm$0.0036 (0.0041) & 12.92$\pm$1.90 (2.15) \\
+    N=100, B=15, density-scaled & 0.5440$\pm$0.0026 (0.0029) & 26.84$\pm$3.93 (4.45) \\
+    N=100, B=3 stress & 0.0131$\pm$0.0007 (0.0007) & 0.00$\pm$0.00 (0.00) \\
+    N=100, B=10, random walk & 0.2024$\pm$0.0086 (0.0097) & 5.95$\pm$0.50 (0.56) \\
+    N=100, B=10, $\Rc/D=0.65$, $\Rs/\Rc=0.75$ & 0.3569$\pm$0.0042 (0.0047) & 13.20$\pm$1.13 (1.28) \\
+    N=100, B=10, 20 ms slot & 0.3644$\pm$0.0155 (0.0175) & 13.24$\pm$1.17 (1.32) \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
 
 \begin{table*}[!t]
   \centering
@@ -189,9 +232,9 @@ Rows tagged \texttt{main} support the manuscript tables and figures; rows tagged
     \toprule
     Tier & Rows & Episodes & Intended use \\
     \midrule
-    \texttt{main} & 98 & 294 & Manuscript tables, range, error, and ablation claims. \\
+    \texttt{main} & 126 & 378 & Manuscript tables, range, error, and ablation claims. \\
     \texttt{main\_boundary} & 24 & 72 & Mobility-boundary evidence in the main paper. \\
-    \texttt{supplement} & 111 & 318 & Scale, beamwidth, mobility, and error extensions. \\
+    \texttt{supplement} & 156 & 408 & Scale-grid, beamwidth, mobility, and error extensions. \\
     \texttt{supplement\_sanity} & 24 & 24 & Quick screens before full multi-seed checks. \\
     \texttt{supplement\_stress} & 5 & 15 & Targeted 3-degree full-baseline stress case. \\
     \bottomrule

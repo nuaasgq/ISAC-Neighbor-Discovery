@@ -180,9 +180,9 @@ def save_curve(df, metric_key: str, metric_col: str, ylabel: str, path: Path, pl
 
 def label_protocol(protocol: str) -> str:
     labels = {
-        "improved_rl_no_isac": "Enhanced-NoISAC",
+        "improved_rl_no_isac": "Enhanced no-ISAC",
         "ablation_isac_one_slot_delay": "One-slot delay",
-        "improved_rl_isac": "Enhanced+ISAC",
+        "improved_rl_isac": "Enhanced ISAC",
     }
     return labels.get(protocol, protocol)
 

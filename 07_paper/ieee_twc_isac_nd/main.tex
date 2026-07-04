@@ -16,7 +16,7 @@
 
 \begin{document}
 
-\title{ISAC-Assisted Topology-Aware Narrow-Beam Neighbor Discovery for Fully Distributed UAV Swarms}
+\title{ISAC-Assisted Topology-Aware Narrow-Beam Neighbor Discovery for Distributed-Execution UAV Swarms}
 
 \author{Author~Names~Omitted~for~Anonymous~Review}
 
@@ -27,7 +27,7 @@ Narrow beams improve the link budget of millimeter-wave unmanned aerial vehicle 
 Deterministic directional neighbor discovery protocols can provide bounded delay but are tightly coupled with network scale and scan schedules, while random protocols are flexible but suffer from long-tail discovery latency and weak topology quality within a finite discovery window.
 This paper studies a distributed-execution UAV-UAV setting in which nodes share no central scheduler or undiscovered-neighbor state, while each UAV has its own navigation-frame pose and position from onboard localization.
 We abstract integrated sensing and communication (ISAC) as a link-layer beam-cell occupancy prior, rather than as an oracle position estimator, and propose \method{}, an ISAC-assisted topology-aware protocol that uses sensing feedback to suppress empty beam cells, preserve exploration under sensing errors, and prioritize beam choices that are more likely to improve local connectivity.
-We further develop \learnedmethod{}, a shared-parameter policy-optimization variant trained at a small scale and tested for transfer to larger swarms and different beamwidths within the evaluated single-hop, finite-horizon regimes.
+We further develop \learnedmethod{}, a shared-parameter policy-optimization variant trained at a small scale and tested for transfer to larger swarms and different beamwidths within the evaluated single-hop, finite-horizon regimes, mainly in 10--30 degree beams while treating 3--5 degree beams as stress cases.
 Simulation results in the tested dynamic UAV scenarios indicate that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learned-policy baselines.
 For example, in the $N=100$, 10-degree, density-scaled setting, the proposed policy achieves a finite-time discovery rate of 0.3655 while the implemented communication-only baselines remain near zero under the same 600-slot horizon.
 Additional robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, angular-cell errors, and mechanism ablations.
@@ -56,7 +56,7 @@ The key question addressed in this paper is therefore not physical-layer beamfor
 
 This paper makes the following contributions.
 \begin{itemize}
-  \item We formulate fully distributed, self-localized, neighbor-unknown UAV-UAV narrow-beam ND. Each UAV knows its own position and attitude, but before discovery it does not know neighbor identities, positions, beams, or the global topology.
+  \item We formulate distributed-execution, self-localized, neighbor-unknown UAV-UAV narrow-beam ND. Each UAV knows its own position and attitude, but before discovery it does not know neighbor identities, positions, beams, or the global topology.
   \item We abstract ISAC as an imperfect beam-cell occupancy prior with false alarms, missed detections, angular cell offsets, staleness, and finite sensing range. The prior affects action selection but never directly creates a neighbor edge.
   \item We design \method{}, a topology-aware ISAC-assisted ND protocol that combines occupancy belief, exploration floors, beam-lock refinement, and local topology-value proxies for finite-time graph formation.
   \item We develop \learnedmethod{}, a shared-parameter policy-optimization variant trained in small swarms and evaluated for transfer to larger UAV networks and different beamwidths, with the clearest current evidence in 10--30 degree beams and smoother mobility regimes.
@@ -82,8 +82,8 @@ Our work differs by treating sensing feedback as a link-layer prior and by using
 \subsection{ISAC-Assisted Beam Management}
 ISAC has been used to reduce beam training overhead in vehicular and UAV-assisted systems \cite{Li2024SensingNRV2X,Cui2024SensingUAVBM}.
 Recent works also study ISAC-assisted beam rendezvous in airborne networks \cite{Hong2024ISACRendezvous} and predictive beam tracking in multipath channels \cite{Cui2024MultipathISAC}.
-Many of these studies focus on physical-layer or beam-management problems between a base station and mobile nodes, while airborne rendezvous studies remain closer to link establishment but still differ from fully distributed UAV-UAV ND.
-By contrast, this paper targets a fully distributed UAV-UAV ND protocol and uses ISAC only as an imperfect occupancy-prior service exposed to the data-link layer.
+Many of these studies focus on physical-layer or beam-management problems between a base station and mobile nodes, while airborne rendezvous studies remain closer to link establishment but still differ from distributed-execution UAV-UAV ND.
+By contrast, this paper targets a distributed-execution UAV-UAV ND protocol and uses ISAC only as an imperfect occupancy-prior service exposed to the data-link layer.
 
 \subsection{Learning for Distributed Wireless Protocols}
 Multi-agent reinforcement learning and graph neural policies have been studied for wireless resource allocation and distributed channel access \cite{Naderializadeh2021MADRLTWC,Eisen2020REGNN,Guo2022MARLMAC}.
@@ -97,7 +97,7 @@ Fig.~\ref{fig:system_model} illustrates the information boundary.
 Each UAV $i$ knows its own position $\mathbf{p}_i(t)$, velocity $\mathbf{v}_i(t)$, heading, pitch, and attitude from onboard localization and inertial sensing.
 Before neighbor discovery, UAV $i$ does not know the identity, position, velocity, or beam state of an undiscovered UAV $j$.
 There is no central controller and no global topology knowledge.
-Fully distributed execution here means no central scheduler and no undiscovered-neighbor state exchange; the simulator still assumes slotted operation and a common navigation reference available from onboard localization and inertial sensing.
+Distributed execution here means no central scheduler and no undiscovered-neighbor state exchange; the simulator still assumes slotted operation and a common navigation reference available from onboard localization and inertial sensing.
 
 Each UAV has a directional beam codebook $\beamset$ with $B_{\mathrm{az}}$ azimuth cells and $B_{\mathrm{el}}$ elevation cells.
 The total number of three-dimensional beam cells is $|\beamset|=B_{\mathrm{az}}B_{\mathrm{el}}$.
@@ -105,16 +105,17 @@ A communication edge $(i,j)$ can be discovered in slot $t$ only if (i) the dista
 Discovery is confirmed only by a successful bidirectional narrow-beam handshake.
 
 \subsection{ISAC Prior}
-When UAV $i$ probes beam $b$ in a slot, its communication waveform can also provide an ISAC observation of nearby beam cells.
+When UAV $i$ probes beam $b$ in a slot, its communication waveform can also provide an ISAC observation of quantized beam-cell occupancy.
 We represent this physical-layer service as a link-layer occupancy observation
 \begin{equation}
   z_i^t(b) \in \{0,1\},
 \end{equation}
-where $z_i^t(b)=1$ indicates that beam cell $b$ is likely occupied by at least one candidate within the sensing observation support.
+where $z_i^t(b)=1$ indicates that beam cell $b$ is likely occupied within the sensing observation support.
 The observation may contain false alarms, missed detections, angular-cell offsets, and staleness.
 The sensing range $\Rs$ denotes the support of the coarse occupancy observation, whereas $\Rc$ defines the link-confirmation range for a discoverable communication edge.
 They are modeled as separate abstraction parameters because radar-like sensing and packet decoding are governed by different detection and decoding thresholds, and radar range depends on waveform, aperture, target scattering, range, and medium parameters \cite{Liu2022ISAC6G,Skolnik2001Radar}.
 We do not derive $\Rs$ from a radar equation or an estimator-specific detection threshold; instead, $\Rs$, false-alarm probability, missed-detection probability, and angular-cell error are exposed as protocol-level abstraction parameters that emulate the service provided by an underlying ISAC receiver.
+The observation does not reveal neighbor identity, position, velocity, or range-resolved neighbor state.
 Only UAV pairs within $\Rc$ can enter the communication-neighbor set and be confirmed by handshake; therefore, $\Rs>\Rc$ may provide additional occupancy evidence but does not create immediately discoverable links in this model.
 
 Each node maintains a local belief $q_i^t(b)$ for every beam cell.
@@ -156,11 +157,11 @@ For UAV $i$, the score of beam $b$ is written as
   s_i^t(b)=
   \alpha q_i^t(b)
   + \beta d_i^t(b)
-  + \gamma u_i^t
+  + \gamma u_i^t(b)
   + \eta r_i^t(b),
   \label{eq:beam_score}
 \end{equation}
-where $q_i^t(b)$ is the ISAC occupancy belief, $d_i^t(b)$ encourages beam diversity, $u_i^t$ is a local degree-need term, and $r_i^t(b)$ is a staleness term.
+where $q_i^t(b)$ is the ISAC occupancy belief, $d_i^t(b)$ encourages beam diversity, $u_i^t(b)$ is a beam-dependent local topology-value term, and $r_i^t(b)$ is a staleness term.
 The beam sampling probability is
 \begin{equation}
   P_i^t(b) =
@@ -171,10 +172,34 @@ The beam sampling probability is
 where $\epsilon$ is the exploration floor and $\kappa$ is the softmax sharpness.
 Equations~\eqref{eq:beam_score} and \eqref{eq:beam_probability} make ISAC feedback useful without permanently pruning beams that may have been affected by sensing errors.
 
+The beam-dependent topology term is implemented through the local candidate set
+\begin{equation}
+  \mathcal{C}_i^t =
+  \{b:q_i^t(b)\ge \tau_q\}
+  \cup
+  \{b_i^{\mathrm{lock}}:\ell_i^t>0\},
+  \label{eq:candidate_set}
+\end{equation}
+where $\tau_q$ is the occupancy threshold, $b_i^{\mathrm{lock}}$ is a beam retained after recent positive evidence or near-miss handshakes, and $\ell_i^t$ is its remaining lock lifetime.
+The topology-value proxy is
+\begin{equation}
+  u_i^t(b)=
+  \mathbb{1}\{b\in\mathcal{C}_i^t\}
+  \max\{0,d_{\mathrm{tar}}-|\hat{\mathcal{N}}_i^t|\},
+  \label{eq:topology_value}
+\end{equation}
+where $d_{\mathrm{tar}}$ is the target discovered degree.
+Thus topology need affects beam selection only for beams with current occupancy or lock evidence, and does not require undiscovered-neighbor identities or global topology.
+
 The local topology-value proxy gives larger priority to beams that may establish links for nodes whose discovered degree is below a target degree.
 This is not an online computation of global algebraic connectivity.
 It is a local rule designed to encourage finite-time formation of a well-connected discovered graph.
 We use $\lambda_2$ as a topology-quality proxy related to consensus performance in networked agents \cite{OlfatiSaber2004Consensus}, but this paper does not prove a closed-loop consensus-control convergence theorem.
+
+At the end of each slot, node $i$ updates $q_i^{t+1}(b)$ from the current ISAC observation, aging previously unobserved cells toward an exploration prior.
+If $z_i^t(b)=1$ or a handshake attempt through $b$ produces near-miss evidence, the node inserts $b$ into $\mathcal{C}_i^{t+1}$ and sets $\ell_i^{t+1}$ to a finite lock lifetime; otherwise the lock lifetime decays by one slot.
+A confirmed bidirectional handshake adds the neighbor to $\hat{\mathcal{N}}_i^{t+1}$.
+The one-slot delayed ablation uses the same updates but applies $\mathcal{C}_i^{t}$ only from the next slot, bounding the low-latency same-slot implementation assumption.
 
 \begin{figure}[!t]
   \centering
@@ -240,14 +265,14 @@ Table~\ref{tab:settings} summarizes the main information boundary and evaluation
 
 \section{Results and Discussion}
 \subsection{Training-Score Evolution}
-Fig.~\ref{fig:training_reward} reports the empirical reward/score evolution during the small-scale shared-policy search.
-Additional training plots report discovery rate, empty-scan ratio, collision count, and connectivity during policy search.
+Fig.~\ref{fig:training_reward} reports the empirical reward evolution during the small-scale shared-policy search.
+The supplement also reports the selection-score curve, discovery rate, empty-scan ratio, collision count, and connectivity during policy search.
 The curve is used as training-stability evidence for the selected search run, not as a theoretical convergence guarantee.
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png}
-  \caption{Training reward/score evolution for the small-scale shared-policy optimization.}
+  \caption{Training reward evolution for the small-scale shared-policy optimization. The corresponding selection-score curve is reported in the supplement.}
   \label{fig:training_reward}
 \end{figure}
 
@@ -263,7 +288,7 @@ These results support the central mechanism claim in small dynamic swarms, while
   \tiny
   \begin{tabular}{lcccc}
     \toprule
-    Mobility & Rand. & No-ISAC & ISAC & Empty (ISAC) \\
+    Mobility & Random & Enh. no-ISAC & Enh. ISAC & Empty (ISAC) \\
     \midrule
     Gauss-Markov & 0.8351 & 0.8608 & 0.9558 & 0.1698 \\
     Random walk & 0.9077 & 0.9171 & 0.9569 & 0.3914 \\
@@ -320,10 +345,10 @@ A strict head-to-head comparison with the complete SkyOrbs protocol is left as f
     Protocol & Disc. & Empty & $\lambda_2$ & Delay \\
     \midrule
     Uniform random & 0.0005 & 0.9015 & 0.0000 & 599.90 \\
-    SkyOrbs-like & 0.0007 & 0.9020 & 0.0000 & 599.79 \\
-    Learned policy without ISAC & 0.0006 & 0.9012 & 0.0000 & 599.78 \\
-    Enhanced learned policy without ISAC & 0.0007 & 0.9011 & 0.0000 & 599.78 \\
-    Enhanced learned policy with ISAC & 0.3655 & 0.4986 & 12.9222 & 477.99 \\
+    SkyOrbs-inspired skip-scan & 0.0007 & 0.9020 & 0.0000 & 599.79 \\
+    Learned no-ISAC & 0.0006 & 0.9012 & 0.0000 & 599.78 \\
+    Enhanced no-ISAC & 0.0007 & 0.9011 & 0.0000 & 599.78 \\
+    Enhanced ISAC & 0.3655 & 0.4986 & 12.9222 & 477.99 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -367,7 +392,7 @@ These results are used to separate supported robustness claims from remaining im
 Within this communication-neighbor-discovery objective, the marginal protocol gain saturates once $\Rs$ approaches $\Rc$ because only communication-range neighbors are eligible for immediate handshake confirmation.
 This saturation is a consequence of the modeled link-confirmation objective, not a statement that sensing range cannot physically exceed communication range.
 At $\Rc/D=0.65$, increasing $\Rs/\Rc$ from 0.5 to 0.75 improves the proposed policy's discovery rate from 0.2628 to 0.3569.
-Increasing $\Rs$ beyond $\Rc$ does not provide additional gain in this model because only communication-range neighbors can be immediately confirmed by handshake.
+Increasing $\Rs$ beyond $\Rc$ does not provide additional gain in the tested sweep and finite-horizon link-confirmation objective because only communication-range neighbors can be immediately confirmed by handshake.
 The slot-duration sweep further indicates that the 5 ms slot assumption is not a tuned single point: at N=100 and 10-degree beams, the proposed policy's discovery rate remains between 0.3564 and 0.3696 when the slot duration varies from 1 ms to 20 ms under Gauss-Markov mobility.
 Fig.~\ref{fig:range_gain_heatmap} summarizes the range sensitivity.
 
@@ -421,9 +446,9 @@ Finally, the proposed ISAC-assisted policy creates more collision attempts than 
 Therefore, collision-penalized discovery should be interpreted together with raw discovery rate in dense finite-horizon settings.
 
 \section{Conclusion}
-This paper studies ISAC-assisted narrow-beam neighbor discovery for fully distributed UAV swarms.
+This paper studies ISAC-assisted narrow-beam neighbor discovery for distributed-execution UAV swarms.
 The central idea is to use ISAC not as an oracle, but as an imperfect beam-cell prior that reduces empty scanning in the evaluated regimes while preserving link-layer handshake confirmation.
-The simulation workflow supports the feasibility of this direction and provides transfer, range, sensing-error, and implementation-boundary evidence for a cross-layer ISAC-assisted neighbor-discovery protocol.
+The simulation workflow supports the feasibility of this direction in the evaluated single-hop, finite-horizon regimes and provides transfer, range, sensing-error, and implementation-boundary evidence for a cross-layer ISAC-assisted neighbor-discovery protocol.
 The results also identify clear boundaries: extremely narrow 3--5 degree beams, abrupt mobility, strict physical-layer ISAC realization, and collision-aware efficiency remain open issues rather than solved cases.
 
 \section*{Acknowledgment}

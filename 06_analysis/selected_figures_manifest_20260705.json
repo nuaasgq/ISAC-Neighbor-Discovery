@@ -1,0 +1,131 @@
+{
+  "created_for": "IEEE TWC/TCOM draft package",
+  "main_manuscript": [
+    {
+      "id": "system_model",
+      "path": "06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png",
+      "claim": "Distributed-execution UAV-UAV narrow-beam neighbor-discovery setting"
+    },
+    {
+      "id": "protocol_mechanism",
+      "path": "06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png",
+      "claim": "ISAC occupancy prior updates local candidate beams before handshake confirmation"
+    },
+    {
+      "id": "shared_policy",
+      "path": "06_analysis/paper_figures/concept/policy_architecture_shared_agent.png",
+      "claim": "Shared local policy supports small-scale training and larger-scale execution"
+    },
+    {
+      "id": "training_reward",
+      "path": "06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png",
+      "claim": "Empirical reward evolution of the selected policy-search run"
+    },
+    {
+      "id": "n100_density_transfer",
+      "path": "06_analysis/paper_figures/round3_n100_transfer/density_beamwidth_discovery_rate_n100.png",
+      "claim": "N=100 beamwidth transfer under density-preserving scaling"
+    },
+    {
+      "id": "n100_area_scale_lambda2",
+      "path": "06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_lambda2.png",
+      "claim": "Density-preserving versus fixed-area scaling comparison"
+    },
+    {
+      "id": "mobility_boundary",
+      "path": "06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png",
+      "claim": "Mobility-model boundary at N=100 and 10-degree beams"
+    },
+    {
+      "id": "range_gain",
+      "path": "06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png",
+      "claim": "Communication/sensing range sensitivity"
+    },
+    {
+      "id": "error_profile",
+      "path": "06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png",
+      "claim": "Configured ISAC error-profile robustness"
+    },
+    {
+      "id": "mechanism_ablation",
+      "path": "06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png",
+      "claim": "Candidate-set refinement and implementation-delay ablation"
+    }
+  ],
+  "supplement": [
+    {
+      "id": "training_score",
+      "path": "06_analysis/paper_figures/training_round2_candidate/train_score_curve.png",
+      "claim": "Selection-score evolution paired with main reward curve"
+    },
+    {
+      "id": "scale_beam_heatmap",
+      "path": "06_analysis/paper_figures/round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png",
+      "claim": "N=10/20/50/100 and 3--30 degree transfer grid"
+    },
+    {
+      "id": "node_count_b10",
+      "path": "06_analysis/paper_figures/round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png",
+      "claim": "B=10 small-to-large node-count transfer"
+    },
+    {
+      "id": "range_lambda2",
+      "path": "06_analysis/paper_figures/round3_robustness/range_gain_lambda2_n100_b10.png",
+      "claim": "Topology-quality range sensitivity"
+    },
+    {
+      "id": "slot_collision_penalized",
+      "path": "06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_collision_penalized_n100_b10.png",
+      "claim": "Slot-duration sensitivity under collision-penalized discovery"
+    },
+    {
+      "id": "beamwidth_stress_lambda2",
+      "path": "06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_lambda2_n100.png",
+      "claim": "N=100 beamwidth stress topology quality"
+    },
+    {
+      "id": "b3_full_baseline_discovery",
+      "path": "06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/n100_b3_full_baselines_discovery.png",
+      "claim": "3-degree full-baseline stress discovery"
+    },
+    {
+      "id": "b3_full_baseline_empty",
+      "path": "06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/n100_b3_full_baselines_empty_scan.png",
+      "claim": "3-degree full-baseline empty-scan mechanism evidence"
+    },
+    {
+      "id": "full_baseline_mobility_b10",
+      "path": "06_analysis/paper_figures/round8_n100_multimobility_full_baseline/full_baseline_discovery_n100_b10.png",
+      "claim": "N=100 B=10 mobility-boundary baseline completeness"
+    },
+    {
+      "id": "full_baseline_mobility_b15",
+      "path": "06_analysis/paper_figures/round8_n100_multimobility_full_baseline/full_baseline_discovery_n100_b15.png",
+      "claim": "N=100 B=15 mobility-boundary baseline completeness"
+    },
+    {
+      "id": "b15_error_discovery",
+      "path": "06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/error_profile_discovery_n100_b15.png",
+      "claim": "B=15 configured ISAC error-profile discovery"
+    },
+    {
+      "id": "b15_error_collision_penalized",
+      "path": "06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/ablation_collision_penalized_discovery_n100_b15.png",
+      "claim": "B=15 configured ISAC error-profile collision-penalized evidence"
+    }
+  ],
+  "backup_only": [
+    {
+      "path": "06_analysis/paper_figures/round7_scale_beam_grid_light/",
+      "claim": "Full scale-beam grid backup figures"
+    },
+    {
+      "path": "06_analysis/paper_figures/round8_n100_multimobility_full_baseline/",
+      "claim": "Full mobility-baseline backup metrics"
+    },
+    {
+      "path": "06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/",
+      "claim": "Full 3-degree stress backup metrics"
+    }
+  ]
+}

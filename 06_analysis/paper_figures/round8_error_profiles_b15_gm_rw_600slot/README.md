@@ -1,6 +1,6 @@
-# Round3 Robustness Figures
+# Round8 Error Profiles B15 Gm Rw 600Slot Figures
 
-Generated at: 2026-07-04T21:37:20.878330+00:00
+Generated at: 2026-07-04T22:30:40.222369+00:00
 Generated figures: 9
 
 ## Generated

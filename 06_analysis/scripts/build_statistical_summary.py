@@ -114,7 +114,7 @@ METRICS = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build compact statistical stability tables from archived sweeps.")
     parser.add_argument("--output", default="06_analysis/paper_tables/statistical_stability_summary")
-    parser.add_argument("--node-count", type=int, default=100)
+    parser.add_argument("--node-count", default="all", help="Node count to include, or 'all' for all archived rows.")
     return parser.parse_args()
 
 
@@ -148,7 +148,7 @@ def metric_values(row: dict[str, str], metric: str, n_episodes: int | None) -> d
     }
 
 
-def load_source(root: Path, block: str, tier: str, csv_path: str, node_count: int) -> list[dict[str, str]]:
+def load_source(root: Path, block: str, tier: str, csv_path: str, node_count: int | None) -> list[dict[str, str]]:
     path = root / csv_path
     if not path.exists():
         return []
@@ -157,7 +157,7 @@ def load_source(root: Path, block: str, tier: str, csv_path: str, node_count: in
         reader = csv.DictReader(handle)
         for row in reader:
             row_node_count = as_float(row.get("node_count"))
-            if row_node_count is not None and int(row_node_count) != node_count:
+            if node_count is not None and row_node_count is not None and int(row_node_count) != node_count:
                 continue
             n_episodes_float = as_float(row.get("n_episodes"))
             n_episodes = int(n_episodes_float) if n_episodes_float is not None else None
@@ -194,6 +194,7 @@ Interpretation notes:
 - Rows tagged `supplement` are useful for reviewer-facing robustness evidence but should not replace the current main evidence chain without a separate promotion decision.
 - Rows tagged `supplement_stress` are failure-boundary or extreme-regime checks; use them to bound claims rather than to advertise main performance.
 - Rows tagged `supplement_sanity` are quick or one-seed checks; use them only to track trends while waiting for fuller multi-seed results.
+- By default the script includes all archived node counts; pass `--node-count 100` to reproduce an N=100-only table.
 - Total rows: {row_count}
 """
     (output_dir / "README.md").write_text(text, encoding="utf-8")
@@ -205,9 +206,11 @@ def main() -> None:
     output_dir = root / args.output
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    node_count = None if str(args.node_count).lower() == "all" else int(args.node_count)
+
     rows: list[dict[str, str]] = []
     for block, tier, csv_path in SOURCE_DEFS:
-        rows.extend(load_source(root, block, tier, csv_path, args.node_count))
+        rows.extend(load_source(root, block, tier, csv_path, node_count))
 
     fieldnames = (
         ["evidence_block", "evidence_tier", "source_csv", "n_episodes"]

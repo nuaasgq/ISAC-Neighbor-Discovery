@@ -1,4 +1,4 @@
-# Round3 Robustness Figures
+# Round7 Error Profiles Light Figures
 
 Generated at: 2026-07-04T20:17:04.386716+00:00
 Generated figures: 9
