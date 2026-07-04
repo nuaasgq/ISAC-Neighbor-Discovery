@@ -1,0 +1,146 @@
+experiment:
+  name: "marl_algorithm_family_sweep"
+  seed: 20260704
+  purpose: "compare value-based, policy-gradient, actor-critic, and architecture-enhanced MARL for ISAC-assisted neighbor discovery"
+  slots_per_episode: 3000
+
+environment:
+  base_config: "05_simulation/configs/mvp.yaml"
+  observation_contract: "self-localized-neighbor-unknown"
+  action_space:
+    mode_actions: ["sense", "tx", "rx", "idle"]
+    beam_selection: "hierarchical_discrete_cell"
+  execution_constraint:
+    decentralized_actor: true
+    actor_uses_undiscovered_neighbor_truth: false
+    actor_uses_global_topology: false
+
+training_scales:
+  train_node_range: [8, 20]
+  validation_node_counts: [10, 20, 30]
+  zero_shot_test_node_counts: [30, 50, 100, 200]
+  main_transfer_protocol: "train_small_test_large_without_finetuning"
+
+phase_0_rule_expert:
+  algorithms:
+    - name: "I-TAP-ND"
+      role: "rule expert and non-learning baseline"
+    - name: "Oracle-ND"
+      role: "upper bound only"
+  outputs:
+    expert_trajectories: true
+    rule_logits: true
+    baseline_metrics: true
+
+phase_1_sanity:
+  train_episodes: 500
+  eval_episodes: 50
+  algorithms:
+    - "IQL-DRQN"
+    - "VDN"
+    - "QMIX"
+    - "IPPO"
+    - "MAPPO"
+  networks:
+    beam_encoder: "flatten_mlp"
+    neighbor_encoder: "mean_pool"
+    memory: "gru"
+    rule_residual: false
+  pass_criteria:
+    min_gain_over_uniform_random: 0.05
+    no_training_collapse: true
+    valid_decentralized_execution: true
+
+phase_2_algorithm_families:
+  train_episodes: 2000
+  eval_episodes: 100
+  algorithms:
+    value_based:
+      - "WQMIX"
+      - "QPLEX"
+      - "Qatten"
+      - "QTRAN++"
+      - "TransfQMix"
+      - "RiskQ"
+      - "MAVEN"
+      - "ACE"
+    policy_gradient:
+      - "MAPPO"
+      - "HAPPO"
+      - "HATRPO"
+      - "MAT"
+    actor_critic:
+      - "COMA"
+      - "MAAC"
+      - "MASAC-discrete"
+      - "MAHSAC-hybrid"
+  networks:
+    beam_encoder: ["shared_beam_scorer", "top_k_beam_attention"]
+    neighbor_encoder: ["attention_pool", "local_gnn"]
+    memory: ["gru"]
+    rule_residual: [false, true]
+  pass_criteria:
+    zero_shot_gain_positive_at_n100: true
+    scale_retention_min: 0.5
+    outperform_best_heuristic_by: 0.05
+
+phase_3_architecture_innovation:
+  train_episodes: 5000
+  eval_episodes: 200
+  candidate_architectures:
+    - name: "PABR-Net"
+      full_name: "Pose-aware Action-memory Beam Risk Network"
+      compatible_algorithms: ["MAPPO", "HAPPO", "MASAC-discrete", "Qatten", "QPLEX"]
+    - name: "Rule-Residual Beam Attention MARL"
+      compatible_algorithms: ["IPPO", "MAPPO", "HAPPO", "MASAC-discrete"]
+    - name: "Topology-Aware Attention Critic"
+      compatible_algorithms: ["MAPPO", "COMA", "MAAC", "Qatten"]
+    - name: "Scale-Invariant Beam-Graph Transformer"
+      compatible_algorithms: ["MAT", "MAPPO", "HAPPO"]
+    - name: "Uncertainty-Adaptive Maximum-Entropy Explorer"
+      compatible_algorithms: ["MASAC-discrete", "MAHSAC-hybrid", "IPPO", "MAPPO"]
+    - name: "K-hop Local Critic with Mean-field Congestion"
+      compatible_algorithms: ["MAAC", "MAPPO", "MASAC-discrete", "MADDPG-K-style"]
+  ablations:
+    - "no_isac_prior_token"
+    - "no_rule_residual"
+    - "no_uncertainty_token"
+    - "no_neighbor_pooling"
+    - "flat_mlp_beam_encoder"
+    - "no_pose_encoding"
+    - "no_temporal_memory"
+    - "node_gru_vs_per_beam_action_memory"
+    - "mean_prior_vs_risk_head"
+    - "fixed_entropy"
+    - "full_critic_vs_khop_critic"
+    - "global_agent_sequence_vs_local_token_sequence"
+
+cross_codebook_tests:
+  train_beam_cells:
+    azimuth: 24
+    elevation: 8
+  test_beam_cells:
+    - [36, 8]
+    - [72, 12]
+  purpose: "check whether beam-token and spherical encoders transfer across beam granularity"
+
+metrics:
+  discovery:
+    - "mean_discovery_delay"
+    - "p95_discovery_delay"
+    - "p99_discovery_delay"
+    - "finite_time_discovery_rate"
+    - "empty_scan_ratio"
+  topology:
+    - "lcc_ratio"
+    - "num_components"
+    - "isolated_node_ratio"
+    - "lambda2_proxy"
+  transfer:
+    - "zero_shot_gain"
+    - "scale_retention"
+    - "per_node_inference_time"
+  robustness:
+    - "p_fa_sensitivity"
+    - "p_md_sensitivity"
+    - "sigma_cell_sensitivity"

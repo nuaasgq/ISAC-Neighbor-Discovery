@@ -16,7 +16,14 @@
 
 当前阶段：
 
-- P3-P5 过渡：系统模型、规则协议、多智能体强化学习方法和可扩展仿真实验设计
+- P3-P5 过渡：系统模型、规则协议、MARL 算法族筛选、网络结构创新和可扩展仿真实验设计
+
+当前新增任务线：
+
+- `00_workflow/sprint_4_marl_algorithm_exploration.md`
+- `04_protocol/marl_algorithm_suite.md`
+- `04_protocol/neural_architecture_innovation.md`
+- `05_simulation/configs/marl_algorithm_sweep.yaml`
 
 ## Repository Rules
 

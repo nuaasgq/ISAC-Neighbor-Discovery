@@ -102,3 +102,34 @@ Early included sources:
 Interpretation:
 
 Transferable MARL and GNN-based wireless resource allocation are not blank areas. The defensible gap is the combination of ISAC beam-cell prior, pre-alignment U2U narrow-beam neighbor discovery, topology-aware reward, and zero-shot small-to-large UAV swarm deployment.
+
+### Track E: MARL Algorithm Families for Sprint 4
+
+Representative queries:
+
+- `"QPLEX" "Duplex Dueling Multi-Agent Q-Learning" OpenReview`
+- `"Qatten" "cooperative multiagent reinforcement learning" arXiv`
+- `"HAPPO" "HATRPO" "multi-agent reinforcement learning" arXiv`
+- `"Multi-Agent Transformer" "sequence modeling" MARL NeurIPS`
+- `"COMA" "Counterfactual Multi-Agent Policy Gradients" arXiv`
+- `"Actor-Attention-Critic" "multi-agent reinforcement learning" ICML`
+- `"Decomposed Soft Actor-Critic" "cooperative multi-agent reinforcement learning"`
+- `"Multi-Agent Transformer" "sequence modeling" MARL NeurIPS`
+- `"Multi-Agent Actor-Critic with Hierarchical Graph Attention Network"`
+- `"Scalable Neighborhood-Based Multi-Agent Actor-Critic" arXiv`
+
+Early included sources:
+
+- VDN, QMIX, QTRAN/QTRAN++, QPLEX, Qatten, MAVEN, ACE.
+- WQMIX, RiskQ, TransfQMix as enhanced value-factorization and risk/transfer candidates.
+- IPPO/MAPPO, HAPPO/HATRPO, MAT.
+- COMA, MAAC, MASAC / decomposed SAC.
+- Hierarchical graph attention actor-critic and local-neighborhood centralized critic variants.
+
+Interpretation:
+
+The MARL part should be framed as an algorithm-family screening and problem-specific architecture design, not as a fixed MAPPO implementation. The likely method novelty is not the base optimizer itself, but the ISAC-aware beam representation, topology-aware credit assignment, uncertainty-aware exploration, and scale-invariant local observation design.
+
+Network-structure note:
+
+Attention critics, graph attention actor-critic, MAT-style sequence modeling, and K-neighborhood critics all suggest the same risk: full centralized critics do not scale cleanly. For this project, critic design should use local graph / top-K / pooling / mean-field summaries so that training on `N<=20` can still produce useful gradients for `N=50/100/200`.

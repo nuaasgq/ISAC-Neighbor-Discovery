@@ -71,9 +71,16 @@
 | ISAC-only ND | 使用 occupancy prior，不用 topology proxy | 验证 ISAC 剪枝收益 |
 | Topology-only ND | 使用方向稀缺/度数代理，不用 ISAC prior | 验证 topology proxy 独立收益 |
 | I-TAP-ND | 完整方法 | 主方法 |
-| IPPO-I-TAP | 参数共享 IPPO 学习 mode/beam | 轻量 MARL baseline |
-| MAPPO-I-TAP | CTDE + 参数共享 MAPPO | MARL 主方法 |
-| MAPPO-I-TAP-GNN | MAPPO + neighbor/beam attention pooling | 规模迁移候选主方法 |
+| IQL/DRQN-I-TAP | 独立 Q 学习 + GRU 历史 | 值函数 sanity baseline |
+| VDN-I-TAP | 加性值分解 | 轻量 team reward baseline |
+| QMIX-I-TAP | 单调 mixing 值分解 | 经典 CTDE 值函数 baseline |
+| QPLEX/Qatten-I-TAP | 增强值分解或 attention mixer | 复杂拓扑/碰撞信用分配候选 |
+| MAVEN-I-TAP | 值函数 + committed exploration | 稀疏奖励和长尾发现候选 |
+| IPPO-I-TAP | 参数共享 IPPO 学习 mode/beam | 轻量策略梯度 baseline |
+| MAPPO-I-TAP | CTDE + 参数共享 MAPPO | 强策略梯度 baseline |
+| HAPPO/HATRPO-I-TAP | sequential trust-region PG | 稳定策略更新候选 |
+| COMA/MAAC/MASAC-I-TAP | counterfactual / attention / maximum-entropy actor-critic | 信用分配和探索候选 |
+| MAT-I-TAP | multi-agent transformer / sequence modeling | 结构创新候选 |
 | Oracle ND | 已知真实 occupied beam cells | 上界，不参与公平协议比较 |
 
 ## Metrics
@@ -189,3 +196,45 @@
 8. I-TAP-ND expert trajectory 生成。
 9. IPPO/MAPPO 训练和小到大迁移评估。
 10. 参数扫描和绘图。
+
+## Sprint 4 MARL 算法筛选顺序
+
+配置入口：`05_simulation/configs/marl_algorithm_sweep.yaml`
+
+### Phase 0：规则专家
+
+- 跑通 I-TAP-ND。
+- 输出规则 logits、expert trajectories 和 non-learning baseline metrics。
+
+### Phase 1：轻量算法族筛选
+
+| 候选 | 目的 | 淘汰规则 |
+|---|---|---|
+| IQL/DRQN | 检查纯本地值函数是否能利用 ISAC prior | 长期劣于 random 淘汰 |
+| VDN | 检查 team reward 加性分解 | 劣于 IQL 或训练方差过大淘汰 |
+| QMIX | 检查单调 mixing 是否足够 | 拓扑/碰撞指标劣于 VDN 时降级为 baseline |
+| IPPO | 检查参数共享策略梯度 | 不稳定或空扫率高则淘汰 |
+| MAPPO | 强 baseline | 不能直接定为主方法，只作为比较对象 |
+
+### Phase 2：增强算法族筛选
+
+- 值函数增强：QPLEX、Qatten、QTRAN++、MAVEN、ACE。
+- 策略梯度增强：HAPPO、HATRPO、MAT。
+- Actor-Critic：COMA、MAAC、MASAC / discrete SAC。
+
+保留标准：
+
+- 在 `N_train in [8,20]` 上稳定优于轻量 baseline。
+- 在 `N_test in {30,50,100}` 上零微调保持正收益。
+- 每节点 actor 推理复杂度不随全网 `N` 线性增长。
+
+### Phase 3：结构创新优化
+
+只在 Phase 2 胜出算法上加入：
+
+- rule-residual beam attention。
+- topology-aware attention critic / mixer。
+- uncertainty-aware entropy control。
+- scale-invariant neighbor pooling 或 beam-graph transformer。
+
+最终论文方法必须证明：同一算法下，问题定制结构优于 vanilla 网络。

@@ -163,15 +163,9 @@ R^topo(t) =
 - 反复 sensing 低价值 beam。
 - 高置信 beam 多次失败后仍反复选择。
 
-## 6. 推荐架构
+## 6. 算法筛选与候选架构
 
-主推荐：
-
-```text
-PS-MAPPO-GAT
-```
-
-即 Parameter-Shared MAPPO with Beam Prior Encoder and Graph/Attention Aggregation。
+本阶段不把 `MARL-I-TAP-ND` 预设为某一个具体算法。`MAPPO` 只作为强 baseline 进入候选池，而不是默认主方法。算法筛选细节见 `04_protocol/marl_algorithm_suite.md`，网络结构创新细节见 `04_protocol/neural_architecture_innovation.md`。
 
 模块：
 
@@ -185,12 +179,20 @@ mode_head
 beam_head
 ```
 
-优先级：
+第一轮候选池：
 
-1. IPPO：最轻量 baseline。
-2. MAPPO：主方法。
-3. MAPPO + attention/GNN pooling：规模迁移主方法。
-4. Mean-field MARL：超大规模扩展版本。
+1. 值函数类：IQL-GRU、VDN、QMIX。
+2. 增强值分解类：QPLEX、Qatten、QTRAN++、MAVEN、ACE。
+3. 策略梯度类：IPPO、MAPPO、HAPPO、HATRPO。
+4. Actor-Critic 类：COMA、MAAC、MASAC / discrete SAC。
+5. 结构增强类：rule-residual beam attention、topology-aware critic、scale-invariant beam-graph transformer。
+
+筛选原则：
+
+- 先用轻量算法检查环境和奖励是否可学。
+- 再比较值分解、策略梯度和 Actor-Critic 三类方法。
+- 最后只在胜出算法上引入问题定制结构创新。
+- 最终主方法必须同时优于规则基线和同算法的 vanilla 网络。
 
 ## 7. 规则先验融合
 
@@ -219,7 +221,7 @@ pi_i^m = epsilon / M + (1 - epsilon) * softmax(logit_i^m)
 min_theta CE(pi_theta(a|o), a_I-TAP)
 ```
 
-再用 MAPPO fine-tune。
+再用候选 MARL 算法 fine-tune。对于值函数类，可使用 expert replay / Q warm-start；对于策略梯度和 Actor-Critic 类，可使用 behavior cloning 或 KL regularization。
 
 ## 8. 消融实验
 
@@ -227,7 +229,10 @@ min_theta CE(pi_theta(a|o), a_I-TAP)
 - no-topology proxy。
 - no-rule bias。
 - no-neighbor pooling。
-- IPPO vs MAPPO。
+- value-based vs policy-gradient vs actor-critic。
+- IQL/VDN/QMIX vs QPLEX/Qatten/MAVEN。
+- IPPO/MAPPO vs HAPPO/HATRPO。
+- COMA/MAAC/MASAC vs vanilla MAPPO。
 - small-scale only vs randomized-N training。
 - zero-shot transfer vs fine-tuned transfer。
 

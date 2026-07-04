@@ -24,6 +24,7 @@
 | Scalable wireless MARL | Naderializadeh et al., IEEE TWC 2021; Wang et al., IEEE TSP 2022 | High | 已明确讨论无线网络中小规模训练、不同规模迁移和 GNN 可迁移资源分配。 | 本文不能声称“首次可迁移无线 MARL”，应聚焦 ISAC prior 驱动的对准前 U2U 邻居发现。 |
 | MARL MAC / access | Guo et al., IEEE JSAC 2022; MAPPO-MAC 2023 | High | 已将 MARL/MAPPO/QMIX 用于分布式链路层接入。 | 本文动作包含窄波束 sensing/Tx/Rx/beam 选择，目标是 neighbor discovery 和拓扑形成，不是通用 MAC。 |
 | RL directional neighbor discovery | Enhanced RL two-way DND, Ad Hoc Networks 2024/2025 | High | 已用 RL 改进 two-way directional antenna neighbor discovery。 | 本文新增 ISAC beam-cell prior、自定位辅助、UAV-UAV 三维场景、拓扑优先和小到大迁移。 |
+| General MARL algorithm families | VDN/QMIX/QPLEX/Qatten; MAPPO/HAPPO; COMA/MAAC/MAT | Medium-High | 值分解、策略梯度、Actor-Critic、Transformer MARL 都已有成熟算法，不能把基础算法本身包装成创新。 | 本文应做统一算法族筛选，并把创新放在 ISAC-aware 表征、topology-aware credit assignment、uncertainty-aware exploration 和 scale-invariant execution。 |
 
 ---
 
@@ -53,6 +54,10 @@ ISAC 感知角度不一定等于最佳通信方向，multipath、遮挡、虚警
 
 无线网络中的可迁移 MARL、GNN 资源分配和分布式 MAC 已有较强工作。因此本文不能把“可迁移 MARL”本身作为唯一创新点。更稳妥的表述是：将可扩展 MARL 作为实现机制，服务于 ISAC-assisted pre-alignment narrow-beam neighbor discovery，并通过 topology-aware reward 和 beam-cell prior 融合体现领域特异性。
 
+### G7. 从套用 MARL 算法转向问题定制结构
+
+VDN、QMIX、QPLEX、MAPPO、HAPPO、COMA、MAAC 和 MAT 等算法已经是通用工具。本文不应声称基础优化器新，而应通过统一筛选证明算法选择合理，并进一步提出面向本问题的结构：ISAC beam-cell token、规则残差融合、拓扑注意力 critic / mixer、不确定性感知探索和可迁移邻居 pooling。
+
 ---
 
 ## 建议论文主张
@@ -76,3 +81,5 @@ ISAC 感知角度不一定等于最佳通信方向，multipath、遮挡、虚警
 5. TWC/TCOM 审稿视角下，ISAC 抽象层是否足够具体，是否需要给出最小物理层感知误差模型？
 6. MARL-I-TAP-ND 是否能在不借助大规模微调的情况下超过 I-TAP-ND 规则基线？
 7. 可迁移 MARL 的新意是否足够依托 ISAC prior 和 neighbor discovery，而不是泛泛重复无线资源分配中的 GNN/MARL 迁移思想？
+8. 在相同环境和训练预算下，值函数类、策略梯度类和 Actor-Critic 类哪个算法族更适合 mode+beam 邻居发现？
+9. 网络结构创新相对于 vanilla MARL 的增益是否稳定，还是只来自更大模型和更长训练？
