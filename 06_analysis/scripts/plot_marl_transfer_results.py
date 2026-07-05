@@ -94,6 +94,7 @@ def load_eval_rows(run_dirs: list[Path], pd):
         frame["env_protocol"] = str(manifest.get("env_protocol", "unknown"))
         frame["node_count"] = int(manifest.get("node_count", 0))
         frame["beam_count"] = int(manifest.get("beam_count", 0))
+        frame["slots_per_episode"] = int(manifest.get("slots_per_episode", 0))
         frame["azimuth_cells"] = int(manifest.get("azimuth_cells", 0))
         frame["elevation_cells"] = int(manifest.get("elevation_cells", 0))
         frame["beamwidth_deg"] = 360.0 / max(1, int(manifest.get("azimuth_cells", 1)))
@@ -113,6 +114,7 @@ def summarize(rows, pd):
         "node_count",
         "beamwidth_deg",
         "beam_count",
+        "slots_per_episode",
         "communication_range_m",
         "sensing_range_m",
     ]
@@ -174,9 +176,9 @@ def plot_node_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
     subset = summary[summary["phase"].astype(str).str.endswith("stochastic")].copy()
     if subset.empty:
         subset = summary
-    for (algorithm, beamwidth), group in subset.groupby(["train_algorithm", "beamwidth_deg"]):
+    for (algorithm, beamwidth, slots), group in subset.groupby(["train_algorithm", "beamwidth_deg", "slots_per_episode"]):
         group = group.sort_values("node_count")
-        label = f"{algorithm}, {beamwidth:g} deg"
+        label = f"{algorithm}, {beamwidth:g} deg, {slots:g} slots"
         ax.errorbar(
             group["node_count"],
             group[metric],
@@ -200,9 +202,9 @@ def plot_beam_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
     subset = summary[summary["phase"].astype(str).str.endswith("stochastic")].copy()
     if subset.empty:
         subset = summary
-    for (algorithm, node_count), group in subset.groupby(["train_algorithm", "node_count"]):
+    for (algorithm, node_count, slots), group in subset.groupby(["train_algorithm", "node_count", "slots_per_episode"]):
         group = group.sort_values("beamwidth_deg")
-        label = f"{algorithm}, N={node_count:g}"
+        label = f"{algorithm}, N={node_count:g}, {slots:g} slots"
         ax.errorbar(
             group["beamwidth_deg"],
             group[metric],
