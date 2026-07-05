@@ -29,7 +29,7 @@ Core claim:
 | Error profiles | B=10 moderate errors remain useful; B=15 Gauss-Markov remains high but random-walk is more sensitive | Supports bounded robustness, not sensing immunity. |
 | Round11 five-seed paired campaign | B=10 proposed discovery 0.3639 vs enhanced no-ISAC 0.0006; B=15 proposed discovery 0.5445 vs 0.0034; all 5/5 paired seeds positive versus random, enhanced no-ISAC, candidate-set ablation, and one-slot delay for raw discovery | Strengthens seed-stability and mechanism evidence while preserving collision caveats. |
 | Round11 collision-aware check | B=10 proposed collision-penalized discovery 0.2995 vs one-slot delay 0.2622; B=15 proposed 0.2042 vs one-slot delay 0.2207 | Shows collision-aware MAC control is still open, especially for denser wider-beam operation. |
-| Round12 collision-aware MAC refinement | B=10 collision-aware collision-penalized discovery 0.3162 vs proposed 0.2995; B=15 0.2504 vs 0.2042; paired deltas are 5/5 positive versus proposed and one-slot delay at both beamwidths | Shows the collision boundary can be mitigated by local role control while preserving the same ISAC candidate-set interface. |
+| Round13 collision-aware MAC refinement | B=10 collision-aware collision-penalized discovery 0.3147 vs proposed 0.2991; B=15 0.2479 vs 0.2017; collision-penalized and discoveries-per-joule deltas are 10/10 positive versus proposed and one-slot delay at both beamwidths | Shows the collision boundary can be mitigated by local role control while preserving the same ISAC candidate-set interface. |
 
 ## What Not To Claim
 
@@ -38,7 +38,7 @@ Core claim:
 - Do not claim physical-layer ISAC waveform or estimator design. The paper uses a protocol-level occupancy-prior abstraction.
 - Do not claim 3--30 deg are all solved. Write "evaluated over 3--30 deg"; 3--5 deg are stress cases.
 - Do not claim instantaneous active communication graph connectivity under arbitrary mobility. The reported lambda2 is for the finite-horizon discovered-neighbor graph/cache.
-- Do not claim the proposed protocol is a final collision-optimal MAC. Round12 mitigates the round11 boundary, but energy-aware role scheduling remains future work.
+- Do not claim the proposed protocol is a final collision-optimal MAC. Round13 mitigates the round11 boundary under assumed radio-state accounting, but calibrated energy-aware role scheduling remains future work.
 
 ## Likely Reviewer Questions and Preferred Answers
 
@@ -54,5 +54,5 @@ Core claim:
 ## 11:00 Priority If More Work Is Available
 
 1. Run one final independent manuscript audit after the latest edits.
-2. Keep additional experiments narrow: collision-aware MAC refinement or extra seeds for N=100/B=10/B=15 only, not a full Cartesian sweep.
+2. Keep additional experiments narrow: calibrated energy assumptions, PHY-to-ISAC sensing-parameter mapping, or 10+ seed confirmation only, not a full Cartesian sweep.
 3. Prepare the next-paper roadmap for real neural MARL: candidate-set-constrained action heads, graph/local-neighborhood encoders after discovery, and value-decomposition or actor-critic variants evaluated under the same transfer protocol.

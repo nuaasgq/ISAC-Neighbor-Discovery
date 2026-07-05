@@ -26,7 +26,7 @@ This run tracks the long unattended work window for the ISAC-assisted narrow-bea
 - Small-scale shared-policy tuning at `N=10`, `10 deg` transfers to `N=100` for 10-30 degree beams under both density-preserving and fixed-area scaling.
 - The sensing range benefit saturates around the communication range in the current communication-neighbor-discovery model.
 - Slot duration from 1 ms to 20 ms does not materially change the Gauss-Markov `N=100`, 10-degree conclusion.
-- The current figure archive contains 358 PNG figures, all checked at 4:3 aspect ratio. The manuscript also includes an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft exist on disk.
+- At that checkpoint, the figure archive contained 358 PNG figures, all checked at 4:3 aspect ratio. The manuscript also included an explicit training-score evolution curve, and all 10 figures referenced by the IEEE LaTeX draft existed on disk.
 
 ## Morning Manuscript Checkpoint
 

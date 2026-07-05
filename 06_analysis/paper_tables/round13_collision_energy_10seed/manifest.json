@@ -1,0 +1,49 @@
+{
+  "created_at": "2026-07-05T09:37:08",
+  "source": "05_simulation\\results_raw\\round13_collision_energy_10seed",
+  "output_dir": "06_analysis\\paper_tables\\round13_collision_energy_10seed",
+  "figure_dir": "06_analysis\\paper_figures\\round13_collision_energy_10seed",
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_cumulative_discovery_b10.png",
+      "type": "cumulative",
+      "beamwidth_deg": 10.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_cumulative_discovery_b15.png",
+      "type": "cumulative",
+      "beamwidth_deg": 15.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_discovery_rate.png",
+      "type": "bar",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_collision_penalized.png",
+      "type": "bar",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_collision_count.png",
+      "type": "bar",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_discoveries_per_joule.png",
+      "type": "bar",
+      "metric": "discoveries_per_joule_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_energy_per_discovery.png",
+      "type": "bar",
+      "metric": "energy_per_discovery_censored_j_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_collision_energy_10seed\\round13_collision_penalized_delta.png",
+      "type": "paired_delta",
+      "metric": "collision_penalized_discovery_rate"
+    }
+  ],
+  "tag": "round13"
+}

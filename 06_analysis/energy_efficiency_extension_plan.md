@@ -22,7 +22,7 @@ The original paper-ready efficiency metrics were scan-action and collision norma
 - `collision_normalized_efficiency`
 - `collision_penalized_discovery_rate`
 
-Round12 adds assumed radio-state accounting metrics:
+Round12 added the simulator-side assumed radio-state accounting metrics, and round13 reports the ten-seed collision/energy probe:
 
 - `energy_j`
 - `discoveries_per_joule`
@@ -36,15 +36,15 @@ The configuration files define action probabilities such as `p_tx`, `p_rx`, and 
 Optional radio-state powers are now loaded from an `energy` section when present, with defaults used otherwise.
 The MARL planning file still keeps power actions disabled with `include_power: false`, so this is accounting rather than energy-aware control.
 
-Implemented optional parameters:
+Implemented optional parameters and current defaults:
 
 | Parameter | Meaning | Example unit |
 |---|---|---|
-| `tx_power_w` | transmit-chain power during TX slots | W |
-| `rx_power_w` | receive-chain power during RX slots | W |
-| `sense_power_w` | dedicated sensing power during sense slots | W |
-| `idle_power_w` | idle baseline power | W |
-| `piggyback_sense_power_w` | additional sensing/processing cost during piggyback sensing | W |
+| `tx_power_w` | transmit-chain power during TX slots | W, default 1.0 |
+| `rx_power_w` | receive-chain power during RX slots | W, default 0.6 |
+| `sense_power_w` | dedicated sensing power during sense slots | W, default 1.2 |
+| `idle_power_w` | idle baseline power | W, default 0.05 |
+| `piggyback_sense_power_w` | additional sensing/processing cost during piggyback sensing | W, default 0.2 |
 
 Then compute
 
@@ -69,7 +69,7 @@ Derived metrics:
 1. `SimulationConfig` and YAML loading in `05_simulation/src/isac_nd_sim/config.py`.
 2. `EpisodeResult`, `summarize()`, and `radio_energy_j()` in `05_simulation/src/isac_nd_sim/simulator.py`.
 3. Focused deterministic energy-accounting test in `05_simulation/tests/test_protocol_comparison_contract.py`.
-4. Round12 plotting hooks in `06_analysis/scripts/plot_round12_collision_aware.py`.
+4. Round13 plotting hooks in `06_analysis/scripts/plot_round12_collision_aware.py` using `--tag round13`.
 
 ## Manuscript Wording
 

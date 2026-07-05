@@ -37,6 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source", default="05_simulation/results_raw/round12_collision_aware_probe_v2")
     parser.add_argument("--output", default="06_analysis/paper_tables/round12_collision_aware_probe_v2")
     parser.add_argument("--figures", default="06_analysis/paper_figures/round12_collision_aware_probe_v2")
+    parser.add_argument("--tag", default="round12", help="Filename prefix for generated tables and figures.")
     return parser.parse_args()
 
 
@@ -58,20 +59,22 @@ def main() -> None:
     paired = build_paired_delta_table(episode, pd)
     cumulative = build_cumulative_curves(episode, edges, pd)
 
-    summary.to_csv(output_dir / "round12_endpoint_summary.csv", index=False)
-    paired.to_csv(output_dir / "round12_paired_delta_summary.csv", index=False)
-    cumulative.to_csv(output_dir / "round12_cumulative_discovery_curves.csv", index=False)
+    tag = str(args.tag)
+    summary.to_csv(output_dir / f"{tag}_endpoint_summary.csv", index=False)
+    paired.to_csv(output_dir / f"{tag}_paired_delta_summary.csv", index=False)
+    cumulative.to_csv(output_dir / f"{tag}_cumulative_discovery_curves.csv", index=False)
 
     for name in ("aggregate_metrics.csv", "per_episode_summary.csv", "manifest.json", "README.md"):
         shutil.copyfile(source / name, output_dir / name)
 
-    figures = write_figures(summary, paired, cumulative, figure_dir)
+    figures = write_figures(summary, paired, cumulative, figure_dir, tag)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "source": str(source),
         "output_dir": str(output_dir),
         "figure_dir": str(figure_dir),
         "figures": figures,
+        "tag": tag,
     }
     (output_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     write_readme(output_dir, manifest)
@@ -232,19 +235,19 @@ def setup_matplotlib():
     return plt
 
 
-def write_figures(summary, paired, cumulative, figure_dir: Path) -> list[dict]:
+def write_figures(summary, paired, cumulative, figure_dir: Path, tag: str) -> list[dict]:
     plt = setup_matplotlib()
     figures = []
     for beamwidth in (10.0, 15.0):
-        figures.append(plot_cumulative(cumulative, beamwidth, figure_dir / f"round12_cumulative_discovery_b{int(beamwidth)}.png", plt))
-    figures.append(plot_bar(summary, "discovery_rate_mean", "discovery_rate_ci95", "Discovery rate", figure_dir / "round12_discovery_rate.png", plt))
-    figures.append(plot_bar(summary, "collision_penalized_discovery_rate_mean", "collision_penalized_discovery_rate_ci95", "Collision-penalized discovery", figure_dir / "round12_collision_penalized.png", plt))
-    figures.append(plot_bar(summary, "collision_count_mean", "collision_count_ci95", "Collision count", figure_dir / "round12_collision_count.png", plt))
+        figures.append(plot_cumulative(cumulative, beamwidth, figure_dir / f"{tag}_cumulative_discovery_b{int(beamwidth)}.png", plt))
+    figures.append(plot_bar(summary, "discovery_rate_mean", "discovery_rate_ci95", "Discovery rate", figure_dir / f"{tag}_discovery_rate.png", plt))
+    figures.append(plot_bar(summary, "collision_penalized_discovery_rate_mean", "collision_penalized_discovery_rate_ci95", "Collision-penalized discovery", figure_dir / f"{tag}_collision_penalized.png", plt))
+    figures.append(plot_bar(summary, "collision_count_mean", "collision_count_ci95", "Collision count", figure_dir / f"{tag}_collision_count.png", plt))
     if "discoveries_per_joule_mean" in summary.columns:
-        figures.append(plot_bar(summary, "discoveries_per_joule_mean", "discoveries_per_joule_ci95", "Discoveries per joule", figure_dir / "round12_discoveries_per_joule.png", plt))
+        figures.append(plot_bar(summary, "discoveries_per_joule_mean", "discoveries_per_joule_ci95", "Discoveries per joule", figure_dir / f"{tag}_discoveries_per_joule.png", plt))
     if "energy_per_discovery_censored_j_mean" in summary.columns:
-        figures.append(plot_bar(summary, "energy_per_discovery_censored_j_mean", "energy_per_discovery_censored_j_ci95", "Energy per discovery (J)", figure_dir / "round12_energy_per_discovery.png", plt))
-    figures.append(plot_paired_delta(paired, figure_dir / "round12_collision_penalized_delta.png", plt))
+        figures.append(plot_bar(summary, "energy_per_discovery_censored_j_mean", "energy_per_discovery_censored_j_ci95", "Energy per discovery (J)", figure_dir / f"{tag}_energy_per_discovery.png", plt))
+    figures.append(plot_paired_delta(paired, figure_dir / f"{tag}_collision_penalized_delta.png", plt))
     return figures
 
 
@@ -316,13 +319,14 @@ def plot_paired_delta(paired, path: Path, plt) -> dict:
 
 
 def write_readme(output_dir: Path, manifest: dict) -> None:
+    label = str(manifest.get("tag", "round12")).capitalize()
     text = [
-        "# Round12 Collision-Aware MAC Refinement Probe",
+        f"# {label} Collision-Aware MAC Refinement Probe",
         "",
         f"- Created: {manifest['created_at']}",
         f"- Source: `{manifest['source']}`",
         "",
-        "This focused five-seed block reuses the round11 N=100, B=10/B=15, Gauss-Markov, 600-slot, density-scaled, single-hop setting.",
+        "This focused paired-seed block reuses the round11 N=100, B=10/B=15, Gauss-Markov, 600-slot, density-scaled, single-hop setting.",
         "It adds `collision_aware_isac`, a distributed ISAC variant that keeps the same candidate-set handshake interface but lowers TX probability under local candidate and collision pressure.",
         "Use it as a mechanism-refinement probe: it supports the claim that the B=15 collision-penalized boundary can be mitigated by MAC-layer role control.",
     ]

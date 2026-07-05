@@ -1,14 +1,14 @@
 # Submission Readiness Audit - 2026-07-05 Morning
 
-This note records the readiness state after commit `3eae6dd` (`Add round11 stability evidence to supplement`) plus the current collision-aware MAC refinement work in progress.
+This note records the readiness state after the latest round13 ten-seed collision/energy evidence integration.
 
 ## Current Manuscript Package
 
 | Artifact | Status | Notes |
 |---|---:|---|
 | `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, texcount `3669+62+294`, 10 figures, 4 tables. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 10-page IEEEtran supplement with finite-horizon backup, round11/round12, energy-accounting, and structured MARL probe figures. |
-| `06_analysis/paper_figures/` | Verified | 358 PNG figures, all within 4:3 aspect tolerance. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 10-page IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting, and structured MARL probe figures. |
+| `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, and round13 figures checked at 4:3 aspect ratio. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
 | `06_analysis/paper_tables/paired_delta_summary/` | Verified | 125 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
 | `06_analysis/paper_tables/round10_n100_b10_b15_extra_seeds/` | Backup | Extra three-seed N=100/B=10/B=15 stability check; preserves qualitative ordering but shows absolute discovery-rate seed sensitivity. |
@@ -29,7 +29,7 @@ Select-String -Path main.log,supplement.log -Pattern 'LaTeX Error|Emergency stop
 python -m pytest 05_simulation\tests
 python 06_analysis\scripts\build_paired_delta_summary.py
 python 06_analysis\scripts\plot_round11_stability.py
-python 06_analysis\scripts\plot_round12_collision_aware.py
+python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulation\results_raw\round13_collision_energy_10seed --output 06_analysis\paper_tables\round13_collision_energy_10seed --figures 06_analysis\paper_figures\round13_collision_energy_10seed --tag round13
 ```
 
 Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `29 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3.
@@ -49,16 +49,16 @@ Result after the latest full check: no log errors, no unresolved references or c
 
 The main manuscript now carries the concise evidence chain: training evolution, dynamic protocol comparison, N=100 transfer, area scaling, mobility boundary, range sensitivity, error robustness, and mechanism ablation.
 
-The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, focused round11 five-seed paired stability, round12 collision-aware MAC refinement, and structured MARL probe results. Round10 is backup trajectory evidence; round11 is the focused paired stability evidence for N=100/B=10/B=15; round12 is a mechanism-refinement probe for the collision boundary.
+The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, focused round11 five-seed paired stability, round13 collision-aware MAC refinement and energy accounting, and structured MARL probe results. Round10 is backup trajectory evidence; round11 is the focused paired stability evidence for N=100/B=10/B=15; round13 is a ten-seed mechanism-refinement probe for the collision boundary.
 
 ## Remaining Risks Before External Submission
 
 1. The main learned method is still CEM/shared-policy search; the neural actor-critic branch is a structured MARL probe, not the strongest evidence. This is acceptable only if framed as a protocol paper with a learning-assisted extension, not as a pure MARL contribution.
-2. Collision-aware efficiency is partly addressed by the round12 role-control probe and assumed radio-state accounting; dense 15/30-degree cases still need a full MAC and platform-calibrated energy model.
+2. Collision-aware efficiency is partly addressed by the round13 role-control probe and assumed radio-state accounting; dense 15/30-degree cases still need a full MAC and platform-calibrated energy model.
 3. The SkyOrbs-like baseline is only an inspired communication-only baseline. A complete SkyOrbs reproduction remains future work.
 4. The physical-layer ISAC service is abstracted. A TWC/TCOM reviewer may still ask for a stronger mapping from sensing parameters to waveform/estimator assumptions.
 5. The 3-degree and 5-degree cases are not success regimes under the current 600-slot horizon.
-6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive; round11 strengthens the paired raw-discovery ordering while exposing the B=15 collision-penalized boundary, and round12 shows that a local role-control refinement can mitigate that boundary.
+6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive; round11 strengthens the paired raw-discovery ordering while exposing the B=15 collision-penalized boundary, and round13 shows that a local role-control refinement can mitigate that boundary.
 7. The best structured stochastic actor reduces empty scanning and improves deterministic nonzero behavior, but still trails the flat stochastic actor in raw discovery rate.
 
 ## Next High-Value Work

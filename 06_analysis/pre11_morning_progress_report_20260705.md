@@ -61,4 +61,4 @@ The neural MARL result is useful as feasibility evidence for a future structured
 - `python -m pytest 05_simulation\tests` passed earlier after the MARL interface changes: 27 tests.
 - `python -m py_compile 06_analysis\scripts\analyze_structured_marl_probe.py 06_analysis\scripts\plot_pre11_evidence.py` passed.
 - `pdflatex -interaction=nonstopmode supplement.tex` run twice after supplement edits.
-- Final supplement compile at that checkpoint: 9 pages, no undefined-reference or overfull warnings in the checked log output. This checkpoint is superseded by the later round12 supplement state recorded in `final_status_report_draft_20260705.md`.
+- Final supplement compile at that checkpoint: 9 pages, no undefined-reference or overfull warnings in the checked log output. This checkpoint is superseded by the later round13 supplement state recorded in `final_status_report_draft_20260705.md`.

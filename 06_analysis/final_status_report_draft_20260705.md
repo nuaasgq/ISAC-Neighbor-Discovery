@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the round12 collision-aware MAC and energy-accounting commit.
+- Latest synced commit: current `master` HEAD after the round13 ten-seed collision/energy evidence commit.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean
 
@@ -35,7 +35,7 @@ python -m py_compile 05_simulation\run_actor_critic_imitation_probe.py `
   06_analysis\scripts\plot_pre11_evidence.py `
   06_analysis\scripts\plot_round12_collision_aware.py
 python 06_analysis\scripts\plot_round11_stability.py
-python 06_analysis\scripts\plot_round12_collision_aware.py
+python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulation\results_raw\round13_collision_energy_10seed --output 06_analysis\paper_tables\round13_collision_energy_10seed --figures 06_analysis\paper_figures\round13_collision_energy_10seed --tag round13
 pdflatex -interaction=nonstopmode main.tex
 bibtex main
 pdflatex -interaction=nonstopmode main.tex
@@ -49,7 +49,7 @@ Results:
 - Unit tests: 29 passed.
 - Main PDF pages: 8.
 - Supplement PDF pages: 10.
-- New pre-11, round11, and round12 evidence figures: 26 PNGs, all checked at 1920x1440 (4:3).
+- Selected pre-11, round11, and round13 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures.
 
 ## Main Evidence
 
@@ -84,14 +84,14 @@ Round11 five-seed paired campaign:
 - Proposed raw-discovery deltas are positive in all 5/5 paired seeds against random, enhanced no-ISAC, candidate-set removal, and one-slot delay at both B=10 and B=15.
 - Collision-aware boundary: B=10 proposed collision-penalized discovery is 0.2995 vs one-slot delay 0.2622, but at B=15 proposed is 0.2042 vs one-slot delay 0.2207. Collision-aware MAC control remains open.
 
-Round12 collision-aware MAC refinement probe:
+Round13 collision-aware MAC refinement probe:
 
-- Same N=100/B=10/B=15, five paired seeds, Gauss-Markov, 600-slot, density-scaled, single-hop setting as round11.
-- B=10 collision-aware discovery/collision-penalized discovery: 0.3697 / 0.3162 vs proposed 0.3639 / 0.2995.
-- B=15 collision-aware discovery/collision-penalized discovery: 0.5696 / 0.2504 vs proposed 0.5445 / 0.2042.
-- Collision-aware collision-penalized deltas are positive in 5/5 paired seeds versus both the proposed low-latency protocol and the one-slot delayed variant at B=10 and B=15.
-- Assumed radio-state accounting: discoveries per joule improve from 6.1722 to 6.6080 at B=10 and from 9.2453 to 10.2430 at B=15 versus the proposed low-latency protocol.
-- Interpretation: the B=15 collision boundary is schedulable by local role control, but full collision- and platform-calibrated energy-aware MAC design remains open.
+- Same N=100/B=10/B=15, ten paired seeds, Gauss-Markov, 600-slot, density-scaled, single-hop setting as round11.
+- B=10 collision-aware discovery/collision-penalized discovery: 0.3660 / 0.3147 vs proposed 0.3652 / 0.2991.
+- B=15 collision-aware discovery/collision-penalized discovery: 0.5647 / 0.2479 vs proposed 0.5421 / 0.2017.
+- Collision-aware collision-penalized deltas are positive in 10/10 paired seeds versus both the proposed low-latency protocol and the one-slot delayed variant at B=10 and B=15.
+- Assumed radio-state accounting: discoveries per joule improve from 6.1932 to 6.5417 at B=10 and from 9.2045 to 10.1564 at B=15 versus the proposed low-latency protocol, also with 10/10 positive paired deltas.
+- Interpretation: the B=15 collision boundary is mitigated in this ten-seed probe by local role control, but full collision- and platform-calibrated energy-aware MAC design remains open.
 
 ## Structured Neural MARL Probe
 
@@ -128,9 +128,9 @@ Follow-up:
 - Round11 paired-seed stability figures/tables:
   - `06_analysis/paper_figures/round11_paired_seed_campaign_main`
   - `06_analysis/paper_tables/round11_paired_seed_campaign_main`
-- Round12 collision-aware MAC figures/tables:
-  - `06_analysis/paper_figures/round12_collision_aware_probe_v2`
-  - `06_analysis/paper_tables/round12_collision_aware_probe_v2`
+- Round13 collision-aware MAC and energy figures/tables:
+  - `06_analysis/paper_figures/round13_collision_energy_10seed`
+  - `06_analysis/paper_tables/round13_collision_energy_10seed`
   - `06_analysis/scripts/plot_round12_collision_aware.py`
 - One-page submission pitch:
   - `06_analysis/submission_pitch_one_page_20260705.md`
@@ -152,7 +152,7 @@ Use these boundaries consistently:
 - Neural MARL is currently a structured method probe, not the main result.
 - SkyOrbs-like is an inspired deterministic 3-D skip-scan reference, not a strict reproduction.
 - 3--5 degree beams and abrupt mobility are stress regimes.
-- Raw discovery, collision-penalized discovery, and assumed energy accounting should be discussed separately; round12 mitigates the collision boundary but does not provide a final MAC or platform-calibrated Joule-level energy model.
+- Raw discovery, collision-penalized discovery, and assumed energy accounting should be discussed separately; round13 mitigates the collision boundary but does not provide a final MAC or platform-calibrated Joule-level energy model.
 
 ## Readiness Judgment
 

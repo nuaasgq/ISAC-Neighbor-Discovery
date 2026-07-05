@@ -30,7 +30,7 @@ Within the evaluated single-hop, finite-horizon UAV swarm regimes, ISAC-assisted
 | Round10 backup seeds | B=10 proposed 0.1739 vs enhanced no-ISAC 0.0008; B=15 proposed 0.4181 vs 0.0045 | Confirms ordering but flags scenario sensitivity. |
 | Round11 five-seed paired campaign | B=10 proposed 0.3639 vs enhanced no-ISAC 0.0006; B=15 proposed 0.5445 vs 0.0034; 5/5 positive paired raw-discovery deltas versus all four controls | Strongest current seed-stability check for the main N=100/B=10/B=15 mechanism. |
 | Round11 collision-aware boundary | B=10 proposed collision-penalized 0.2995 vs one-slot delay 0.2622; B=15 proposed 0.2042 vs one-slot delay 0.2207 | Shows collision-aware MAC optimization is not solved by raw discovery maximization. |
-| Round12 collision-aware MAC probe | B=10 collision-aware collision-penalized 0.3162 vs proposed 0.2995; B=15 0.2504 vs 0.2042; 5/5 positive paired deltas versus proposed and one-slot delay at both beamwidths | Shows the B=15 collision boundary can be mitigated by local role control without changing the ISAC candidate interface. |
+| Round13 collision-aware MAC probe | B=10 collision-aware collision-penalized 0.3147 vs proposed 0.2991; B=15 0.2479 vs 0.2017; collision-penalized and discoveries-per-joule deltas are 10/10 positive versus proposed and one-slot delay at both beamwidths | Shows the B=15 collision boundary can be mitigated by local role control without changing the ISAC candidate interface. |
 | Structured MARL probe | Best structured stochastic actor 0.5978; clean no-ISAC neural stochastic 0.0044 | Supports learning-interface feasibility, not main-method superiority. |
 
 ## Literature Anchors
@@ -48,9 +48,9 @@ Within the evaluated single-hop, finite-horizon UAV swarm regimes, ISAC-assisted
 - Do not claim calibrated physical sensing range laws; `Rs`, `P_fa`, `P_md`, and angular-cell errors are abstraction parameters.
 - Do not claim full MARL superiority; structured actor-critic results are a probe and currently trail the flat stochastic student in raw discovery.
 - Do not claim consensus convergence; lambda2 is a discovered-graph quality proxy.
-- Do not claim final collision-optimal scheduling or platform-calibrated energy optimality; round12 is a mechanism probe with assumed radio-state accounting.
+- Do not claim final collision-optimal scheduling or platform-calibrated energy optimality; round13 is a mechanism probe with assumed radio-state accounting.
 
 ## Best Next Experiment
 
 The most defensible next experiment is not a broad Cartesian sweep.
-Extend the completed focused five-seed paired campaign to 10+ seeds only if needed, and next prioritize either calibrated radio-state power assumptions or a calibrated PHY-to-ISAC sensing-parameter mapping.
+The 10-seed collision/energy probe is now complete; next prioritize either calibrated radio-state power assumptions or a calibrated PHY-to-ISAC sensing-parameter mapping.
