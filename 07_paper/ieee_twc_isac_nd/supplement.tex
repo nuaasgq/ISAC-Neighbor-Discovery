@@ -301,6 +301,7 @@ These values are not platform-calibrated; they convert action counts into a tran
 Under this model, the collision-aware variant improves discoveries per joule from 6.1932 to 6.5417 at B=10 and from 9.2045 to 10.1564 at B=15 relative to the proposed low-latency variant.
 The corresponding energy per discovered edge decreases from 0.1616 J to 0.1530 J at B=10 and from 0.1087 J to 0.0985 J at B=15.
 Both accounting deltas are positive in all 10/10 paired seeds for both beamwidths.
+As a post-hoc sensitivity check, we also reweight the same radio-state action counts under transmit-heavy, receive-heavy, sensing-heavy, higher-idle, and lower-sensing-overhead power profiles; the collision-aware variant remains positive versus the one-slot-delay control in all tested profile/beamwidth cases, while the receive-heavy B=10 profile becomes a boundary versus the proposed low-latency variant.
 Fig.~\ref{fig:supp_round13_energy} reports these two accounting metrics.
 
 \begin{figure*}[!t]

@@ -24,7 +24,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | The 3-degree beam setting is an explicit stress/failure boundary even with five baselines. | `06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv`, `06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/` | Supplementary stress evidence. |
 | Candidate-constrained neural MARL is feasible under the same local information boundary, but not yet superior to all baselines. | `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`, `06_analysis/paper_figures/structured_marl_probe/` | Secondary method-probe evidence; do not frame as the main contribution. |
 | Focused five-seed paired stability preserves the main N=100/B=10/B=15 raw-discovery ordering. | `06_analysis/paper_tables/round11_paired_seed_campaign_main/`, `06_analysis/paper_figures/round11_paired_seed_campaign_main/` | Strong stability/mechanism evidence; also shows collision-penalized optimization remains open at B=15. |
-| Collision-aware local role control mitigates the B=15 collision-penalized boundary. | `06_analysis/paper_tables/round13_collision_energy_10seed/`, `06_analysis/paper_figures/round13_collision_energy_10seed/` | Ten-seed mechanism-refinement evidence with assumed radio-state accounting; not a complete MAC or calibrated energy model. |
+| Collision-aware local role control mitigates the B=15 collision-penalized boundary. | `06_analysis/paper_tables/round13_collision_energy_10seed/`, `06_analysis/paper_figures/round13_collision_energy_10seed/`, `06_analysis/paper_tables/round13_energy_sensitivity/` | Ten-seed mechanism-refinement evidence with assumed radio-state accounting and post-hoc power sensitivity; not a complete MAC or calibrated energy model. |
 | ISAC abstraction has a cite-backed PHY-to-protocol interpretation. | `07_paper/ieee_twc_isac_nd/main.tex`, `07_paper/ieee_twc_isac_nd/supplement.tex`, `06_analysis/phy_to_protocol_isac_mapping_20260705.md` | Text-only mitigation; still not a calibrated waveform/detector appendix. |
 
 ## Recommended Main-Text Figures
@@ -54,6 +54,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 - Round14 ten-seed main-table stability check: `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/`.
 - Round11 paired-seed campaign: `06_analysis/paper_tables/round11_paired_seed_campaign_main/`.
 - Round13 collision-aware MAC/energy probe: `06_analysis/paper_tables/round13_collision_energy_10seed/`.
+- Round13 radio-state power-sensitivity reweighting: `06_analysis/paper_tables/round13_energy_sensitivity/`.
 - One-page submission pitch: `06_analysis/submission_pitch_one_page_20260705.md`.
 - Figure integrity audit: `06_analysis/paper_figure_integrity_audit_20260705.md` reports 47 referenced figure instances, 44 unique files, 0 missing files, and 0 non-4:3 violations.
 
@@ -68,7 +69,7 @@ Recent checks support the current scope:
 ## Remaining Risks
 
 - Full neural MARL is not yet a main contribution; the current learning evidence is shared-parameter protocol tuning plus a structured actor-critic probe.
-- Energy efficiency is still model-assumed; round13 reports radio-state accounting, but not a calibrated Joule-level hardware model or energy-aware optimizer.
+- Energy efficiency is still model-assumed; round13 reports radio-state accounting and post-hoc power sensitivity, but not a calibrated Joule-level hardware model or energy-aware optimizer.
 - 3-degree and 5-degree beams are not solved.
 - Random-direction and random-waypoint mobility remain stress regimes.
 - The main paper is still compact; the supplement now carries round7/round8 stress results, pre-11 backup trajectories, round11 paired-seed stability, the B=15 collision boundary, round13 collision-aware refinement and energy accounting, structured MARL probe figures, the PHY-to-protocol parameter table, and full std/CI tables.

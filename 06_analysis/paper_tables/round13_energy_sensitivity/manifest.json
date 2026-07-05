@@ -1,0 +1,73 @@
+{
+  "created_at": "2026-07-05T10:39:48",
+  "source": "05_simulation\\results_raw\\round13_collision_energy_10seed\\per_episode_summary.csv",
+  "output": "06_analysis\\paper_tables\\round13_energy_sensitivity",
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\round13_energy_sensitivity\\energy_sensitivity_discoveries_per_joule.png",
+      "type": "bar",
+      "metric": "discoveries_per_joule_reweighted"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round13_energy_sensitivity\\energy_sensitivity_delta_vs_proposed.png",
+      "type": "bar",
+      "metric": "discoveries_per_joule_delta_vs_proposed"
+    }
+  ],
+  "power_profiles": [
+    {
+      "name": "default",
+      "tx": 1.0,
+      "rx": 0.6,
+      "sense": 1.2,
+      "idle": 0.05,
+      "piggyback": 0.2,
+      "note": "Simulator default radio-state accounting."
+    },
+    {
+      "name": "tx_x2",
+      "tx": 2.0,
+      "rx": 0.6,
+      "sense": 1.2,
+      "idle": 0.05,
+      "piggyback": 0.2,
+      "note": "Transmit-heavy profile."
+    },
+    {
+      "name": "rx_x2",
+      "tx": 1.0,
+      "rx": 1.2,
+      "sense": 1.2,
+      "idle": 0.05,
+      "piggyback": 0.2,
+      "note": "Receive-heavy profile."
+    },
+    {
+      "name": "sense_x2",
+      "tx": 1.0,
+      "rx": 0.6,
+      "sense": 2.4,
+      "idle": 0.05,
+      "piggyback": 0.4,
+      "note": "Sensing and piggyback-sensing heavy profile."
+    },
+    {
+      "name": "idle_x4",
+      "tx": 1.0,
+      "rx": 0.6,
+      "sense": 1.2,
+      "idle": 0.2,
+      "piggyback": 0.2,
+      "note": "Higher idle/listening baseline profile."
+    },
+    {
+      "name": "sense_half",
+      "tx": 1.0,
+      "rx": 0.6,
+      "sense": 0.6,
+      "idle": 0.05,
+      "piggyback": 0.1,
+      "note": "Lower sensing-overhead profile."
+    }
+  ]
+}
