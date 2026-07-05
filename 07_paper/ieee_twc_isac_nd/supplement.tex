@@ -54,6 +54,13 @@ The complete evidence map is maintained in the repository coverage matrix.
   \end{tabular}
 \end{table*}
 
+\section{Baseline Scope Note}
+
+The SkyOrbs-like skip-scan baseline is included as a deterministic three-dimensional directional scan-scheduling reference under the same finite-horizon simulator information boundary as the other communication-only baselines.
+It uses the same beam codebook, mobility trace, range setting, slot horizon, and evaluation metrics as the proposed protocol, but disables ISAC-derived occupancy, candidate, and beam-lock observations.
+It should not be interpreted as a strict reproduction of the complete SkyOrbs protocol: the original beam-indexing order, scan-cycle synchronization, antenna switching, motion assumptions, and published-trend reproduction have not all been reconstructed here.
+Accordingly, the main claim is not a head-to-head claim against complete SkyOrbs; the SkyOrbs-like results are used to contextualize deterministic communication-only scan scheduling, while the core evidence comes from no-ISAC controls and ISAC mechanism ablations.
+
 \section{Training and Scale Transfer Evidence}
 
 Fig.~\ref{fig:supp_training} reports the empirical reward and score evolution of the shared-parameter policy-search run used to select the candidate learned policy.
@@ -117,13 +124,13 @@ The range sweep treats $\Rc$ and $\Rs$ as protocol-level support parameters; the
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png}
+  \includegraphics[width=0.46\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png}
   \hfill
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_discovery_n100_b10.png}
-  \vspace{0.4em}
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_lambda2_n100_b10.png}
+  \includegraphics[width=0.46\textwidth]{../../06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_discovery_n100_b10.png}
+  \vspace{0.2em}
+  \includegraphics[width=0.46\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_lambda2_n100_b10.png}
   \hfill
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_collision_penalized_n100_b10.png}
+  \includegraphics[width=0.46\textwidth]{../../06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_collision_penalized_n100_b10.png}
   \caption{Range and timing sensitivity. Top left: discovery gain over the no-ISAC counterpart as $\Rc/D$ and $\Rs/\Rc$ vary. Top right: discovery rate under slot durations from 1 ms to 20 ms. Bottom left: corresponding algebraic-connectivity gain. Bottom right: collision-penalized discovery under slot-duration variation.}
   \label{fig:supp_range_timing}
 \end{figure*}

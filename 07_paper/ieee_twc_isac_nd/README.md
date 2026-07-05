@@ -10,7 +10,7 @@ Template basis:
 Current status:
 
 - `main.tex` is a conservative IEEE journal draft with explicit claim boundaries; it is not yet a final submission manuscript.
-- `supplement.tex` is a compact supplementary-material draft for coverage, stress, mobility-baseline, error-profile, PHY-to-protocol parameter mapping, paired-stability, collision-aware MAC-refinement, and assumed radio-state energy-accounting evidence.
+- `supplement.tex` is a compact supplementary-material draft for coverage, SkyOrbs-like baseline-scope notes, stress, mobility-baseline, error-profile, PHY-to-protocol parameter mapping, paired-stability, collision-aware MAC-refinement, and assumed radio-state energy-accounting evidence.
 - `references.bib` only includes references that were locally noted or web-verified during the workflow.
 - The current draft compiles to a 9-page PDF with `pdflatex`; the final checked log has no undefined references/citations and no overfull warnings.
 - The supplement compiles to a 10-page PDF with `pdflatex`; the final checked log has no undefined references and no overfull warnings.

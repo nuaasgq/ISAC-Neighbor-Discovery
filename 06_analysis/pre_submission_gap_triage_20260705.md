@@ -31,7 +31,7 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 
 | Priority | Experiment or artifact | Rationale | Suggested scope |
 |---:|---|---|---|
-| P1 | Strict SkyOrbs reproduction or deeper baseline appendix | The current baseline is SkyOrbs-like only. | Either implement the missing original details or write a precise non-reproduction appendix. |
+| P1 | Strict SkyOrbs reproduction | A precise non-reproduction baseline-scope appendix is now present, but the current baseline is still SkyOrbs-like only. | Implement missing original details and reproduce one published trend only if the paper needs strict head-to-head SkyOrbs language. |
 | P2 | Platform-calibrated radio-state power sensitivity | Energy accounting uses assumed powers. | Add a small sensitivity grid over plausible TX/RX/sensing/idle powers; do not change the main claim. |
 | P3 | Calibrated PHY-to-ISAC parameter appendix | The cite-backed parameter mapping is now present, but a reviewer may still ask how the chosen false alarm/miss/angular-error values map to a named waveform, SNR, detector, aperture, and RCS model. | Optional next upgrade: add a compact illustrative link-budget/radar-equation appendix, not a full waveform design. |
 | P4 | Collision-aware MAC extension | Round13 role control mitigates but does not solve collision-heavy regimes. | Extend role control to 30-degree and high-density settings if the paper is pushed toward MAC. |

@@ -5,9 +5,9 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, round14 ten-seed main-table, and cite-backed PHY-to-protocol ISAC mapping updates.
+- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, round14 ten-seed main-table, cite-backed PHY-to-protocol ISAC mapping, and SkyOrbs-like baseline-scope updates.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
-- Working tree at last check: clean
+- Working tree at last check: clean after the final local commit/push.
 
 ## Manuscript Package
 
@@ -143,6 +143,8 @@ Follow-up:
   - `06_analysis/scripts/analyze_round14_main_table.py`
 - PHY-to-protocol ISAC mapping note:
   - `06_analysis/phy_to_protocol_isac_mapping_20260705.md`
+- SkyOrbs-like baseline-scope appendix:
+  - `06_analysis/skyorbs_like_baseline_scope_appendix_20260705.md`
 - Round13 paper-writing route:
   - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
 - Pre-submission gap triage:
@@ -166,7 +168,7 @@ Use these boundaries consistently:
 - The topology metric is for the finite-horizon discovered-neighbor graph/cache, not arbitrary active-link connectivity.
 - The main method remains the rule-driven ISAC-assisted protocol.
 - Neural MARL is currently a structured method probe, not the main result.
-- SkyOrbs-like is an inspired deterministic 3-D skip-scan reference, not a strict reproduction.
+- SkyOrbs-like is an inspired deterministic 3-D skip-scan reference, not a strict reproduction; the supplement and standalone scope appendix now state this boundary explicitly.
 - 3--5 degree beams and abrupt mobility are stress regimes.
 - Raw discovery, collision-penalized discovery, and assumed energy accounting should be discussed separately; round13 mitigates the collision boundary but does not provide a final MAC or platform-calibrated Joule-level energy model.
 
@@ -177,4 +179,4 @@ The central paper angle is defensible:
 
 > ISAC-assisted candidate-beam refinement is a viable cross-layer mechanism for narrowing the search space of distributed UAV-UAV narrow-beam neighbor discovery, with clear gains over blind/no-ISAC baselines and explicit boundaries under extreme beamwidths, abrupt mobility, and collision-heavy regimes.
 
-It is still not final TWC/TCOM submission-ready because a reviewer could request broader B=15/mobility seed campaigns, a strict SkyOrbs reproduction, stronger energy-aware MAC validation, a calibrated radio-state power model, or a calibrated PHY appendix for ISAC error parameters.
+It is still not final TWC/TCOM submission-ready because a reviewer could request broader B=15/mobility seed campaigns, a strict SkyOrbs reproduction, stronger energy-aware MAC validation, a calibrated radio-state power model, or a calibrated PHY appendix for ISAC error parameters. The current SkyOrbs risk is now framed as a deliberate non-reproduction boundary rather than an ambiguous baseline claim.

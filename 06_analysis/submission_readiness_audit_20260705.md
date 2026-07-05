@@ -7,7 +7,7 @@ This note records the readiness state after the latest round13 ten-seed collisio
 | Artifact | Status | Notes |
 |---|---:|---|
 | `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | IEEEtran draft; Table IV now uses the round14 ten-seed N=100/B=10 main comparison, and the ISAC prior paragraph now separates sensing-service support from communication-link support with 3GPP citations. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting, structured MARL probe figures, and a PHY-to-protocol ISAC parameter mapping table. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting, structured MARL probe figures, a PHY-to-protocol ISAC parameter mapping table, and a SkyOrbs-like baseline-scope note. |
 | `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, round13, and round14 figures checked at 4:3 aspect ratio. |
 | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/` | Verified | Ten-seed N=100/B=10 main-table check with positive paired discovery deltas against all four communication-only controls. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
@@ -41,7 +41,7 @@ Result after the latest full check: no log errors, no unresolved references or c
 | Claim area | Current wording discipline |
 |---|---|
 | Learning method | Use "shared-parameter protocol tuning" for the main method and "structured MARL probe" for the neural extension; do not claim MAPPO/QMIX/GNN superiority. |
-| SkyOrbs comparison | Use "SkyOrbs-like"; the main text explicitly says it is not a strict reproduction. |
+| SkyOrbs comparison | Use "SkyOrbs-like"; the main text, supplement, and standalone scope appendix explicitly say it is not a strict reproduction. |
 | Beamwidth coverage | Write "evaluated over 3--30 degrees"; 10--30 degrees are the main useful operating region, while 3--5 degrees are stress cases. |
 | ISAC abstraction | Treat `Rs`, false alarms, missed detections, angular-cell errors, and staleness as protocol-level sensing-service parameters with standards/literature support, not a calibrated radar equation. |
 | Distributed setting | Use distributed execution with own navigation-frame pose/position and no central scheduler or undiscovered-neighbor state. |
@@ -51,13 +51,13 @@ Result after the latest full check: no log errors, no unresolved references or c
 
 The main manuscript now carries the concise evidence chain: training evolution, dynamic protocol comparison, N=100 transfer, area scaling, mobility boundary, range sensitivity, error robustness, mechanism ablation, and the round14 ten-seed main-table baseline comparison.
 
-The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, focused round11 five-seed paired stability, round13 collision-aware MAC refinement and energy accounting, round14 ten-seed main-table stability, and structured MARL probe results. Round10 is backup trajectory evidence; round11 is the focused paired stability evidence for N=100/B=10/B=15; round13 is a ten-seed mechanism-refinement probe for the collision boundary.
+The supplement now carries the reviewer-facing evidence chain: coverage matrix, SkyOrbs-like baseline-scope note, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, focused round11 five-seed paired stability, round13 collision-aware MAC refinement and energy accounting, round14 ten-seed main-table stability, and structured MARL probe results. Round10 is backup trajectory evidence; round11 is the focused paired stability evidence for N=100/B=10/B=15; round13 is a ten-seed mechanism-refinement probe for the collision boundary.
 
 ## Remaining Risks Before External Submission
 
 1. The main learned method is still CEM/shared-policy search; the neural actor-critic branch is a structured MARL probe, not the strongest evidence. This is acceptable only if framed as a protocol paper with a learning-assisted extension, not as a pure MARL contribution.
 2. Collision-aware efficiency is partly addressed by the round13 role-control probe and assumed radio-state accounting; dense 15/30-degree cases still need a full MAC and platform-calibrated energy model.
-3. The SkyOrbs-like baseline is only an inspired communication-only baseline. A complete SkyOrbs reproduction remains future work.
+3. The SkyOrbs-like baseline is only an inspired communication-only baseline. The scope is now explicit in the supplement and appendix, but a complete SkyOrbs reproduction remains future work.
 4. The physical-layer ISAC service is still abstracted. The current draft now has cite-backed PHY-to-protocol mapping, but a TWC/TCOM reviewer may still ask for a calibrated waveform/detector appendix.
 5. The 3-degree and 5-degree cases are not success regimes under the current 600-slot horizon.
 6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive; round14 now gives a ten-seed main-table check at N=100/B=10, round11 strengthens the paired raw-discovery ordering while exposing the B=15 collision-penalized boundary, and round13 shows that a local role-control refinement can mitigate that boundary.

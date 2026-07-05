@@ -15,7 +15,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Claim | Primary artifacts | Current status |
 |---|---|---|
 | ISAC candidate-beam refinement is the largest observed contributor at the main `N=100`, 10-degree operating point. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`, `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | Strong but operating-point-specific main claim. |
-| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong ten-seed main comparison, with SkyOrbs-like non-reproduction caveat. |
+| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong ten-seed main comparison; SkyOrbs-like scope note and appendix are present, but strict reproduction is absent. |
 | Small-scale training transfers to `N=100` for 10--30 degree beams in tested regimes. | `06_analysis/paper_tables/round3_robustness/n100_*_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_transfer}` | Strong but bounded; 3/5 degrees remain stress regimes. |
 | Collision-aware metrics change the preferred beamwidth. | `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv` | Supplementary but important for reviewer discussion. |
 | Moderate ISAC errors degrade but do not collapse the gain. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`, `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv` | Strong bounded robustness claim. |
@@ -60,7 +60,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 
 Recent checks support the current scope:
 
-- SkyOrbs is the closest UAV 3-D directional ND reference, but our baseline remains `SkyOrbs-like`, not a strict reproduction: `https://ieeexplore.ieee.org/document/10659183/`
+- SkyOrbs is the closest UAV 3-D directional ND reference, but our baseline remains `SkyOrbs-like`, not a strict reproduction; the supplement and `06_analysis/skyorbs_like_baseline_scope_appendix_20260705.md` now make this explicit: `https://ieeexplore.ieee.org/document/10659183/`
 - Delay-power UAV ND work supports reporting collision and radio-activity caveats; our work now has assumed radio-state accounting but not a platform-calibrated delay-power model: `https://www.computer.org/csdl/journal/tm/2026/06/11320813/2cTQxGWicIo`
 - ISAC predictive beam tracking remains mostly physical-layer/beam-management work, so our protocol layer distinction should remain explicit; the current draft now supports the distinction with 3GPP sensing-service and channel-model citations.
 

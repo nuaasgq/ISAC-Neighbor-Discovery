@@ -7,6 +7,7 @@ Date: 2026-07-05
 The current simulator includes `skyorbs_like_skip_scan` as a deterministic directional scanning baseline. This is intentionally described as a SkyOrbs-like baseline, not a strict reproduction of the full SkyOrbs protocol.
 
 This wording should remain until the checklist below is completed.
+The supplement now includes a baseline-scope note, and `06_analysis/skyorbs_like_baseline_scope_appendix_20260705.md` records the exact non-reproduction boundary.
 
 ## Items Required for a Strict Baseline Claim
 
@@ -16,7 +17,7 @@ This wording should remain until the checklist below is completed.
 4. Match the original node motion assumptions or clearly state deviations.
 5. Match the original communication range, angular coverage, and discovery success definition as closely as the paper allows.
 6. Reproduce at least one published SkyOrbs trend or table in an isolated validation run.
-7. Report deviations in a baseline appendix before using the phrase "SkyOrbs reproduction".
+7. Report deviations in a baseline appendix before using the phrase "SkyOrbs reproduction". A scope appendix now exists, but it documents non-reproduction rather than completing strict reproduction.
 
 ## Current Fair-Use Wording
 
