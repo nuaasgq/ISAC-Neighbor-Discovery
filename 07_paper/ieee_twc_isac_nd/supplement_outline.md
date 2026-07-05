@@ -24,22 +24,26 @@ Purpose: keep the main IEEE draft compact while preserving the full experiment e
 
 Use:
 
-- `06_analysis/paper_figures/training_round2_candidate/`
-- `06_analysis/paper_figures/round7_long_cem_training/`
+- `06_analysis/paper_figures/marl/phase5_contention_shared_v2_train_curves/`
+- `06_analysis/paper_tables/marl/phase5_contention_shared_v2_train_curves/`
 
 Recommended figures:
 
-- Reward and selection-score evolution.
-- Discovery-rate evolution.
-- Empty-scan evolution.
-- Collision and connectivity evolution.
+- Step-indexed reward and per-episode return.
+- Discovery-rate, lambda2, collision, and empty-scan episode curves.
+- Policy loss, value loss, and entropy as optimization diagnostics.
+- RSS and system-memory curves for resource monitoring.
 
-Interpretation rule: empirical training-score stabilization only, not a theoretical convergence proof.
+Interpretation rule: empirical MARL training diagnostics only, not a theoretical convergence proof or global MAC optimality claim.
 
 ## S3. Full Transfer and Beamwidth Stress
 
 Use:
 
+- `06_analysis/paper_tables/marl/phase3_n100_stress/marl_transfer_summary.csv`
+- `06_analysis/paper_figures/marl/phase3_n100_stress/`
+- `06_analysis/paper_tables/marl/phase5_method_comparison/marl_method_comparison.csv`
+- `06_analysis/paper_figures/marl/phase5_method_comparison/`
 - `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv`
 - `06_analysis/paper_figures/round7_scale_beam_grid_light/`
 - `06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv`
@@ -49,8 +53,10 @@ Recommended focus:
 
 - `N=10,20,50,100` and `3,5,10,15,30` degree transfer.
 - Raw discovery versus collision-penalized discovery.
+- Legacy shared ISAC-MAPPO, collision-reward ISAC-MAPPO, and contention-aware ISAC-MAPPO under N=100, 3000-slot transfer.
 - Full five-baseline comparison for the `N=100`, 3-degree stress case.
 - State explicitly that 3/5-degree beams are stress regimes.
+- State explicitly that older 600-slot figures are supplementary mechanism-boundary evidence, not the main MARL transfer result.
 
 ## S4. Mobility Boundary and Missing Baselines
 

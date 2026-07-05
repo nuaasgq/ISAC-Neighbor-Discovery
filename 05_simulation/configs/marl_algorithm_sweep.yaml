@@ -2,7 +2,9 @@ experiment:
   name: "marl_algorithm_family_sweep"
   seed: 20260704
   purpose: "compare value-based, policy-gradient, actor-critic, and architecture-enhanced MARL for ISAC-assisted neighbor discovery"
-  slots_per_episode: 3000
+  train_slots_per_episode: 300
+  eval_horizons_slots: [300, 1200, 3000]
+  slots_per_episode: 300
 
 environment:
   base_config: "05_simulation/configs/mvp.yaml"

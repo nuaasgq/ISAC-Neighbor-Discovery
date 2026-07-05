@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +48,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default=None)
     parser.add_argument("--seed", type=int, default=30260705)
     parser.add_argument("--torch-threads", type=int, default=2)
+    parser.add_argument("--resource-log-period", type=int, default=500)
+    parser.add_argument("--max-rss-mb", type=float, default=12000.0)
+    parser.add_argument("--max-system-memory-percent", type=float, default=92.0)
     return parser.parse_args()
 
 
@@ -58,6 +62,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
 
     if int(args.torch_threads) > 0:
         torch.set_num_threads(int(args.torch_threads))
+    ensure_resource_args(args)
     cfg = override_config(load_config(args.config), args)
     checkpoint = load_checkpoint(args.checkpoint, torch)
     train_args = checkpoint.get("args", {})
@@ -94,8 +99,19 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     env_protocol = str(args.env_protocol or train_args.get("env_protocol") or inferred_env_protocol(train_args))
-    eval_rows = evaluate_policy(cfg, policy, torch, args, env_protocol, reward_version, progress_dir=output)
+    resource_rows: list[dict[str, Any]] = []
+    eval_rows = evaluate_policy(
+        cfg,
+        policy,
+        torch,
+        args,
+        env_protocol,
+        reward_version,
+        progress_dir=output,
+        resource_rows=resource_rows,
+    )
     write_rows(output / "eval_episode_metrics.csv", eval_rows)
+    write_rows(output / "resource_log.csv", resource_rows)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "scope": "marl_transfer_evaluation",
@@ -119,8 +135,12 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "deterministic": bool(args.deterministic),
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
+        "resource_limits": {
+            "max_rss_mb": float(args.max_rss_mb),
+            "max_system_memory_percent": float(args.max_system_memory_percent),
+        },
         "final_eval": eval_rows[-1] if eval_rows else {},
-        "files": ["eval_episode_metrics.csv", "manifest.json"],
+        "files": ["eval_episode_metrics.csv", "resource_log.csv", "manifest.json"],
     }
     (output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
@@ -131,6 +151,15 @@ def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
         return torch_module.load(path, map_location="cpu", weights_only=False)
     except TypeError:
         return torch_module.load(path, map_location="cpu")
+
+
+def ensure_resource_args(args: argparse.Namespace) -> None:
+    if not hasattr(args, "resource_log_period"):
+        args.resource_log_period = 500
+    if not hasattr(args, "max_rss_mb"):
+        args.max_rss_mb = 12000.0
+    if not hasattr(args, "max_system_memory_percent"):
+        args.max_system_memory_percent = 92.0
 
 
 def build_policy(network: str, *args: Any, **kwargs: Any) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic:
@@ -185,6 +214,7 @@ def evaluate_policy(
     env_protocol: str,
     reward_version: str,
     progress_dir: Path | None = None,
+    resource_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows = []
     if bool(args.eval_both):
@@ -201,10 +231,30 @@ def evaluate_policy(
                 observations, _ = env.reset(seed=seed)
                 rewards = []
                 truncated = False
+                slot = 0
                 while not truncated:
                     step = policy.act(observations, deterministic=not use_stochastic)
                     observations, reward, _terminated, truncated, _info = env.step(step.actions)
                     rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
+                    slot += 1
+                    if int(args.resource_log_period) > 0 and slot % int(args.resource_log_period) == 0:
+                        snapshot = resource_snapshot()
+                        snapshot.update(
+                            {
+                                "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
+                                "eval_episode": episode,
+                                "slot": slot,
+                                "seed": seed,
+                                "node_count": int(cfg.n_nodes),
+                                "beam_count": int(cfg.n_beams),
+                                "slots_per_episode": int(cfg.slots_per_episode),
+                            }
+                        )
+                        if resource_rows is not None:
+                            resource_rows.append(snapshot)
+                            if progress_dir is not None:
+                                write_rows(progress_dir / "resource_log.csv", resource_rows)
+                        enforce_resource_limits(snapshot, args)
                 rewards_tensor = torch_module.stack(rewards)
                 summary = env._sim.summarize(episode).as_dict()
                 row = {
@@ -251,6 +301,123 @@ def evaluate_policy(
                     flush=True,
                 )
     return rows
+
+
+def resource_snapshot() -> dict[str, Any]:
+    try:
+        import psutil
+    except ImportError:
+        return windows_resource_snapshot()
+    process = psutil.Process()
+    memory = psutil.virtual_memory()
+    return {
+        "rss_mb": process.memory_info().rss / (1024.0 * 1024.0),
+        "process_cpu_percent": process.cpu_percent(interval=None),
+        "system_memory_percent": memory.percent,
+        "system_available_mb": memory.available / (1024.0 * 1024.0),
+    }
+
+
+def windows_resource_snapshot() -> dict[str, Any]:
+    try:
+        import ctypes
+        from ctypes import wintypes
+    except ImportError:
+        return empty_resource_snapshot()
+    if not hasattr(ctypes, "windll"):
+        return empty_resource_snapshot()
+
+    class MemoryStatusEx(ctypes.Structure):
+        _fields_ = [
+            ("dwLength", wintypes.DWORD),
+            ("dwMemoryLoad", wintypes.DWORD),
+            ("ullTotalPhys", ctypes.c_ulonglong),
+            ("ullAvailPhys", ctypes.c_ulonglong),
+            ("ullTotalPageFile", ctypes.c_ulonglong),
+            ("ullAvailPageFile", ctypes.c_ulonglong),
+            ("ullTotalVirtual", ctypes.c_ulonglong),
+            ("ullAvailVirtual", ctypes.c_ulonglong),
+            ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+        ]
+
+    class ProcessMemoryCounters(ctypes.Structure):
+        _fields_ = [
+            ("cb", wintypes.DWORD),
+            ("PageFaultCount", wintypes.DWORD),
+            ("PeakWorkingSetSize", ctypes.c_size_t),
+            ("WorkingSetSize", ctypes.c_size_t),
+            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+            ("PagefileUsage", ctypes.c_size_t),
+            ("PeakPagefileUsage", ctypes.c_size_t),
+        ]
+
+    try:
+        memory = MemoryStatusEx()
+        memory.dwLength = ctypes.sizeof(MemoryStatusEx)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(memory)):
+            return empty_resource_snapshot()
+        counters = ProcessMemoryCounters()
+        counters.cb = ctypes.sizeof(ProcessMemoryCounters)
+        handle = ctypes.windll.kernel32.GetCurrentProcess()
+        if not ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb):
+            rss_mb = current_process_rss_mb_fallback()
+        else:
+            rss_mb = counters.WorkingSetSize / (1024.0 * 1024.0)
+        available_mb = memory.ullAvailPhys / (1024.0 * 1024.0)
+        total_mb = max(memory.ullTotalPhys / (1024.0 * 1024.0), 1e-9)
+        return {
+            "rss_mb": rss_mb,
+            "process_cpu_percent": "",
+            "system_memory_percent": 100.0 * (1.0 - available_mb / total_mb),
+            "system_available_mb": available_mb,
+        }
+    except Exception:
+        return empty_resource_snapshot()
+
+
+def current_process_rss_mb_fallback() -> float | str:
+    try:
+        import subprocess
+
+        completed = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f"(Get-Process -Id {os.getpid()}).WorkingSet64",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        value = completed.stdout.strip()
+        return float(value) / (1024.0 * 1024.0) if value else ""
+    except Exception:
+        return ""
+
+
+def empty_resource_snapshot() -> dict[str, Any]:
+    return {
+        "rss_mb": "",
+        "process_cpu_percent": "",
+        "system_memory_percent": "",
+        "system_available_mb": "",
+    }
+
+
+def enforce_resource_limits(snapshot: dict[str, Any], args: argparse.Namespace) -> None:
+    rss = snapshot.get("rss_mb")
+    memory_percent = snapshot.get("system_memory_percent")
+    if isinstance(rss, (int, float)) and rss > float(args.max_rss_mb):
+        raise RuntimeError(f"RSS memory limit exceeded: {rss:.1f} MB > {float(args.max_rss_mb):.1f} MB")
+    if isinstance(memory_percent, (int, float)) and memory_percent > float(args.max_system_memory_percent):
+        raise RuntimeError(
+            f"System memory limit exceeded: {memory_percent:.1f}% > {float(args.max_system_memory_percent):.1f}%"
+        )
 
 
 def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:

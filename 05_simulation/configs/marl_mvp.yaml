@@ -3,7 +3,9 @@ experiment:
   seed: 20260704
   train_episodes: 2000
   eval_episodes: 100
-  slots_per_episode: 3000
+  train_slots_per_episode: 300
+  eval_horizons_slots: [300, 1200, 3000]
+  slots_per_episode: 300
 
 training:
   algorithm: "algorithm_family_sweep"

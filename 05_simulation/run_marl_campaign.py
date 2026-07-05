@@ -41,6 +41,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--ppo-epochs", type=int, default=2)
     parser.add_argument("--torch-threads", type=int, default=2)
+    parser.add_argument("--step-log-period", type=int, default=1)
+    parser.add_argument("--resource-log-period", type=int, default=100)
+    parser.add_argument("--max-rss-mb", type=float, default=10000.0)
+    parser.add_argument("--max-system-memory-percent", type=float, default=90.0)
+    parser.add_argument("--eval-stochastic-only", action="store_true")
+    parser.add_argument("--command-timeout-seconds", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -60,7 +66,20 @@ def main() -> None:
     run_records = []
     for index, command in enumerate(plan["commands"], start=1):
         print(f"[{index}/{len(plan['commands'])}] {' '.join(command)}", flush=True)
-        completed = subprocess.run(command, cwd=ROOT, text=True)
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=ROOT,
+                text=True,
+                timeout=int(args.command_timeout_seconds) if int(args.command_timeout_seconds) > 0 else None,
+            )
+        except subprocess.TimeoutExpired:
+            run_records.append({"index": index, "command": command, "returncode": "timeout"})
+            (output_root / "campaign_run_records.json").write_text(
+                json.dumps(run_records, ensure_ascii=True, indent=2),
+                encoding="utf-8",
+            )
+            raise
         run_records.append({"index": index, "command": command, "returncode": completed.returncode})
         (output_root / "campaign_run_records.json").write_text(
             json.dumps(run_records, ensure_ascii=True, indent=2),
@@ -110,13 +129,13 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
             "--torch-threads",
             str(args.torch_threads),
             "--resource-log-period",
-            "100",
+            str(args.resource_log_period),
             "--step-log-period",
-            "5",
+            str(args.step_log_period),
             "--max-rss-mb",
-            "10000",
+            str(args.max_rss_mb),
             "--max-system-memory-percent",
-            "90",
+            str(args.max_system_memory_percent),
         ]
         if algorithm == "mappo":
             command.extend(["--disable-isac-features", "--env-protocol", "structured_marl_no_isac"])
@@ -156,14 +175,23 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
                         "900",
                         "--sensing-range",
                         "900",
-                        "--stochastic",
                         "--seed",
                         str(args.seed + 100_000 + n_nodes * 100 + beamwidth + eval_slots),
                         "--torch-threads",
                         str(args.torch_threads),
                         "--reward-version",
                         str(args.reward_version),
+                        "--resource-log-period",
+                        str(args.resource_log_period),
+                        "--max-rss-mb",
+                        str(args.max_rss_mb),
+                        "--max-system-memory-percent",
+                        str(args.max_system_memory_percent),
                     ]
+                    if bool(args.eval_stochastic_only):
+                        command.append("--stochastic")
+                    else:
+                        command.append("--eval-both")
                     if algorithm == "mappo":
                         command.extend(["--env-protocol", "structured_marl_no_isac"])
                     commands.append(command)
@@ -179,6 +207,14 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
         "algorithms": list(args.algorithms),
         "network": str(args.network),
         "reward_version": str(args.reward_version),
+        "step_log_period": int(args.step_log_period),
+        "resource_log_period": int(args.resource_log_period),
+        "eval_stochastic_only": bool(args.eval_stochastic_only),
+        "command_timeout_seconds": int(args.command_timeout_seconds),
+        "resource_limits": {
+            "max_rss_mb": float(args.max_rss_mb),
+            "max_system_memory_percent": float(args.max_system_memory_percent),
+        },
         "commands": commands,
     }
 

@@ -2,7 +2,9 @@ experiment:
   name: "mvp_002_dynamic_pruning"
   seed: 20260704
   episodes: 50
-  slots_per_episode: 3000
+  train_slots_per_episode: 300
+  eval_horizons_slots: [300, 1200, 3000]
+  slots_per_episode: 300
   slot_duration_ms: 10
 
 network:
