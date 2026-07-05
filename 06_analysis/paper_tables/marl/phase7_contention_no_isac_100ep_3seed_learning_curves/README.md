@@ -1,0 +1,28 @@
+# MARL Learning Curves
+
+- Created: 2026-07-06T04:11:12
+- Runs loaded: 3
+- Step rows: 90000
+- Episode rows: 300
+- Eval rows: 198
+
+These plots use true environment steps or training episodes as the x-axis.
+They are intended for real MARL runs, not CEM candidate-search traces.
+
+## Final Train Rows
+
+```csv
+algorithm,approx_kl,clip_fraction,collision_count,collision_normalized_efficiency,collision_penalized_discovery_rate,collisions_per_discovery_censored,connected_components,discovered_edges,discoveries_per_1000_scan_actions,discoveries_per_joule,discovery_per_scan_action,discovery_rate,empty_scan_count,empty_scan_ratio,energy_j,energy_per_discovery_censored_j,entropy,episode,episode_return_mean_per_agent,episode_return_sum,idle_actions,isolated_node_ratio,lambda2,largest_component_size,lcc_ratio,mean_delay_censored,mobility_model,moved_distance_mean_m,n_beams,n_nodes,p90_delay_censored,p95_delay_censored,p99_delay_censored,piggyback_sense_actions,policy_loss,protocol,rx_actions,scan_actions,scan_actions_per_discovery_censored,scenario_seed,seed,sense_actions,slots,step_reward_mean,step_reward_sum_mean,training_step,true_edges_seen,tx_actions,value_loss,run,network,reward_version,env_protocol,method,method_label,training_seed,node_count,beam_count,azimuth_cells,elevation_cells,slot_duration_ms
+mappo,4.774751148461931e-05,0.0,0,0.0,0.0,0.0,10,0,0.0,0.0,0.0,0.0,946,0.9926547743966422,7.24325,7.24325,7.694058179855347,99,-4.012499809265137,-40.124996185302734,1497,1.0,0.0,1,0.1,300.0,gauss_markov,2.9097086499643923,648,10,300.0,300.0,300.0,0,1.192005434091925e-05,structured_marl_no_isac,598,953,953.0,20260832,20260832,550,300,-0.0133749991655349,-0.1337500065565109,30000,45,355,0.0208612959831953,train_n10_b10_contention_no_isac_100ep_300slot_seed20260733,contention_shared,collision_topology,structured_marl_no_isac,contention_no_isac,Contention-aware MAPPO w/o ISAC,20260733,10,648,36,18,5.0
+mappo,3.945807791838618e-06,0.0,0,0.0,0.0,0.0,10,0,0.0,0.0,0.0,0.0,1516,0.9831387808041504,9.603,9.603,7.79161810874939,99,-5.697999477386475,-56.97999572753906,804,1.0,0.0,1,0.1,300.0,gauss_markov,2.6145206529075984,648,10,300.0,300.0,300.0,0,-0.0002161265216611,structured_marl_no_isac,1116,1542,1542.0,20260830,20260830,654,300,-0.0189933311194181,-0.1899333298206329,30000,45,426,0.0451981294900178,train_n10_b10_contention_no_isac_100ep_300slot_seed20260731,contention_shared,collision_topology,structured_marl_no_isac,contention_no_isac,Contention-aware MAPPO w/o ISAC,20260731,10,648,36,18,5.0
+mappo,0.0001306476422663,0.0,0,0.0,0.0,0.0,10,0,0.0,0.0,0.0,0.0,944,0.978238341968912,10.15725,10.15725,7.772367238998413,99,-4.252499580383301,-42.525001525878906,1017,1.0,0.0,1,0.1,300.0,gauss_markov,2.377444509918951,648,10,300.0,300.0,300.0,0,4.15368080233236e-05,structured_marl_no_isac,515,965,965.0,20260831,20260831,1018,300,-0.0141750006005167,-0.1417499929666519,30000,45,450,0.0126433339901268,train_n10_b10_contention_no_isac_100ep_300slot_seed20260732,contention_shared,collision_topology,structured_marl_no_isac,contention_no_isac,Contention-aware MAPPO w/o ISAC,20260732,10,648,36,18,5.0
+```
+
+## Final Eval Rows
+
+```csv
+algorithm,collision_count,collision_normalized_efficiency,collision_penalized_discovery_rate,collisions_per_discovery_censored,connected_components,discovered_edges,discoveries_per_1000_scan_actions,discoveries_per_joule,discovery_per_scan_action,discovery_rate,empty_scan_count,empty_scan_ratio,energy_j,energy_per_discovery_censored_j,env_protocol,episode,episode_return_mean_per_agent,episode_return_sum,eval_after_episode,eval_episode,idle_actions,isolated_node_ratio,lambda2,largest_component_size,lcc_ratio,mean_delay_censored,mobility_model,moved_distance_mean_m,p90_delay_censored,p95_delay_censored,p99_delay_censored,phase,piggyback_sense_actions,protocol,rx_actions,scan_actions,scan_actions_per_discovery_censored,scenario_seed,seed,sense_actions,slots,step_reward_mean,true_edges_seen,tx_actions,run,network,reward_version,method,method_label,training_seed,node_count,beam_count,azimuth_cells,elevation_cells,slot_duration_ms,training_step
+mappo,0,0.0,0.0,0.0,10,0,0.0,0.0,0.0,0.0,2700,0.9,9.0,9.0,structured_marl_no_isac,101,-11.991999626159668,-119.91999816894533,100,1,0,1.0,0.0,1,0.1,300.0,gauss_markov,2.385437756787287,300.0,300.0,300.0,eval_deterministic,0,structured_marl_no_isac,3000,3000,3000.0,21360732,21360732,0,300,-0.0399733334779739,45,0,train_n10_b10_contention_no_isac_100ep_300slot_seed20260731,contention_shared,collision_topology,contention_no_isac,Contention-aware MAPPO w/o ISAC,20260731,10,648,36,18,5.0,30000
+mappo,0,0.0,0.0,0.0,10,0,0.0,0.0,0.0,0.0,941,0.9781704781704782,10.15475,10.15475,structured_marl_no_isac,100,-4.310499668121338,-43.10499954223633,100,0,1027,1.0,0.0,1,0.1,300.0,gauss_markov,2.5383955375289746,300.0,300.0,300.0,eval_stochastic,0,structured_marl_no_isac,489,962,962.0,22270732,22270732,1011,300,-0.0143683329224586,45,473,train_n10_b10_contention_no_isac_100ep_300slot_seed20260732,contention_shared,collision_topology,contention_no_isac,Contention-aware MAPPO w/o ISAC,20260732,10,648,36,18,5.0,30000
+mappo,0,0.0,0.0,0.0,10,0,0.0,0.0,0.0,0.0,907,0.9912568306010928,7.178000000000001,7.178000000000001,structured_marl_no_isac,102,-4.013000011444092,-40.12999725341797,100,2,1524,1.0,0.0,1,0.1,300.0,gauss_markov,2.893785495652961,300.0,300.0,300.0,eval_stochastic,0,structured_marl_no_isac,572,915,915.0,22270735,22270735,561,300,-0.0133766653016209,45,343,train_n10_b10_contention_no_isac_100ep_300slot_seed20260733,contention_shared,collision_topology,contention_no_isac,Contention-aware MAPPO w/o ISAC,20260733,10,648,36,18,5.0,30000
+```
