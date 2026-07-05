@@ -40,10 +40,17 @@ class MarlNeighborDiscoveryEnv:
     is available through training_state() only.
     """
 
-    def __init__(self, config: SimulationConfig, seed: int | None = None, protocol: str = "isac_structured_marl"):
+    def __init__(
+        self,
+        config: SimulationConfig,
+        seed: int | None = None,
+        protocol: str = "isac_structured_marl",
+        reward_version: str = "legacy",
+    ):
         self.cfg = config
         self.seed = int(config.seed if seed is None else seed)
         self.protocol = str(protocol)
+        self.reward_version = _parse_reward_version(reward_version)
         self._sim = NeighborDiscoverySimulator(config, protocol=self.protocol, seed=self.seed)
         self._slot = 0
         self._last_actions: list[Action] = [Action(MODE_IDLE, 0) for _ in range(config.n_nodes)]
@@ -93,6 +100,8 @@ class MarlNeighborDiscoveryEnv:
 
         fail_before = self._sim.fail_count.sum(axis=1).copy()
         success_before = self._sim.success_count.sum(axis=1).copy()
+        collision_fail_before = self._sim.collision_fail_count.sum(axis=1).copy()
+        topology_before = self._topology_reward_snapshot() if self.reward_version == "collision_topology" else None
 
         self._sim._candidate_pool_cache.clear()
         self._sim.snapshot_pre_sensing_candidates(self._slot)
@@ -104,7 +113,15 @@ class MarlNeighborDiscoveryEnv:
         metric_row = self._sim.slot_metrics(episode=0, slot=self._slot, true_comm_edges=true_comm_edges, new_edges=new_edges)
         self._sim.per_slot_rows.append(metric_row)
 
-        rewards = self._rewards(parsed_actions, new_edges, empty_by_node, fail_before, success_before)
+        rewards = self._rewards(
+            parsed_actions,
+            new_edges,
+            empty_by_node,
+            fail_before,
+            success_before,
+            collision_fail_before,
+            topology_before,
+        )
         step_states(
             self._sim.states,
             self.cfg.area_size_m,
@@ -288,6 +305,8 @@ class MarlNeighborDiscoveryEnv:
         empty_by_node: np.ndarray,
         fail_before: np.ndarray,
         success_before: np.ndarray,
+        collision_fail_before: np.ndarray,
+        topology_before: dict[str, Any] | None,
     ) -> np.ndarray:
         rewards = np.zeros(self.n_agents, dtype=np.float32)
         for node, action in enumerate(actions):
@@ -305,7 +324,61 @@ class MarlNeighborDiscoveryEnv:
         for i, j in new_edges:
             rewards[i] += 1.0
             rewards[j] += 1.0
+        if self.reward_version == "collision_topology":
+            rewards = self._collision_topology_reward_shaping(
+                rewards,
+                actions,
+                new_edges,
+                collision_fail_before,
+                topology_before,
+            )
         return rewards
+
+    def _topology_reward_snapshot(self) -> dict[str, Any]:
+        components = connected_components(self.n_agents, self._sim.discovered_edges)
+        component_id: dict[int, int] = {}
+        for index, component in enumerate(components):
+            for node in component:
+                component_id[int(node)] = index
+        degree = np.zeros(self.n_agents, dtype=np.float32)
+        for i, j in self._sim.discovered_edges:
+            degree[i] += 1.0
+            degree[j] += 1.0
+        return {"component_id": component_id, "degree": degree}
+
+    def _collision_topology_reward_shaping(
+        self,
+        rewards: np.ndarray,
+        actions: list[Action],
+        new_edges: list[tuple[int, int]],
+        collision_fail_before: np.ndarray,
+        topology_before: dict[str, Any] | None,
+    ) -> np.ndarray:
+        shaped = rewards.astype(np.float32, copy=True)
+        collision_delta = self._sim.collision_fail_count.sum(axis=1) - collision_fail_before
+        shaped -= np.minimum(collision_delta, 3.0).astype(np.float32) * 0.08
+
+        tx_count = sum(1 for action in actions if action.mode == MODE_TX)
+        rx_count = sum(1 for action in actions if action.mode == MODE_RX)
+        role_imbalance = abs(tx_count - rx_count) / max(1, tx_count + rx_count)
+        if role_imbalance > 0.0:
+            for node, action in enumerate(actions):
+                if action.mode in (MODE_TX, MODE_RX):
+                    shaped[node] -= 0.02 * float(role_imbalance)
+
+        if topology_before is None:
+            return shaped
+        component_id = topology_before["component_id"]
+        degree_before = np.asarray(topology_before["degree"], dtype=np.float32)
+        for i, j in new_edges:
+            if component_id.get(i, i) != component_id.get(j, j):
+                shaped[i] += 0.30
+                shaped[j] += 0.30
+            if degree_before[i] < float(self.cfg.target_degree):
+                shaped[i] += 0.10
+            if degree_before[j] < float(self.cfg.target_degree):
+                shaped[j] += 0.10
+        return shaped
 
     def _safe_info(self, new_edges_count: int) -> dict[str, Any]:
         components = connected_components(self.n_agents, self._sim.discovered_edges)
@@ -334,6 +407,7 @@ class MarlNeighborDiscoveryEnv:
             "isolated_node_ratio": isolated / max(1, self.n_agents),
             "lambda2": algebraic_connectivity(self.n_agents, self._sim.discovered_edges),
             "mobility_model": str(self.cfg.mobility.get("model", "gauss_markov")),
+            "reward_version": self.reward_version,
         }
 
     def _positions(self) -> np.ndarray:
@@ -357,6 +431,13 @@ def _parse_mode(mode: str | int | np.integer) -> str:
     text = aliases.get(text, text)
     if text not in MODE_TO_INDEX:
         raise ValueError(f"Unsupported action mode: {mode}")
+    return text
+
+
+def _parse_reward_version(reward_version: str) -> str:
+    text = str(reward_version).lower()
+    if text not in {"legacy", "collision_topology"}:
+        raise ValueError("reward_version must be 'legacy' or 'collision_topology'.")
     return text
 
 

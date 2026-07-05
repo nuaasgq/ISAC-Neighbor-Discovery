@@ -109,6 +109,31 @@ def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     _assert_no_forbidden_keys(next_observations)
 
 
+def test_collision_topology_reward_version_keeps_public_contract_safe() -> None:
+    cfg = _small_cfg()
+    env = MarlNeighborDiscoveryEnv(cfg, reward_version="collision_topology")
+    observations, _ = env.reset(seed=8)
+    assert len(observations) == cfg.n_nodes
+
+    actions = [
+        {"mode": "sense", "beam": 0},
+        {"mode": "tx", "beam": 1},
+        {"mode": "rx", "beam": 1},
+        {"mode": "tx", "beam": 2},
+        {"mode": "rx", "beam": 2},
+        {"mode": "idle"},
+    ]
+    next_observations, rewards, terminated, truncated, info = env.step(actions)
+
+    assert rewards.shape == (cfg.n_nodes,)
+    assert np.isfinite(rewards).all()
+    assert terminated is False
+    assert truncated is False
+    assert info["reward_version"] == "collision_topology"
+    _assert_no_forbidden_keys(info)
+    _assert_no_forbidden_keys(next_observations)
+
+
 def test_training_state_is_explicitly_separate_from_public_info() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg)

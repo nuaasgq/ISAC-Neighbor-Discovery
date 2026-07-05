@@ -35,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", default="05_simulation/results_raw/marl_training")
     parser.add_argument("--algorithm", choices=["ippo", "mappo", "isac_mappo"], default="isac_mappo")
     parser.add_argument("--network", choices=["shared", "scalegraph_beam"], default="shared")
+    parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
     parser.add_argument("--episodes", type=int, default=200)
     parser.add_argument("--slots", type=int, default=1200)
     parser.add_argument("--eval-episodes", type=int, default=5)
@@ -297,7 +298,12 @@ def collect_trajectory(
     args: argparse.Namespace,
     resource_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=env_protocol)
+    env = MarlNeighborDiscoveryEnv(
+        cfg,
+        seed=seed,
+        protocol=env_protocol,
+        reward_version=str(getattr(args, "reward_version", "legacy")),
+    )
     observations, _ = env.reset(seed=seed)
     old_log_probs = []
     rewards = []
@@ -605,7 +611,12 @@ def evaluate_policy(
         for mode_index, use_stochastic in enumerate(eval_modes):
             for offset in range(int(args.eval_episodes)):
                 seed = seed_start + 10_000 * mode_index + offset
-                env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=env_protocol)
+                env = MarlNeighborDiscoveryEnv(
+                    cfg,
+                    seed=seed,
+                    protocol=env_protocol,
+                    reward_version=str(getattr(args, "reward_version", "legacy")),
+                )
                 observations, _ = env.reset(seed=seed)
                 rewards = []
                 truncated = False
@@ -828,6 +839,7 @@ def build_manifest(
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "algorithm": str(args.algorithm),
         "network": str(getattr(args, "network", "shared")),
+        "reward_version": str(getattr(args, "reward_version", "legacy")),
         "scope": "real_marl_training",
         "config": str(args.config),
         "output": str(args.output),

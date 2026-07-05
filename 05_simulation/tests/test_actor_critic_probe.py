@@ -195,6 +195,7 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
             output=str(output),
             algorithm="isac_mappo",
             network="shared",
+            reward_version="legacy",
             episodes=1,
             slots=2,
             eval_episodes=1,
@@ -269,6 +270,7 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
             deterministic=False,
             stochastic=True,
             eval_both=False,
+            reward_version=None,
             seed=179,
             torch_threads=1,
         )

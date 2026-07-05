@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--deterministic", action="store_true", help="Use argmax actions.")
     parser.add_argument("--stochastic", action="store_true", help="Sample actions.")
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
+    parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default=None)
     parser.add_argument("--seed", type=int, default=30260705)
     parser.add_argument("--torch-threads", type=int, default=2)
     return parser.parse_args()
@@ -71,9 +72,10 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
             "candidate_score": True,
             "topology_deficit": True,
             "rule_residual": True,
-        }
+    }
     hidden_dim = int(train_args.get("hidden_dim", 128))
     train_network = str(train_args.get("network", "shared"))
+    reward_version = str(args.reward_version or train_args.get("reward_version", "legacy"))
     policy = build_policy(
         train_network,
         cfg.n_beams,
@@ -91,7 +93,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     env_protocol = str(args.env_protocol or train_args.get("env_protocol") or inferred_env_protocol(train_args))
-    eval_rows = evaluate_policy(cfg, policy, torch, args, env_protocol)
+    eval_rows = evaluate_policy(cfg, policy, torch, args, env_protocol, reward_version)
     write_rows(output / "eval_episode_metrics.csv", eval_rows)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -99,6 +101,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "checkpoint": str(args.checkpoint),
         "train_algorithm": str(train_args.get("algorithm", checkpoint.get("algorithm", "unknown"))),
         "train_network": train_network,
+        "train_reward_version": str(train_args.get("reward_version", "legacy")),
+        "eval_reward_version": reward_version,
         "config": str(args.config),
         "output": str(args.output),
         "eval_episodes": int(args.eval_episodes),
@@ -176,6 +180,7 @@ def evaluate_policy(
     torch_module: Any,
     args: argparse.Namespace,
     env_protocol: str,
+    reward_version: str,
 ) -> list[dict[str, Any]]:
     rows = []
     if bool(args.eval_both):
@@ -188,7 +193,7 @@ def evaluate_policy(
         for mode_index, use_stochastic in enumerate(eval_modes):
             for episode in range(int(args.eval_episodes)):
                 seed = int(args.seed) + 10_000 * mode_index + episode
-                env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=env_protocol)
+                env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=env_protocol, reward_version=reward_version)
                 observations, _ = env.reset(seed=seed)
                 rewards = []
                 truncated = False

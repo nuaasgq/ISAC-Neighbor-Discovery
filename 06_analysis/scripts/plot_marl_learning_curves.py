@@ -99,6 +99,7 @@ def load_runs(run_dirs: list[Path], pd):
                 "path": str(manifest_path),
                 "algorithm": manifest.get("algorithm"),
                 "network": manifest.get("network", "shared"),
+                "reward_version": manifest.get("reward_version", "legacy"),
             }
         )
         step_frames.append(load_csv(run_dir / "step_rewards.csv", pd, run_name, manifest))
@@ -121,6 +122,7 @@ def load_csv(path: Path, pd, run_name: str, manifest: dict):
     frame["run"] = run_name
     frame["algorithm"] = frame.get("algorithm", manifest.get("algorithm", "unknown"))
     frame["network"] = manifest.get("network", "shared")
+    frame["reward_version"] = manifest.get("reward_version", "legacy")
     frame["env_protocol"] = frame.get("env_protocol", manifest.get("env_protocol", "unknown"))
     frame["node_count"] = manifest.get("node_count", "")
     frame["beam_count"] = manifest.get("beam_count", "")

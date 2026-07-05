@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-n100", action="store_true", help="Also evaluate N=100 transfer cases.")
     parser.add_argument("--algorithms", nargs="+", default=["isac_mappo", "mappo"])
     parser.add_argument("--network", choices=["shared", "scalegraph_beam"], default="shared")
+    parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--ppo-epochs", type=int, default=2)
@@ -73,9 +74,10 @@ def main() -> None:
 def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[int]) -> dict:
     commands = []
     train_runs = {}
+    network_suffix = "" if str(args.network) == "shared" else f"_{args.network}"
+    reward_suffix = "" if str(args.reward_version) == "legacy" else f"_{args.reward_version}"
     for algorithm in args.algorithms:
-        network_suffix = "" if str(args.network) == "shared" else f"_{args.network}"
-        run_name = f"train_n10_b10_{algorithm}{network_suffix}_{args.train_slots}slot"
+        run_name = f"train_n10_b10_{algorithm}{network_suffix}{reward_suffix}_{args.train_slots}slot"
         output = output_root / "train" / run_name
         command = [
             sys.executable,
@@ -88,6 +90,8 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
             algorithm,
             "--network",
             str(args.network),
+            "--reward-version",
+            str(args.reward_version),
             "--episodes",
             str(args.train_episodes),
             "--slots",
@@ -126,7 +130,7 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
                 for beamwidth in args.beamwidths:
                     azimuth, elevation = beam_cells(beamwidth)
                     eval_name = (
-                        f"{algorithm}{network_suffix}_train_n10_b10_test_n{n_nodes}_b{beamwidth}_{eval_slots}slot"
+                        f"{algorithm}{network_suffix}{reward_suffix}_train_n10_b10_test_n{n_nodes}_b{beamwidth}_{eval_slots}slot"
                     )
                     output = output_root / "eval" / eval_name
                     command = [
@@ -157,6 +161,8 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
                         str(args.seed + 100_000 + n_nodes * 100 + beamwidth + eval_slots),
                         "--torch-threads",
                         str(args.torch_threads),
+                        "--reward-version",
+                        str(args.reward_version),
                     ]
                     if algorithm == "mappo":
                         command.extend(["--env-protocol", "structured_marl_no_isac"])
@@ -172,6 +178,7 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
         "beamwidths": list(args.beamwidths),
         "algorithms": list(args.algorithms),
         "network": str(args.network),
+        "reward_version": str(args.reward_version),
         "commands": commands,
     }
 
