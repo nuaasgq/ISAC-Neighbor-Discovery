@@ -9,11 +9,17 @@ from typing import Any
 
 FIGSIZE = (6.4, 4.8)
 DPI = 300
-METHODS = [
-    ("legacy_shared", "Legacy reward", "#0072B2", "-"),
-    ("collision_reward", "Collision reward", "#009E73", "--"),
-    ("contention_actor", "Contention actor", "#D55E00", "-."),
-]
+METHOD_STYLES = {
+    "uniform_random": ("Uniform random", "#6C757D", ":"),
+    "skyorbs_like": ("SkyOrbs-like", "#CC79A7", "--"),
+    "mappo_no_isac": ("MAPPO no-ISAC", "#56B4E9", "-."),
+    "contention_no_isac": ("Contention no-ISAC", "#009E73", (0, (3, 1, 1, 1))),
+    "legacy_shared": ("Legacy reward", "#0072B2", "-"),
+    "collision_reward": ("Collision reward", "#009E73", "--"),
+    "contention_actor": ("Contention actor", "#D55E00", "-."),
+}
+FALLBACK_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#56B4E9", "#6C757D", "#E69F00"]
+FALLBACK_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1))]
 METRICS = {
     "discovery_rate_mean": "Discovery rate",
     "collision_penalized_discovery_rate_mean": "Collision-penalized discovery rate",
@@ -167,10 +173,13 @@ def write_figures(frame, figure_dir: Path) -> list[dict]:
         if metric not in frame.columns:
             continue
         fig, ax = plt.subplots(figsize=FIGSIZE)
-        for method, label, color, linestyle in METHODS:
+        for index, method in enumerate(method_order(frame)):
+            label, color, linestyle = style_for_method(method, index)
             group = frame[frame["method"] == method].sort_values("beamwidth_deg")
             if group.empty:
                 continue
+            if "method_label" in group.columns and str(group["method_label"].iloc[0]) not in {"", "nan"}:
+                label = str(group["method_label"].iloc[0])
             ci_col = metric.replace("_mean", "_ci95")
             yerr = group[ci_col] if ci_col in group.columns else None
             ax.errorbar(
@@ -192,6 +201,31 @@ def write_figures(frame, figure_dir: Path) -> list[dict]:
         plt.close(fig)
         figures.append({"path": str(path), "metric": metric})
     return figures
+
+
+def method_order(frame) -> list[str]:
+    preferred = [
+        "uniform_random",
+        "skyorbs_like",
+        "mappo_no_isac",
+        "contention_no_isac",
+        "legacy_shared",
+        "collision_reward",
+        "contention_actor",
+    ]
+    available = [str(value) for value in frame["method"].dropna().unique()]
+    ordered = [method for method in preferred if method in available]
+    ordered.extend(sorted(method for method in available if method not in set(ordered)))
+    return ordered
+
+
+def style_for_method(method: str, index: int) -> tuple[str, str, object]:
+    if method in METHOD_STYLES:
+        return METHOD_STYLES[method]
+    label = method.replace("_", " ")
+    color = FALLBACK_COLORS[index % len(FALLBACK_COLORS)]
+    linestyle = FALLBACK_LINESTYLES[index % len(FALLBACK_LINESTYLES)]
+    return label, color, linestyle
 
 
 def write_readme(output_dir: Path, manifest: dict, frame) -> None:

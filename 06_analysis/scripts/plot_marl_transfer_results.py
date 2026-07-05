@@ -99,6 +99,8 @@ def load_eval_rows(run_dirs: list[Path], pd):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         frame = pd.read_csv(data_path)
         frame["run"] = run_dir.name
+        frame["method"] = str(manifest.get("method") or infer_method(manifest))
+        frame["method_label"] = str(manifest.get("method_label") or frame["method"].iloc[0])
         frame["train_algorithm"] = str(manifest.get("train_algorithm", "unknown"))
         frame["train_network"] = str(manifest.get("train_network", "shared"))
         frame["train_reward_version"] = str(manifest.get("train_reward_version", "legacy"))
@@ -109,7 +111,7 @@ def load_eval_rows(run_dirs: list[Path], pd):
         frame["slots_per_episode"] = int(manifest.get("slots_per_episode", 0))
         frame["azimuth_cells"] = int(manifest.get("azimuth_cells", 0))
         frame["elevation_cells"] = int(manifest.get("elevation_cells", 0))
-        frame["beamwidth_deg"] = 360.0 / max(1, int(manifest.get("azimuth_cells", 1)))
+        frame["beamwidth_deg"] = float(manifest.get("beamwidth_deg", 360.0 / max(1, int(manifest.get("azimuth_cells", 1)))))
         frame["communication_range_m"] = float(manifest.get("communication_range_m", 0.0))
         frame["sensing_range_m"] = float(manifest.get("sensing_range_m", 0.0))
         frames.append(frame)
@@ -120,6 +122,8 @@ def load_eval_rows(run_dirs: list[Path], pd):
 
 def summarize(rows, pd):
     group_keys = [
+        "method",
+        "method_label",
         "train_algorithm",
         "train_network",
         "train_reward_version",
@@ -145,8 +149,28 @@ def summarize(rows, pd):
             record[f"{metric}_ci95"] = 1.96 * record[f"{metric}_std"] / (len(values) ** 0.5) if len(values) > 1 else 0.0
         records.append(record)
     return pd.DataFrame(records).sort_values(
-        ["phase", "node_count", "beamwidth_deg", "train_algorithm", "train_network", "train_reward_version"]
+        ["phase", "node_count", "beamwidth_deg", "method", "train_algorithm", "train_network", "train_reward_version"]
     )
+
+
+def infer_method(manifest: dict) -> str:
+    algorithm = str(manifest.get("train_algorithm", "unknown"))
+    network = str(manifest.get("train_network", "shared"))
+    reward = str(manifest.get("train_reward_version", "legacy"))
+    env_protocol = str(manifest.get("env_protocol", ""))
+    if algorithm == "protocol_baseline":
+        return network
+    if algorithm == "mappo" and env_protocol == "structured_marl_no_isac" and network == "shared":
+        return "mappo_no_isac"
+    if algorithm == "mappo" and env_protocol == "structured_marl_no_isac" and network == "contention_shared":
+        return "contention_no_isac"
+    if network == "contention_shared" and reward == "collision_topology":
+        return "contention_actor"
+    if network == "shared" and reward == "collision_topology":
+        return "collision_reward"
+    if network == "shared" and reward == "legacy":
+        return "legacy_shared"
+    return f"{algorithm}_{network}_{reward}".replace("/", "_")
 
 
 def setup_matplotlib():
