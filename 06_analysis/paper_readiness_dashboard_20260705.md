@@ -23,6 +23,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Mobility-boundary results are not caused by missing SkyOrbs-like or vanilla learned-policy baselines. | `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`, `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/` | Supplementary baseline-completeness evidence. |
 | The 3-degree beam setting is an explicit stress/failure boundary even with five baselines. | `06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv`, `06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/` | Supplementary stress evidence. |
 | Candidate-constrained neural MARL is feasible under the same local information boundary, but not yet superior to all baselines. | `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`, `06_analysis/paper_figures/structured_marl_probe/` | Secondary method-probe evidence; do not frame as the main contribution. |
+| Focused five-seed paired stability preserves the main N=100/B=10/B=15 raw-discovery ordering. | `06_analysis/paper_tables/round11_paired_seed_campaign_main/`, `06_analysis/paper_figures/round11_paired_seed_campaign_main/` | Strong stability/mechanism evidence; also shows collision-penalized optimization remains open at B=15. |
 
 ## Recommended Main-Text Figures
 
@@ -47,6 +48,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 - `python -m pytest 05_simulation\tests`: 27 passed.
 - `06_analysis/paper_figures`: 358 PNG figures, all checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
+- Round11 paired-seed campaign: `06_analysis/paper_tables/round11_paired_seed_campaign_main/`.
 - One-page submission pitch: `06_analysis/submission_pitch_one_page_20260705.md`.
 
 ## Literature Boundary Notes

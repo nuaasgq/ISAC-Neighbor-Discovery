@@ -18,6 +18,7 @@ Purpose: map the requested experiment requirements to archived data, figures, an
 | Learned policy without ISAC baseline | Covered | `rl_no_isac` rows in `round3_robustness/n100_*_multiseed` and `round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`. | Used to isolate communication-only shared-policy behavior; do not call the main method full neural MARL. |
 | Enhanced learned policy without ISAC baseline | Covered | `improved_rl_no_isac` rows in main and supplement tables. | Shows that rule/policy improvement without sensing remains near zero in the evaluated large narrow-beam settings. |
 | Enhanced learned policy plus ISAC | Covered | `improved_rl_isac` rows in all main and supplement tables. | Main performance evidence for the proposed protocol. |
+| Focused paired-seed stability campaign | Covered | `06_analysis/paper_tables/round11_paired_seed_campaign_main/`; `06_analysis/paper_figures/round11_paired_seed_campaign_main/`. | Five paired seeds at N=100, B=10/15, Gauss-Markov, 600 slots; use as stability/mechanism evidence unless main tables are formally promoted. |
 | Multi-mobility evaluation | Covered as operating-boundary evidence | Main: `06_analysis/paper_tables/round5_mobility_transfer/aggregate_metrics.csv`; stress: `06_analysis/paper_tables/round7_n100_multimobility_600slot/aggregate_metrics.csv`; full missing-baseline check: `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`. | Gauss-Markov and random-walk are favorable tested regimes; random-direction and random-waypoint remain stress regimes. |
 | Communication range and sensing range tests | Covered | `06_analysis/paper_tables/round3_robustness/range_rc_rs_grid/aggregate_metrics.csv`; `06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png`. | `Rs/Rc` saturation is internal to the communication-neighbor-discovery abstraction; it is not a calibrated radar range law. |
 | Slot duration and motion timescale | Covered | `06_analysis/paper_tables/round6_slot_duration_sensitivity/aggregate_metrics.csv`; `06_analysis/paper_figures/round6_slot_duration_sensitivity/`. | Supports that the 5 ms setting is not a single tuned point under Gauss-Markov mobility. |
@@ -41,6 +42,7 @@ Purpose: map the requested experiment requirements to archived data, figures, an
 | Do ISAC errors break the result? | `06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png`; `06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/ablation_discovery_n100_b15.png`. |
 | Is there a neural MARL path under the same information boundary? | `06_analysis/paper_figures/structured_marl_probe/marl_eval_discovery_rate.png`; `marl_eval_empty_scan_ratio.png`; `marl_rule_residual_scale_sweep.png`. |
 | Are the pre-11 backup runs consistent over finite time? | `06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b10.png`; `round10_cumulative_discovery_b15.png`; `round10_tradeoff_discovery_rate.png`. |
+| Do paired seeds support the main mechanism? | `06_analysis/paper_figures/round11_paired_seed_campaign_main/round11_discovery_rate.png`; `round11_paired_discovery_delta.png`; `round11_collision_penalized.png`. |
 
 ## Remaining Experiment Gaps
 
@@ -50,3 +52,4 @@ Purpose: map the requested experiment requirements to archived data, figures, an
 - A full Cartesian cross of all node counts, all beamwidths, all mobility models, all baselines, and all ISAC errors is not available.
 - Joule-level energy efficiency is not available because no explicit radio-state energy model has been added.
 - The current range sweep is protocol-level; physical sensing and communication ranges would require calibrated link budgets and waveform/receiver assumptions.
+- Round11 shows B=15 raw discovery remains strongest for the proposed protocol, but one-slot delay can be better on collision-penalized discovery, so MAC collision control remains an open optimization problem.

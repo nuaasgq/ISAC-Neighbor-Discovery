@@ -27,6 +27,8 @@ Core claim:
 | One-slot delay ablation | Delayed ISAC still reaches discovery 0.2989 and lambda2 8.47 | Bounds the low-latency same-slot assumption and improves implementation credibility. |
 | Mobility boundary | Gauss-Markov/random-walk remain useful; random-direction/random-waypoint degrade | Converts weak regimes into explicit applicability boundaries. |
 | Error profiles | B=10 moderate errors remain useful; B=15 Gauss-Markov remains high but random-walk is more sensitive | Supports bounded robustness, not sensing immunity. |
+| Round11 five-seed paired campaign | B=10 proposed discovery 0.3639 vs enhanced no-ISAC 0.0006; B=15 proposed discovery 0.5445 vs 0.0034; all 5/5 paired seeds positive versus random, enhanced no-ISAC, candidate-set ablation, and one-slot delay for raw discovery | Strengthens seed-stability and mechanism evidence while preserving collision caveats. |
+| Round11 collision-aware check | B=10 proposed collision-penalized discovery 0.2995 vs one-slot delay 0.2622; B=15 proposed 0.2042 vs one-slot delay 0.2207 | Shows collision-aware MAC control is still open, especially for denser wider-beam operation. |
 
 ## What Not To Claim
 
@@ -35,6 +37,7 @@ Core claim:
 - Do not claim physical-layer ISAC waveform or estimator design. The paper uses a protocol-level occupancy-prior abstraction.
 - Do not claim 3--30 deg are all solved. Write "evaluated over 3--30 deg"; 3--5 deg are stress cases.
 - Do not claim instantaneous active communication graph connectivity under arbitrary mobility. The reported lambda2 is for the finite-horizon discovered-neighbor graph/cache.
+- Do not claim the proposed protocol is collision-optimal. Round11 confirms strong raw discovery but also shows collision-penalized tradeoffs.
 
 ## Likely Reviewer Questions and Preferred Answers
 
