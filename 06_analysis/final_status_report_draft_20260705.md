@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, and round14 ten-seed main-table updates.
+- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, round14 ten-seed main-table, and cite-backed PHY-to-protocol ISAC mapping updates.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean
 
@@ -19,7 +19,7 @@ This draft is intended for the 11:00 handoff.
 
 Current compiled state:
 
-- Main: 8 pages.
+- Main: 9 pages.
 - Supplement: 10 pages.
 - Compile status: no unresolved citation/reference and no overfull warnings in the checked final logs.
 - Remaining LaTeX messages are narrow-column underfull warnings only.
@@ -50,10 +50,11 @@ pdflatex -interaction=nonstopmode supplement.tex
 Results:
 
 - Unit tests: 29 passed.
-- Main PDF pages: 8.
+- Main PDF pages: 9.
 - Supplement PDF pages: 10.
 - Selected pre-11, round11, round13, and round14 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures and round14 contributes 1 current main-table stability figure.
 - Referenced figures in `main.tex` and `supplement.tex`: all present on disk.
+- The final checked LaTeX logs contain no unresolved citations/references and no overfull warnings after adding the 3GPP ISAC/channel references and the supplement PHY-to-protocol parameter table.
 
 ## Main Evidence
 
@@ -140,6 +141,8 @@ Follow-up:
   - `06_analysis/paper_figures/round14_main_table_10seed_n100_b10`
   - `06_analysis/paper_tables/round14_main_table_10seed_n100_b10`
   - `06_analysis/scripts/analyze_round14_main_table.py`
+- PHY-to-protocol ISAC mapping note:
+  - `06_analysis/phy_to_protocol_isac_mapping_20260705.md`
 - Round13 paper-writing route:
   - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
 - Pre-submission gap triage:
@@ -158,6 +161,7 @@ Use these boundaries consistently:
 
 - The paper is a cross-layer link-layer protocol paper.
 - ISAC is an imperfect beam-cell occupancy prior, not an oracle.
+- `Rc`, `Rs`, false alarms, missed detections, angular-cell error, and staleness are cite-backed sensing-service/link-support abstraction parameters, not calibrated waveform/detector outputs.
 - Edges are created only by bidirectional narrow-beam handshake.
 - The topology metric is for the finite-horizon discovered-neighbor graph/cache, not arbitrary active-link connectivity.
 - The main method remains the rule-driven ISAC-assisted protocol.
@@ -173,4 +177,4 @@ The central paper angle is defensible:
 
 > ISAC-assisted candidate-beam refinement is a viable cross-layer mechanism for narrowing the search space of distributed UAV-UAV narrow-beam neighbor discovery, with clear gains over blind/no-ISAC baselines and explicit boundaries under extreme beamwidths, abrupt mobility, and collision-heavy regimes.
 
-It is still not final TWC/TCOM submission-ready because a reviewer could request more main-result seeds, a strict SkyOrbs reproduction, stronger energy-aware MAC validation, a calibrated radio-state power model, or a calibrated PHY mapping for ISAC error parameters.
+It is still not final TWC/TCOM submission-ready because a reviewer could request broader B=15/mobility seed campaigns, a strict SkyOrbs reproduction, stronger energy-aware MAC validation, a calibrated radio-state power model, or a calibrated PHY appendix for ISAC error parameters.

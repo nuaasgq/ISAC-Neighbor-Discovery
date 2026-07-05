@@ -25,6 +25,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Candidate-constrained neural MARL is feasible under the same local information boundary, but not yet superior to all baselines. | `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`, `06_analysis/paper_figures/structured_marl_probe/` | Secondary method-probe evidence; do not frame as the main contribution. |
 | Focused five-seed paired stability preserves the main N=100/B=10/B=15 raw-discovery ordering. | `06_analysis/paper_tables/round11_paired_seed_campaign_main/`, `06_analysis/paper_figures/round11_paired_seed_campaign_main/` | Strong stability/mechanism evidence; also shows collision-penalized optimization remains open at B=15. |
 | Collision-aware local role control mitigates the B=15 collision-penalized boundary. | `06_analysis/paper_tables/round13_collision_energy_10seed/`, `06_analysis/paper_figures/round13_collision_energy_10seed/` | Ten-seed mechanism-refinement evidence with assumed radio-state accounting; not a complete MAC or calibrated energy model. |
+| ISAC abstraction has a cite-backed PHY-to-protocol interpretation. | `07_paper/ieee_twc_isac_nd/main.tex`, `07_paper/ieee_twc_isac_nd/supplement.tex`, `06_analysis/phy_to_protocol_isac_mapping_20260705.md` | Text-only mitigation; still not a calibrated waveform/detector appendix. |
 
 ## Recommended Main-Text Figures
 
@@ -46,6 +47,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 ## Verification Snapshot
 
 - `pdflatex -interaction=nonstopmode main.tex`: passed; no undefined references/citations and no overfull warnings in the final checked log.
+- `pdflatex -interaction=nonstopmode supplement.tex`: passed; no undefined references/citations and no overfull warnings in the final checked log.
 - `python -m pytest 05_simulation\tests`: 29 passed.
 - `06_analysis/paper_figures`: archived paper-figure pool with the selected manuscript and supplement figures checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
@@ -60,7 +62,7 @@ Recent checks support the current scope:
 
 - SkyOrbs is the closest UAV 3-D directional ND reference, but our baseline remains `SkyOrbs-like`, not a strict reproduction: `https://ieeexplore.ieee.org/document/10659183/`
 - Delay-power UAV ND work supports reporting collision and radio-activity caveats; our work now has assumed radio-state accounting but not a platform-calibrated delay-power model: `https://www.computer.org/csdl/journal/tm/2026/06/11320813/2cTQxGWicIo`
-- ISAC predictive beam tracking remains mostly physical-layer/beam-management work, so our protocol layer distinction should remain explicit.
+- ISAC predictive beam tracking remains mostly physical-layer/beam-management work, so our protocol layer distinction should remain explicit; the current draft now supports the distinction with 3GPP sensing-service and channel-model citations.
 
 ## Remaining Risks
 
@@ -68,4 +70,4 @@ Recent checks support the current scope:
 - Energy efficiency is still model-assumed; round13 reports radio-state accounting, but not a calibrated Joule-level hardware model or energy-aware optimizer.
 - 3-degree and 5-degree beams are not solved.
 - Random-direction and random-waypoint mobility remain stress regimes.
-- The main paper is still compact; the supplement now carries round7/round8 stress results, pre-11 backup trajectories, round11 paired-seed stability, the B=15 collision boundary, round13 collision-aware refinement and energy accounting, structured MARL probe figures, and full std/CI tables.
+- The main paper is still compact; the supplement now carries round7/round8 stress results, pre-11 backup trajectories, round11 paired-seed stability, the B=15 collision boundary, round13 collision-aware refinement and energy accounting, structured MARL probe figures, the PHY-to-protocol parameter table, and full std/CI tables.

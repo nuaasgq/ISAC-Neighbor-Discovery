@@ -6,8 +6,8 @@ This note records the readiness state after the latest round13 ten-seed collisio
 
 | Artifact | Status | Notes |
 |---|---:|---|
-| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, texcount `3669+62+294`, 10 figures, 4 tables; Table IV now uses the round14 ten-seed N=100/B=10 main comparison. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 10-page IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting, and structured MARL probe figures. |
+| `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | IEEEtran draft; Table IV now uses the round14 ten-seed N=100/B=10 main comparison, and the ISAC prior paragraph now separates sensing-service support from communication-link support with 3GPP citations. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting, structured MARL probe figures, and a PHY-to-protocol ISAC parameter mapping table. |
 | `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, round13, and round14 figures checked at 4:3 aspect ratio. |
 | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/` | Verified | Ten-seed N=100/B=10 main-table check with positive paired discovery deltas against all four communication-only controls. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
@@ -43,7 +43,7 @@ Result after the latest full check: no log errors, no unresolved references or c
 | Learning method | Use "shared-parameter protocol tuning" for the main method and "structured MARL probe" for the neural extension; do not claim MAPPO/QMIX/GNN superiority. |
 | SkyOrbs comparison | Use "SkyOrbs-like"; the main text explicitly says it is not a strict reproduction. |
 | Beamwidth coverage | Write "evaluated over 3--30 degrees"; 10--30 degrees are the main useful operating region, while 3--5 degrees are stress cases. |
-| ISAC abstraction | Treat `Rs`, false alarms, missed detections, and angular-cell errors as protocol-level abstraction parameters, not a calibrated radar equation. |
+| ISAC abstraction | Treat `Rs`, false alarms, missed detections, angular-cell errors, and staleness as protocol-level sensing-service parameters with standards/literature support, not a calibrated radar equation. |
 | Distributed setting | Use distributed execution with own navigation-frame pose/position and no central scheduler or undiscovered-neighbor state. |
 | Transfer | Bind transfer claims to evaluated single-hop, 600-slot regimes, strongest for smoother mobility and 10--30 degree beams. |
 
@@ -58,14 +58,14 @@ The supplement now carries the reviewer-facing evidence chain: coverage matrix, 
 1. The main learned method is still CEM/shared-policy search; the neural actor-critic branch is a structured MARL probe, not the strongest evidence. This is acceptable only if framed as a protocol paper with a learning-assisted extension, not as a pure MARL contribution.
 2. Collision-aware efficiency is partly addressed by the round13 role-control probe and assumed radio-state accounting; dense 15/30-degree cases still need a full MAC and platform-calibrated energy model.
 3. The SkyOrbs-like baseline is only an inspired communication-only baseline. A complete SkyOrbs reproduction remains future work.
-4. The physical-layer ISAC service is abstracted. A TWC/TCOM reviewer may still ask for a stronger mapping from sensing parameters to waveform/estimator assumptions.
+4. The physical-layer ISAC service is still abstracted. The current draft now has cite-backed PHY-to-protocol mapping, but a TWC/TCOM reviewer may still ask for a calibrated waveform/detector appendix.
 5. The 3-degree and 5-degree cases are not success regimes under the current 600-slot horizon.
 6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive; round14 now gives a ten-seed main-table check at N=100/B=10, round11 strengthens the paired raw-discovery ordering while exposing the B=15 collision-penalized boundary, and round13 shows that a local role-control refinement can mitigate that boundary.
 7. The best structured stochastic actor reduces empty scanning and improves deterministic nonzero behavior, but still trails the flat stochastic actor in raw discovery rate.
 
 ## Next High-Value Work
 
-1. Add a concise "why this is TWC/TCOM and not pure PHY" paragraph if reviewer-style checks still find ambiguity.
+1. Add a calibrated PHY-to-ISAC appendix only if reviewer-style checks still find the cite-backed mapping insufficient.
 2. Strengthen the method-name consistency around `ITAP-ND` and `L-ITAP-ND` in captions and figure legends.
 3. Prepare a one-page response-style evidence map for likely reviewer questions: SkyOrbs, MARL naming, Rs/Rc, 3-degree beams, collisions, and single-hop scope.
 4. If time remains before 11:00, run one more compile/test check after any manuscript edits and commit the refreshed research records.

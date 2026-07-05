@@ -25,6 +25,7 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 | Make small-sample statistics visible | Main tables are mean-heavy; supplement has std/CI. | Add `mean over seeds; std/CI in supplement` wherever a table/figure could be misread. |
 | Keep energy wording diagnostic | Round13 uses default powers but no platform calibration. | Write `assumed radio-state accounting`, never energy-optimality. |
 | Clarify discovered graph versus active communication graph | Prevent topology metric overclaiming. | Continue using `discovered-neighbor graph/cache`. |
+| Cite-backed PHY-to-protocol mapping | TWC/TCOM reviewers may ask why `Rs`, `Rc`, `P_fa`, `P_md`, angular error, and staleness are valid protocol inputs. | Main text and supplement now include a standards/literature-backed mapping; keep it as an abstraction, not calibration. |
 
 ## New Evidence Before External Submission
 
@@ -32,7 +33,7 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 |---:|---|---|---|
 | P1 | Strict SkyOrbs reproduction or deeper baseline appendix | The current baseline is SkyOrbs-like only. | Either implement the missing original details or write a precise non-reproduction appendix. |
 | P2 | Platform-calibrated radio-state power sensitivity | Energy accounting uses assumed powers. | Add a small sensitivity grid over plausible TX/RX/sensing/idle powers; do not change the main claim. |
-| P3 | PHY-to-ISAC parameter mapping | TWC/TCOM reviewers may ask how false alarm/miss/angular-error settings map to sensing SNR or detector design. | Add a short analytical mapping or cite-based parameter table, not a full waveform design. |
+| P3 | Calibrated PHY-to-ISAC parameter appendix | The cite-backed parameter mapping is now present, but a reviewer may still ask how the chosen false alarm/miss/angular-error values map to a named waveform, SNR, detector, aperture, and RCS model. | Optional next upgrade: add a compact illustrative link-budget/radar-equation appendix, not a full waveform design. |
 | P4 | Collision-aware MAC extension | Round13 role control mitigates but does not solve collision-heavy regimes. | Extend role control to 30-degree and high-density settings if the paper is pushed toward MAC. |
 
 ## Do Not Prioritize Now
@@ -46,4 +47,4 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 ## Submission Framing
 
 The current package is strong enough for an internal TWC/TCOM-style draft and advisor review.
-For external submission, the safest next evidence upgrade is now a precise baseline-scope appendix or PHY-to-ISAC parameter mapping; the 10-seed main-table confirmation is complete in round14.
+For external submission, the safest next evidence upgrade is now a precise baseline-scope appendix or calibrated PHY-to-ISAC parameter appendix; the 10-seed main-table confirmation is complete in round14 and the cite-backed PHY-to-protocol mapping has been added.

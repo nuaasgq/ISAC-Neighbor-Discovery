@@ -95,6 +95,26 @@ The heatmap and B=10 node-count curve show the intended small-to-large transfer 
 Fig.~\ref{fig:supp_range_timing} records the two implementation-sensitivity checks most directly tied to the ISAC abstraction.
 The range sweep treats $\Rc$ and $\Rs$ as protocol-level support parameters; the slot-duration sweep evaluates the 5 ms slot assumption against nearby time scales under Gauss-Markov mobility.
 
+\begin{table}[!t]
+  \centering
+  \caption{PHY-to-Protocol Interpretation of ISAC Abstraction Parameters}
+  \label{tab:supp_phy_protocol_mapping}
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
+  \begin{tabular}{@{}p{0.20\columnwidth}p{0.70\columnwidth}@{}}
+    \toprule
+    Parameter & Interpretation \\
+    \midrule
+    $\Rc$ & Communication-link support: a pair can be confirmed only if bidirectional narrow-beam handshake decoding is feasible under the assumed link-budget and channel conditions. \\
+    $\Rs$ & Sensing-observation support: a beam cell may provide occupancy evidence when the underlying sensing receiver meets its chosen detection operating point. \\
+    $P_{\mathrm{fa}}$ & Detector false-alarm operating point; a cell with no in-support target may still be marked occupied. \\
+    $P_{\mathrm{md}}$ & Detector missed-detection operating point; an occupied in-support cell may be reported empty. \\
+    $\sigma_b$ & Angular-estimation error after quantization by the beam codebook; roughly, angle error normalized by beam-cell width. \\
+    Slot age/staleness & Sensing-to-use latency and mobility coherence; old occupancy evidence is decayed before it can dominate future scans. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png}
