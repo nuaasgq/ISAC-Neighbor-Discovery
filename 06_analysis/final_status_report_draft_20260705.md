@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the round13 ten-seed collision/energy evidence commit.
+- Latest synced commit: current `master` HEAD after the final gap-triage and round13 reproducibility updates.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean
 
@@ -35,6 +35,7 @@ python -m py_compile 05_simulation\run_actor_critic_imitation_probe.py `
   06_analysis\scripts\plot_pre11_evidence.py `
   06_analysis\scripts\plot_round12_collision_aware.py
 python 06_analysis\scripts\plot_round11_stability.py
+python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round13_collision_energy_10seed --node-counts 100 --beamwidth-degs 10,15 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 600 --slot-metric-period 1 --area-scale density --range-mode singlehop --protocols uniform_random,improved_rl_no_isac,ablation_isac_one_slot_delay,improved_rl_isac,collision_aware_isac --train-node-count 10 --train-beamwidth-deg 10 --name round13_collision_energy_10seed
 python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulation\results_raw\round13_collision_energy_10seed --output 06_analysis\paper_tables\round13_collision_energy_10seed --figures 06_analysis\paper_figures\round13_collision_energy_10seed --tag round13
 pdflatex -interaction=nonstopmode main.tex
 bibtex main
@@ -132,6 +133,8 @@ Follow-up:
   - `06_analysis/paper_figures/round13_collision_energy_10seed`
   - `06_analysis/paper_tables/round13_collision_energy_10seed`
   - `06_analysis/scripts/plot_round12_collision_aware.py`
+- Round13 paper-writing route:
+  - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
 - One-page submission pitch:
   - `06_analysis/submission_pitch_one_page_20260705.md`
 - Progress report:
