@@ -36,6 +36,18 @@ tmp/
 06_analysis/tables/*
 !06_analysis/tables/.gitkeep
 
+# Temporary paper-figure/table exports; selected final exports are committed explicitly.
+06_analysis/paper_figures/marl/*partial*/
+06_analysis/paper_figures/marl/pilot_*/
+06_analysis/paper_figures/marl/smoke_*/
+06_analysis/paper_figures/marl/phase1_train_curves/
+06_analysis/paper_figures/marl/phase2_scalegraph_train_compare/
+06_analysis/paper_tables/marl/*partial*/
+06_analysis/paper_tables/marl/pilot_*/
+06_analysis/paper_tables/marl/smoke_*/
+06_analysis/paper_tables/marl/phase1_train_curves/
+06_analysis/paper_tables/marl/phase2_scalegraph_train_compare/
+
 # Paper build outputs
 07_paper/**/*.aux
 07_paper/**/*.bbl
