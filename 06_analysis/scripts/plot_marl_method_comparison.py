@@ -4,6 +4,7 @@ import argparse
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 
 FIGSIZE = (6.4, 4.8)
@@ -27,8 +28,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--legacy", default="06_analysis/paper_tables/marl/phase3_n100_stress/marl_transfer_summary.csv")
     parser.add_argument("--collision", default="06_analysis/paper_tables/marl/phase4_shared_collision_transfer_probe/marl_transfer_summary.csv")
     parser.add_argument("--contention", default="06_analysis/paper_tables/marl/phase5_contention_shared_v2_transfer_probe/marl_transfer_summary.csv")
+    parser.add_argument("--combined-summary", action="append", default=None)
     parser.add_argument("--output", default="06_analysis/paper_tables/marl/phase5_method_comparison")
     parser.add_argument("--figures", default="06_analysis/paper_figures/marl/phase5_method_comparison")
+    parser.add_argument("--slots", type=int, default=3000)
+    parser.add_argument("--node-count", type=int, default=100)
+    parser.add_argument("--phase", default="eval_stochastic", help="Use 'all' to keep all phases.")
+    parser.add_argument("--beamwidths", type=float, nargs="+", default=[10.0, 15.0, 30.0])
     parser.add_argument("--quiet", action="store_true")
     return parser.parse_args()
 
@@ -42,12 +48,17 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     figure_dir.mkdir(parents=True, exist_ok=True)
 
-    rows = []
-    rows.append(load_method(pd, args.legacy, "legacy_shared"))
-    rows.append(load_method(pd, args.collision, "collision_reward"))
-    rows.append(load_method(pd, args.contention, "contention_actor"))
-    combined = pd.concat(rows, ignore_index=True)
-    combined = combined[combined["beamwidth_deg"].isin([10.0, 15.0, 30.0])].copy()
+    if args.combined_summary:
+        combined = load_combined_summaries(pd, args.combined_summary)
+    else:
+        rows = []
+        rows.append(load_method(pd, args.legacy, "legacy_shared"))
+        rows.append(load_method(pd, args.collision, "collision_reward"))
+        rows.append(load_method(pd, args.contention, "contention_actor"))
+        combined = pd.concat(rows, ignore_index=True)
+    combined = filter_comparison_frame(combined, args)
+    if combined.empty:
+        raise ValueError("No rows remain after applying method-comparison filters.")
     combined.sort_values(["beamwidth_deg", "method"], inplace=True)
     combined.to_csv(output_dir / "marl_method_comparison.csv", index=False)
 
@@ -57,6 +68,13 @@ def main() -> None:
         "legacy": str(args.legacy),
         "collision": str(args.collision),
         "contention": str(args.contention),
+        "combined_summary": [str(path) for path in args.combined_summary] if args.combined_summary else [],
+        "filters": {
+            "slots_per_episode": int(args.slots),
+            "node_count": int(args.node_count),
+            "phase": str(args.phase),
+            "beamwidths": [float(value) for value in args.beamwidths],
+        },
         "output_dir": str(output_dir),
         "figure_dir": str(figure_dir),
         "rows": int(len(combined)),
@@ -70,9 +88,49 @@ def main() -> None:
 
 def load_method(pd, path: str, method: str):
     frame = pd.read_csv(path)
-    frame = frame[frame["slots_per_episode"].astype(float) == 3000.0].copy()
     frame["method"] = method
     return frame
+
+
+def load_combined_summaries(pd, paths: list[str]):
+    frames = []
+    for path in paths:
+        frame = pd.read_csv(path)
+        if "method" not in frame.columns:
+            frame["method"] = frame.apply(infer_method, axis=1)
+        else:
+            frame["method"] = frame.apply(lambda row: str(row.get("method") or infer_method(row)), axis=1)
+        frames.append(frame)
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
+
+
+def infer_method(row: Any) -> str:
+    network = str(row.get("train_network", "shared"))
+    reward = str(row.get("train_reward_version", "legacy"))
+    algorithm = str(row.get("train_algorithm", "unknown"))
+    if network == "contention_shared" and reward == "collision_topology":
+        return "contention_actor"
+    if network == "shared" and reward == "collision_topology":
+        return "collision_reward"
+    if network == "shared" and reward == "legacy":
+        return "legacy_shared"
+    return f"{algorithm}_{network}_{reward}".replace("/", "_")
+
+
+def filter_comparison_frame(frame, args: argparse.Namespace):
+    filtered = frame.copy()
+    if "slots_per_episode" in filtered.columns:
+        filtered = filtered[filtered["slots_per_episode"].astype(float) == float(args.slots)]
+    if "node_count" in filtered.columns:
+        filtered = filtered[filtered["node_count"].astype(float) == float(args.node_count)]
+    if str(args.phase).lower() != "all" and "phase" in filtered.columns:
+        filtered = filtered[filtered["phase"].astype(str) == str(args.phase)]
+    if "beamwidth_deg" in filtered.columns:
+        beamwidths = {float(value) for value in args.beamwidths}
+        filtered = filtered[filtered["beamwidth_deg"].astype(float).isin(beamwidths)]
+    return filtered.copy()
 
 
 def setup_matplotlib():
@@ -106,6 +164,8 @@ def write_figures(frame, figure_dir: Path) -> list[dict]:
     plt = setup_matplotlib()
     figures = []
     for metric, ylabel in METRICS.items():
+        if metric not in frame.columns:
+            continue
         fig, ax = plt.subplots(figsize=FIGSIZE)
         for method, label, color, linestyle in METHODS:
             group = frame[frame["method"] == method].sort_values("beamwidth_deg")
@@ -139,7 +199,12 @@ def write_readme(output_dir: Path, manifest: dict, frame) -> None:
         "# MARL Method Comparison",
         "",
         f"- Created: {manifest['created_at']}",
-        "- Scenario: zero-shot N=100 transfer, 3000-slot evaluation.",
+        (
+            "- Scenario: zero-shot transfer, "
+            f"N={manifest['filters']['node_count']}, "
+            f"{manifest['filters']['slots_per_episode']}-slot evaluation, "
+            f"phase={manifest['filters']['phase']}."
+        ),
         "",
         "```csv",
         frame.to_csv(index=False).strip(),

@@ -26,6 +26,14 @@ This file is the active rule for the rebuilt MARL + ISAC experiment line.
   evidence only. New MARL transfer claims should be based on the 300-slot-trained
   policies evaluated at the declared test horizons above.
 
+## Version Control
+
+- The canonical development repository is `nuaasgq/ISAC-Neighbor-Discovery`.
+- Every code, configuration, analysis, figure, and paper update must be committed
+  to git before it is treated as part of the active research workflow.
+- If GitHub push is unavailable, keep local commits as the minimum versioned
+  record and push when network/credential access is restored.
+
 ## Transfer Tests
 
 - Train small and test large without fine-tuning.
@@ -68,3 +76,15 @@ The current campaign entry point is:
 ```powershell
 python 05_simulation/run_marl_campaign.py --campaign phase1_short_train_long_eval --train-episodes 20 --train-slots 300 --eval-episodes 3 --eval-slots 300 1200 3000 --node-counts 10 20 50 --beamwidths 5 10 15 30 --algorithms isac_mappo mappo --hidden-dim 64 --ppo-epochs 2 --torch-threads 2
 ```
+
+## Final Long Evaluation Campaign
+
+The final paper-grade transfer evaluation reuses fixed 300-slot-trained MARL
+checkpoints and only extends the test horizon:
+
+```powershell
+python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2
+```
+
+For a lower-cost intermediate check, use `--eval-slots 1200 3000` with fewer
+episodes or narrower beamwidth subsets. Do not use this script for training.
