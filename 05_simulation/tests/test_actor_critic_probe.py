@@ -15,6 +15,8 @@ from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "05_simulation" / "run_actor_critic_probe.py"
 IMITATION_SCRIPT = ROOT / "05_simulation" / "run_actor_critic_imitation_probe.py"
+MARL_TRAINING_SCRIPT = ROOT / "05_simulation" / "run_marl_training.py"
+MARL_EVALUATE_SCRIPT = ROOT / "05_simulation" / "run_marl_evaluate.py"
 
 
 def test_shared_actor_critic_samples_valid_actions() -> None:
@@ -155,6 +157,100 @@ def test_actor_critic_imitation_probe_writes_history(tmp_path: Path) -> None:
     assert manifest["scope"] == "method_probe_not_paper_result"
     assert (output / "training_history.csv").exists()
     assert (output / "manifest.json").exists()
+
+
+def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    module = load_probe_module(MARL_TRAINING_SCRIPT, "run_marl_training")
+    output = tmp_path / "marl_training"
+    manifest = module.run_training(
+        Namespace(
+            config=str(ROOT / "05_simulation" / "configs" / "mvp.yaml"),
+            output=str(output),
+            algorithm="isac_mappo",
+            episodes=1,
+            slots=2,
+            eval_episodes=1,
+            eval_interval=1,
+            stochastic_eval=False,
+            eval_both=True,
+            checkpoint_interval=0,
+            node_count=4,
+            azimuth_cells=4,
+            elevation_cells=2,
+            communication_range=800.0,
+            sensing_range=900.0,
+            false_alarm_rate=0.0,
+            miss_detection_rate=0.0,
+            angular_cell_offset_std=0.0,
+            sensing_period_slots=1,
+            mobility_model=None,
+            env_protocol=None,
+            hidden_dim=16,
+            learning_rate=1e-3,
+            gamma=0.95,
+            ppo_epochs=1,
+            clip_epsilon=0.2,
+            value_coef=0.5,
+            entropy_coef=0.01,
+            max_grad_norm=1.0,
+            candidate_mask=False,
+            candidate_score=False,
+            topology_deficit=False,
+            rule_residual=False,
+            rule_residual_scale=1.0,
+            disable_isac_features=False,
+            seed=79,
+            torch_threads=1,
+            step_log_period=1,
+            resource_log_period=1,
+            max_rss_mb=12000.0,
+            max_system_memory_percent=99.0,
+        )
+    )
+
+    assert manifest["scope"] == "real_marl_training"
+    assert manifest["logs_per_step_reward"] is True
+    assert manifest["logs_episode_return"] is True
+    assert manifest["centralized_training_decentralized_execution"] is True
+    assert (output / "step_rewards.csv").exists()
+    assert (output / "episode_metrics.csv").exists()
+    assert (output / "eval_episode_metrics.csv").exists()
+    assert (output / "resource_log.csv").exists()
+    assert (output / "final_model.pt").exists()
+
+    eval_module = load_probe_module(MARL_EVALUATE_SCRIPT, "run_marl_evaluate")
+    eval_output = tmp_path / "marl_transfer_eval"
+    eval_manifest = eval_module.run_evaluation(
+        Namespace(
+            checkpoint=str(output / "final_model.pt"),
+            config=str(ROOT / "05_simulation" / "configs" / "mvp.yaml"),
+            output=str(eval_output),
+            eval_episodes=1,
+            slots=2,
+            node_count=5,
+            azimuth_cells=5,
+            elevation_cells=2,
+            communication_range=900.0,
+            sensing_range=900.0,
+            false_alarm_rate=0.0,
+            miss_detection_rate=0.0,
+            angular_cell_offset_std=0.0,
+            sensing_period_slots=1,
+            mobility_model=None,
+            env_protocol=None,
+            deterministic=False,
+            stochastic=True,
+            eval_both=False,
+            seed=179,
+            torch_threads=1,
+        )
+    )
+
+    assert eval_manifest["scope"] == "marl_transfer_evaluation"
+    assert eval_manifest["node_count"] == 5
+    assert eval_manifest["beam_count"] == 10
+    assert (eval_output / "eval_episode_metrics.csv").exists()
 
 
 def load_probe_module(path: Path, name: str):

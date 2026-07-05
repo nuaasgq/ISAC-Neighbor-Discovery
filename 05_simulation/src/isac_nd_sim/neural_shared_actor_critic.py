@@ -109,12 +109,16 @@ class SharedBeamActorCritic:
                 mode_idx = int(mode_dist.sample().item())
                 beam_idx = int(beam_dist.sample().item())
             mode = MODE_NAMES[mode_idx]
+            sampled_beam_idx = beam_idx
             if mode == "idle":
                 beam_idx = 0
             actions.append(Action(mode, beam_idx))
             mode_tensor = torch.tensor(mode_idx, dtype=torch.long, device=self.device)
-            beam_tensor = torch.tensor(beam_idx, dtype=torch.long, device=self.device)
-            log_probs.append(mode_dist.log_prob(mode_tensor) + beam_dist.log_prob(beam_tensor))
+            beam_tensor = torch.tensor(sampled_beam_idx, dtype=torch.long, device=self.device)
+            beam_log_prob = torch.zeros((), dtype=value.dtype, device=self.device)
+            if mode != "idle":
+                beam_log_prob = beam_dist.log_prob(beam_tensor)
+            log_probs.append(mode_dist.log_prob(mode_tensor) + beam_log_prob)
             values.append(value.squeeze(-1))
             entropies.append(mode_dist.entropy() + beam_dist.entropy())
         return PolicyStep(
