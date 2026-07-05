@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, round14 ten-seed main-table, cite-backed PHY-to-protocol ISAC mapping, and SkyOrbs-like baseline-scope updates.
+- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, round14 ten-seed main-table, cite-backed PHY-to-protocol ISAC mapping, SkyOrbs-like baseline-scope, figure-audit, novelty/evidence-summary, and final audit-report updates.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean after the final local commit/push.
 
@@ -39,6 +39,7 @@ python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_
 python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulation\results_raw\round13_collision_energy_10seed --output 06_analysis\paper_tables\round13_collision_energy_10seed --figures 06_analysis\paper_figures\round13_collision_energy_10seed --tag round13
 python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --node-counts 100 --beamwidth-degs 10 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 600 --slot-metric-period 0 --area-scale density --range-mode singlehop --protocols uniform_random,skyorbs_like_skip_scan,rl_no_isac,improved_rl_no_isac,improved_rl_isac --train-node-count 10 --train-beamwidth-deg 10 --name round14_main_table_10seed_n100_b10
 python 06_analysis\scripts\analyze_round14_main_table.py --source 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --output 06_analysis\paper_tables\round14_main_table_10seed_n100_b10 --figures 06_analysis\paper_figures\round14_main_table_10seed_n100_b10
+python 06_analysis\scripts\audit_paper_figures.py
 pdflatex -interaction=nonstopmode main.tex
 bibtex main
 pdflatex -interaction=nonstopmode main.tex
@@ -50,6 +51,7 @@ pdflatex -interaction=nonstopmode supplement.tex
 Results:
 
 - Unit tests: 29 passed.
+- Final figure audit: 47 LaTeX figure instances, 44 unique existing figure files, 0 missing files, and 0 non-4:3 violations.
 - Main PDF pages: 9.
 - Supplement PDF pages: 10.
 - Selected pre-11, round11, round13, and round14 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures and round14 contributes 1 current main-table stability figure.
@@ -149,6 +151,10 @@ Follow-up:
   - `06_analysis/paper_figure_integrity_audit_20260705.md`
   - `06_analysis/paper_figure_integrity_audit_20260705.csv`
   - `06_analysis/scripts/audit_paper_figures.py`
+- Refreshed novelty/evidence and response maps:
+  - `06_analysis/novelty_evidence_summary_20260705.md`
+  - `06_analysis/submission_pitch_one_page_20260705.md`
+  - `06_analysis/figure_to_claim_map_20260705.md`
 - Round13 paper-writing route:
   - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
 - Pre-submission gap triage:
