@@ -18,6 +18,7 @@ if str(SRC) not in sys.path:
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
+from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic  # noqa: E402
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 
@@ -132,11 +133,13 @@ def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
         return torch_module.load(path, map_location="cpu")
 
 
-def build_policy(network: str, *args: Any, **kwargs: Any) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic:
+def build_policy(network: str, *args: Any, **kwargs: Any) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic:
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
+    if str(network) == "contention_shared":
+        return ContentionGraphActorCritic(*args, **kwargs)
     raise ValueError(f"Unsupported network in checkpoint: {network}")
 
 

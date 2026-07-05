@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--beamwidths", type=int, nargs="+", default=[5, 10, 15, 30])
     parser.add_argument("--include-n100", action="store_true", help="Also evaluate N=100 transfer cases.")
     parser.add_argument("--algorithms", nargs="+", default=["isac_mappo", "mappo"])
-    parser.add_argument("--network", choices=["shared", "scalegraph_beam"], default="shared")
+    parser.add_argument("--network", choices=["shared", "scalegraph_beam", "contention_shared"], default="shared")
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--hidden-dim", type=int, default=64)

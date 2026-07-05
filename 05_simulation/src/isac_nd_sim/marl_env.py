@@ -171,6 +171,7 @@ class MarlNeighborDiscoveryEnv:
         mode_one_hot = np.zeros(len(MODE_NAMES), dtype=np.float32)
         mode_one_hot[MODE_TO_INDEX[last_action.mode]] = 1.0
         candidate = self._candidate_features_for(node)
+        contention_state = self._contention_state_for(node, degree, topology_deficit, candidate)
 
         self_state = np.asarray(
             [
@@ -198,14 +199,61 @@ class MarlNeighborDiscoveryEnv:
             "beam_age": (self._sim.age[node] / max(1, self.cfg.slots_per_episode)).astype(np.float32).copy(),
             "beam_success": self._sim.success_count[node].astype(np.float32).copy(),
             "beam_fail": self._sim.fail_count[node].astype(np.float32).copy(),
+            "beam_collision": self._sim.collision_fail_count[node].astype(np.float32).copy(),
             "candidate_mask": candidate["mask"],
             "candidate_score": candidate["score"],
             "topology_deficit": np.asarray([topology_deficit], dtype=np.float32),
+            "contention_state": contention_state,
             "rule_mode_logits": self._rule_mode_logits_for(node, topology_deficit, int(np.count_nonzero(candidate["mask"]))),
             "last_mode": mode_one_hot,
             "last_beam": np.asarray([last_action.beam / max(1, self.n_beams - 1)], dtype=np.float32),
             "local_summary": local_summary,
         }
+
+    def _contention_state_for(
+        self,
+        node: int,
+        degree: int,
+        topology_deficit: float,
+        candidate: dict[str, np.ndarray],
+    ) -> np.ndarray:
+        """Local contention/topology summary exposed to decentralized actors.
+
+        The vector is computed from this node's public memory and aggregate
+        episode counters. It does not use true neighbor positions or hidden
+        adjacency. It lets policies learn role throttling and beam risk without
+        requiring centralized execution.
+        """
+
+        success = self._sim.success_count[node]
+        fail = self._sim.fail_count[node]
+        collision = self._sim.collision_fail_count[node]
+        empty = self._sim.empty_beam_count[node]
+        total_feedback = float(success.sum() + fail.sum() + empty.sum() + 1.0)
+        fail_total = float(fail.sum())
+        collision_total = float(collision.sum())
+        candidate_mask = candidate["mask"]
+        candidate_score = candidate["score"]
+        candidate_count = float(np.count_nonzero(candidate_mask))
+        candidate_fraction = candidate_count / max(1.0, float(self.n_beams))
+        masked_scores = candidate_score[candidate_mask > 0.5]
+        candidate_score_mean = float(masked_scores.mean()) if masked_scores.size else 0.0
+        candidate_score_max = float(masked_scores.max()) if masked_scores.size else 0.0
+        return np.asarray(
+            [
+                degree / max(1, self.n_agents - 1),
+                float(topology_deficit),
+                float(success.sum()) / total_feedback,
+                fail_total / total_feedback,
+                collision_total / max(1.0, fail_total + collision_total),
+                float(empty.sum()) / total_feedback,
+                candidate_fraction,
+                candidate_score_mean,
+                candidate_score_max,
+                float(self._last_actions[node].mode == "tx") - float(self._last_actions[node].mode == "rx"),
+            ],
+            dtype=np.float32,
+        )
 
     def _candidate_features_for(self, node: int) -> dict[str, np.ndarray]:
         """Local beam proposal features for candidate-constrained policies.
