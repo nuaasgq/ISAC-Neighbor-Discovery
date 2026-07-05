@@ -6,7 +6,7 @@ Current time anchor: after pushed commit `20932d9` (`Add MARL residual scale swe
 
 - IEEEtran main draft compiles cleanly.
 - Supplement compiles cleanly.
-- Unit tests pass: `27 passed`.
+- Unit tests pass: `29 passed`.
 - Paper figures keep 4:3 aspect ratio.
 - Main manuscript claim boundaries have been tightened:
   - ISAC is an imperfect occupancy prior, not an oracle.

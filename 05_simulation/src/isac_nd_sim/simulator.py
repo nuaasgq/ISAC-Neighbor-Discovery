@@ -63,6 +63,9 @@ class EpisodeResult:
     collisions_per_discovery_censored: float
     collision_normalized_efficiency: float
     collision_penalized_discovery_rate: float
+    energy_j: float
+    discoveries_per_joule: float
+    energy_per_discovery_censored_j: float
     moved_distance_mean_m: float
     largest_component_size: int
     connected_components: int
@@ -814,6 +817,9 @@ class NeighborDiscoverySimulator:
         collisions_per_discovery = self.collision_count / max(1, discovered_count)
         collision_normalized_efficiency = discovered_count / max(1, discovered_count + self.collision_count)
         collision_penalized_discovery_rate = discovered_count / max(1, len(self.first_true_slot) + self.collision_count)
+        energy_j = self.radio_energy_j()
+        discoveries_per_joule = discovered_count / max(energy_j, 1e-12)
+        energy_per_discovery = energy_j / max(1, discovered_count)
         moved = 0.0
         if self.initial_positions is not None:
             moved = float(np.linalg.norm(self.positions() - self.initial_positions, axis=1).mean())
@@ -846,12 +852,28 @@ class NeighborDiscoverySimulator:
             collisions_per_discovery_censored=collisions_per_discovery,
             collision_normalized_efficiency=collision_normalized_efficiency,
             collision_penalized_discovery_rate=collision_penalized_discovery_rate,
+            energy_j=energy_j,
+            discoveries_per_joule=discoveries_per_joule,
+            energy_per_discovery_censored_j=energy_per_discovery,
             moved_distance_mean_m=moved,
             largest_component_size=largest,
             connected_components=len(components),
             lcc_ratio=largest / max(1, self.cfg.n_nodes),
             isolated_node_ratio=isolated / max(1, self.cfg.n_nodes),
             lambda2=algebraic_connectivity(self.cfg.n_nodes, self.discovered_edges),
+        )
+
+    def radio_energy_j(self) -> float:
+        slot_s = float(self.cfg.slot_duration_s)
+        return float(
+            slot_s
+            * (
+                self.tx_actions * self.cfg.tx_power_w
+                + self.rx_actions * self.cfg.rx_power_w
+                + self.sense_actions * self.cfg.sense_power_w
+                + self.idle_actions * self.cfg.idle_power_w
+                + self.piggyback_sense_actions * self.cfg.piggyback_sense_power_w
+            )
         )
 
 

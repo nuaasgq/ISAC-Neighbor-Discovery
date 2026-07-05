@@ -264,6 +264,21 @@ This probe does not close the full MAC-design problem; it shows that the collisi
   \label{fig:supp_round12_collision_aware}
 \end{figure*}
 
+We further add an assumed radio-state energy accounting model with default powers $P_{\mathrm{tx}}=1.0$ W, $P_{\mathrm{rx}}=0.6$ W, $P_{\mathrm{sense}}=1.2$ W, $P_{\mathrm{idle}}=0.05$ W, and piggyback sensing overhead $0.2$ W.
+These values are not platform-calibrated; they convert action counts into a transparent Joule-level accounting metric for reviewer diagnostics.
+Under this model, the collision-aware variant improves discoveries per joule from 6.1722 to 6.6080 at B=10 and from 9.2453 to 10.2430 at B=15 relative to the proposed low-latency variant.
+The corresponding energy per discovered edge decreases from 0.1620 J to 0.1515 J at B=10 and from 0.1082 J to 0.0977 J at B=15.
+Fig.~\ref{fig:supp_round12_energy} reports these two accounting metrics.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round12_collision_aware_probe_v2/round12_discoveries_per_joule.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round12_collision_aware_probe_v2/round12_energy_per_discovery.png}
+  \caption{Assumed radio-state energy accounting in the round12 probe. Left: discoveries per joule. Right: energy per discovered edge. These are diagnostic accounting metrics under stated default radio-state powers, not platform-calibrated energy-optimality results.}
+  \label{fig:supp_round12_energy}
+\end{figure*}
+
 \clearpage
 
 \section{Structured Neural MARL Probe}

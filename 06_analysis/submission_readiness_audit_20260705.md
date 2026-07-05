@@ -7,7 +7,7 @@ This note records the readiness state after commit `3eae6dd` (`Add round11 stabi
 | Artifact | Status | Notes |
 |---|---:|---|
 | `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | 8-page IEEEtran draft, texcount `3669+62+294`, 10 figures, 4 tables. |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 9-page IEEEtran supplement with finite-horizon backup evidence and structured MARL probe figures. |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | 10-page IEEEtran supplement with finite-horizon backup, round11/round12, energy-accounting, and structured MARL probe figures. |
 | `06_analysis/paper_figures/` | Verified | 358 PNG figures, all within 4:3 aspect tolerance. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
 | `06_analysis/paper_tables/paired_delta_summary/` | Verified | 125 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
@@ -32,7 +32,7 @@ python 06_analysis\scripts\plot_round11_stability.py
 python 06_analysis\scripts\plot_round12_collision_aware.py
 ```
 
-Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `27 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3.
+Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `29 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3.
 
 ## Claim Boundaries Now Reflected in Text
 
@@ -54,7 +54,7 @@ The supplement now carries the reviewer-facing evidence chain: coverage matrix, 
 ## Remaining Risks Before External Submission
 
 1. The main learned method is still CEM/shared-policy search; the neural actor-critic branch is a structured MARL probe, not the strongest evidence. This is acceptable only if framed as a protocol paper with a learning-assisted extension, not as a pure MARL contribution.
-2. Collision-aware efficiency is only partly addressed by the round12 role-control probe; dense 15/30-degree cases still need a full MAC and energy model.
+2. Collision-aware efficiency is partly addressed by the round12 role-control probe and assumed radio-state accounting; dense 15/30-degree cases still need a full MAC and platform-calibrated energy model.
 3. The SkyOrbs-like baseline is only an inspired communication-only baseline. A complete SkyOrbs reproduction remains future work.
 4. The physical-layer ISAC service is abstracted. A TWC/TCOM reviewer may still ask for a stronger mapping from sensing parameters to waveform/estimator assumptions.
 5. The 3-degree and 5-degree cases are not success regimes under the current 600-slot horizon.

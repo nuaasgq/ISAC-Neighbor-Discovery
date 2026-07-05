@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the round12 collision-aware MAC refinement commit.
+- Latest synced commit: current `master` HEAD after the round12 collision-aware MAC and energy-accounting commit.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean
 
@@ -20,7 +20,7 @@ This draft is intended for the 11:00 handoff.
 Current compiled state:
 
 - Main: 8 pages.
-- Supplement: 9 pages.
+- Supplement: 10 pages.
 - Compile status: no unresolved citation/reference and no overfull warnings in the checked final logs.
 - Remaining LaTeX messages are narrow-column underfull warnings only.
 
@@ -46,10 +46,10 @@ pdflatex -interaction=nonstopmode supplement.tex
 
 Results:
 
-- Unit tests: 28 passed.
+- Unit tests: 29 passed.
 - Main PDF pages: 8.
-- Supplement PDF pages: 9.
-- New pre-11, round11, and round12 evidence figures: 24 PNGs, all checked at 1920x1440 (4:3).
+- Supplement PDF pages: 10.
+- New pre-11, round11, and round12 evidence figures: 26 PNGs, all checked at 1920x1440 (4:3).
 
 ## Main Evidence
 
@@ -90,7 +90,8 @@ Round12 collision-aware MAC refinement probe:
 - B=10 collision-aware discovery/collision-penalized discovery: 0.3697 / 0.3162 vs proposed 0.3639 / 0.2995.
 - B=15 collision-aware discovery/collision-penalized discovery: 0.5696 / 0.2504 vs proposed 0.5445 / 0.2042.
 - Collision-aware collision-penalized deltas are positive in 5/5 paired seeds versus both the proposed low-latency protocol and the one-slot delayed variant at B=10 and B=15.
-- Interpretation: the B=15 collision boundary is schedulable by local role control, but full collision- and energy-aware MAC design remains open.
+- Assumed radio-state accounting: discoveries per joule improve from 6.1722 to 6.6080 at B=10 and from 9.2453 to 10.2430 at B=15 versus the proposed low-latency protocol.
+- Interpretation: the B=15 collision boundary is schedulable by local role control, but full collision- and platform-calibrated energy-aware MAC design remains open.
 
 ## Structured Neural MARL Probe
 
@@ -151,7 +152,7 @@ Use these boundaries consistently:
 - Neural MARL is currently a structured method probe, not the main result.
 - SkyOrbs-like is an inspired deterministic 3-D skip-scan reference, not a strict reproduction.
 - 3--5 degree beams and abrupt mobility are stress regimes.
-- Raw discovery and collision-penalized discovery should be discussed separately; round12 mitigates the collision boundary but does not provide a final MAC or Joule-level energy model.
+- Raw discovery, collision-penalized discovery, and assumed energy accounting should be discussed separately; round12 mitigates the collision boundary but does not provide a final MAC or platform-calibrated Joule-level energy model.
 
 ## Readiness Judgment
 
@@ -160,4 +161,4 @@ The central paper angle is defensible:
 
 > ISAC-assisted candidate-beam refinement is a viable cross-layer mechanism for narrowing the search space of distributed UAV-UAV narrow-beam neighbor discovery, with clear gains over blind/no-ISAC baselines and explicit boundaries under extreme beamwidths, abrupt mobility, and collision-heavy regimes.
 
-It is still not final TWC/TCOM submission-ready because a reviewer could request more main-result seeds, a strict SkyOrbs reproduction, stronger energy-aware MAC validation, a Joule-level energy model, or a calibrated PHY mapping for ISAC error parameters.
+It is still not final TWC/TCOM submission-ready because a reviewer could request more main-result seeds, a strict SkyOrbs reproduction, stronger energy-aware MAC validation, a calibrated radio-state power model, or a calibrated PHY mapping for ISAC error parameters.

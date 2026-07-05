@@ -46,6 +46,11 @@ class SimulationConfig:
     confidence_decay: float
     piggyback_sensing_period_multiplier: float
     baselines: tuple[str, ...]
+    tx_power_w: float = 1.0
+    rx_power_w: float = 0.6
+    sense_power_w: float = 1.2
+    idle_power_w: float = 0.05
+    piggyback_sense_power_w: float = 0.2
 
     @property
     def n_beams(self) -> int:
@@ -91,6 +96,7 @@ def load_config(path: str | Path) -> SimulationConfig:
     slot = raw["slot"]
     isac_error = raw["isac_error"]
     protocol = raw["protocol"]
+    energy = raw.get("energy", {})
 
     return SimulationConfig(
         name=str(experiment["name"]),
@@ -128,4 +134,9 @@ def load_config(path: str | Path) -> SimulationConfig:
         confidence_decay=float(protocol["confidence_decay"]),
         piggyback_sensing_period_multiplier=float(protocol.get("piggyback_sensing_period_multiplier", 1.0)),
         baselines=tuple(str(v) for v in raw["baselines"]),
+        tx_power_w=float(energy.get("tx_power_w", 1.0)),
+        rx_power_w=float(energy.get("rx_power_w", 0.6)),
+        sense_power_w=float(energy.get("sense_power_w", 1.2)),
+        idle_power_w=float(energy.get("idle_power_w", 0.05)),
+        piggyback_sense_power_w=float(energy.get("piggyback_sense_power_w", 0.2)),
     )

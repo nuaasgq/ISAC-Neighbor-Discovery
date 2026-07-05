@@ -48,9 +48,9 @@ Within the evaluated single-hop, finite-horizon UAV swarm regimes, ISAC-assisted
 - Do not claim calibrated physical sensing range laws; `Rs`, `P_fa`, `P_md`, and angular-cell errors are abstraction parameters.
 - Do not claim full MARL superiority; structured actor-critic results are a probe and currently trail the flat stochastic student in raw discovery.
 - Do not claim consensus convergence; lambda2 is a discovered-graph quality proxy.
-- Do not claim final collision-optimal scheduling; round12 is a mechanism probe, while full MAC and energy optimization remain open.
+- Do not claim final collision-optimal scheduling or platform-calibrated energy optimality; round12 is a mechanism probe with assumed radio-state accounting.
 
 ## Best Next Experiment
 
 The most defensible next experiment is not a broad Cartesian sweep.
-Extend the completed focused five-seed paired campaign to 10+ seeds only if needed, and next prioritize either a stricter energy-aware MAC model or a calibrated PHY-to-ISAC sensing-parameter mapping.
+Extend the completed focused five-seed paired campaign to 10+ seeds only if needed, and next prioritize either calibrated radio-state power assumptions or a calibrated PHY-to-ISAC sensing-parameter mapping.

@@ -89,6 +89,12 @@ def build_endpoint_summary(aggregate):
         "collision_penalized_discovery_rate_std",
         "collision_count_mean",
         "collision_count_std",
+        "discoveries_per_joule_mean",
+        "discoveries_per_joule_std",
+        "energy_per_discovery_censored_j_mean",
+        "energy_per_discovery_censored_j_std",
+        "energy_j_mean",
+        "energy_j_std",
         "lambda2_mean",
         "lambda2_std",
         "empty_scan_ratio_mean",
@@ -100,6 +106,9 @@ def build_endpoint_summary(aggregate):
         "discovery_rate",
         "collision_penalized_discovery_rate",
         "collision_count",
+        "discoveries_per_joule",
+        "energy_per_discovery_censored_j",
+        "energy_j",
         "lambda2",
         "empty_scan_ratio",
     ):
@@ -117,6 +126,9 @@ def build_paired_delta_table(episode, pd):
         "discovery_rate",
         "collision_penalized_discovery_rate",
         "collision_count",
+        "discoveries_per_joule",
+        "energy_per_discovery_censored_j",
+        "energy_j",
         "lambda2",
     )
     rows = []
@@ -228,6 +240,10 @@ def write_figures(summary, paired, cumulative, figure_dir: Path) -> list[dict]:
     figures.append(plot_bar(summary, "discovery_rate_mean", "discovery_rate_ci95", "Discovery rate", figure_dir / "round12_discovery_rate.png", plt))
     figures.append(plot_bar(summary, "collision_penalized_discovery_rate_mean", "collision_penalized_discovery_rate_ci95", "Collision-penalized discovery", figure_dir / "round12_collision_penalized.png", plt))
     figures.append(plot_bar(summary, "collision_count_mean", "collision_count_ci95", "Collision count", figure_dir / "round12_collision_count.png", plt))
+    if "discoveries_per_joule_mean" in summary.columns:
+        figures.append(plot_bar(summary, "discoveries_per_joule_mean", "discoveries_per_joule_ci95", "Discoveries per joule", figure_dir / "round12_discoveries_per_joule.png", plt))
+    if "energy_per_discovery_censored_j_mean" in summary.columns:
+        figures.append(plot_bar(summary, "energy_per_discovery_censored_j_mean", "energy_per_discovery_censored_j_ci95", "Energy per discovery (J)", figure_dir / "round12_energy_per_discovery.png", plt))
     figures.append(plot_paired_delta(paired, figure_dir / "round12_collision_penalized_delta.png", plt))
     return figures
 

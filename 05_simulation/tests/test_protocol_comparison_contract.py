@@ -71,6 +71,8 @@ def test_runner_runs_five_paper_comparison_protocols() -> None:
         assert "discovery_per_scan_action" in row
         assert "collision_penalized_discovery_rate" in row
         assert "collision_normalized_efficiency" in row
+        assert "energy_j" in row
+        assert "discoveries_per_joule" in row
         assert row["p99_discovery_delay"] == row["p99_delay_censored"]
 
 
@@ -165,3 +167,26 @@ def test_collision_aware_isac_reduces_tx_probability_under_candidate_pressure() 
     assert collision_aware[0] < baseline_tx_probability
     assert collision_aware[1] > 1.0 - 0.01 - baseline_tx_probability
     np.testing.assert_allclose(collision_aware.sum(), 1.0)
+
+
+def test_radio_energy_uses_configured_state_powers() -> None:
+    cfg = replace(
+        compact_config(),
+        slot_duration_s=0.01,
+        tx_power_w=2.0,
+        rx_power_w=1.0,
+        sense_power_w=3.0,
+        idle_power_w=0.1,
+        piggyback_sense_power_w=0.5,
+    )
+    simulator = initialized_simulator(cfg, "improved_rl_isac")
+    simulator.tx_actions = 3
+    simulator.rx_actions = 5
+    simulator.sense_actions = 2
+    simulator.idle_actions = 7
+    simulator.piggyback_sense_actions = 4
+
+    np.testing.assert_allclose(
+        simulator.radio_energy_j(),
+        0.01 * (3 * 2.0 + 5 * 1.0 + 2 * 3.0 + 7 * 0.1 + 4 * 0.5),
+    )

@@ -467,7 +467,7 @@ Second, the SkyOrbs-like comparison is an inspired baseline rather than a strict
 Third, ISAC is represented by an abstract beam-cell occupancy prior; physical waveform design and estimator implementation are outside the scope.
 Fourth, candidate-set refinement abstracts sub-slot or readiness behavior; the one-slot delayed candidate-set ablation bounds this implementation assumption but does not replace a hardware-specific timing study.
 Fifth, extremely narrow beams at 3 and 5 degrees and abrupt mobility models remain stress regions and should be discussed as such.
-Sixth, the efficiency metrics are scan-action and collision normalized; a Joule-level delay-power comparison would require an explicit radio-state energy model.
+Sixth, the supplement includes assumed radio-state energy accounting, but calibrated delay-power optimization would require platform-specific power states and traffic models.
 Finally, the proposed ISAC-assisted policy creates more collision attempts than the no-ISAC baseline in dense finite-horizon tests.
 Therefore, collision-penalized discovery should be interpreted together with raw discovery rate in dense finite-horizon settings.
 A supplementary collision-aware role-control probe mitigates this boundary in the tested B=10/B=15 paired settings, but a complete collision- and energy-aware MAC remains outside the present scope.
