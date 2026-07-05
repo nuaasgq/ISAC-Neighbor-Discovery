@@ -48,6 +48,14 @@
 5. Build the five-class MARL-compatible comparison after `contention_no_isac` checkpoints are available.
 6. Update the IEEE draft so all text, tables, and figure paths use the 10-episode Phase-6 data.
 
+## Learning-Curve Plot Rule
+
+- `06_analysis/scripts/plot_marl_learning_curves.py` must use `training_step` on
+  the x-axis for step, episode, evaluation, and resource curves.
+- Multi-seed paper figures should be method-level mean curves with a standard
+  deviation band, not one color per raw run.
+- Raw per-run CSV rows remain exported for auditability.
+
 ## Next Matrix After B=3/B=5
 
 ### Five-Class Baseline Closure

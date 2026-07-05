@@ -14,6 +14,24 @@ COLORS = {
     "ippo": "#D55E00",
     "no_isac": "#6C757D",
 }
+METHOD_COLORS = {
+    "legacy_shared": "#4C78A8",
+    "collision_reward": "#F58518",
+    "contention_actor": "#54A24B",
+    "contention_no_isac": "#B279A2",
+    "mappo_no_isac": "#6C757D",
+    "ippo_no_isac": "#9D755D",
+    "unknown": "#6C757D",
+}
+METHOD_LABELS = {
+    "legacy_shared": "Legacy ISAC-MAPPO",
+    "collision_reward": "Collision-reward ISAC-MAPPO",
+    "contention_actor": "Contention-aware ISAC-MAPPO",
+    "contention_no_isac": "Contention-aware MAPPO w/o ISAC",
+    "mappo_no_isac": "MAPPO w/o ISAC",
+    "ippo_no_isac": "IPPO w/o ISAC",
+    "unknown": "Unknown",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,6 +111,7 @@ def load_runs(run_dirs: list[Path], pd):
             continue
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         run_name = run_dir.name
+        method = infer_method(manifest, run_name)
         manifests.append(
             {
                 "run": run_name,
@@ -100,6 +119,8 @@ def load_runs(run_dirs: list[Path], pd):
                 "algorithm": manifest.get("algorithm"),
                 "network": manifest.get("network", "shared"),
                 "reward_version": manifest.get("reward_version", "legacy"),
+                "method": method,
+                "method_label": METHOD_LABELS.get(method, method),
             }
         )
         step_frames.append(load_csv(run_dir / "step_rewards.csv", pd, run_name, manifest))
@@ -119,17 +140,61 @@ def load_csv(path: Path, pd, run_name: str, manifest: dict):
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame()
     frame = pd.read_csv(path)
+    method = infer_method(manifest, run_name)
     frame["run"] = run_name
     frame["algorithm"] = frame.get("algorithm", manifest.get("algorithm", "unknown"))
     frame["network"] = manifest.get("network", "shared")
     frame["reward_version"] = manifest.get("reward_version", "legacy")
     frame["env_protocol"] = frame.get("env_protocol", manifest.get("env_protocol", "unknown"))
+    frame["method"] = method
+    frame["method_label"] = METHOD_LABELS.get(method, method)
+    frame["training_seed"] = infer_training_seed(run_name, manifest)
     frame["node_count"] = manifest.get("node_count", "")
     frame["beam_count"] = manifest.get("beam_count", "")
     frame["azimuth_cells"] = manifest.get("azimuth_cells", "")
     frame["elevation_cells"] = manifest.get("elevation_cells", "")
     frame["slot_duration_ms"] = manifest.get("slot_duration_ms", "")
+    if "training_step" not in frame.columns and "eval_after_episode" in frame.columns:
+        slots = int(manifest.get("slots_per_episode", manifest.get("slots", 1)) or 1)
+        frame["training_step"] = pd.to_numeric(frame["eval_after_episode"], errors="coerce") * slots
     return frame
+
+
+def infer_method(manifest: dict, run_name: str) -> str:
+    run_name_lower = run_name.lower()
+    for method in METHOD_LABELS:
+        if method != "unknown" and method in run_name_lower:
+            return method
+    algorithm = str(manifest.get("algorithm", "")).lower()
+    network = str(manifest.get("network", "shared")).lower()
+    reward_version = str(manifest.get("reward_version", "legacy")).lower()
+    env_protocol = str(manifest.get("env_protocol", "")).lower()
+    if "no_isac" in env_protocol or bool((manifest.get("args") or {}).get("disable_isac_features", False)):
+        if "contention" in network:
+            return "contention_no_isac"
+        if algorithm == "ippo":
+            return "ippo_no_isac"
+        return "mappo_no_isac"
+    if "contention" in network:
+        return "contention_actor"
+    if "collision" in reward_version or "topology" in reward_version:
+        return "collision_reward"
+    if algorithm == "isac_mappo":
+        return "legacy_shared"
+    return "unknown"
+
+
+def infer_training_seed(run_name: str, manifest: dict) -> int | str:
+    marker = "seed"
+    if marker in run_name:
+        tail = run_name.rsplit(marker, 1)[-1]
+        digits = "".join(ch for ch in tail if ch.isdigit())
+        if digits:
+            return int(digits)
+    value = manifest.get("seed")
+    if value is not None:
+        return value
+    return ""
 
 
 def concat_frames(frames: list, pd):
@@ -242,11 +307,12 @@ def write_figures(step_rows, episode_rows, eval_rows, resources, figure_dir: Pat
 
 def plot_step_curve(rows, metric: str, ylabel: str, path: Path, plt, rolling_window: int) -> dict:
     fig, ax = plt.subplots(figsize=FIGSIZE)
-    for run, group in rows.groupby("run"):
-        group = group.sort_values("training_step").copy()
-        color = color_for(group)
-        y = group[metric].rolling(max(1, rolling_window), min_periods=1).mean()
-        ax.plot(group["training_step"], y, label=str(run), color=color, alpha=0.9)
+    for method in ordered_methods(rows):
+        group = rows[rows["method"] == method].sort_values(["run", "training_step"]).copy()
+        group["_y"] = group.groupby("run")[metric].transform(
+            lambda values: values.rolling(max(1, rolling_window), min_periods=1).mean()
+        )
+        plot_mean_band(ax, group, "training_step", "_y", method)
     ax.set_xlabel("Training step")
     ax.set_ylabel(ylabel)
     ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
@@ -259,9 +325,9 @@ def plot_step_curve(rows, metric: str, ylabel: str, path: Path, plt, rolling_win
 
 def plot_episode_curve(rows, metric: str, ylabel: str, path: Path, plt) -> dict:
     fig, ax = plt.subplots(figsize=FIGSIZE)
-    for run, group in rows.groupby("run"):
-        group = group.sort_values("training_step")
-        ax.plot(group["training_step"], group[metric], marker="o", markersize=3, label=str(run), color=color_for(group))
+    for method in ordered_methods(rows):
+        group = rows[rows["method"] == method].sort_values(["run", "training_step"])
+        plot_mean_band(ax, group, "training_step", metric, method, marker="o", markersize=3)
     ax.set_xlabel("Training step")
     ax.set_ylabel(ylabel)
     ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
@@ -274,10 +340,10 @@ def plot_episode_curve(rows, metric: str, ylabel: str, path: Path, plt) -> dict:
 
 def plot_eval_curve(rows, metric: str, ylabel: str, path: Path, plt) -> dict:
     fig, ax = plt.subplots(figsize=FIGSIZE)
-    for run, group in rows.groupby("run"):
-        grouped = group.groupby("eval_after_episode", as_index=False)[metric].mean()
-        ax.plot(grouped["eval_after_episode"], grouped[metric], marker="s", markersize=4, label=str(run), color=color_for(group))
-    ax.set_xlabel("Training episode")
+    for method in ordered_methods(rows):
+        group = rows[rows["method"] == method].sort_values(["run", "training_step"])
+        plot_mean_band(ax, group, "training_step", metric, method, marker="s", markersize=4)
+    ax.set_xlabel("Training step")
     ax.set_ylabel(ylabel)
     ax.legend(frameon=False)
     fig.tight_layout()
@@ -288,9 +354,9 @@ def plot_eval_curve(rows, metric: str, ylabel: str, path: Path, plt) -> dict:
 
 def plot_resource_curve(rows, metric: str, ylabel: str, path: Path, plt) -> dict:
     fig, ax = plt.subplots(figsize=FIGSIZE)
-    for run, group in rows.groupby("run"):
-        group = group.sort_values("training_step")
-        ax.plot(group["training_step"], group[metric], label=str(run), color=color_for(group))
+    for method in ordered_methods(rows):
+        group = rows[rows["method"] == method].sort_values(["run", "training_step"])
+        plot_mean_band(ax, group, "training_step", metric, method)
     ax.set_xlabel("Training step")
     ax.set_ylabel(ylabel)
     ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
@@ -301,7 +367,43 @@ def plot_resource_curve(rows, metric: str, ylabel: str, path: Path, plt) -> dict
     return {"path": str(path), "type": "resource_curve", "metric": metric}
 
 
+def ordered_methods(rows) -> list[str]:
+    present = [str(method) for method in rows["method"].dropna().unique()] if "method" in rows else ["unknown"]
+    preferred = [method for method in METHOD_LABELS if method in present and method != "unknown"]
+    extras = sorted(method for method in present if method not in preferred and method != "unknown")
+    if "unknown" in present:
+        extras.append("unknown")
+    return preferred + extras
+
+
+def plot_mean_band(ax, rows, x_col: str, y_col: str, method: str, **plot_kwargs) -> None:
+    import pandas as pd
+
+    if rows.empty or x_col not in rows.columns or y_col not in rows.columns:
+        return
+    compact = rows[[x_col, y_col]].copy()
+    compact[x_col] = pd.to_numeric(compact[x_col], errors="coerce")
+    compact[y_col] = pd.to_numeric(compact[y_col], errors="coerce")
+    compact = compact.dropna()
+    if compact.empty:
+        return
+    grouped = compact.groupby(x_col, as_index=False)[y_col].agg(["mean", "std", "count"]).reset_index()
+    color = color_for_method(method)
+    label = METHOD_LABELS.get(method, method)
+    ax.plot(grouped[x_col], grouped["mean"], label=label, color=color, alpha=0.95, **plot_kwargs)
+    if int(grouped["count"].max()) > 1:
+        lower = grouped["mean"] - grouped["std"].fillna(0.0)
+        upper = grouped["mean"] + grouped["std"].fillna(0.0)
+        ax.fill_between(grouped[x_col], lower, upper, color=color, alpha=0.14, linewidth=0)
+
+
+def color_for_method(method: str) -> str:
+    return METHOD_COLORS.get(method, METHOD_COLORS["unknown"])
+
+
 def color_for(group) -> str:
+    if "method" in group and len(group):
+        return color_for_method(str(group["method"].iloc[0]))
     algorithm = str(group["algorithm"].iloc[0]) if "algorithm" in group and len(group) else "unknown"
     if "no_isac" in str(group.get("env_protocol", "")).lower():
         return COLORS["no_isac"]
