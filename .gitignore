@@ -47,6 +47,7 @@ tmp/
 06_analysis/paper_tables/marl/smoke_*/
 06_analysis/paper_tables/marl/phase1_train_curves/
 06_analysis/paper_tables/marl/phase2_scalegraph_train_compare/
+06_analysis/paper_tables/marl/*/marl_step_rewards.csv
 
 # Paper build outputs
 07_paper/**/*.aux
