@@ -55,7 +55,7 @@ def main() -> None:
         "output_dir": str(output_dir),
         "figure_dir": str(figure_dir),
         "figures": figures,
-        "note": "Each point is one full candidate-policy episode evaluation, not a per-step RL reward sample.",
+        "note": "The x-axis is cumulative training environment steps; each point is one full candidate-policy episode evaluation.",
     }
     (output_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     write_readme(output_dir, manifest, history, best_by_generation)
@@ -66,6 +66,12 @@ def add_evaluation_index(df):
     df = df.sort_values(["generation", "candidate"]).reset_index(drop=True).copy()
     if "evaluation_index" not in df.columns:
         df["evaluation_index"] = range(1, len(df) + 1)
+    step_scale = (
+        df.get("slots_per_episode", 1).astype(float)
+        * df.get("episodes_per_seed", 1).astype(float)
+        * df.get("seed_count", 1).astype(float)
+    )
+    df["training_step"] = (df["evaluation_index"].astype(float) * step_scale).astype(int)
     return df
 
 
@@ -81,6 +87,7 @@ def build_best_by_generation(history, pd):
                 "generation": int(generation),
                 "candidate": int(best["candidate"]),
                 "evaluation_index": int(best["evaluation_index"]),
+                "training_step": int(best["training_step"]),
                 "generation_best_score": float(best["score"]),
                 "generation_best_reward": float(best.get("reward_mean", best["score"])),
                 "generation_best_discovery_rate": float(best.get("discovery_rate_mean", 0.0)),
@@ -130,7 +137,7 @@ def write_figures(history, elite, best_by_generation, figure_dir: Path) -> list[
             "score",
             "best_so_far_score",
             "Selection score",
-            figure_dir / "cem_candidate_score_trajectory.png",
+            figure_dir / "cem_step_score_curve.png",
             plt,
         )
     )
@@ -142,7 +149,7 @@ def write_figures(history, elite, best_by_generation, figure_dir: Path) -> list[
             "reward_mean",
             "best_so_far_reward",
             "Episode reward",
-            figure_dir / "cem_candidate_reward_trajectory.png",
+            figure_dir / "cem_step_reward_curve.png",
             plt,
         )
     )
@@ -154,7 +161,7 @@ def write_figures(history, elite, best_by_generation, figure_dir: Path) -> list[
             "discovery_rate_mean",
             "best_so_far_discovery_rate",
             "Discovery rate",
-            figure_dir / "cem_candidate_discovery_trajectory.png",
+            figure_dir / "cem_step_discovery_curve.png",
             plt,
         )
     )
@@ -166,7 +173,7 @@ def write_figures(history, elite, best_by_generation, figure_dir: Path) -> list[
             "empty_scan_ratio_mean",
             None,
             "Empty-scan ratio",
-            figure_dir / "cem_candidate_empty_scan_trajectory.png",
+            figure_dir / "cem_step_empty_scan_curve.png",
             plt,
         )
     )
@@ -176,7 +183,7 @@ def write_figures(history, elite, best_by_generation, figure_dir: Path) -> list[
 def plot_metric(history, elite, best_by_generation, metric: str, best_metric: str | None, ylabel: str, path: Path, plt) -> dict:
     fig, ax = plt.subplots(figsize=FIGSIZE)
     ax.scatter(
-        history["evaluation_index"].to_numpy(),
+        history["training_step"].to_numpy(),
         history[metric].to_numpy(),
         s=24,
         color=COLOR_CANDIDATE,
@@ -185,7 +192,7 @@ def plot_metric(history, elite, best_by_generation, metric: str, best_metric: st
     )
     elite_subset = elite[elite["rank"] == 1] if "rank" in elite.columns else elite
     ax.plot(
-        elite_subset["evaluation_index"].to_numpy(),
+        elite_subset["training_step"].to_numpy(),
         elite_subset[metric].to_numpy(),
         marker="o",
         markersize=4,
@@ -194,36 +201,39 @@ def plot_metric(history, elite, best_by_generation, metric: str, best_metric: st
     )
     if best_metric is not None and best_metric in best_by_generation.columns:
         ax.step(
-            best_by_generation["evaluation_index"].to_numpy(),
+            best_by_generation["training_step"].to_numpy(),
             best_by_generation[best_metric].to_numpy(),
             where="post",
             color=COLOR_BEST,
             label="Best so far",
         )
-    ax.set_xlabel("Candidate evaluation index")
+    ax.set_xlabel("Training step")
     ax.set_ylabel(ylabel)
+    ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     ax.legend(frameon=False)
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
-    return {"path": str(path), "type": "cem_candidate_trajectory", "metric": metric}
+    return {"path": str(path), "type": "cem_step_curve", "metric": metric}
 
 
 def write_readme(output_dir: Path, manifest: dict, history, best_by_generation) -> None:
     best_row = history.sort_values("score", ascending=False).iloc[0]
     lines = [
-        "# Training Candidate-Evaluation Trajectory",
+        "# Step-Indexed Training Trajectory",
         "",
         f"- Created: {manifest['created_at']}",
         f"- Source: `{manifest['training_dir']}`",
         f"- Candidate evaluations: {len(history)}",
+        f"- Final training step: {int(history['training_step'].max())}",
         f"- Generations: {int(history['generation'].nunique())}",
         f"- Best score: {float(best_row['score']):.4f}",
         f"- Best candidate: generation {int(best_row['generation'])}, candidate {int(best_row['candidate'])}",
         "",
         "Interpretation: the selected policy was produced by a CEM-style shared-parameter policy search.",
-        "Each plotted point is a full candidate-policy episode evaluation, not a per-step or per-gradient-update RL reward sample.",
-        "Use these plots as candidate-search trace evidence only; do not describe them as a theoretical convergence proof.",
+        "The x-axis is cumulative training environment steps, computed from candidate evaluations, episode length, episodes per seed, and training seeds.",
+        "Each plotted point is still one full candidate-policy episode evaluation, not a per-gradient-update reward sample.",
+        "Use these plots as step-indexed policy-search trace evidence only; do not describe them as a theoretical convergence proof.",
         "",
         "Generated files:",
         "- `candidate_evaluation_history.csv`",

@@ -9,7 +9,7 @@ This map records why each selected paper figure is in the manuscript package.
 | Fig. 1 system model | `paper_figures/concept/system_model_isac_uav_swarm.png` | UAV-UAV self-localized, neighbor-unknown, distributed narrow-beam discovery setting. |
 | Fig. 2 protocol mechanism | `paper_figures/concept/protocol_mechanism_itap_nd.png` | ISAC occupancy evidence is used as a link-layer prior before handshake confirmation. |
 | Fig. 3 shared policy | `paper_figures/concept/policy_architecture_shared_agent.png` | One shared local policy can be trained at small scale and executed by many UAVs. |
-| Fig. 4 candidate reward | `training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png` | Learned policy-search run has a CEM candidate-evaluation trace; no per-step MARL convergence claim. |
+| Fig. 4 training reward | `training_candidate_trajectory_20260705/cem_step_reward_curve.png` | Learned policy-search run has a step-indexed CEM training trace; no per-gradient MARL convergence claim. |
 | Table I information boundary | `main.tex` | Own state is available; undiscovered neighbor state and global topology are not. |
 | Table II dynamic comparison | `main.tex` | ISAC-assisted protocol improves finite-time discovery over random scanning in small dynamic swarms. |
 | Table III N=100 transfer | `main.tex` | 10--30 degree beams are useful transfer regimes; 5 degrees is weak. |
@@ -26,7 +26,7 @@ This map records why each selected paper figure is in the manuscript package.
 | Supplement item | File or source | Reviewer question addressed |
 |---|---|---|
 | Coverage table | `supplement.tex` | Are all requested dimensions covered, and what are the caveats? |
-| Training reward and score | `training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png`, `cem_candidate_score_trajectory.png` | Where is the training trace, and is convergence overclaimed? |
+| Training reward and score | `training_candidate_trajectory_20260705/cem_step_reward_curve.png`, `cem_step_score_curve.png` | Where is the training trace, and is convergence overclaimed? |
 | Scale/beam heatmap | `round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png` | Does N=10 training transfer across N=10--100 and beamwidths 3--30? |
 | B=10 node-count curve | `round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png` | How does the main trained beamwidth scale with node count? |
 | Area-scale discovery/connectivity | `round3_n100_transfer/area_scale_n100_discovery_rate.png`, `area_scale_n100_lambda2.png` | Does N=100 performance depend on density-preserving versus fixed-area scaling? |

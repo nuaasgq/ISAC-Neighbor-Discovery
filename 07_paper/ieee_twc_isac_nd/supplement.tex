@@ -49,7 +49,7 @@ The complete evidence map is maintained in the repository coverage matrix.
     Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
     Range and timing & Sensitivity & Range grid, slot-duration sensitivity, and 3000-slot long-horizon check. & Protocol-level abstraction, not calibrated RF range law. \\
     ISAC errors & Configured & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
-    Training curves & Trace & Round2 CEM candidate-evaluation reward/score histories and round7 longer CEM histories. & Empirical training-score evolution only, not per-step MARL convergence. \\
+    Training curves & Trace & Round2 step-indexed CEM reward/score histories and round7 longer CEM histories. & Empirical training-score evolution only, not per-gradient MARL convergence. \\
     \bottomrule
   \end{tabular}
 \end{table*}
@@ -64,15 +64,15 @@ Accordingly, the main claim is not a head-to-head claim against complete SkyOrbs
 \section{Training and Scale Transfer Evidence}
 
 Fig.~\ref{fig:supp_training} reports the empirical reward and score trajectories of the shared-parameter policy-search run used to select the candidate learned policy.
-The horizontal axis is the candidate evaluation index: each point is a complete candidate-policy episode evaluation under the CEM-style search.
-The curves are not used as a proof of convergence, and they should not be read as per-step MARL reward curves.
+The horizontal axis is cumulative training environment steps, measured in simulated discovery slots consumed by the CEM-style policy search.
+Each point is a complete candidate-policy evaluation, so the curves are not used as a proof of convergence and should not be read as per-gradient MARL reward curves.
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_reward_curve.png}
   \hfill
-  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_score_trajectory.png}
-  \caption{Candidate-evaluation history for the selected shared-parameter policy-search run. Left: episode reward. Right: selection score. These single-run curves document the CEM search trace only; they are not per-step MARL convergence curves.}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_score_curve.png}
+  \caption{Step-indexed training history for the selected shared-parameter policy-search run. Left: episode reward. Right: selection score. These single-run curves document the CEM search trace against cumulative environment steps; they are not per-gradient MARL convergence curves.}
   \label{fig:supp_training}
 \end{figure*}
 \clearpage

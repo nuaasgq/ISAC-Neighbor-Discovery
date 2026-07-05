@@ -292,15 +292,15 @@ Table~\ref{tab:settings} summarizes the main information boundary and evaluation
 
 \section{Results and Discussion}
 \subsection{Training-Score Evolution}
-Fig.~\ref{fig:training_reward} reports the candidate-evaluation reward trajectory during the small-scale shared-policy search.
-Each point is one full candidate-policy episode evaluation in the CEM-style search, not a per-step reward sample from a gradient-based MARL run.
+Fig.~\ref{fig:training_reward} reports the training reward trajectory against cumulative environment steps during the small-scale shared-policy search.
+The x-axis is the cumulative number of simulated discovery slots consumed during training; each point is still one full candidate-policy evaluation in the CEM-style search, not a gradient update from a neural MARL run.
 The supplement also reports the selection-score and discovery-rate trajectories during policy search.
 The curve is used as training-trace evidence for the selected search run, not as a theoretical convergence guarantee.
 
 \begin{figure}[!t]
   \centering
-  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png}
-  \caption{Candidate-evaluation reward trajectory for the small-scale shared-policy optimization. The corresponding selection-score trajectory is reported in the supplement.}
+  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_reward_curve.png}
+  \caption{Step-indexed reward trajectory for the small-scale shared-policy optimization. The corresponding selection-score trajectory is reported in the supplement.}
   \label{fig:training_reward}
 \end{figure}
 

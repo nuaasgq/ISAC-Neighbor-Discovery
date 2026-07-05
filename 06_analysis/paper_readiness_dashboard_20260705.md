@@ -35,7 +35,7 @@ Use the existing main draft selection:
 - System model: `06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png`
 - Protocol mechanism: `06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png`
 - Shared-policy architecture: `06_analysis/paper_figures/concept/policy_architecture_shared_agent.png`
-- Training-score evolution: `06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png`
+- Training-score evolution: `06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_reward_curve.png`
 - N=100 transfer: `06_analysis/paper_figures/round3_n100_transfer/density_beamwidth_discovery_rate_n100.png`
 - Area-scale check: `06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_lambda2.png`
 - Mobility boundary: `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png`
