@@ -9,8 +9,10 @@
 - Training setting: `N=10`, `B=10 deg`, `300 slots/episode`, `100 episodes`
 - Seeds: `20260731`, `20260732`, `20260733`
 
-This is the true-MARL counterpart for the five-class comparison. It is not a
-rule proxy or CEM-tuned policy.
+This is a true-MARL no-ISAC counterpart, not a rule proxy or CEM-tuned policy.
+However, it was produced before the strict no-ISAC simulator patch that prevents
+explicit `sense` actions from updating occupancy belief. Treat it as a
+pre-strict conservative reference, not the final five-class paper result.
 
 ## Artifacts
 
@@ -53,9 +55,10 @@ for every possible no-ISAC algorithm.
 
 ## Paper Use
 
-- Use as the training-side evidence for the "improved RL without ISAC" baseline.
-- Pair with the Phase-8 five-way evaluation campaign before making endpoint
-  comparison claims at `N=100`.
+- Use as pre-strict training-side evidence that no-ISAC MARL is already weak
+  even under a looser information boundary.
+- Replace with `phase7_contention_no_isac_strict_100ep_3seed` before making
+  final five-class endpoint claims at `N=100`.
 - In figures, prefer:
   - `marl_episode_discovery_curve.png`
   - `marl_episode_lambda2_curve.png`
