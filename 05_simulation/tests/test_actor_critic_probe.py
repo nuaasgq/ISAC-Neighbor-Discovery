@@ -9,6 +9,7 @@ import pytest
 
 from isac_nd_sim.config import load_config
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
+from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic
 
 
@@ -82,6 +83,31 @@ def test_shared_actor_critic_rule_residual_can_force_candidate_action() -> None:
 
     assert step.actions[0].mode == "tx"
     assert step.actions[0].beam == target_beam
+
+
+def test_scalegraph_beam_actor_critic_candidate_mask_samples_valid_actions() -> None:
+    pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=123)
+    policy = ScaleGraphBeamActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_topology_deficit=True,
+    )
+
+    step = policy.act(observations)
+
+    assert len(step.actions) == cfg.n_nodes
+    assert step.log_probs.shape == (cfg.n_nodes,)
+    assert step.values.shape == (cfg.n_nodes,)
+    for observation, action in zip(observations, step.actions, strict=True):
+        assert action.mode in env.modes
+        assert 0 <= action.beam < cfg.n_beams
+        if action.mode != "idle":
+            assert observation["candidate_mask"][action.beam] > 0.5
 
 
 def test_actor_critic_probe_writes_history(tmp_path: Path) -> None:
@@ -168,6 +194,7 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
             config=str(ROOT / "05_simulation" / "configs" / "mvp.yaml"),
             output=str(output),
             algorithm="isac_mappo",
+            network="shared",
             episodes=1,
             slots=2,
             eval_episodes=1,

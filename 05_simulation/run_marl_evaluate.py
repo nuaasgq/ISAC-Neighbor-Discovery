@@ -18,6 +18,7 @@ if str(SRC) not in sys.path:
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
+from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 
 
@@ -72,7 +73,9 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
             "rule_residual": True,
         }
     hidden_dim = int(train_args.get("hidden_dim", 128))
-    policy = SharedBeamActorCritic(
+    train_network = str(train_args.get("network", "shared"))
+    policy = build_policy(
+        train_network,
         cfg.n_beams,
         hidden_dim=hidden_dim,
         device="cpu",
@@ -95,6 +98,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "scope": "marl_transfer_evaluation",
         "checkpoint": str(args.checkpoint),
         "train_algorithm": str(train_args.get("algorithm", checkpoint.get("algorithm", "unknown"))),
+        "train_network": train_network,
         "config": str(args.config),
         "output": str(args.output),
         "eval_episodes": int(args.eval_episodes),
@@ -122,6 +126,14 @@ def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
         return torch_module.load(path, map_location="cpu", weights_only=False)
     except TypeError:
         return torch_module.load(path, map_location="cpu")
+
+
+def build_policy(network: str, *args: Any, **kwargs: Any) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic:
+    if str(network) == "shared":
+        return SharedBeamActorCritic(*args, **kwargs)
+    if str(network) == "scalegraph_beam":
+        return ScaleGraphBeamActorCritic(*args, **kwargs)
+    raise ValueError(f"Unsupported network in checkpoint: {network}")
 
 
 def override_config(config: SimulationConfig, args: argparse.Namespace) -> SimulationConfig:

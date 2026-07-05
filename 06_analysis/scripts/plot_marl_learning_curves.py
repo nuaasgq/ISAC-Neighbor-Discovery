@@ -93,7 +93,14 @@ def load_runs(run_dirs: list[Path], pd):
             continue
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         run_name = run_dir.name
-        manifests.append({"run": run_name, "path": str(manifest_path), "algorithm": manifest.get("algorithm")})
+        manifests.append(
+            {
+                "run": run_name,
+                "path": str(manifest_path),
+                "algorithm": manifest.get("algorithm"),
+                "network": manifest.get("network", "shared"),
+            }
+        )
         step_frames.append(load_csv(run_dir / "step_rewards.csv", pd, run_name, manifest))
         episode_frames.append(load_csv(run_dir / "episode_metrics.csv", pd, run_name, manifest))
         eval_frames.append(load_csv(run_dir / "eval_episode_metrics.csv", pd, run_name, manifest))
@@ -113,6 +120,7 @@ def load_csv(path: Path, pd, run_name: str, manifest: dict):
     frame = pd.read_csv(path)
     frame["run"] = run_name
     frame["algorithm"] = frame.get("algorithm", manifest.get("algorithm", "unknown"))
+    frame["network"] = manifest.get("network", "shared")
     frame["env_protocol"] = frame.get("env_protocol", manifest.get("env_protocol", "unknown"))
     frame["node_count"] = manifest.get("node_count", "")
     frame["beam_count"] = manifest.get("beam_count", "")

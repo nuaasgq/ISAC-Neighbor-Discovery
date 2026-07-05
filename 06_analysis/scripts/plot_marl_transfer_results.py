@@ -93,6 +93,7 @@ def load_eval_rows(run_dirs: list[Path], pd):
         frame = pd.read_csv(data_path)
         frame["run"] = run_dir.name
         frame["train_algorithm"] = str(manifest.get("train_algorithm", "unknown"))
+        frame["train_network"] = str(manifest.get("train_network", "shared"))
         frame["env_protocol"] = str(manifest.get("env_protocol", "unknown"))
         frame["node_count"] = int(manifest.get("node_count", 0))
         frame["beam_count"] = int(manifest.get("beam_count", 0))
@@ -111,6 +112,7 @@ def load_eval_rows(run_dirs: list[Path], pd):
 def summarize(rows, pd):
     group_keys = [
         "train_algorithm",
+        "train_network",
         "env_protocol",
         "phase",
         "node_count",
@@ -131,7 +133,7 @@ def summarize(rows, pd):
             record[f"{metric}_std"] = float(values.std(ddof=1)) if len(values) > 1 else 0.0
             record[f"{metric}_ci95"] = 1.96 * record[f"{metric}_std"] / (len(values) ** 0.5) if len(values) > 1 else 0.0
         records.append(record)
-    return pd.DataFrame(records).sort_values(["phase", "node_count", "beamwidth_deg", "train_algorithm"])
+    return pd.DataFrame(records).sort_values(["phase", "node_count", "beamwidth_deg", "train_algorithm", "train_network"])
 
 
 def setup_matplotlib():
@@ -178,9 +180,11 @@ def plot_node_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
     subset = summary[summary["phase"].astype(str).str.endswith("stochastic")].copy()
     if subset.empty:
         subset = summary
-    for (algorithm, beamwidth, slots), group in subset.groupby(["train_algorithm", "beamwidth_deg", "slots_per_episode"]):
+    for (algorithm, network, beamwidth, slots), group in subset.groupby(
+        ["train_algorithm", "train_network", "beamwidth_deg", "slots_per_episode"]
+    ):
         group = group.sort_values("node_count")
-        label = f"{algorithm}, {beamwidth:g} deg, {slots:g} slots"
+        label = f"{method_label(algorithm, network)}, {beamwidth:g} deg, {slots:g} slots"
         ax.errorbar(
             group["node_count"],
             group[metric],
@@ -189,6 +193,7 @@ def plot_node_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
             capsize=3,
             label=label,
             color=COLORS.get(str(algorithm), COLORS["unknown"]),
+            linestyle=line_style(network),
         )
     ax.set_xlabel("Number of UAVs")
     ax.set_ylabel(ylabel)
@@ -204,9 +209,11 @@ def plot_beam_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
     subset = summary[summary["phase"].astype(str).str.endswith("stochastic")].copy()
     if subset.empty:
         subset = summary
-    for (algorithm, node_count, slots), group in subset.groupby(["train_algorithm", "node_count", "slots_per_episode"]):
+    for (algorithm, network, node_count, slots), group in subset.groupby(
+        ["train_algorithm", "train_network", "node_count", "slots_per_episode"]
+    ):
         group = group.sort_values("beamwidth_deg")
-        label = f"{algorithm}, N={node_count:g}, {slots:g} slots"
+        label = f"{method_label(algorithm, network)}, N={node_count:g}, {slots:g} slots"
         ax.errorbar(
             group["beamwidth_deg"],
             group[metric],
@@ -215,6 +222,7 @@ def plot_beam_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
             capsize=3,
             label=label,
             color=COLORS.get(str(algorithm), COLORS["unknown"]),
+            linestyle=line_style(network),
         )
     ax.set_xlabel("Beamwidth (deg)")
     ax.set_ylabel(ylabel)
@@ -223,6 +231,18 @@ def plot_beam_curve(summary, metric: str, ci_metric: str, ylabel: str, path: Pat
     fig.savefig(path)
     plt.close(fig)
     return {"path": str(path), "type": "beam_transfer_curve", "metric": metric}
+
+
+def method_label(algorithm: object, network: object) -> str:
+    algorithm_text = str(algorithm)
+    network_text = str(network)
+    if network_text in {"", "shared", "nan"}:
+        return algorithm_text
+    return f"{algorithm_text}/{network_text}"
+
+
+def line_style(network: object) -> str:
+    return "--" if str(network) not in {"", "shared", "nan"} else "-"
 
 
 def write_readme(output_dir: Path, manifest: dict, summary) -> None:

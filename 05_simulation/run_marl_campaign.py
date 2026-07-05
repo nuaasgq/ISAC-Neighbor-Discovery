@@ -35,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--beamwidths", type=int, nargs="+", default=[5, 10, 15, 30])
     parser.add_argument("--include-n100", action="store_true", help="Also evaluate N=100 transfer cases.")
     parser.add_argument("--algorithms", nargs="+", default=["isac_mappo", "mappo"])
+    parser.add_argument("--network", choices=["shared", "scalegraph_beam"], default="shared")
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--ppo-epochs", type=int, default=2)
@@ -73,7 +74,8 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
     commands = []
     train_runs = {}
     for algorithm in args.algorithms:
-        run_name = f"train_n10_b10_{algorithm}_{args.train_slots}slot"
+        network_suffix = "" if str(args.network) == "shared" else f"_{args.network}"
+        run_name = f"train_n10_b10_{algorithm}{network_suffix}_{args.train_slots}slot"
         output = output_root / "train" / run_name
         command = [
             sys.executable,
@@ -84,6 +86,8 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
             str(output),
             "--algorithm",
             algorithm,
+            "--network",
+            str(args.network),
             "--episodes",
             str(args.train_episodes),
             "--slots",
@@ -121,7 +125,9 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
             for n_nodes in node_counts:
                 for beamwidth in args.beamwidths:
                     azimuth, elevation = beam_cells(beamwidth)
-                    eval_name = f"{algorithm}_train_n10_b10_test_n{n_nodes}_b{beamwidth}_{eval_slots}slot"
+                    eval_name = (
+                        f"{algorithm}{network_suffix}_train_n10_b10_test_n{n_nodes}_b{beamwidth}_{eval_slots}slot"
+                    )
                     output = output_root / "eval" / eval_name
                     command = [
                         sys.executable,
@@ -165,6 +171,7 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
         "node_counts": node_counts,
         "beamwidths": list(args.beamwidths),
         "algorithms": list(args.algorithms),
+        "network": str(args.network),
         "commands": commands,
     }
 
