@@ -23,6 +23,9 @@ class TrainMethod:
     network: str
     reward_version: str
     description: str
+    disable_isac_features: bool = False
+    env_protocol: str | None = None
+    topology_deficit: bool = False
 
 
 METHODS = {
@@ -46,6 +49,16 @@ METHODS = {
         network="contention_shared",
         reward_version="collision_topology",
         description="Contention-aware shared ISAC-MAPPO actor.",
+    ),
+    "contention_no_isac": TrainMethod(
+        name="contention_no_isac",
+        algorithm="mappo",
+        network="contention_shared",
+        reward_version="collision_topology",
+        description="Contention-aware shared MAPPO actor without ISAC-derived features.",
+        disable_isac_features=True,
+        env_protocol="structured_marl_no_isac",
+        topology_deficit=True,
     ),
 }
 
@@ -205,6 +218,12 @@ def build_plan(args: argparse.Namespace, train_root: Path, log_root: Path) -> di
                 "--seed",
                 str(seed),
             ]
+            if method.disable_isac_features:
+                command.append("--disable-isac-features")
+            if method.env_protocol:
+                command.extend(["--env-protocol", method.env_protocol])
+            if method.topology_deficit:
+                command.append("--topology-deficit")
             runs.append(
                 {
                     "run_name": run_name,
@@ -250,6 +269,10 @@ def complete_training_run(output: Path, expected_episodes: int, expected_slots: 
     if str(manifest.get("network", "")) != method.network:
         return False
     if str(manifest.get("reward_version", "")) != method.reward_version:
+        return False
+    if method.env_protocol and str(manifest.get("env_protocol", "")) != method.env_protocol:
+        return False
+    if bool((manifest.get("args") or {}).get("disable_isac_features", False)) != bool(method.disable_isac_features):
         return False
     return csv_rows(output / "episode_metrics.csv") >= expected_episodes
 
