@@ -15,10 +15,16 @@ This file is the active rule for the rebuilt MARL + ISAC experiment line.
   - beamwidth `10 deg`
   - `300 slots` per episode
   - slot duration `5 ms`
+- Training configs and commands must keep `300 slots` as the default episode length.
+  Do not extend MARL training episodes to `1200` or `3000` slots unless a separate
+  ablation is explicitly marked as long-horizon training.
 - Long horizons are evaluation-only:
   - `300 slots`
   - `1200 slots`
   - `3000 slots`
+- Treat older `600-slot` figures as historical or supplementary stress-window
+  evidence only. New MARL transfer claims should be based on the 300-slot-trained
+  policies evaluated at the declared test horizons above.
 
 ## Transfer Tests
 

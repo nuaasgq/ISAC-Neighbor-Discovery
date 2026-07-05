@@ -2,7 +2,7 @@ experiment:
   name: "paper_transfer_train_n10_b10_singlehop"
   seed: 20260704
   episodes: 4
-  slots_per_episode: 1200
+  slots_per_episode: 300
   slot_metric_period: 1
   slot_duration_ms: 5
 
