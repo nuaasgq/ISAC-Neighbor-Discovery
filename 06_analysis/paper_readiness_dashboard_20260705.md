@@ -47,6 +47,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 - `python -m pytest 05_simulation\tests`: 27 passed.
 - `06_analysis/paper_figures`: 358 PNG figures, all checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
+- One-page submission pitch: `06_analysis/submission_pitch_one_page_20260705.md`.
 
 ## Literature Boundary Notes
 
