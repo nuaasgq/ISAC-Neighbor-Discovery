@@ -29,7 +29,7 @@ This paper studies a distributed-execution UAV-UAV setting in which nodes share 
 We abstract integrated sensing and communication (ISAC) as a link-layer beam-cell occupancy prior, rather than as an oracle position estimator, and propose \method{}, an ISAC-assisted topology-aware protocol that uses sensing feedback to suppress empty beam cells, preserve exploration under sensing errors, and prioritize candidate beams for nodes with local discovered-degree deficits.
 We further develop \learnedmethod{}, a black-box shared-parameter protocol-tuning variant trained at a small scale and tested for transfer to larger swarms and different beamwidths within the evaluated single-hop, finite-horizon regimes, mainly in 10--30 degree beams while treating 3--5 degree beams as stress cases.
 Simulation results in the tested dynamic UAV scenarios indicate that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learned-policy baselines.
-For example, in the $N=100$, 10-degree, density-scaled setting, the proposed policy achieves a finite-time discovery rate of 0.3655 while the implemented communication-only baselines remain near zero under the same 600-slot horizon.
+For example, in the $N=100$, 10-degree, density-scaled ten-seed baseline check, the proposed policy achieves a finite-time discovery rate of 0.3652 while the implemented communication-only baselines remain near zero under the same 600-slot horizon.
 Additional robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, angular-cell errors, mechanism ablations, collision-penalized discovery, and diagnostic radio-state energy accounting.
 \end{abstract}
 
@@ -335,7 +335,7 @@ Fixed-area scaling gives a similar trend, indicating that the conclusion is not 
 Figs.~\ref{fig:n100_transfer_density} and \ref{fig:n100_area_scale} visualize these transfer trends.
 Table~\ref{tab:n100_baseline} further isolates the main comparison at $N=100$ and 10-degree beams.
 In this narrow-beam large-swarm setting, the implemented communication-only baselines, including a deterministic SkyOrbs-like 3-D skip-scan reference that should not be interpreted as a full SkyOrbs reproduction, spend most trials on empty cells under our information boundary and simulation assumptions.
-The ISAC-assisted policy forms a connected discovered-neighbor graph with a finite-time discovery rate of 0.3655 in the same finite horizon.
+The ISAC-assisted policy forms a connected discovered-neighbor graph with a finite-time discovery rate of 0.3652 in the same finite horizon.
 A strict head-to-head comparison with the complete SkyOrbs protocol is left as future work because SkyOrbs uses protocol assumptions and scan-schedule details that are not fully reproduced here.
 
 \begin{table}[!t]
@@ -362,7 +362,7 @@ A strict head-to-head comparison with the complete SkyOrbs protocol is left as f
 
 \begin{table}[!t]
   \centering
-  \caption{N=100 Baseline Comparison at 10-Degree Beams (Mean over Three Seeds; Std./CI in Supplement)}
+  \caption{N=100 Baseline Comparison at 10-Degree Beams (Mean over Ten Seeds)}
   \label{tab:n100_baseline}
   \tiny
   \setlength{\tabcolsep}{3pt}
@@ -370,11 +370,11 @@ A strict head-to-head comparison with the complete SkyOrbs protocol is left as f
     \toprule
     Protocol & Disc. & Empty & $\lambda_2$ & Delay \\
     \midrule
-    Uniform random & 0.0005 & 0.9015 & 0.0000 & 599.90 \\
-    SkyOrbs-like skip-scan & 0.0007 & 0.9020 & 0.0000 & 599.79 \\
-    Learned no-ISAC & 0.0006 & 0.9012 & 0.0000 & 599.78 \\
-    Enhanced no-ISAC & 0.0007 & 0.9011 & 0.0000 & 599.78 \\
-    Enhanced ISAC & 0.3655 & 0.4986 & 12.9222 & 477.99 \\
+    Uniform random & 0.0005 & 0.9022 & 0.0000 & 599.86 \\
+    SkyOrbs-like skip-scan & 0.0007 & 0.9011 & 0.0000 & 599.78 \\
+    Learned no-ISAC & 0.0007 & 0.9014 & 0.0000 & 599.78 \\
+    Enhanced no-ISAC & 0.0006 & 0.9019 & 0.0000 & 599.82 \\
+    Enhanced ISAC & 0.3652 & 0.5001 & 13.2595 & 477.62 \\
     \bottomrule
   \end{tabular}
 \end{table}

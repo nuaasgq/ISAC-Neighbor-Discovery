@@ -20,7 +20,7 @@ Core claim:
 
 | Evidence item | Current result | Why it matters |
 |---|---:|---|
-| N=100, B=10, density-scaled main comparison | Proposed discovery 0.3655 vs enhanced no-ISAC 0.0007; lambda2 12.92 vs 0 | Establishes the core empty-beam pruning value of ISAC under large narrow-beam search. |
+| N=100, B=10, density-scaled main comparison | Round14 ten-seed proposed discovery 0.3652 vs enhanced no-ISAC 0.0006; lambda2 13.2595 vs 0; 10/10 positive paired discovery deltas versus all four communication-only controls | Establishes the core empty-beam pruning value of ISAC under large narrow-beam search. |
 | N=100, B=15, density-scaled transfer | Proposed discovery 0.5440; lambda2 26.84 | Shows the mechanism is not a single B=10 artifact, while collision caveats remain. |
 | Paired delta, N=100/B=10 | Discovery delta +0.3648, empty-scan delta -0.4025, lambda2 delta +12.92, all 3/3 paired seeds positive for discovery/lambda2 | Gives seed-matched stability evidence beyond simple mean tables. |
 | Candidate-set ablation | Removing candidate-set refinement drops discovery from 0.3655 to 0.0313 | Identifies the actual ISAC mechanism rather than attributing gains to generic learning. |

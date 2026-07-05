@@ -1,0 +1,65 @@
+{
+  "created_at": "2026-07-05T09:58:22",
+  "name": "round14_main_table_10seed_n100_b10",
+  "config": "05_simulation\\configs\\paper_transfer_train_n10_b10_singlehop.yaml",
+  "trained_config": "06_analysis\\paper_tables\\round2_transfer\\training\\best_config.yaml",
+  "protocols": [
+    "uniform_random",
+    "skyorbs_like_skip_scan",
+    "rl_no_isac",
+    "improved_rl_no_isac",
+    "improved_rl_isac"
+  ],
+  "node_counts": [
+    100
+  ],
+  "beamwidth_degs": [
+    10.0
+  ],
+  "mobilities": [
+    "gauss_markov"
+  ],
+  "seeds": [
+    20290704,
+    20291713,
+    20292722,
+    20293731,
+    20294740,
+    20295749,
+    20296758,
+    20297767,
+    20298776,
+    20299785
+  ],
+  "communication_range_ratios": [
+    null
+  ],
+  "sensing_to_comm_ratios": [
+    null
+  ],
+  "slot_duration_ms_values": [
+    null
+  ],
+  "false_alarm_rates": [
+    null
+  ],
+  "miss_detection_rates": [
+    null
+  ],
+  "angular_cell_offsets": [
+    null
+  ],
+  "isac_error_profiles": null,
+  "episodes_per_seed": 1,
+  "slots": 600,
+  "slot_metric_period": 0,
+  "area_scale": "density",
+  "range_mode": "singlehop",
+  "train_node_count": 10,
+  "train_beamwidth_deg": 10.0,
+  "case_count": 10,
+  "episode_rows": 50,
+  "slot_rows": 0,
+  "edge_rows": 18198,
+  "aggregate_rows": 5
+}

@@ -15,7 +15,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Claim | Primary artifacts | Current status |
 |---|---|---|
 | ISAC candidate-beam refinement is the largest observed contributor at the main `N=100`, 10-degree operating point. | `06_analysis/paper_tables/round3_robustness/ablation/aggregate_metrics.csv`, `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | Strong but operating-point-specific main claim. |
-| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round3_robustness/n100_density_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong main comparison, with SkyOrbs-like non-reproduction caveat. |
+| Proposed ISAC policy shows observed improvement over random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC baselines at `N=100`, 10 degrees. | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/`, `Table~\ref{tab:n100_baseline}` in `07_paper/ieee_twc_isac_nd/main.tex` | Strong ten-seed main comparison, with SkyOrbs-like non-reproduction caveat. |
 | Small-scale training transfers to `N=100` for 10--30 degree beams in tested regimes. | `06_analysis/paper_tables/round3_robustness/n100_*_multiseed/aggregate_metrics.csv`, `Table~\ref{tab:n100_transfer}` | Strong but bounded; 3/5 degrees remain stress regimes. |
 | Collision-aware metrics change the preferred beamwidth. | `06_analysis/paper_tables/round7_scale_beam_grid_light/aggregate_metrics.csv` | Supplementary but important for reviewer discussion. |
 | Moderate ISAC errors degrade but do not collapse the gain. | `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`, `06_analysis/paper_tables/round7_error_profiles_light/aggregate_metrics.csv` | Strong bounded robustness claim. |
@@ -49,6 +49,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 - `python -m pytest 05_simulation\tests`: 29 passed.
 - `06_analysis/paper_figures`: archived paper-figure pool with the selected manuscript and supplement figures checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
+- Round14 ten-seed main-table stability check: `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/`.
 - Round11 paired-seed campaign: `06_analysis/paper_tables/round11_paired_seed_campaign_main/`.
 - Round13 collision-aware MAC/energy probe: `06_analysis/paper_tables/round13_collision_energy_10seed/`.
 - One-page submission pitch: `06_analysis/submission_pitch_one_page_20260705.md`.

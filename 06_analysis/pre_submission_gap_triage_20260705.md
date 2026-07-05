@@ -10,7 +10,7 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 |---|---|---|
 | Cross-layer problem positioning | Main manuscript models ISAC as an imperfect link-layer occupancy prior, not a PHY oracle. | Use as the central TWC/TCOM angle. |
 | Main protocol mechanism | Candidate-set removal drops N=100/B=10 discovery from 0.3655 to 0.0313. | Claim candidate-beam refinement is the dominant observed mechanism at the main operating point. |
-| Main baseline comparison | N=100/B=10 proposed discovery 0.3655 and lambda2 12.9222; random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC stay near zero. | Keep as the main table. |
+| Main baseline comparison | Round14 ten-seed N=100/B=10 proposed discovery 0.3652 and lambda2 13.2595; random, SkyOrbs-like, learned no-ISAC, and enhanced no-ISAC stay near zero, with 10/10 positive paired discovery deltas versus all four controls. | Keep as the main table. |
 | N=10 to N=100 transfer | Tested under density and fixed-area scaling, with strongest behavior for 10--30 degree beams. | Claim bounded zero-shot transfer, not universal scalability. |
 | Range, slot, and sensing-error sensitivity | Rc/D, Rs/Rc, 1--20 ms slots, false alarms, misses, and angular errors are covered. | Use to defend modeling assumptions and moderate-error robustness. |
 | Collision-aware refinement | Round13 ten-seed probe improves collision-penalized discovery and assumed discoveries per joule at B=10/B=15. | Keep mostly in supplement; main text gets a one-sentence boundary mitigation. |
@@ -30,11 +30,10 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 
 | Priority | Experiment or artifact | Rationale | Suggested scope |
 |---:|---|---|---|
-| P1 | More seeds for the main N=100/B=10 and B=15 comparison | Round11/round13 strengthen focused blocks, but the main table is still n=3. | 10 paired seeds for the exact five-protocol main table. |
-| P2 | Strict SkyOrbs reproduction or deeper baseline appendix | The current baseline is SkyOrbs-like only. | Either implement the missing original details or write a precise non-reproduction appendix. |
-| P3 | Platform-calibrated radio-state power sensitivity | Energy accounting uses assumed powers. | Add a small sensitivity grid over plausible TX/RX/sensing/idle powers; do not change the main claim. |
-| P4 | PHY-to-ISAC parameter mapping | TWC/TCOM reviewers may ask how false alarm/miss/angular-error settings map to sensing SNR or detector design. | Add a short analytical mapping or cite-based parameter table, not a full waveform design. |
-| P5 | Collision-aware MAC extension | Round13 role control mitigates but does not solve collision-heavy regimes. | Extend role control to 30-degree and high-density settings if the paper is pushed toward MAC. |
+| P1 | Strict SkyOrbs reproduction or deeper baseline appendix | The current baseline is SkyOrbs-like only. | Either implement the missing original details or write a precise non-reproduction appendix. |
+| P2 | Platform-calibrated radio-state power sensitivity | Energy accounting uses assumed powers. | Add a small sensitivity grid over plausible TX/RX/sensing/idle powers; do not change the main claim. |
+| P3 | PHY-to-ISAC parameter mapping | TWC/TCOM reviewers may ask how false alarm/miss/angular-error settings map to sensing SNR or detector design. | Add a short analytical mapping or cite-based parameter table, not a full waveform design. |
+| P4 | Collision-aware MAC extension | Round13 role control mitigates but does not solve collision-heavy regimes. | Extend role control to 30-degree and high-density settings if the paper is pushed toward MAC. |
 
 ## Do Not Prioritize Now
 
@@ -47,4 +46,4 @@ This triage decides what is already sufficient for a bounded IEEE TWC/TCOM-style
 ## Submission Framing
 
 The current package is strong enough for an internal TWC/TCOM-style draft and advisor review.
-For external submission, the safest next evidence upgrade is not a new mechanism; it is a 10-seed main-table confirmation plus a precise baseline-scope appendix.
+For external submission, the safest next evidence upgrade is now a precise baseline-scope appendix or PHY-to-ISAC parameter mapping; the 10-seed main-table confirmation is complete in round14.

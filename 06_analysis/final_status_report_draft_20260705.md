@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, and supplement-procedure updates.
+- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, supplement-procedure, and round14 ten-seed main-table updates.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean
 
@@ -37,6 +37,8 @@ python -m py_compile 05_simulation\run_actor_critic_imitation_probe.py `
 python 06_analysis\scripts\plot_round11_stability.py
 python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round13_collision_energy_10seed --node-counts 100 --beamwidth-degs 10,15 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 600 --slot-metric-period 1 --area-scale density --range-mode singlehop --protocols uniform_random,improved_rl_no_isac,ablation_isac_one_slot_delay,improved_rl_isac,collision_aware_isac --train-node-count 10 --train-beamwidth-deg 10 --name round13_collision_energy_10seed
 python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulation\results_raw\round13_collision_energy_10seed --output 06_analysis\paper_tables\round13_collision_energy_10seed --figures 06_analysis\paper_figures\round13_collision_energy_10seed --tag round13
+python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --node-counts 100 --beamwidth-degs 10 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 600 --slot-metric-period 0 --area-scale density --range-mode singlehop --protocols uniform_random,skyorbs_like_skip_scan,rl_no_isac,improved_rl_no_isac,improved_rl_isac --train-node-count 10 --train-beamwidth-deg 10 --name round14_main_table_10seed_n100_b10
+python 06_analysis\scripts\analyze_round14_main_table.py --source 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --output 06_analysis\paper_tables\round14_main_table_10seed_n100_b10 --figures 06_analysis\paper_figures\round14_main_table_10seed_n100_b10
 pdflatex -interaction=nonstopmode main.tex
 bibtex main
 pdflatex -interaction=nonstopmode main.tex
@@ -50,16 +52,16 @@ Results:
 - Unit tests: 29 passed.
 - Main PDF pages: 8.
 - Supplement PDF pages: 10.
-- Selected pre-11, round11, and round13 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures.
+- Selected pre-11, round11, round13, and round14 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures and round14 contributes 1 current main-table stability figure.
 - Referenced figures in `main.tex` and `supplement.tex`: all present on disk.
 
 ## Main Evidence
 
 | Evidence | Result |
 |---|---:|
-| N=100/B=10 main proposed discovery | 0.3655 |
-| N=100/B=10 enhanced no-ISAC discovery | 0.0007 |
-| N=100/B=10 proposed lambda2 | 12.9222 |
+| N=100/B=10 main proposed discovery | 0.3652 |
+| N=100/B=10 enhanced no-ISAC discovery | 0.0006 |
+| N=100/B=10 proposed lambda2 | 13.2595 |
 | Candidate-set removal discovery | 0.0313 |
 | One-slot delayed ISAC discovery | 0.2989 |
 | N=100/B=15 proposed discovery | 0.5440 |
@@ -68,7 +70,7 @@ Results:
 
 Paired deltas:
 
-- Main N=100/B=10 proposed vs enhanced no-ISAC: discovery +0.3648, empty scan -0.4025, lambda2 +12.92.
+- Round14 main N=100/B=10 proposed vs enhanced no-ISAC: discovery +0.3646, empty scan -0.4018, lambda2 +13.26, with 10/10 positive paired discovery deltas.
 - Main N=100/B=15 proposed vs enhanced no-ISAC: discovery +0.5403, empty scan -0.5052, lambda2 +26.84.
 - Candidate-set ablation: discovery +0.3341 vs removing candidate-set refinement.
 - One-slot delayed ISAC vs enhanced no-ISAC: discovery +0.2982.
@@ -134,6 +136,10 @@ Follow-up:
   - `06_analysis/paper_figures/round13_collision_energy_10seed`
   - `06_analysis/paper_tables/round13_collision_energy_10seed`
   - `06_analysis/scripts/plot_round12_collision_aware.py`
+- Round14 ten-seed main-table stability figures/tables:
+  - `06_analysis/paper_figures/round14_main_table_10seed_n100_b10`
+  - `06_analysis/paper_tables/round14_main_table_10seed_n100_b10`
+  - `06_analysis/scripts/analyze_round14_main_table.py`
 - Round13 paper-writing route:
   - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
 - Pre-submission gap triage:

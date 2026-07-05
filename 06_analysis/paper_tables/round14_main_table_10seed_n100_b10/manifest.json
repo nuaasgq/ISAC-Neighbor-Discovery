@@ -1,0 +1,24 @@
+{
+  "source": "05_simulation\\results_raw\\round14_main_table_10seed_n100_b10",
+  "output": "06_analysis\\paper_tables\\round14_main_table_10seed_n100_b10",
+  "figures": [
+    "06_analysis\\paper_figures\\round14_main_table_10seed_n100_b10\\round14_main_table_discovery_lambda2.png"
+  ],
+  "protocols": [
+    "uniform_random",
+    "skyorbs_like_skip_scan",
+    "rl_no_isac",
+    "improved_rl_no_isac",
+    "improved_rl_isac"
+  ],
+  "metrics": [
+    "discovery_rate",
+    "empty_scan_ratio",
+    "lambda2",
+    "mean_discovery_delay",
+    "collision_count",
+    "collision_penalized_discovery_rate",
+    "discoveries_per_joule",
+    "energy_per_discovery_censored_j"
+  ]
+}

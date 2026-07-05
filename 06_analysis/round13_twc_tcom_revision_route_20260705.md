@@ -25,7 +25,7 @@ Round13 should be used as reviewer-facing evidence that collision and assumed ra
    The handshake still creates the edge; sensing only changes beam-cell priority.
 
 3. Main N=100 baseline comparison:
-   At N=100 and 10-degree beams, the ISAC-assisted policy achieves discovery 0.3655 and lambda2 12.9222, while implemented communication-only baselines remain near zero.
+   In the round14 ten-seed N=100, 10-degree main-table check, the ISAC-assisted policy achieves discovery 0.3652 and lambda2 13.2595, while implemented communication-only baselines remain near zero.
    Keep the SkyOrbs baseline as "SkyOrbs-like".
 
 4. Transfer:
