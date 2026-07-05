@@ -1,0 +1,42 @@
+{
+  "created_at": "2026-07-06T02:11:25",
+  "legacy": "06_analysis\\paper_tables\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_legacy_shared\\marl_transfer_summary.csv",
+  "collision": "06_analysis\\paper_tables\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_collision_reward\\marl_transfer_summary.csv",
+  "contention": "06_analysis\\paper_tables\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_contention_actor\\marl_transfer_summary.csv",
+  "combined_summary": [],
+  "filters": {
+    "slots_per_episode": 3000,
+    "node_count": 100,
+    "phase": "eval_stochastic",
+    "beamwidths": [
+      10.0,
+      15.0,
+      30.0
+    ]
+  },
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison",
+  "rows": 9,
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison\\marl_method_comparison_discovery_rate.png",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison\\marl_method_comparison_collision_penalized_discovery_rate.png",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison\\marl_method_comparison_collision_count.png",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison\\marl_method_comparison_collisions_per_discovery_censored.png",
+      "metric": "collisions_per_discovery_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison\\marl_method_comparison_lambda2.png",
+      "metric": "lambda2_mean"
+    }
+  ]
+}

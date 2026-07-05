@@ -128,11 +128,11 @@ def main() -> None:
 
     plan = build_plan(args, output_root)
     (output_root / "final_eval_campaign_plan.json").write_text(
-        json.dumps(plan, ensure_ascii=False, indent=2),
+        json.dumps(plan, ensure_ascii=True, indent=2),
         encoding="utf-8",
     )
     if args.dry_run:
-        print(json.dumps(plan, ensure_ascii=False, indent=2))
+        print(json.dumps(plan, ensure_ascii=True, indent=2))
         return
 
     missing = [item for item in plan["missing_checkpoints"] if item["method"] in set(args.methods)]
@@ -158,7 +158,7 @@ def main() -> None:
                     "skipped_complete": len(plan["skipped_complete"]),
                     "aggregation_commands": len(plan["aggregation_commands"]),
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
                 indent=2,
             )
         )
@@ -361,7 +361,7 @@ def run_commands_serial(commands: list[list[str]], records_path: Path, args: arg
                 "returncode": returncode,
             }
         )
-        records_path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+        records_path.write_text(json.dumps(records, ensure_ascii=True, indent=2), encoding="utf-8")
         if returncode == "timeout":
             raise TimeoutError(f"Command timed out: {' '.join(command)}")
         if returncode != 0:
@@ -432,7 +432,10 @@ def run_commands_parallel(
                 "stderr": item["stderr"],
             }
             records.append(record)
-            records_path.write_text(json.dumps(sorted(records, key=lambda row: row["index"]), ensure_ascii=False, indent=2), encoding="utf-8")
+            records_path.write_text(
+                json.dumps(sorted(records, key=lambda row: row["index"]), ensure_ascii=True, indent=2),
+                encoding="utf-8",
+            )
             if returncode == "timeout":
                 terminate_running(still_running)
                 raise TimeoutError(f"Command timed out: {' '.join(item['command'])}")
