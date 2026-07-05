@@ -105,6 +105,7 @@ class ContentionGraphActorCritic:
         return tensors
 
     def _apply_residuals(self, tensors: dict, mode_logits, beam_logits):
+        mode_logits = mode_logits + self._contention_mode_prior(tensors)
         if self.use_rule_residual:
             if "rule_mode_logits" in tensors:
                 mode_logits = mode_logits + self.rule_residual_scale * tensors["rule_mode_logits"]
@@ -112,9 +113,30 @@ class ContentionGraphActorCritic:
                 # ISAC candidate confidence attracts access, while local
                 # collision pressure suppresses repeatedly colliding beams.
                 beam_logits = beam_logits + self.rule_residual_scale * (
-                    tensors["candidate_score"] - 0.50 * tensors["beam_collision_norm"]
+                    tensors["candidate_score"] - 0.85 * tensors["beam_collision_norm"]
                 )
         return mode_logits, beam_logits
+
+    def _contention_mode_prior(self, tensors: dict):
+        torch = self.torch
+        state = tensors["contention_state"]
+        topology_need = state[..., 1]
+        fail_pressure = state[..., 3]
+        collision_pressure = state[..., 4]
+        candidate_fraction = state[..., 6]
+        last_role_delta = state[..., 9]
+        prior = torch.zeros_like(tensors["rule_mode_logits"]) if "rule_mode_logits" in tensors else torch.zeros(
+            (*state.shape[:-1], len(MODE_NAMES)),
+            dtype=state.dtype,
+            device=state.device,
+        )
+        sparse_candidates = torch.clamp(1.0 - 8.0 * candidate_fraction, min=0.0, max=1.0)
+        contention = torch.clamp(0.65 * collision_pressure + 0.35 * fail_pressure, min=0.0, max=1.0)
+        prior[..., MODE_NAMES.index("sense")] = 0.20 * topology_need + 0.35 * sparse_candidates + 0.35 * contention
+        prior[..., MODE_NAMES.index("tx")] = 0.45 * topology_need - 0.95 * contention - 0.25 * torch.clamp(last_role_delta, min=0.0)
+        prior[..., MODE_NAMES.index("rx")] = 0.45 * topology_need - 0.70 * contention + 0.15 * torch.clamp(last_role_delta, min=0.0)
+        prior[..., MODE_NAMES.index("idle")] = 0.60 * contention - 0.35 * topology_need
+        return prior
 
     def act(self, observations: Sequence[dict], deterministic: bool = False) -> PolicyStep:
         torch = self.torch

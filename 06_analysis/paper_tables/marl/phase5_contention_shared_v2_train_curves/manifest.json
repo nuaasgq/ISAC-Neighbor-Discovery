@@ -1,0 +1,100 @@
+{
+  "created_at": "2026-07-05T19:47:11",
+  "input_root": "05_simulation/results_raw/marl_campaign/phase5_contention_shared_v2_train/train",
+  "run_dirs": [
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_train\\train\\train_n10_b10_isac_mappo_contention_shared_collision_topology_300slot"
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase5_contention_shared_v2_train_curves",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves",
+  "runs": 1,
+  "step_rows": 6000,
+  "episode_rows": 20,
+  "eval_rows": 30,
+  "resource_rows": 240,
+  "source_manifests": [
+    {
+      "run": "train_n10_b10_isac_mappo_contention_shared_collision_topology_300slot",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_train\\train\\train_n10_b10_isac_mappo_contention_shared_collision_topology_300slot\\manifest.json",
+      "algorithm": "isac_mappo",
+      "network": "contention_shared",
+      "reward_version": "collision_topology"
+    }
+  ],
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_step_reward_curve.png",
+      "type": "step_curve",
+      "metric": "reward_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_step_discovery_curve.png",
+      "type": "step_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_step_empty_scan_curve.png",
+      "type": "step_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_episode_return_curve.png",
+      "type": "episode_curve",
+      "metric": "episode_return_mean_per_agent"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_policy_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "policy_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_value_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "value_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_entropy_curve.png",
+      "type": "episode_curve",
+      "metric": "entropy"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_episode_discovery_curve.png",
+      "type": "episode_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_episode_lambda2_curve.png",
+      "type": "episode_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_episode_collision_curve.png",
+      "type": "episode_curve",
+      "metric": "collision_count"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_episode_empty_scan_curve.png",
+      "type": "episode_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_eval_discovery_curve.png",
+      "type": "eval_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_eval_lambda2_curve.png",
+      "type": "eval_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_resource_rss_curve.png",
+      "type": "resource_curve",
+      "metric": "rss_mb"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_train_curves\\marl_resource_memory_curve.png",
+      "type": "resource_curve",
+      "metric": "system_memory_percent"
+    }
+  ]
+}

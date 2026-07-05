@@ -1,0 +1,31 @@
+{
+  "created_at": "2026-07-05T19:48:25",
+  "legacy": "06_analysis/paper_tables/marl/phase3_n100_stress/marl_transfer_summary.csv",
+  "collision": "06_analysis/paper_tables/marl/phase4_shared_collision_transfer_probe/marl_transfer_summary.csv",
+  "contention": "06_analysis/paper_tables/marl/phase5_contention_shared_v2_transfer_probe/marl_transfer_summary.csv",
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase5_method_comparison",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase5_method_comparison",
+  "rows": 9,
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_method_comparison\\marl_method_comparison_discovery_rate.png",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_method_comparison\\marl_method_comparison_collision_penalized_discovery_rate.png",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_method_comparison\\marl_method_comparison_collision_count.png",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_method_comparison\\marl_method_comparison_collisions_per_discovery_censored.png",
+      "metric": "collisions_per_discovery_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_method_comparison\\marl_method_comparison_lambda2.png",
+      "metric": "lambda2_mean"
+    }
+  ]
+}

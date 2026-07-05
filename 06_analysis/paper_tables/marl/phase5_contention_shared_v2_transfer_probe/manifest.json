@@ -1,0 +1,148 @@
+{
+  "created_at": "2026-07-05T19:47:11",
+  "input_root": "05_simulation/results_raw/marl_campaign/phase5_contention_shared_v2_transfer_probe/eval",
+  "run_dirs": [
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_transfer_probe\\eval\\isac_mappo_contention_shared_v2_n100_b10_3000slot_1ep",
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_transfer_probe\\eval\\isac_mappo_contention_shared_v2_n100_b10_3000slot_3ep",
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_transfer_probe\\eval\\isac_mappo_contention_shared_v2_n100_b15_3000slot_1ep",
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_transfer_probe\\eval\\isac_mappo_contention_shared_v2_n100_b15_3000slot_3ep",
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_transfer_probe\\eval\\isac_mappo_contention_shared_v2_n100_b30_3000slot_1ep",
+    "05_simulation\\results_raw\\marl_campaign\\phase5_contention_shared_v2_transfer_probe\\eval\\isac_mappo_contention_shared_v2_n100_b30_3000slot_3ep"
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase5_contention_shared_v2_transfer_probe",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe",
+  "rows": 12,
+  "runs": 6,
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_discovery_rate.png",
+      "type": "node_transfer_curve",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_discovery_rate.png",
+      "type": "beam_transfer_curve",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_collision_penalized_discovery_rate.png",
+      "type": "node_transfer_curve",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_collision_penalized_discovery_rate.png",
+      "type": "beam_transfer_curve",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_mean_delay_censored.png",
+      "type": "node_transfer_curve",
+      "metric": "mean_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_mean_delay_censored.png",
+      "type": "beam_transfer_curve",
+      "metric": "mean_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_p95_delay_censored.png",
+      "type": "node_transfer_curve",
+      "metric": "p95_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_p95_delay_censored.png",
+      "type": "beam_transfer_curve",
+      "metric": "p95_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_empty_scan_ratio.png",
+      "type": "node_transfer_curve",
+      "metric": "empty_scan_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_empty_scan_ratio.png",
+      "type": "beam_transfer_curve",
+      "metric": "empty_scan_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_lambda2.png",
+      "type": "node_transfer_curve",
+      "metric": "lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_lambda2.png",
+      "type": "beam_transfer_curve",
+      "metric": "lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_largest_component_size.png",
+      "type": "node_transfer_curve",
+      "metric": "largest_component_size_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_largest_component_size.png",
+      "type": "beam_transfer_curve",
+      "metric": "largest_component_size_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_lcc_ratio.png",
+      "type": "node_transfer_curve",
+      "metric": "lcc_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_lcc_ratio.png",
+      "type": "beam_transfer_curve",
+      "metric": "lcc_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_isolated_node_ratio.png",
+      "type": "node_transfer_curve",
+      "metric": "isolated_node_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_isolated_node_ratio.png",
+      "type": "beam_transfer_curve",
+      "metric": "isolated_node_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_collision_count.png",
+      "type": "node_transfer_curve",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_collision_count.png",
+      "type": "beam_transfer_curve",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_collisions_per_discovery_censored.png",
+      "type": "node_transfer_curve",
+      "metric": "collisions_per_discovery_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_collisions_per_discovery_censored.png",
+      "type": "beam_transfer_curve",
+      "metric": "collisions_per_discovery_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_discoveries_per_1000_scan_actions.png",
+      "type": "node_transfer_curve",
+      "metric": "discoveries_per_1000_scan_actions_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_discoveries_per_1000_scan_actions.png",
+      "type": "beam_transfer_curve",
+      "metric": "discoveries_per_1000_scan_actions_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_node_discoveries_per_joule.png",
+      "type": "node_transfer_curve",
+      "metric": "discoveries_per_joule_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase5_contention_shared_v2_transfer_probe\\marl_transfer_beam_discoveries_per_joule.png",
+      "type": "beam_transfer_curve",
+      "metric": "discoveries_per_joule_mean"
+    }
+  ]
+}
