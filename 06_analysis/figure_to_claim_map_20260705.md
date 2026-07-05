@@ -46,3 +46,9 @@ This map records why each selected paper figure is in the manuscript package.
 | Round13 paired collision delta | `round13_collision_energy_10seed/round13_collision_penalized_delta.png` | Is the collision-aware gain seed-paired? Yes, collision-penalized delta is 10/10 positive versus proposed and one-slot delay at B=10 and B=15. |
 | Round13 radio-state accounting | `round13_collision_energy_10seed/round13_discoveries_per_joule.png`, `round13_energy_per_discovery.png` | Does the collision-aware role-control probe also improve assumed energy accounting? Yes, discoveries-per-joule delta is 10/10 positive under stated default radio-state powers, while not claiming platform-calibrated optimality. |
 | Round14 main-table stability | `round14_main_table_10seed_n100_b10/round14_main_table_discovery_lambda2.png` | Does the N=100/B=10 main comparison survive a ten-seed baseline check? Yes, the ISAC-assisted policy keeps discovery near 0.365 while four communication-only controls stay near zero, with 10/10 positive paired discovery deltas. |
+
+## Figure Integrity
+
+| Audit | File or source | Claim supported |
+|---|---|---|
+| LaTeX figure-reference audit | `paper_figure_integrity_audit_20260705.md`, `paper_figure_integrity_audit_20260705.csv` | The current main/supplement package references 47 figure instances, 44 unique existing files, no missing figures, and no 4:3 aspect-ratio violations. |

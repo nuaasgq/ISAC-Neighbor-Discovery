@@ -66,6 +66,6 @@ The supplement now carries the reviewer-facing evidence chain: coverage matrix, 
 ## Next High-Value Work
 
 1. Add a calibrated PHY-to-ISAC appendix only if reviewer-style checks still find the cite-backed mapping insufficient.
-2. Strengthen the method-name consistency around `ITAP-ND` and `L-ITAP-ND` in captions and figure legends.
+2. Keep method-name consistency around `I-TAP-ND` and `LE-I-TAP-ND` in captions and figure legends.
 3. Prepare a one-page response-style evidence map for likely reviewer questions: SkyOrbs, MARL naming, Rs/Rc, 3-degree beams, collisions, and single-hop scope.
 4. If time remains before 11:00, run one more compile/test check after any manuscript edits and commit the refreshed research records.
