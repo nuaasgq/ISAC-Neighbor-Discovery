@@ -54,5 +54,5 @@ Core claim:
 ## 11:00 Priority If More Work Is Available
 
 1. Run one final independent manuscript audit after the latest edits.
-2. Keep additional experiments narrow: calibrated energy assumptions, PHY-to-ISAC sensing-parameter mapping, or 10+ seed confirmation only, not a full Cartesian sweep.
+2. Keep additional experiments narrow: radio-state accounting sensitivity under stated default powers, platform-calibrated power study, PHY-to-ISAC sensing-parameter mapping, or 10+ seed confirmation only, not a full Cartesian sweep.
 3. Prepare the next-paper roadmap for real neural MARL: candidate-set-constrained action heads, graph/local-neighborhood encoders after discovery, and value-decomposition or actor-critic variants evaluated under the same transfer protocol.

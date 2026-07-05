@@ -30,7 +30,7 @@ We abstract integrated sensing and communication (ISAC) as a link-layer beam-cel
 We further develop \learnedmethod{}, a black-box shared-parameter protocol-tuning variant trained at a small scale and tested for transfer to larger swarms and different beamwidths within the evaluated single-hop, finite-horizon regimes, mainly in 10--30 degree beams while treating 3--5 degree beams as stress cases.
 Simulation results in the tested dynamic UAV scenarios indicate that the proposed ISAC-assisted policy reduces empty scans and improves finite-time discovery over random scanning and communication-only learned-policy baselines.
 For example, in the $N=100$, 10-degree, density-scaled setting, the proposed policy achieves a finite-time discovery rate of 0.3655 while the implemented communication-only baselines remain near zero under the same 600-slot horizon.
-Additional robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, angular-cell errors, and mechanism ablations.
+Additional robustness experiments evaluate the impact of communication-to-region range, sensing-to-communication range, false alarms, missed detections, angular-cell errors, mechanism ablations, collision-penalized discovery, and diagnostic radio-state energy accounting.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -60,7 +60,7 @@ This paper makes the following contributions.
   \item We abstract ISAC as an imperfect beam-cell occupancy prior with false alarms, missed detections, angular cell offsets, staleness, and finite sensing range. The prior affects action selection but never directly creates a neighbor edge.
   \item We design \method{}, an ISAC-assisted ND protocol that combines occupancy belief, exploration floors, beam-lock refinement, and local discovered-degree/topology-deficit proxies for finite-time discovered-graph formation.
   \item We develop \learnedmethod{}, a black-box shared-parameter protocol-tuning variant trained in small swarms and evaluated for transfer to larger UAV networks and different beamwidths, with the clearest current evidence in 10--30 degree beams and smoother mobility regimes.
-  \item We implement a reproducible simulation workflow covering dynamic mobility, random and directional baselines, ISAC/no-ISAC comparisons, node counts from 10 to 100, and beamwidths from 3 to 30 degrees, where 10--30 degrees form the main useful operating region and 3--5 degrees are reported as extreme narrow-beam stress cases.
+  \item We implement a reproducible simulation workflow covering dynamic mobility, random and directional baselines, ISAC/no-ISAC comparisons, node counts from 10 to 100, and beamwidths from 3 to 30 degrees, where 10--30 degrees form the main useful operating region, 3--5 degrees are stress cases, and supplementary collision/energy-accounting probes expose remaining MAC-efficiency boundaries.
 \end{itemize}
 
 \begin{figure}[!t]
@@ -262,6 +262,7 @@ Mechanism ablations remove candidate-set refinement, beam-lock refinement, or to
 \subsection{Metrics}
 We report finite-time discovery rate, discovered edge count, mean discovery delay, empty-scan ratio, collision count, largest connected component ratio, and algebraic connectivity $\lambda_2$ of the discovered graph.
 Because high-percentile discovery delays can be censored by a finite simulation horizon, the main claims emphasize discovery rate, empty-scan ratio, edge count, and connectivity metrics.
+We also report collision-penalized discovery in supplementary dense-regime analyses and assumed radio-state accounting as diagnostic evidence; these metrics are not presented as a platform-calibrated energy-optimality result.
 For range sweeps, $D$ denotes the region diagonal.
 Table~\ref{tab:settings} summarizes the main information boundary and evaluation settings.
 
@@ -333,7 +334,7 @@ The 30-degree setting reduces empty scans but also creates many more collision a
 Fixed-area scaling gives a similar trend, indicating that the conclusion is not an artifact of one area-scaling convention.
 Figs.~\ref{fig:n100_transfer_density} and \ref{fig:n100_area_scale} visualize these transfer trends.
 Table~\ref{tab:n100_baseline} further isolates the main comparison at $N=100$ and 10-degree beams.
-In this narrow-beam large-swarm setting, the implemented communication-only baselines, including a deterministic SkyOrbs-inspired 3-D skip-scan reference under our information boundary that should not be interpreted as a full SkyOrbs reproduction, spend most trials on empty cells under our information boundary and simulation assumptions.
+In this narrow-beam large-swarm setting, the implemented communication-only baselines, including a deterministic SkyOrbs-like 3-D skip-scan reference that should not be interpreted as a full SkyOrbs reproduction, spend most trials on empty cells under our information boundary and simulation assumptions.
 The ISAC-assisted policy forms a connected discovered-neighbor graph with a finite-time discovery rate of 0.3655 in the same finite horizon.
 A strict head-to-head comparison with the complete SkyOrbs protocol is left as future work because SkyOrbs uses protocol assumptions and scan-schedule details that are not fully reproduced here.
 
@@ -370,7 +371,7 @@ A strict head-to-head comparison with the complete SkyOrbs protocol is left as f
     Protocol & Disc. & Empty & $\lambda_2$ & Delay \\
     \midrule
     Uniform random & 0.0005 & 0.9015 & 0.0000 & 599.90 \\
-    SkyOrbs-inspired skip-scan & 0.0007 & 0.9020 & 0.0000 & 599.79 \\
+    SkyOrbs-like skip-scan & 0.0007 & 0.9020 & 0.0000 & 599.79 \\
     Learned no-ISAC & 0.0006 & 0.9012 & 0.0000 & 599.78 \\
     Enhanced no-ISAC & 0.0007 & 0.9011 & 0.0000 & 599.78 \\
     Enhanced ISAC & 0.3655 & 0.4986 & 12.9222 & 477.99 \\
@@ -450,7 +451,7 @@ To bound this assumption, we evaluate a one-slot delayed candidate-set variant.
 The delayed variant obtains a discovery rate of 0.2989 and $\lambda_2=8.4709$, compared with 0.3655 and 12.9222 for the low-latency variant and 0.0007 for the no-ISAC learning baseline.
 It also reduces collisions from 1050.0 to 697.0, and its collision-penalized discovery rate remains 0.2620 versus 0.3015 for the low-latency variant.
 This supports interpreting the proposed protocol as a low-latency design point and the delayed variant as a practical implementation boundary.
-This B=10 result should not be read as collision optimality: the supplementary five-seed B=15 check shows that one-slot delay can be more collision-efficient, making collision-aware MAC refinement a separate protocol-layer problem.
+This B=10 result should not be read as collision optimality: the supplementary paired B=15 checks show that one-slot delay can be more collision-efficient, while a ten-seed local role-control probe can mitigate that boundary, making collision-aware MAC refinement a separate protocol-layer problem.
 Fig.~\ref{fig:ablation_discovery} gives the corresponding ablation comparison.
 
 \begin{figure}[!t]

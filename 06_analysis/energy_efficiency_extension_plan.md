@@ -77,9 +77,7 @@ Use:
 
 > The supplement reports assumed radio-state energy accounting under stated default powers. These metrics are diagnostic and not platform-calibrated energy-optimality results.
 
-Avoid:
-
-> The proposed method is energy optimal.
+Avoid making an energy-optimality claim for the proposed method.
 
 Avoid:
 

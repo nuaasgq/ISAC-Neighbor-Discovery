@@ -43,7 +43,7 @@ Within the evaluated single-hop, finite-horizon UAV swarm regimes, ISAC-assisted
 
 ## Reviewer Boundaries
 
-- Do not claim strict SkyOrbs superiority; current baseline is SkyOrbs-inspired skip-scan under the same simulator information boundary.
+- Do not claim a head-to-head comparison with complete SkyOrbs; the current baseline is SkyOrbs-like skip-scan under the same simulator information boundary.
 - Do not claim 3--5 degree beams are solved; they are stress/failure-boundary cases.
 - Do not claim calibrated physical sensing range laws; `Rs`, `P_fa`, `P_md`, and angular-cell errors are abstraction parameters.
 - Do not claim full MARL superiority; structured actor-critic results are a probe and currently trail the flat stochastic student in raw discovery.
@@ -53,4 +53,4 @@ Within the evaluated single-hop, finite-horizon UAV swarm regimes, ISAC-assisted
 ## Best Next Experiment
 
 The most defensible next experiment is not a broad Cartesian sweep.
-The 10-seed collision/energy probe is now complete; next prioritize either calibrated radio-state power assumptions or a calibrated PHY-to-ISAC sensing-parameter mapping.
+The 10-seed collision/energy probe is now complete; next prioritize either radio-state accounting sensitivity under stated default powers, a platform-calibrated power study, or a calibrated PHY-to-ISAC sensing-parameter mapping.

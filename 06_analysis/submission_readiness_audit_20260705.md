@@ -39,7 +39,7 @@ Result after the latest full check: no log errors, no unresolved references or c
 | Claim area | Current wording discipline |
 |---|---|
 | Learning method | Use "shared-parameter protocol tuning" for the main method and "structured MARL probe" for the neural extension; do not claim MAPPO/QMIX/GNN superiority. |
-| SkyOrbs comparison | Use "SkyOrbs-like" or "SkyOrbs-inspired"; the main text explicitly says it is not a strict reproduction. |
+| SkyOrbs comparison | Use "SkyOrbs-like"; the main text explicitly says it is not a strict reproduction. |
 | Beamwidth coverage | Write "evaluated over 3--30 degrees"; 10--30 degrees are the main useful operating region, while 3--5 degrees are stress cases. |
 | ISAC abstraction | Treat `Rs`, false alarms, missed detections, and angular-cell errors as protocol-level abstraction parameters, not a calibrated radar equation. |
 | Distributed setting | Use distributed execution with own navigation-frame pose/position and no central scheduler or undiscovered-neighbor state. |
