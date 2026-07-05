@@ -229,6 +229,23 @@ This is why the manuscript interprets collision-penalized discovery together wit
   \label{fig:supp_tradeoff}
 \end{figure*}
 
+\subsection{Focused Five-Seed Paired Stability Check}
+
+Fig.~\ref{fig:supp_round11_stability} reports a focused N=100, B=10/B=15 five-seed paired campaign using the same Gauss-Markov, 600-slot, density-scaled, single-hop setting.
+At B=10, the proposed protocol obtains discovery 0.3639 versus 0.0006 for enhanced no-ISAC, 0.0333 without candidate-set refinement, and 0.2977 with one-slot delayed candidate use.
+At B=15, the corresponding discovery values are 0.5445, 0.0034, 0.1080, and 0.5107.
+The proposed raw-discovery delta is positive in all 5/5 paired seeds against random, enhanced no-ISAC, candidate-set removal, and one-slot delay for both beamwidths.
+However, the collision-penalized panel exposes a MAC-layer boundary: at B=15 the one-slot delayed variant has collision-penalized discovery 0.2207 versus 0.2042 for the proposed low-latency variant, so collision-aware role control remains open.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round11_paired_seed_campaign_main/round11_discovery_rate.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round11_paired_seed_campaign_main/round11_collision_penalized.png}
+  \caption{Focused five-seed paired stability campaign at N=100. Left: raw finite-horizon discovery rate. Right: collision-penalized discovery. The raw-discovery ordering is stable, while the B=15 collision-penalized result identifies the need for collision-aware MAC refinement.}
+  \label{fig:supp_round11_stability}
+\end{figure*}
+
 \clearpage
 
 \section{Structured Neural MARL Probe}
