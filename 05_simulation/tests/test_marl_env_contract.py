@@ -136,6 +136,23 @@ def test_collision_topology_reward_version_keeps_public_contract_safe() -> None:
     _assert_no_forbidden_keys(next_observations)
 
 
+def test_no_isac_marl_protocol_does_not_update_belief_from_sense_action() -> None:
+    cfg = _small_cfg()
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="structured_marl_no_isac")
+    env.reset(seed=9)
+    env._sim.belief[:, :] = 0.0
+    env._sim.belief[0, 0] = 1.0
+
+    actions = [{"mode": "sense", "beam": 0} for _ in range(cfg.n_nodes)]
+    next_observations, _, _, _, info = env.step(actions)
+
+    assert info["sense_actions"] == cfg.n_nodes
+    assert info["piggyback_sense_actions"] == 0
+    assert env._sim.belief[0, 0] == np.float64(cfg.confidence_decay)
+    assert np.count_nonzero(env._sim.belief[0]) == 1
+    assert next_observations[0]["beam_belief"][0] == np.float32(cfg.confidence_decay)
+
+
 def test_training_state_is_explicitly_separate_from_public_info() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg)

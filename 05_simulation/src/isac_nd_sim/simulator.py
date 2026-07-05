@@ -26,6 +26,13 @@ ISAC_PROTOCOLS = (
 
 DELAYED_CANDIDATE_PROTOCOLS = ("ablation_isac_one_slot_delay",)
 
+NO_ISAC_SENSING_PROTOCOLS = (
+    "rl_no_isac",
+    "basic_marl_no_isac",
+    "improved_rl_no_isac",
+    "structured_marl_no_isac",
+)
+
 
 @dataclass(frozen=True)
 class Action:
@@ -584,6 +591,8 @@ class NeighborDiscoverySimulator:
         return int(self.rng.choice(candidate_indices, p=probs))
 
     def update_sensing(self, actions: list[Action], slot: int | None = None) -> None:
+        if self.protocol in NO_ISAC_SENSING_PROTOCOLS:
+            return
         eligible_nodes: list[tuple[int, Action]] = []
         for node, action in enumerate(actions):
             piggyback_isac = self.protocol in ISAC_PROTOCOLS and action.mode in (

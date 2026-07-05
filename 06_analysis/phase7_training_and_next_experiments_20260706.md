@@ -32,6 +32,12 @@
 - Setting: `N=10`, `B=10 deg`, `100 episodes`, `300 slots/episode`.
 - Method: `contention_no_isac`, implemented as `MAPPO + contention_shared + collision_topology` with `--disable-isac-features` and `env_protocol=structured_marl_no_isac`.
 - Purpose: provide the true-MARL counterpart for the five-class baseline closure, separating network-structure benefit from ISAC-derived occupancy/candidate priors.
+- Strict no-ISAC update: with the current simulator patch,
+  `structured_marl_no_isac` no longer lets explicit `sense` actions update
+  occupancy belief. Earlier `phase7_contention_no_isac_100ep_3seed`
+  curves are useful as a conservative pre-strict reference because they already
+  fail despite the weaker information boundary, but paper-grade five-way results
+  should use a fresh strict-no-ISAC training/evaluation campaign.
 
 ### Protocol Baseline Adapter
 
@@ -57,11 +63,12 @@
   MARL policies. The legacy `rl_no_isac`, `improved_rl_no_isac`, and
   `improved_rl_isac` names are simulator proxy protocols and must not be called
   MARL checkpoint baselines.
-- No-ISAC MARL wording boundary: the current no-ISAC checkpoints remove
-  ISAC-derived candidate mask/score/rule-residual assistance and piggyback
-  sensing, but the environment still has the generic sensing action and beam
-  belief state. Use "without ISAC-derived candidate features" rather than
-  "sensing disabled".
+- No-ISAC MARL wording boundary: after the strict simulator patch, no-ISAC
+  checkpoints remove ISAC-derived candidate mask/score/rule-residual assistance,
+  piggyback sensing, and sensing-based belief updates. The actor still receives
+  generic beam-memory tensors for failed/successful communication attempts, so
+  use "without ISAC-derived sensing/candidate assistance" rather than "without
+  local memory".
 
 ## Immediate Priority
 
@@ -69,8 +76,12 @@
 2. Run Phase-6 `B=3` with the same settings after `B=5`.
 3. Aggregate `B=3/5/10/15/30` into one MARL transfer table and figure set.
 4. Build Phase-7 multi-seed learning-curve figures using `training_step` as the x-axis.
-5. Build the five-class MARL-compatible comparison after `contention_no_isac` checkpoints are available.
-6. Update the IEEE draft so all text, tables, and figure paths use the 10-episode Phase-6 data.
+5. Launch the strict `contention_no_isac` replacement campaign and regenerate
+   no-ISAC learning curves.
+6. Build the five-class MARL-compatible comparison after strict no-ISAC
+   checkpoints are available.
+7. Update the IEEE draft so all text, tables, and figure paths use the
+   10-episode Phase-6 data and strict five-class closure.
 
 ## Learning-Curve Plot Rule
 
