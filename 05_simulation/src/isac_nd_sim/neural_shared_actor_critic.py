@@ -78,13 +78,33 @@ class SharedBeamActorCritic:
                 beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
         return mode_logits, beam_logits, value
 
+    def batched_logits_value(self, observations: Sequence[dict], hard_mask: bool = False):
+        torch = self.torch
+        tensors = observations_to_batched_tensors(observations, self.device, torch)
+        tensors = self._prepare_tensors(tensors)
+        mode_logits, beam_logits, value = self.model(tensors)
+        if self.use_rule_residual:
+            if "rule_mode_logits" in tensors:
+                mode_logits = mode_logits + self.rule_residual_scale * tensors["rule_mode_logits"]
+            if "candidate_score" in tensors:
+                beam_logits = beam_logits + self.rule_residual_scale * tensors["candidate_score"]
+        if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
+            mask = tensors["candidate_mask"] > 0.5
+            has_candidate = mask.any(dim=-1, keepdim=True)
+            beam_logits = torch.where(
+                has_candidate,
+                beam_logits.masked_fill(~mask, -1.0e9),
+                beam_logits,
+            )
+        return mode_logits, beam_logits, value
+
     def _prepare_tensors(self, tensors: dict):
         torch = self.torch
         if not self.use_candidate_score and "candidate_score" in tensors:
             tensors = dict(tensors)
             tensors["candidate_score"] = torch.zeros_like(tensors["candidate_score"])
             tensors["beam_features"] = tensors["beam_features"].clone()
-            tensors["beam_features"][:, 4] = 0.0
+            tensors["beam_features"][..., 4] = 0.0
         if not self.use_topology_deficit and "topology_deficit" in tensors:
             tensors = dict(tensors)
             tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
@@ -94,38 +114,42 @@ class SharedBeamActorCritic:
         torch = self.torch
         from torch.distributions import Categorical
 
-        actions: list[Action] = []
-        log_probs = []
-        values = []
-        entropies = []
-        for observation in observations:
-            mode_logits, beam_logits, value = self.logits_value(observation, hard_mask=True)
-            mode_dist = Categorical(logits=mode_logits)
-            beam_dist = Categorical(logits=beam_logits)
-            if deterministic:
-                mode_idx = int(torch.argmax(mode_logits).item())
-                beam_idx = int(torch.argmax(beam_logits).item())
-            else:
-                mode_idx = int(mode_dist.sample().item())
-                beam_idx = int(beam_dist.sample().item())
-            mode = MODE_NAMES[mode_idx]
-            sampled_beam_idx = beam_idx
-            if mode == "idle":
-                beam_idx = 0
-            actions.append(Action(mode, beam_idx))
-            mode_tensor = torch.tensor(mode_idx, dtype=torch.long, device=self.device)
-            beam_tensor = torch.tensor(sampled_beam_idx, dtype=torch.long, device=self.device)
-            beam_log_prob = torch.zeros((), dtype=value.dtype, device=self.device)
-            if mode != "idle":
-                beam_log_prob = beam_dist.log_prob(beam_tensor)
-            log_probs.append(mode_dist.log_prob(mode_tensor) + beam_log_prob)
-            values.append(value.squeeze(-1))
-            entropies.append(mode_dist.entropy() + beam_dist.entropy())
+        if not observations:
+            empty = torch.empty(0, device=self.device)
+            return PolicyStep(actions=[], log_probs=empty, values=empty, entropies=empty)
+
+        mode_logits, beam_logits, value = self.batched_logits_value(observations, hard_mask=True)
+        mode_dist = Categorical(logits=mode_logits)
+        beam_dist = Categorical(logits=beam_logits)
+        if deterministic:
+            mode_idx = torch.argmax(mode_logits, dim=-1)
+            sampled_beam_idx = torch.argmax(beam_logits, dim=-1)
+        else:
+            mode_idx = mode_dist.sample()
+            sampled_beam_idx = beam_dist.sample()
+        idle_idx = MODE_NAMES.index("idle")
+        beam_idx = torch.where(
+            mode_idx == idle_idx,
+            torch.zeros_like(sampled_beam_idx),
+            sampled_beam_idx,
+        )
+        actions = [
+            Action(MODE_NAMES[int(mode_item.item())], int(beam_item.item()))
+            for mode_item, beam_item in zip(mode_idx, beam_idx, strict=True)
+        ]
+        beam_log_prob = torch.where(
+            mode_idx == idle_idx,
+            torch.zeros_like(value.squeeze(-1)),
+            beam_dist.log_prob(sampled_beam_idx),
+        )
+        log_probs = mode_dist.log_prob(mode_idx) + beam_log_prob
+        values = value.squeeze(-1)
+        entropies = mode_dist.entropy() + beam_dist.entropy()
         return PolicyStep(
             actions=actions,
-            log_probs=torch.stack(log_probs),
-            values=torch.stack(values),
-            entropies=torch.stack(entropies),
+            log_probs=log_probs,
+            values=values,
+            entropies=entropies,
         )
 
 
@@ -160,22 +184,37 @@ class _SharedBeamActorCriticModule:
             def forward(self, tensors: dict[str, torch.Tensor]):
                 beam_features = tensors["beam_features"]
                 beam_tokens = self.beam_encoder(beam_features)
-                beam_context = beam_tokens.mean(dim=0)
-                context_input = torch.cat(
-                    [
-                        tensors["self_state"],
-                        tensors["local_summary"],
-                        tensors["last_mode"],
-                        tensors["last_beam"],
-                        tensors["topology_deficit"],
-                        beam_context,
-                    ],
-                    dim=0,
-                )
+                if beam_tokens.dim() == 2:
+                    beam_context = beam_tokens.mean(dim=0)
+                    context_input = torch.cat(
+                        [
+                            tensors["self_state"],
+                            tensors["local_summary"],
+                            tensors["last_mode"],
+                            tensors["last_beam"],
+                            tensors["topology_deficit"],
+                            beam_context,
+                        ],
+                        dim=0,
+                    )
+                else:
+                    beam_context = beam_tokens.mean(dim=1)
+                    context_input = torch.cat(
+                        [
+                            tensors["self_state"],
+                            tensors["local_summary"],
+                            tensors["last_mode"],
+                            tensors["last_beam"],
+                            tensors["topology_deficit"],
+                            beam_context,
+                        ],
+                        dim=1,
+                    )
                 context = self.context_encoder(context_input)
                 mode_logits = self.mode_head(context)
                 query = self.beam_query(context)
-                beam_logits = (beam_tokens * query.unsqueeze(0)).sum(dim=1) / np.sqrt(float(self.hidden_dim))
+                query_dim = 0 if beam_tokens.dim() == 2 else 1
+                beam_logits = (beam_tokens * query.unsqueeze(query_dim)).sum(dim=-1) / np.sqrt(float(self.hidden_dim))
                 beam_logits = beam_logits + self.beam_bias(beam_tokens).squeeze(-1)
                 value = self.value_head(context)
                 return mode_logits, beam_logits, value
@@ -218,3 +257,13 @@ def observation_to_tensors(observation: dict, device, torch_module) -> dict:
             observation["rule_mode_logits"], dtype=torch_module.float32, device=device
         )
     return tensors
+
+
+def observations_to_batched_tensors(observations: Sequence[dict], device, torch_module) -> dict:
+    tensors = [observation_to_tensors(observation, device, torch_module) for observation in observations]
+    keys = set().union(*(tensor.keys() for tensor in tensors))
+    batched = {}
+    for key in keys:
+        if all(key in tensor for tensor in tensors):
+            batched[key] = torch_module.stack([tensor[key] for tensor in tensors], dim=0)
+    return batched

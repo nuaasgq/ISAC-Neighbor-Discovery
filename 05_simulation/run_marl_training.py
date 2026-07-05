@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--network", choices=["shared", "scalegraph_beam"], default="shared")
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
     parser.add_argument("--episodes", type=int, default=200)
-    parser.add_argument("--slots", type=int, default=1200)
+    parser.add_argument("--slots", type=int, default=300)
     parser.add_argument("--eval-episodes", type=int, default=5)
     parser.add_argument("--eval-interval", type=int, default=25)
     parser.add_argument("--stochastic-eval", action="store_true", help="Sample from the policy during evaluation.")

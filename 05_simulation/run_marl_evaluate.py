@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", default="05_simulation/configs/paper_transfer_train_n10_b10_singlehop.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_eval")
     parser.add_argument("--eval-episodes", type=int, default=10)
-    parser.add_argument("--slots", type=int, default=1200)
+    parser.add_argument("--slots", type=int, default=3000)
     parser.add_argument("--node-count", type=int, default=None)
     parser.add_argument("--azimuth-cells", type=int, default=None)
     parser.add_argument("--elevation-cells", type=int, default=None)
@@ -93,7 +93,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     env_protocol = str(args.env_protocol or train_args.get("env_protocol") or inferred_env_protocol(train_args))
-    eval_rows = evaluate_policy(cfg, policy, torch, args, env_protocol, reward_version)
+    eval_rows = evaluate_policy(cfg, policy, torch, args, env_protocol, reward_version, progress_dir=output)
     write_rows(output / "eval_episode_metrics.csv", eval_rows)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -181,6 +181,7 @@ def evaluate_policy(
     args: argparse.Namespace,
     env_protocol: str,
     reward_version: str,
+    progress_dir: Path | None = None,
 ) -> list[dict[str, Any]]:
     rows = []
     if bool(args.eval_both):
@@ -214,6 +215,38 @@ def evaluate_policy(
                 }
                 row.update(summary)
                 rows.append(row)
+                if progress_dir is not None:
+                    write_rows(progress_dir / "eval_episode_metrics.csv", rows)
+                    progress = {
+                        "updated_at": datetime.now().isoformat(timespec="seconds"),
+                        "completed_rows": len(rows),
+                        "eval_episodes": int(args.eval_episodes),
+                        "mode": "stochastic" if use_stochastic else "deterministic",
+                        "eval_episode": episode,
+                        "slots_per_episode": int(cfg.slots_per_episode),
+                        "node_count": int(cfg.n_nodes),
+                        "beam_count": int(cfg.n_beams),
+                        "latest": row,
+                    }
+                    (progress_dir / "progress.json").write_text(
+                        json.dumps(progress, ensure_ascii=False, indent=2),
+                        encoding="utf-8",
+                    )
+                print(
+                    json.dumps(
+                        {
+                            "phase": "eval_progress",
+                            "completed_rows": len(rows),
+                            "mode": "stochastic" if use_stochastic else "deterministic",
+                            "eval_episode": episode,
+                            "discovery_rate": row.get("discovery_rate"),
+                            "lambda2": row.get("lambda2"),
+                            "collision_count": row.get("collision_count"),
+                        },
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
     return rows
 
 

@@ -10,11 +10,18 @@ FIGSIZE = (6.4, 4.8)
 DPI = 300
 METRICS = {
     "discovery_rate": "Discovery rate",
+    "collision_penalized_discovery_rate": "Collision-penalized discovery rate",
     "mean_delay_censored": "Mean discovery delay (slots)",
     "p95_delay_censored": "P95 discovery delay (slots)",
     "empty_scan_ratio": "Empty-scan ratio",
     "lambda2": r"$\lambda_2$",
+    "largest_component_size": "Largest component size",
+    "lcc_ratio": "Largest component ratio",
+    "isolated_node_ratio": "Isolated node ratio",
     "collision_count": "Collisions per episode",
+    "collisions_per_discovery_censored": "Collisions per discovery",
+    "discoveries_per_1000_scan_actions": "Discoveries per 1000 scan actions",
+    "discoveries_per_joule": "Discoveries per joule",
 }
 COLORS = {
     "isac_mappo": "#0072B2",
@@ -74,7 +81,7 @@ def resolve_run_dirs(args: argparse.Namespace) -> list[Path]:
     runs = []
     for manifest_path in sorted(root.rglob("manifest.json")):
         try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         except json.JSONDecodeError:
             continue
         if manifest.get("scope") == "marl_transfer_evaluation":
@@ -89,7 +96,7 @@ def load_eval_rows(run_dirs: list[Path], pd):
         data_path = run_dir / "eval_episode_metrics.csv"
         if not manifest_path.exists() or not data_path.exists() or data_path.stat().st_size == 0:
             continue
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         frame = pd.read_csv(data_path)
         frame["run"] = run_dir.name
         frame["train_algorithm"] = str(manifest.get("train_algorithm", "unknown"))
@@ -129,6 +136,7 @@ def summarize(rows, pd):
     for key, group in rows.groupby(group_keys, dropna=False):
         record = dict(zip(group_keys, key, strict=True))
         record["eval_n"] = int(len(group))
+        record["episodes"] = int(len(group))
         record["run_n"] = int(group["run"].nunique())
         for metric in METRICS:
             values = pd.to_numeric(group.get(metric), errors="coerce").dropna()
