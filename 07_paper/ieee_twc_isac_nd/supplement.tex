@@ -22,6 +22,11 @@ This supplement records the experiment coverage and stress evidence supporting t
 The main paper should be read as a cross-layer link-layer neighbor-discovery study: ISAC provides an imperfect beam-cell occupancy prior, and neighbor edges are created only by bidirectional narrow-beam handshakes.
 The additional figures and tables below are used to bound the claims rather than to assert universal robustness.
 
+At each 5 ms discovery slot, a UAV ages local belief/lock timers, selects a local radio role, samples a beam from the main-paper score if transmitting or receiving, attempts a narrow-beam handshake, and adds a discovered edge only after bidirectional alignment within communication range.
+The ISAC observation then updates the local beam-cell belief: empty observations suppress later visits, while occupied observations or near-miss evidence can refresh a candidate lock.
+The round13 collision-aware refinement changes only local role probabilities under candidate and collision pressure; it does not change the ISAC candidate-set interface or the handshake-confirmation rule.
+Thus sensing is a priority signal for future link-layer actions rather than a direct edge-creation event.
+
 \section{Experiment Coverage}
 
 Table~\ref{tab:supp_coverage} maps the main reviewer-facing experiment requirements to archived artifacts.
