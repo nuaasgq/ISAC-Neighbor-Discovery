@@ -74,13 +74,14 @@ This paper makes the following contributions.
 \subsection{Directional Neighbor Discovery}
 Early directional ND work studied probabilistic transmission and listening strategies for nodes with directional antennas \cite{Vasudevan2005DirectionalND}.
 Oblivious ND later established a theoretical foundation for distributed directional discovery without prior coordination or synchronization \cite{Chen2017ObliviousND}.
-Hunting-based directional ND further studied blind mmWave spatial rendezvous without a control channel or prior coordination, but mainly as a deterministic scan-sequence problem \cite{Wang2017HDND}.
+Hunting-based directional ND and FastND further studied blind mmWave spatial rendezvous and accelerated 60-GHz directional discovery, but mainly as scan/beam-learning problems under communication-side assumptions \cite{Wang2017HDND,Zhou2018FastND}.
 For UAV networks, SkyOrbs introduced a fast three-dimensional directional ND algorithm tailored to aerial scenarios \cite{SkyOrbs2024TMC}.
 Recent work further considers delay-power optimization for UAV ND with directional antennas \cite{Fan2026DelayPowerND}.
 Our work differs by treating sensing feedback as a link-layer prior and by using topology-quality proxies to guide finite-time discovery priorities.
 
 \subsection{ISAC-Assisted Beam Management}
-ISAC has been used to reduce beam training overhead in vehicular and UAV-assisted systems \cite{Li2024SensingNRV2X,Cui2024SensingUAVBM}.
+Side information and sensing have been used to reduce beam training overhead, from out-of-band spatial information for mmWave beam selection to sensing-assisted vehicular and UAV beam management \cite{Ali2018OutOfBand,Li2024SensingNRV2X,Cui2024SensingUAVBM}.
+Radar-assisted predictive beamforming illustrates the ``communication served by sensing'' principle, while UAV mmWave/THz beam learning highlights the effect of in-flight mobility uncertainty on beam alignment \cite{Liu2020RadarPredictiveBF,Moorthy2022BeamLearningDrone}.
 Recent works also study ISAC-assisted beam rendezvous in airborne networks \cite{Hong2024ISACRendezvous}, predictive beam tracking in multipath channels \cite{Cui2024MultipathISAC}, and deep-learning predictive bidirectional beamforming for ISAC-enabled UAV networks \cite{Xu2026PredictiveBidirectionalBF}.
 Many of these studies focus on physical-layer or beam-management problems between a base station and mobile nodes, while airborne rendezvous studies remain closer to link establishment but still differ from distributed-execution UAV-UAV ND.
 By contrast, this paper targets a distributed-execution UAV-UAV ND protocol and uses ISAC only as an imperfect occupancy-prior service exposed to the data-link layer.
@@ -124,7 +125,7 @@ followed by a zero-mean discrete angular-cell offset $\Delta b\sim K_{\sigma_b}$
 The kernel is truncated or wrapped at the codebook boundary in the simulator implementation.
 The observation may therefore contain false alarms, missed detections, angular-cell offsets, and staleness.
 The sensing range $\Rs$ denotes the support of the coarse occupancy observation, whereas $\Rc$ defines the link-confirmation range for a discoverable communication edge.
-They are modeled as separate abstraction parameters because radar-like sensing and packet decoding are governed by different detection and decoding thresholds, and radar range depends on waveform, aperture, target scattering, range, and medium parameters \cite{Liu2022ISAC6G,Skolnik2001Radar}.
+They are modeled as separate abstraction parameters because radar-like sensing and packet decoding are governed by different detection and decoding thresholds, and radar range depends on waveform, aperture, target scattering, range, and medium parameters \cite{Liu2022ISAC6G,Skolnik2001Radar,Bomfin2024SystemISAC}.
 We do not derive $\Rs$ from a radar equation or an estimator-specific detection threshold; instead, $\Rs$, false-alarm probability, missed-detection probability, and angular-cell error are exposed as protocol-level abstraction parameters that emulate the service provided by an underlying ISAC receiver.
 The observation does not reveal neighbor identity, position, velocity, or range-resolved neighbor state.
 Only UAV pairs within $\Rc$ can enter the communication-neighbor set and be confirmed by handshake; therefore, $\Rs>\Rc$ may provide additional occupancy evidence but does not create immediately discoverable links in this model.
