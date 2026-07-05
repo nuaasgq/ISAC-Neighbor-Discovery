@@ -19,6 +19,7 @@ The repository already has the minimum scaffolding for a neural MARL extension:
 - `05_simulation/run_actor_critic_imitation_probe.py`
   - Provides behavior cloning from the rule expert and optional actor-critic fine-tuning.
   - Existing status notes show that the neural path becomes nonzero only when the MARL env exposes ISAC piggyback belief updates.
+  - The 2026-07-05 update also supports `--eval-both` and `--env-protocol`, so deterministic/stochastic evaluation and clean no-ISAC environment baselines can be reported from the same runner.
 
 ## Why the Flat Beam Head Is Weak
 
@@ -76,9 +77,9 @@ The next neural method should be an ISAC-candidate-constrained shared actor-crit
      - lambda2 of discovered graph.
    - Actor remains decentralized and uses only local observations.
 
-## Minimal 8-Hour Experiment
+## Completed 8-Hour Probe
 
-Target: produce a method-probe result, not a main manuscript result.
+Target: produce a method-probe result, not a main manuscript result. This target has been reached.
 
 1. Add candidate mask generation to `MarlNeighborDiscoveryEnv._observation_for()` or a helper:
    - `candidate_mask`
@@ -129,11 +130,23 @@ Smoke status: `05_simulation/results_raw/structured_imitation_smoke_20260705` ve
    - random,
    - enhanced no-ISAC.
 
-5. Report only if:
-   - autonomous student discovery is nonzero in all held-out seeds,
-   - empty-scan ratio is below flat actor-critic,
-   - behavior remains nonzero under at least one mobility change,
-   - deterministic and stochastic evaluation are both reported.
+5. Current reportable probe evidence:
+   - Core N=10/B=72, 80-slot, 3-seed block reports both stochastic and deterministic evaluation.
+   - Full structured residual actor (`rule_residual_scale=1.0`) reduces stochastic empty-scan ratio to 0.1112, versus 0.6901 for the flat stochastic actor.
+   - Clean no-ISAC neural baseline (`env_protocol=improved_rl_no_isac`, `expert_protocol=improved_rl_no_isac`) collapses to deterministic discovery 0 and stochastic discovery 0.0044.
+   - Residual-scale sweep finds `rule_residual_scale=0.25` as the best balanced tested value, with stochastic discovery 0.5978 and deterministic discovery 0.0837.
+   - The best structured stochastic actor still remains below the flat stochastic actor's discovery rate of 0.6322, so this is evidence for an architectural direction rather than proof of a superior learned policy.
+
+## Open Neural Design Problems
+
+The current actor constrains the beam search effectively, but it does not yet solve distributed handshake coordination.
+The next neural iteration should therefore focus on:
+
+- TX/RX role balance: add explicit coordination regularization or a local role-prior residual so deterministic policies do not converge to one-sided transmission/reception.
+- Collision-aware value shaping: penalize repeated many-to-one contention and reward unique reciprocal alignments, not just discovered-edge count.
+- Candidate-mask exploration: keep a small probability of out-of-mask beams to recover from sensing errors while preventing the flat action space from dominating.
+- Transfer-normalized inputs: use beam-index-relative features and mask-size-normalized scores so N=10/B=72 training can better transfer to B=10/B=15-equivalent codebooks and N=30/50/100 tests.
+- Deterministic policy calibration: select deployment actions through a temperature/epsilon schedule or top-k randomized serving policy if pure argmax remains brittle.
 
 ## Promotion Gate for Main Paper
 
@@ -146,3 +159,12 @@ The neural MARL method can be promoted from "method probe" to "main method" only
 - It preserves the information boundary: no undiscovered-neighbor pose/identity at execution.
 
 Until then, the current manuscript should keep learning as shared-parameter protocol tuning and present neural MARL as future work or a separate extension.
+
+## Manuscript Framing
+
+Use the MARL result as a supplementary cross-layer intelligence probe:
+
+- It validates that the ISAC-derived candidate set can be exposed as a decentralized learning interface.
+- It shows that the same local information boundary can drive both rule-based and neural policies.
+- It supports the claim that the hard part is not only learning a better beam distribution, but using sensing to collapse the action support before learning.
+- It should not be written as "MARL beats all baselines"; the current data do not support that claim.

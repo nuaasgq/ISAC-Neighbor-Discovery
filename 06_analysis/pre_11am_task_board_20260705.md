@@ -1,12 +1,12 @@
 # Pre-11:00 Task Board - 2026-07-05
 
-Current time anchor: after commit `ba9c617` (`Add extra-seed stability evidence`).
+Current time anchor: after pushed commit `20932d9` (`Add MARL residual scale sweep evidence`) plus the current documentation refresh.
 
 ## Already Done
 
 - IEEEtran main draft compiles cleanly.
 - Supplement compiles cleanly.
-- Unit tests pass: `25 passed`.
+- Unit tests pass: `27 passed`.
 - Paper figures keep 4:3 aspect ratio.
 - Main manuscript claim boundaries have been tightened:
   - ISAC is an imperfect occupancy prior, not an oracle.
@@ -20,12 +20,16 @@ Current time anchor: after commit `ba9c617` (`Add extra-seed stability evidence`
 - Extra seed stability check added:
   - N=100, B=10/15, three new seeds.
   - Qualitative ordering remains positive, but absolute B=10 discovery is seed-sensitive.
+- Structured MARL probe added:
+  - Candidate-mask, candidate-score, topology-deficit, and rule-residual interfaces implemented.
+  - Clean no-ISAC neural environment baseline gives near-zero discovery.
+  - Residual-strength sweep improves deterministic nonzero behavior but does not yet make neural MARL the main method.
 
 ## Remaining Before 11:00
 
-1. **Push latest commit when GitHub connection is stable.**
-   - Local commit ahead: `ba9c617`.
-   - Previous push failed due SSL/TLS handshake, not local git state.
+1. **Keep version management clean.**
+   - GitHub push is currently available through commit `20932d9`.
+   - Commit and push the current documentation refresh after consistency checks.
 
 2. **Prepare final status report.**
    - Summarize current evidence, limitations, and exact files.
@@ -35,9 +39,10 @@ Current time anchor: after commit `ba9c617` (`Add extra-seed stability evidence`
    - Main PDF: `07_paper/ieee_twc_isac_nd/main.pdf`.
    - Supplement PDF: `07_paper/ieee_twc_isac_nd/supplement.pdf`.
 
-4. **Do not start a broad full-factor experiment.**
+4. **Use remaining time on high-leverage validation, not broad sweeps.**
    - Full Cartesian sweep across N, beamwidth, mobility, errors, baselines would not finish with enough review time.
    - Extra seeds already show scenario sensitivity; more seed work should be planned as a dedicated campaign.
+   - If launching another experiment, make it narrowly targeted at a reviewer-risk gap, such as collision-aware role balance or a 5-seed repeat of the strongest MARL probe.
 
 ## After 11:00 Research Roadmap
 

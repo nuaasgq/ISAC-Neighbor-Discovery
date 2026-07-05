@@ -255,6 +255,7 @@ Unless otherwise noted, the multi-seed large-scale tables report means over thre
 \subsection{Baselines}
 The comparison set includes uniform random scanning, a SkyOrbs-like directional baseline, a learned communication-only shared policy, an enhanced communication-only shared policy, and the proposed enhanced ISAC-assisted shared policy.
 The SkyOrbs-like baseline implements a deterministic three-dimensional skip-scan schedule inspired by SkyOrbs, but it is not a strict reproduction of the complete SkyOrbs protocol.
+The two no-ISAC learning baselines disable sensing-derived occupancy priors, candidate masks, and beam-lock updates at execution; the enhanced no-ISAC variant keeps the corresponding non-sensing policy refinements so that the comparison isolates the value of the ISAC observation stream.
 Mechanism ablations remove candidate-set refinement, beam-lock refinement, or topology-deficit scoring from the proposed protocol.
 
 \subsection{Metrics}
@@ -301,7 +302,7 @@ The curve is used as training-stability evidence for the selected search run, no
 
 \subsection{Dynamic Protocol Comparison}
 Table~\ref{tab:dynamic_comparison} summarizes the held-out dynamic tests used as the first evidence layer before large-scale transfer.
-Across the four mobility models, the ISAC-assisted policy shows an observed finite-time discovery-rate improvement over uniform random scanning and the improved no-ISAC learning baseline; its empty-scan behavior is reported in the final column.
+Across the four mobility models, the ISAC-assisted policy shows an observed finite-time discovery-rate improvement over uniform random scanning and the enhanced no-ISAC learning baseline; its empty-scan behavior is reported in the final column.
 These results support the central mechanism claim in small dynamic swarms, while the following subsections test whether the same trained policy transfers to larger swarms and different beamwidths.
 
 \begin{table}[!t]
@@ -422,7 +423,7 @@ Fig.~\ref{fig:range_gain_heatmap} summarizes the range sensitivity.
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png}
-  \caption{Range sensitivity at N=100 and 10-degree beams. The heatmap reports discovery-rate gain of the ISAC-assisted policy over the improved no-ISAC baseline across communication-range and sensing-range ratios.}
+  \caption{Range sensitivity at N=100 and 10-degree beams. The heatmap reports discovery-rate gain of the ISAC-assisted policy over the enhanced no-ISAC baseline across communication-range and sensing-range ratios.}
   \label{fig:range_gain_heatmap}
 \end{figure}
 

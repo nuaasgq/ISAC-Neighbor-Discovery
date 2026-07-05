@@ -40,7 +40,7 @@ The complete evidence map is maintained in the repository coverage matrix.
     Beamwidths 3--30 deg & Main+stress & Main 5/10/15/30 deg: round3 N=100 transfer/robustness tables; stress 3/5/10/15/30 deg: round7 scale-beam grid; full 3 deg five-baseline check: round9. & 3 and 5 deg are stress regimes. \\
     Node counts 10--100 & Partially crossed & Round7 scale-beam grid and round3 N=100 density/fixed scaling. & Not a full Cartesian cross with every mobility and error setting. \\
     Small-to-large transfer & Bounded & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter protocol tuning. \\
-    Baselines & Main+stress & Uniform random, SkyOrbs-like, learned no-ISAC, enhanced no-ISAC, enhanced ISAC. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
+    Baselines & Main+stress & Uniform random, SkyOrbs-like, learned no-ISAC, enhanced no-ISAC, enhanced ISAC. The no-ISAC learning baselines disable sensing-derived occupancy, candidate, and beam-lock observations at execution. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
     Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
     Range and timing & Sensitivity & Range grid and slot-duration sensitivity. & Protocol-level abstraction, not calibrated RF range law. \\
     ISAC errors & Configured & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
@@ -56,9 +56,9 @@ The curves are not used as a proof of convergence; they document that the select
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png}
+  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png}
   \hfill
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_score_curve.png}
+  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_score_curve.png}
   \caption{Training-history evidence for the selected shared-parameter policy-search run. Left: reward evolution. Right: selection score evolution. These single-run curves support empirical stabilization only, not theoretical convergence.}
   \label{fig:supp_training}
 \end{figure*}
@@ -69,9 +69,9 @@ The heatmap and B=10 node-count curve show the intended small-to-large transfer 
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png}
+  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png}
   \hfill
-  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png}
+  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png}
   \caption{Node-count and beamwidth transfer evidence. Left: proposed-policy discovery heatmap over $N=10,20,50,100$ and 3--30 degree beams. Right: B=10 node-count transfer curve.}
   \label{fig:supp_scale_transfer}
 \end{figure*}
@@ -208,7 +208,7 @@ The curves are supplementary robustness evidence and should not replace the main
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b10.png}
   \hfill
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b15.png}
-  \caption{Cumulative finite-horizon discovery trajectories in the N=100 extra-seed backup block. Left: B=10 degrees. Right: B=15 degrees. The proposed ISAC-assisted policy accumulates discovered links over the full horizon, while the implemented communication-only baselines remain close to zero in these stress settings.}
+  \caption{Cumulative finite-horizon discovery trajectories in the N=100 extra-seed backup block. Left: B=10 degrees. Right: B=15 degrees. The proposed ISAC-assisted policy accumulates discovered links over the full horizon, while the implemented communication-only baselines remain close to zero in these large-scale backup settings.}
   \label{fig:supp_cumulative_discovery}
 \end{figure*}
 

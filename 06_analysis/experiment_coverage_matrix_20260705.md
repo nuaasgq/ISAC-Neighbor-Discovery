@@ -23,6 +23,9 @@ Purpose: map the requested experiment requirements to archived data, figures, an
 | Slot duration and motion timescale | Covered | `06_analysis/paper_tables/round6_slot_duration_sensitivity/aggregate_metrics.csv`; `06_analysis/paper_figures/round6_slot_duration_sensitivity/`. | Supports that the 5 ms setting is not a single tuned point under Gauss-Markov mobility. |
 | ISAC sensing errors | Covered | Main B=10: `06_analysis/paper_tables/round3_robustness/error_profiles/aggregate_metrics.csv`; confirmation: `round7_error_profiles_light`; B=15 extension: `round8_error_profiles_b15_gm_rw_600slot`. | Supports bounded robustness under configured errors; does not imply physical-layer estimator immunity. |
 | Training reward or score curve | Covered | `06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png`; `06_analysis/paper_figures/training_round2_candidate/train_score_curve.png`; `06_analysis/paper_figures/round7_long_cem_training/`. | Write "training-score/reward evolution"; do not claim theoretical RL convergence. |
+| Structured neural MARL probe | Covered as secondary/probe evidence | `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`; `06_analysis/paper_figures/structured_marl_probe/`. | Supports candidate-constrained decentralized actor design and ISAC information-boundary feasibility; do not claim the neural MARL branch beats all baselines. |
+| Clean no-ISAC neural environment control | Covered | `no_isac_env` rows in `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`. | Shows neural nonzero behavior depends on ISAC-enabled local observations; not a large-scale transfer result. |
+| Residual-strength neural ablation | Covered | `scale_sweep` rows in `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`; `marl_rule_residual_scale_sweep.png`. | Supports tuning of rule-residual coupling; current best tested setting is not a global optimum proof. |
 | More than 16 paper-ready figures, 4:3 aspect, Times-style fonts | Covered | `06_analysis/paper_figures` contains 358 PNG figures after round8 and round9 additions; new full-baseline and stress figures are 1920 x 1440. Figure manifests document 4:3 and Times New Roman with serif fallback. | The final manuscript should select a small subset for the main text and use the rest in supplement. |
 | Network-structure or method innovation beyond blind search | Partially covered | Mechanism figures, candidate-set refinement ablation, topology-deficit scoring ablation, one-slot delay ablation. | Current clearest innovation is cross-layer ISAC occupancy prior plus topology-deficit link-layer discovery. Neural MARL architecture innovation remains a future or secondary thread. |
 
@@ -36,11 +39,14 @@ Purpose: map the requested experiment requirements to archived data, figures, an
 | Is the 5 ms slot assumption brittle? | `06_analysis/paper_figures/round6_slot_duration_sensitivity/slot_duration_discovery_n100_b10.png`. |
 | What is the main mechanism? | `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png`; `ablation_collision_penalized_discovery_n100_b10.png`. |
 | Do ISAC errors break the result? | `06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png`; `06_analysis/paper_figures/round8_error_profiles_b15_gm_rw_600slot/ablation_discovery_n100_b15.png`. |
+| Is there a neural MARL path under the same information boundary? | `06_analysis/paper_figures/structured_marl_probe/marl_eval_discovery_rate.png`; `marl_eval_empty_scan_ratio.png`; `marl_rule_residual_scale_sweep.png`. |
+| Are the pre-11 backup runs consistent over finite time? | `06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b10.png`; `round10_cumulative_discovery_b15.png`; `round10_tradeoff_discovery_rate.png`. |
 
 ## Remaining Experiment Gaps
 
 - A strict SkyOrbs reproduction is not implemented.
 - Full MAPPO/QMIX/GNN MARL is not yet the main evidence; actor-critic remains a method probe.
+- The structured MARL probe has not yet been transferred to N=30/50/100 or B=10/B=15-equivalent deployment without fine-tuning.
 - A full Cartesian cross of all node counts, all beamwidths, all mobility models, all baselines, and all ISAC errors is not available.
 - Joule-level energy efficiency is not available because no explicit radio-state energy model has been added.
 - The current range sweep is protocol-level; physical sensing and communication ranges would require calibrated link budgets and waveform/receiver assumptions.

@@ -36,3 +36,7 @@ This map records why each selected paper figure is in the manuscript package.
 | Mobility full baseline | `round8_n100_multimobility_full_baseline/*.png` | Is the mobility boundary caused by missing communication-only baselines? |
 | B=15 error extension | `round8_error_profiles_b15_gm_rw_600slot/*.png` | Does error sensitivity persist beyond the B=10 main operating point? |
 | Statistical index | `statistical_stability_summary.csv` | Where are multi-seed mean/std/CI values archived? |
+| Finite-horizon backup curves | `pre11_evidence/round10_cumulative_discovery_b10.png`, `round10_cumulative_discovery_b15.png` | Do the extra N=100/B=10 and B=15 seeds preserve the proposed-vs-no-ISAC ordering over time? |
+| Backup tradeoff panels | `pre11_evidence/round10_tradeoff_*.png` | How do discovery, collision-penalized discovery, topology, and empty scanning move together in the backup block? |
+| Structured MARL probe | `structured_marl_probe/marl_eval_discovery_rate.png`, `marl_eval_empty_scan_ratio.png`, `marl_empty_collision_tradeoff.png` | Does the candidate-constrained shared actor use ISAC-local observations to reduce empty scans under the same execution information boundary? |
+| Residual-scale sweep | `structured_marl_probe/marl_rule_residual_scale_sweep.png` | How sensitive is the rule-residual actor to coupling strength, and why is the neural branch framed as a probe rather than the main method? |

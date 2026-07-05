@@ -22,6 +22,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | B=15 remains strong under Gauss-Markov error profiles but random-walk is more sensitive. | `06_analysis/paper_tables/round8_error_profiles_b15_gm_rw_600slot/aggregate_metrics.csv` | Supplementary evidence for operating-region nuance. |
 | Mobility-boundary results are not caused by missing SkyOrbs-like or vanilla learned-policy baselines. | `06_analysis/paper_tables/round8_n100_multimobility_full_baseline/combined_aggregate_metrics.csv`, `06_analysis/paper_figures/round8_n100_multimobility_full_baseline/` | Supplementary baseline-completeness evidence. |
 | The 3-degree beam setting is an explicit stress/failure boundary even with five baselines. | `06_analysis/paper_tables/round9_n100_b3_full_baselines_600slot/aggregate_metrics.csv`, `06_analysis/paper_figures/round9_n100_b3_full_baselines_600slot/` | Supplementary stress evidence. |
+| Candidate-constrained neural MARL is feasible under the same local information boundary, but not yet superior to all baselines. | `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`, `06_analysis/paper_figures/structured_marl_probe/` | Secondary method-probe evidence; do not frame as the main contribution. |
 
 ## Recommended Main-Text Figures
 
@@ -43,7 +44,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 ## Verification Snapshot
 
 - `pdflatex -interaction=nonstopmode main.tex`: passed; no undefined references/citations and no overfull warnings in the final checked log.
-- `python -m pytest 05_simulation\tests`: 25 passed.
+- `python -m pytest 05_simulation\tests`: 27 passed.
 - `06_analysis/paper_figures`: 358 PNG figures, all checked at 4:3 aspect ratio.
 - Statistical stability summary: `06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv`.
 
@@ -57,8 +58,8 @@ Recent checks support the current scope:
 
 ## Remaining Risks
 
-- Full neural MARL is not yet a main contribution; the current learning evidence is shared-parameter protocol tuning.
+- Full neural MARL is not yet a main contribution; the current learning evidence is shared-parameter protocol tuning plus a structured actor-critic probe.
 - Energy efficiency is collision/scan normalized only.
 - 3-degree and 5-degree beams are not solved.
 - Random-direction and random-waypoint mobility remain stress regimes.
-- The main paper is still compact; a supplement is recommended for round7/round8 stress results and full std/CI tables.
+- The main paper is still compact; the supplement now carries round7/round8 stress results, pre-11 backup trajectories, structured MARL probe figures, and full std/CI tables.
