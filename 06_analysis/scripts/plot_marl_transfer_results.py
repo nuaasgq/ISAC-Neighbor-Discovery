@@ -30,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-dir", action="append", default=None)
     parser.add_argument("--output", default="06_analysis/paper_tables/marl/transfer_current")
     parser.add_argument("--figures", default="06_analysis/paper_figures/marl/transfer_current")
+    parser.add_argument("--quiet", action="store_true", help="Do not print the full manifest to stdout.")
     return parser.parse_args()
 
 
@@ -62,7 +63,8 @@ def main() -> None:
     }
     (output_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     write_readme(output_dir, manifest, summary)
-    print(json.dumps(manifest, ensure_ascii=False, indent=2))
+    if not args.quiet:
+        print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
 
 def resolve_run_dirs(args: argparse.Namespace) -> list[Path]:
