@@ -310,6 +310,15 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
                                     )
                                     azimuth_cells, elevation_cells = beam_cells_from_width(beamwidth)
                                     area_diagonal = math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m))
+                                    print(
+                                        (
+                                            f"[transfer_sweep] case={case_count} seed={seed} "
+                                            f"mobility={mobility} N={node_count} B={beamwidth:g} "
+                                            f"slots={args.slots} protocols={len(protocols)}"
+                                        ),
+                                        file=sys.stderr,
+                                        flush=True,
+                                    )
                                     case = {
                                         "case_id": case_count - 1,
                                         "base_seed": int(seed),
@@ -348,6 +357,15 @@ def run_transfer_sweep(args: argparse.Namespace) -> dict[str, Any]:
                                     episode_rows.extend(enrich_row(row, case) for row in rows)
                                     slot_rows.extend(enrich_row(row, case) for row in slots)
                                     edge_rows.extend(enrich_row(row, case) for row in edges)
+                                    print(
+                                        (
+                                            f"[transfer_sweep] completed case={case_count} "
+                                            f"episode_rows={len(episode_rows)} slot_rows={len(slot_rows)} "
+                                            f"edge_rows={len(edge_rows)}"
+                                        ),
+                                        file=sys.stderr,
+                                        flush=True,
+                                    )
 
     aggregate = aggregate_rows(episode_rows)
     write_rows(output_dir / "per_episode_summary.csv", episode_rows)

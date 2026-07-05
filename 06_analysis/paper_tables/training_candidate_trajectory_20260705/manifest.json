@@ -1,0 +1,29 @@
+{
+  "created_at": "2026-07-05T10:59:05",
+  "training_dir": "06_analysis\\paper_tables\\round2_transfer\\training",
+  "output_dir": "06_analysis\\paper_tables\\training_candidate_trajectory_20260705",
+  "figure_dir": "06_analysis\\paper_figures\\training_candidate_trajectory_20260705",
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\training_candidate_trajectory_20260705\\cem_candidate_score_trajectory.png",
+      "type": "cem_candidate_trajectory",
+      "metric": "score"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\training_candidate_trajectory_20260705\\cem_candidate_reward_trajectory.png",
+      "type": "cem_candidate_trajectory",
+      "metric": "reward_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\training_candidate_trajectory_20260705\\cem_candidate_discovery_trajectory.png",
+      "type": "cem_candidate_trajectory",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\training_candidate_trajectory_20260705\\cem_candidate_empty_scan_trajectory.png",
+      "type": "cem_candidate_trajectory",
+      "metric": "empty_scan_ratio_mean"
+    }
+  ],
+  "note": "Each point is one full candidate-policy episode evaluation, not a per-step RL reward sample."
+}

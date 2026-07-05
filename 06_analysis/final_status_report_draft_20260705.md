@@ -20,7 +20,7 @@ This draft is intended for the 11:00 handoff.
 Current compiled state:
 
 - Main: 9 pages.
-- Supplement: 10 pages.
+- Supplement: 13 pages.
 - Compile status: no unresolved citation/reference and no overfull warnings in the checked final logs.
 - Remaining LaTeX messages are narrow-column underfull warnings only.
 
@@ -40,6 +40,8 @@ python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulatio
 python 06_analysis\scripts\analyze_energy_sensitivity.py
 python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --node-counts 100 --beamwidth-degs 10 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 600 --slot-metric-period 0 --area-scale density --range-mode singlehop --protocols uniform_random,skyorbs_like_skip_scan,rl_no_isac,improved_rl_no_isac,improved_rl_isac --train-node-count 10 --train-beamwidth-deg 10 --name round14_main_table_10seed_n100_b10
 python 06_analysis\scripts\analyze_round14_main_table.py --source 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --output 06_analysis\paper_tables\round14_main_table_10seed_n100_b10 --figures 06_analysis\paper_figures\round14_main_table_10seed_n100_b10
+python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round15_long_horizon_3000slot_n100_b10_b15 --node-counts 100 --beamwidth-degs 10,15 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 3000 --slot-metric-period 10 --area-scale density --range-mode singlehop --protocols uniform_random,skyorbs_like_skip_scan,improved_rl_no_isac,improved_rl_isac,collision_aware_isac --train-node-count 10 --train-beamwidth-deg 10 --name round15_long_horizon_3000slot_n100_b10_b15
+python 06_analysis\scripts\analyze_round15_long_horizon.py
 python 06_analysis\scripts\audit_paper_figures.py
 pdflatex -interaction=nonstopmode main.tex
 bibtex main
@@ -52,11 +54,11 @@ pdflatex -interaction=nonstopmode supplement.tex
 Results:
 
 - Unit tests: 29 passed.
-- Final figure audit: 47 LaTeX figure instances, 44 unique existing figure files, 0 missing files, and 0 non-4:3 violations.
+- Final figure audit: 51 LaTeX figure instances, 48 unique existing figure files, 0 missing files, and 0 non-4:3 violations.
 - Main PDF pages: 9.
 - Supplement PDF pages: 10.
-- Selected pre-11, round11, round13, and round14 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures and round14 contributes 1 current main-table stability figure.
-- Referenced figures in `main.tex` and `supplement.tex`: all present on disk. The figure audit checks 47 LaTeX figure instances, 44 unique figure files, 0 missing files, and 0 non-4:3 aspect-ratio violations.
+- Selected pre-11, round11, round13, round14, and round15 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures, round14 contributes 1 current main-table stability figure, and round15 contributes 10 current long-horizon figures.
+- Referenced figures in `main.tex` and `supplement.tex`: all present on disk. The figure audit checks 51 LaTeX figure instances, 48 unique figure files, 0 missing files, and 0 non-4:3 aspect-ratio violations.
 - The final checked LaTeX logs contain no unresolved citations/references and no overfull warnings after adding the 3GPP ISAC/channel references and the supplement PHY-to-protocol parameter table.
 
 ## Main Evidence
@@ -101,6 +103,15 @@ Round13 collision-aware MAC refinement probe:
 - Assumed radio-state accounting: discoveries per joule improve from 6.1932 to 6.5417 at B=10 and from 9.2045 to 10.1564 at B=15 versus the proposed low-latency protocol, also with 10/10 positive paired deltas.
 - Post-hoc power sensitivity: versus one-slot delay, collision-aware discoveries-per-joule deltas remain positive in 10/10 paired seeds for every tested power profile and beamwidth; versus the proposed low-latency policy, the mean delta is positive in 11/12 profile/beamwidth combinations, with RX-heavy B=10 as the boundary.
 - Interpretation: the B=15 collision boundary is mitigated in this ten-seed probe by local role control, but full collision- and platform-calibrated energy-aware MAC design remains open.
+
+Round15 3000-slot long-horizon sensitivity:
+
+- Same N=100/B=10/B=15, ten paired seeds, Gauss-Markov, density-scaled, single-hop setting, but with 3000 slots (15 s at 5 ms/slot) instead of 600 slots (3 s).
+- B=10 proposed/collision-aware discovery: 0.7735 / 0.7718 versus enhanced no-ISAC 0.0034, SkyOrbs-like 0.0036, and random 0.0025.
+- B=15 proposed/collision-aware discovery: 0.8808 / 0.8829 versus enhanced no-ISAC 0.0168, SkyOrbs-like 0.0179, and random 0.0125.
+- Proposed raw-discovery deltas are positive in 10/10 paired seeds versus enhanced no-ISAC, SkyOrbs-like, and random for both B=10 and B=15.
+- Horizon comparison: moving from 600 to 3000 slots raises B=10 proposed discovery from 0.3652 to 0.7735 and B=15 proposed discovery from 0.5421 to 0.8808, while communication-only controls remain near zero.
+- Boundary: long windows accumulate collision cost, especially at B=15. Collision-aware role control improves 3000-slot collision-penalized discovery versus the proposed low-latency variant (B=10: 0.3919 vs 0.3324; B=15: 0.1093 vs 0.0818), but full MAC optimization remains open.
 
 ## Structured Neural MARL Probe
 

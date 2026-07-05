@@ -21,7 +21,7 @@ Date: 2026-07-05
 | Energy efficiency is incomplete. | Recent UAV ND work jointly optimizes delay and power. | Round13 reports assumed radio-state accounting and improves discoveries per joule under the default powers. | Treat energy metrics as diagnostic accounting; keep platform-calibrated delay-power optimization as future work. |
 | B=15 looks good but collisions are large. | Raw discovery and connectivity can hide MAC cost. | Round8 B=15 full sweep includes collision counts and collision-penalized metrics; round13 mitigates the round11 B=15 collision boundary with local role control. | Present B=15 as raw discovery/connectivity operating point, not universally optimal or energy-optimal. |
 | `Rs/Rc` saturation may be misread as a physical sensing law. | The simulator only confirms communication-range neighbors. | Manuscript says saturation is in the evaluated communication-neighbor-discovery abstraction, and now explicitly separates sensing-observation support from communication-handshake support. | Keep wording model-internal. |
-| Training convergence may be overclaimed. | CEM score curve is empirical and finite. | Section renamed `Training-Score Evolution`; text says not a theoretical guarantee. | Do not use `convergence proof` language. |
+| Training convergence may be overclaimed. | CEM score curve is empirical and finite, and it is not sampled per step. | Section now uses candidate-evaluation trajectories and explicitly says each point is a full candidate-policy episode evaluation. | Do not use `convergence proof` or per-step MARL convergence language. |
 
 ## Strongest Reviewer Response Points
 

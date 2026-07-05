@@ -1,0 +1,63 @@
+{
+  "created_at": "2026-07-05T12:58:58",
+  "source": "05_simulation\\results_raw\\round15_long_horizon_3000slot_n100_b10_b15",
+  "output_dir": "06_analysis\\paper_tables\\round15_long_horizon_3000slot",
+  "figure_dir": "06_analysis\\paper_figures\\round15_long_horizon_3000slot",
+  "short_source": "06_analysis/paper_tables/round13_collision_energy_10seed",
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_cumulative_discovery_b10.png",
+      "type": "cumulative",
+      "beamwidth_deg": 10.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_cumulative_discovery_b15.png",
+      "type": "cumulative",
+      "beamwidth_deg": 15.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_discovery_rate.png",
+      "type": "bar",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_collision_penalized.png",
+      "type": "bar",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_mean_delay.png",
+      "type": "bar",
+      "metric": "mean_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_empty_scan_ratio.png",
+      "type": "bar",
+      "metric": "empty_scan_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_lambda2.png",
+      "type": "bar",
+      "metric": "lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_proposed_discovery_delta.png",
+      "type": "paired_delta",
+      "metric": "discovery_rate",
+      "treatment": "improved_rl_isac"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_collision_aware_penalized_delta.png",
+      "type": "paired_delta",
+      "metric": "collision_penalized_discovery_rate",
+      "treatment": "collision_aware_isac"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round15_long_horizon_3000slot\\round15_horizon_discovery_600_vs_3000.png",
+      "type": "horizon_comparison",
+      "metric": "discovery_rate"
+    }
+  ],
+  "tag": "round15",
+  "scope": "N=100, B=10/15 deg, 3000 slots, 5 ms slot, ten paired seeds, single-hop range."
+}

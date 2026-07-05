@@ -25,6 +25,7 @@ The data do not yet support a claim of full neural MARL superiority, strict SkyO
 | Candidate-constrained neural MARL is feasible under the same local information boundary, but not yet superior to all baselines. | `06_analysis/paper_tables/structured_marl_probe/structured_marl_probe_eval_summary.csv`, `06_analysis/paper_figures/structured_marl_probe/` | Secondary method-probe evidence; do not frame as the main contribution. |
 | Focused five-seed paired stability preserves the main N=100/B=10/B=15 raw-discovery ordering. | `06_analysis/paper_tables/round11_paired_seed_campaign_main/`, `06_analysis/paper_figures/round11_paired_seed_campaign_main/` | Strong stability/mechanism evidence; also shows collision-penalized optimization remains open at B=15. |
 | Collision-aware local role control mitigates the B=15 collision-penalized boundary. | `06_analysis/paper_tables/round13_collision_energy_10seed/`, `06_analysis/paper_figures/round13_collision_energy_10seed/`, `06_analysis/paper_tables/round13_energy_sensitivity/` | Ten-seed mechanism-refinement evidence with assumed radio-state accounting and post-hoc power sensitivity; not a complete MAC or calibrated energy model. |
+| The method ordering persists under a longer 3000-slot discovery window. | `06_analysis/paper_tables/round15_long_horizon_3000slot/`, `06_analysis/paper_figures/round15_long_horizon_3000slot/round15_horizon_discovery_600_vs_3000.png` | Strong focused sensitivity evidence at N=100/B=10/B=15; B=15 collision-penalized performance remains a dense-MAC boundary. |
 | ISAC abstraction has a cite-backed PHY-to-protocol interpretation. | `07_paper/ieee_twc_isac_nd/main.tex`, `07_paper/ieee_twc_isac_nd/supplement.tex`, `06_analysis/phy_to_protocol_isac_mapping_20260705.md` | Text-only mitigation; still not a calibrated waveform/detector appendix. |
 
 ## Recommended Main-Text Figures
@@ -34,13 +35,14 @@ Use the existing main draft selection:
 - System model: `06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png`
 - Protocol mechanism: `06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png`
 - Shared-policy architecture: `06_analysis/paper_figures/concept/policy_architecture_shared_agent.png`
-- Training-score evolution: `06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png`
+- Training-score evolution: `06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png`
 - N=100 transfer: `06_analysis/paper_figures/round3_n100_transfer/density_beamwidth_discovery_rate_n100.png`
 - Area-scale check: `06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_lambda2.png`
 - Mobility boundary: `06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png`
 - Range sensitivity: `06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png`
 - ISAC error profile: `06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png`
 - Mechanism ablation: `06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png`
+- Long-horizon sensitivity for supplement: `06_analysis/paper_figures/round15_long_horizon_3000slot/round15_horizon_discovery_600_vs_3000.png`
 
 Keep round7/round8 stress figures as supplement unless the main draft expands.
 
@@ -56,7 +58,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 - Round13 collision-aware MAC/energy probe: `06_analysis/paper_tables/round13_collision_energy_10seed/`.
 - Round13 radio-state power-sensitivity reweighting: `06_analysis/paper_tables/round13_energy_sensitivity/`.
 - One-page submission pitch: `06_analysis/submission_pitch_one_page_20260705.md`.
-- Figure integrity audit: `06_analysis/paper_figure_integrity_audit_20260705.md` reports 47 referenced figure instances, 44 unique files, 0 missing files, and 0 non-4:3 violations.
+- Figure integrity audit: `06_analysis/paper_figure_integrity_audit_20260705.md` reports 51 referenced figure instances, 48 unique files, 0 missing files, and 0 non-4:3 violations.
 
 ## Literature Boundary Notes
 

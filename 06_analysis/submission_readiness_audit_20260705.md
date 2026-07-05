@@ -1,6 +1,6 @@
 # Submission Readiness Audit - 2026-07-05 Morning
 
-This note records the readiness state after the latest round13 ten-seed collision/energy evidence integration and round14 ten-seed main-table stability check.
+This note records the readiness state after the latest round13 ten-seed collision/energy evidence integration, round14 ten-seed main-table stability check, and round15 3000-slot long-horizon sensitivity check.
 
 ## Current Manuscript Package
 
@@ -8,8 +8,9 @@ This note records the readiness state after the latest round13 ten-seed collisio
 |---|---:|---|
 | `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | IEEEtran draft; Table IV now uses the round14 ten-seed N=100/B=10 main comparison, and the ISAC prior paragraph now separates sensing-service support from communication-link support with 3GPP citations. |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting plus power-sensitivity boundary text, structured MARL probe figures, a PHY-to-protocol ISAC parameter mapping table, and a SkyOrbs-like baseline-scope note. |
-| `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, round13, and round14 figures checked at 4:3 aspect ratio; the LaTeX figure audit reports 47 referenced figure instances, 0 missing files, and 0 non-4:3 violations. |
+| `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, round13, round14, and round15 figures checked at 4:3 aspect ratio; the LaTeX figure audit reports 51 referenced figure instances, 0 missing files, and 0 non-4:3 violations. |
 | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/` | Verified | Ten-seed N=100/B=10 main-table check with positive paired discovery deltas against all four communication-only controls. |
+| `06_analysis/paper_tables/round15_long_horizon_3000slot/` | Verified | Ten-seed N=100/B=10/B=15, 3000-slot check showing raw-discovery ordering persists under a 15 s discovery window, with B=15 collision cost remaining a MAC boundary. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
 | `06_analysis/paper_tables/paired_delta_summary/` | Verified | 125 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
 | `06_analysis/paper_tables/round10_n100_b10_b15_extra_seeds/` | Backup | Extra three-seed N=100/B=10/B=15 stability check; preserves qualitative ordering but shows absolute discovery-rate seed sensitivity. |
@@ -32,9 +33,11 @@ python 06_analysis\scripts\build_paired_delta_summary.py
 python 06_analysis\scripts\plot_round11_stability.py
 python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulation\results_raw\round13_collision_energy_10seed --output 06_analysis\paper_tables\round13_collision_energy_10seed --figures 06_analysis\paper_figures\round13_collision_energy_10seed --tag round13
 python 06_analysis\scripts\analyze_round14_main_table.py --source 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --output 06_analysis\paper_tables\round14_main_table_10seed_n100_b10 --figures 06_analysis\paper_figures\round14_main_table_10seed_n100_b10
+python 05_simulation\run_transfer_sweep.py --config 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml --trained-config 06_analysis\paper_tables\round2_transfer\training\best_config.yaml --output 05_simulation\results_raw\round15_long_horizon_3000slot_n100_b10_b15 --node-counts 100 --beamwidth-degs 10,15 --mobilities gauss_markov --seeds 20290704,20291713,20292722,20293731,20294740,20295749,20296758,20297767,20298776,20299785 --episodes-per-seed 1 --slots 3000 --slot-metric-period 10 --area-scale density --range-mode singlehop --protocols uniform_random,skyorbs_like_skip_scan,improved_rl_no_isac,improved_rl_isac,collision_aware_isac --train-node-count 10 --train-beamwidth-deg 10 --name round15_long_horizon_3000slot_n100_b10_b15
+python 06_analysis\scripts\analyze_round15_long_horizon.py
 ```
 
-Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `29 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3. The figure integrity audit passes with 47 referenced figure instances, 44 unique files, no missing files, and no aspect-ratio violations.
+Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `29 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3. The figure integrity audit passes with 51 referenced figure instances, 48 unique files, no missing files, and no aspect-ratio violations.
 
 ## Claim Boundaries Now Reflected in Text
 
@@ -51,7 +54,7 @@ Result after the latest full check: no log errors, no unresolved references or c
 
 The main manuscript now carries the concise evidence chain: training evolution, dynamic protocol comparison, N=100 transfer, area scaling, mobility boundary, range sensitivity, error robustness, mechanism ablation, and the round14 ten-seed main-table baseline comparison.
 
-The supplement now carries the reviewer-facing evidence chain: coverage matrix, SkyOrbs-like baseline-scope note, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, focused round11 five-seed paired stability, round13 collision-aware MAC refinement, energy accounting and power-sensitivity boundary text, round14 ten-seed main-table stability, and structured MARL probe results. Round10 is backup trajectory evidence; round11 is the focused paired stability evidence for N=100/B=10/B=15; round13 is a ten-seed mechanism-refinement probe for the collision boundary.
+The supplement now carries the reviewer-facing evidence chain: coverage matrix, SkyOrbs-like baseline-scope note, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, round15 3000-slot long-horizon sensitivity, focused round11 five-seed paired stability, round13 collision-aware MAC refinement, energy accounting and power-sensitivity boundary text, round14 ten-seed main-table stability, and structured MARL probe results. Round10 is backup trajectory evidence; round15 addresses whether the 600-slot window is too short; round11 is the focused paired stability evidence for N=100/B=10/B=15; round13 is a ten-seed mechanism-refinement probe for the collision boundary.
 
 ## Remaining Risks Before External Submission
 

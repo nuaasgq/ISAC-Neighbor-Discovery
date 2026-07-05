@@ -1,0 +1,83 @@
+base_config_path: 05_simulation\configs\paper_transfer_train_n10_b10_singlehop.yaml
+trained_protocol: improved_rl_isac
+best_score: 126.16484140025176
+best_generation: 4
+best_candidate: 5
+training:
+  generations: 5
+  population: 8
+  episodes: 1
+  slots_per_episode: 1200
+  seeds:
+  - 20260704
+  test_seeds:
+  - 20270704
+  - 20271713
+  test_episodes: 1
+  elite_fraction: 0.25
+  learning_rate: 0.7
+  min_std: 0.03
+  training_seed: 20260704
+shared_policy_parameters:
+  alpha_occupancy: 1.7290062787247988
+  softmax_beta: 2.6355170120582336
+  exploration_floor: 0.1407558503358651
+  confidence_decay: 0.987398480879941
+  piggyback_sensing_period_multiplier: 0.6288489085640206
+resolved_simulation_config:
+  name: paper_transfer_train_n10_b10_singlehop
+  seed: 20260704
+  episodes: 1
+  slots_per_episode: 1200
+  slot_metric_period: 1
+  slot_duration_s: 0.005
+  n_nodes: 10
+  area_size_m:
+  - 260.0
+  - 260.0
+  - 90.0
+  communication_range_m: 390.0
+  sensing_range_m: 390.0
+  mobility:
+    model: gauss_markov
+    speed_min_mps: 1.0
+    speed_max_mps: 5.0
+    mean_speed_mps: 3.0
+    speed_std_mps: 0.8
+    gauss_markov_alpha: 0.85
+    random_walk_step_std_m: 0.4
+    direction_update_period_slots: 60
+    waypoint_threshold_m: 12.0
+    speed_mean_mps: 3.0
+    min_speed_mps: 1.0
+    max_speed_mps: 5.0
+    alpha: 0.85
+    waypoint_pause_slots: 0
+    boundary: reflect
+  azimuth_cells: 36
+  elevation_cells: 18
+  alignment_tolerance_cells: 0
+  p_sense: 0.15
+  p_tx: 0.425
+  p_rx: 0.425
+  p_idle: 0.0
+  false_alarm_rate: 0.0
+  miss_detection_rate: 0.0
+  angular_cell_offset_std: 0.0
+  sensing_period_slots: 1
+  belief_update_rho: 0.55
+  exploration_floor: 0.1407558503358651
+  softmax_beta: 2.6355170120582336
+  target_degree: 4
+  alpha_occupancy: 1.7290062787247988
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.987398480879941
+  piggyback_sensing_period_multiplier: 0.6288489085640206
+  baselines:
+  - skyorbs_like_skip_scan
+  - uniform_random
+  - rl_no_isac
+  - improved_rl_no_isac
+  - improved_rl_isac

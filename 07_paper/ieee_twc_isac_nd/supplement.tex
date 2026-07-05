@@ -47,9 +47,9 @@ The complete evidence map is maintained in the repository coverage matrix.
     Small-to-large transfer & Bounded & Training at $N=10$, 10 deg; N=100 zero-shot tables and figures. & Main training is shared-parameter protocol tuning. \\
     Baselines & Main+stress & Uniform random, SkyOrbs-like, learned no-ISAC, enhanced no-ISAC, enhanced ISAC. The no-ISAC learning baselines disable sensing-derived occupancy, candidate, and beam-lock observations at execution. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
     Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
-    Range and timing & Sensitivity & Range grid and slot-duration sensitivity. & Protocol-level abstraction, not calibrated RF range law. \\
+    Range and timing & Sensitivity & Range grid, slot-duration sensitivity, and 3000-slot long-horizon check. & Protocol-level abstraction, not calibrated RF range law. \\
     ISAC errors & Configured & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
-    Training curves & Trace & Round2 and round7 reward and score histories. & Empirical training-score evolution only. \\
+    Training curves & Trace & Round2 CEM candidate-evaluation reward/score histories and round7 longer CEM histories. & Empirical training-score evolution only, not per-step MARL convergence. \\
     \bottomrule
   \end{tabular}
 \end{table*}
@@ -63,17 +63,19 @@ Accordingly, the main claim is not a head-to-head claim against complete SkyOrbs
 
 \section{Training and Scale Transfer Evidence}
 
-Fig.~\ref{fig:supp_training} reports the empirical reward and score evolution of the shared-parameter policy-search run used to select the candidate learned policy.
-The curves are not used as a proof of convergence; they document that the selected policy came from a stabilized training-score region rather than from a single isolated episode.
+Fig.~\ref{fig:supp_training} reports the empirical reward and score trajectories of the shared-parameter policy-search run used to select the candidate learned policy.
+The horizontal axis is the candidate evaluation index: each point is a complete candidate-policy episode evaluation under the CEM-style search.
+The curves are not used as a proof of convergence, and they should not be read as per-step MARL reward curves.
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_reward_curve.png}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_reward_trajectory.png}
   \hfill
-  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/training_round2_candidate/train_score_curve.png}
-  \caption{Training-history evidence for the selected shared-parameter policy-search run. Left: reward evolution. Right: selection score evolution. These single-run curves support empirical stabilization only, not theoretical convergence.}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_candidate_score_trajectory.png}
+  \caption{Candidate-evaluation history for the selected shared-parameter policy-search run. Left: episode reward. Right: selection score. These single-run curves document the CEM search trace only; they are not per-step MARL convergence curves.}
   \label{fig:supp_training}
 \end{figure*}
+\clearpage
 
 Fig.~\ref{fig:supp_scale_transfer} summarizes the broad node-count and beamwidth transfer grid.
 The policy is trained at $N=10$ and 10-degree beams, while the grid evaluates $N=10,20,50,100$ and 3--30 degree beams under density-preserving scaling.
@@ -81,9 +83,9 @@ The heatmap and B=10 node-count curve show the intended small-to-large transfer 
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png}
   \hfill
-  \includegraphics[width=0.47\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png}
   \caption{Node-count and beamwidth transfer evidence. Left: proposed-policy discovery heatmap over $N=10,20,50,100$ and 3--30 degree beams. Right: B=10 node-count transfer curve.}
   \label{fig:supp_scale_transfer}
 \end{figure*}
@@ -196,6 +198,7 @@ It supports the mobility-boundary interpretation and indicates that the observed
   \caption{Full-baseline mobility comparison at N=100. Left: 10-degree beams. Right: 15-degree beams. The proposed ISAC-assisted policy has the highest observed discovery among the implemented baselines in these N=100, 10/15-degree mobility tests, while random-direction and random-waypoint remain stress regimes.}
   \label{fig:supp_mobility_full}
 \end{figure*}
+\clearpage
 
 \section{B=15 Error Profiles}
 
@@ -242,6 +245,26 @@ The curves are supplementary robustness evidence and should not replace the main
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/pre11_evidence/round10_cumulative_discovery_b15.png}
   \caption{Cumulative finite-horizon discovery trajectories in the N=100 extra-seed backup block. Left: B=10 degrees. Right: B=15 degrees. The proposed ISAC-assisted policy accumulates discovered links over the full horizon, while the implemented communication-only baselines remain close to zero in these large-scale backup settings.}
   \label{fig:supp_cumulative_discovery}
+\end{figure*}
+
+Fig.~\ref{fig:supp_long_horizon} reports a focused 3000-slot, ten-seed long-horizon check under the same N=100, Gauss-Markov, density-scaled, single-hop setting.
+At the 5 ms slot duration, 600 slots correspond to 3 s and 3000 slots correspond to 15 s.
+The long horizon increases raw discovery for the ISAC-assisted policies: at B=10, the proposed and collision-aware variants reach 0.7735 and 0.7718 discovery, while random, SkyOrbs-like, and enhanced no-ISAC remain between 0.0025 and 0.0036.
+At B=15, the proposed and collision-aware variants reach 0.8808 and 0.8829, while the communication-only controls remain at or below 0.0179.
+Thus the 600-slot horizon is a stress window rather than the only regime where the method is useful.
+However, the long horizon also accumulates collision cost, especially at B=15: collision-aware role control improves collision-penalized discovery over the proposed low-latency variant, but full MAC optimization remains an open boundary.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round15_long_horizon_3000slot/round15_horizon_discovery_600_vs_3000.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round15_long_horizon_3000slot/round15_collision_penalized.png}
+  \vspace{0.4em}
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round15_long_horizon_3000slot/round15_cumulative_discovery_b10.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round15_long_horizon_3000slot/round15_cumulative_discovery_b15.png}
+  \caption{Long-horizon sensitivity at N=100 with ten paired seeds. Top left: 600-slot versus 3000-slot discovery for common protocols. Top right: 3000-slot collision-penalized discovery. Bottom: 3000-slot cumulative discovery trajectories for B=10 and B=15.}
+  \label{fig:supp_long_horizon}
 \end{figure*}
 
 Fig.~\ref{fig:supp_tradeoff} places raw discovery, collision-penalized discovery, connectivity, and empty-scan behavior side by side.
