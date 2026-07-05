@@ -1,0 +1,15 @@
+﻿# MARL Transfer Evaluation
+
+- Created: 2026-07-06T07:33:29
+- Runs loaded: 1
+- Rows loaded: 10
+
+This table aggregates zero-shot evaluations of trained shared MARL policies under changed node counts and beam codebooks.
+
+## Summary
+
+```csv
+method,method_label,train_algorithm,train_network,train_reward_version,env_protocol,phase,node_count,beamwidth_deg,beam_count,slots_per_episode,communication_range_m,sensing_range_m,eval_n,episodes,run_n,discovery_rate_mean,discovery_rate_std,discovery_rate_ci95,collision_penalized_discovery_rate_mean,collision_penalized_discovery_rate_std,collision_penalized_discovery_rate_ci95,mean_delay_censored_mean,mean_delay_censored_std,mean_delay_censored_ci95,p95_delay_censored_mean,p95_delay_censored_std,p95_delay_censored_ci95,empty_scan_ratio_mean,empty_scan_ratio_std,empty_scan_ratio_ci95,lambda2_mean,lambda2_std,lambda2_ci95,largest_component_size_mean,largest_component_size_std,largest_component_size_ci95,lcc_ratio_mean,lcc_ratio_std,lcc_ratio_ci95,isolated_node_ratio_mean,isolated_node_ratio_std,isolated_node_ratio_ci95,collision_count_mean,collision_count_std,collision_count_ci95,collisions_per_discovery_censored_mean,collisions_per_discovery_censored_std,collisions_per_discovery_censored_ci95,discoveries_per_1000_scan_actions_mean,discoveries_per_1000_scan_actions_std,discoveries_per_1000_scan_actions_ci95,discoveries_per_joule_mean,discoveries_per_joule_std,discoveries_per_joule_ci95
+
+contention_actor,contention_actor,isac_mappo,contention_shared,collision_topology,isac_structured_marl,eval_stochastic,100,5.0,2592,3000,900.0,900.0,10,10,1,0.22707070707070706,0.01302538645183379,0.008073218163971997,0.18155265072443383,0.009921878476206724,0.006149643991833944,2565.3613333333333,26.017969529082304,16.12610458573268,3000.0,0.0,0.0,0.15285011567965195,0.0008866008204342788,0.0005495208817174702,8.709852743743681,1.3145673149058816,0.8147772631320225,100.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1253.6,439.8166789824041,272.6012018690388,1.1061941437137457,0.3370325951494948,0.20889496669240493,8.37561748098108,0.5171464488520274,0.3205306897990744,0.7487056950403741,0.04258050219966616,0.026391668689491943
+```

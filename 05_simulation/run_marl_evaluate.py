@@ -140,6 +140,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "deterministic": bool(args.deterministic),
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
+        "policy_rng_seed_policy": "torch_and_numpy_episode_seed",
         "resource_limits": {
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
@@ -236,6 +237,8 @@ def evaluate_policy(
         for mode_index, use_stochastic in enumerate(eval_modes):
             for episode in range(int(args.eval_episodes)):
                 seed = int(args.seed) + 10_000 * mode_index + episode
+                torch_module.manual_seed(seed)
+                np.random.seed(seed % (2**32 - 1))
                 env = MarlNeighborDiscoveryEnv(
                     cfg,
                     seed=seed,
