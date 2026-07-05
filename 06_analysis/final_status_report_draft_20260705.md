@@ -5,7 +5,7 @@ This draft is intended for the 11:00 handoff.
 ## Repository State
 
 - Branch: `master`
-- Latest synced commit: current `master` HEAD after the final gap-triage and round13 reproducibility updates.
+- Latest synced commit: current `master` HEAD after the final gap-triage, round13 reproducibility, reference-metadata, and supplement-procedure updates.
 - GitHub remote: `https://github.com/nuaasgq/ISAC-Neighbor-Discovery.git`
 - Working tree at last check: clean
 
@@ -51,6 +51,7 @@ Results:
 - Main PDF pages: 8.
 - Supplement PDF pages: 10.
 - Selected pre-11, round11, and round13 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures.
+- Referenced figures in `main.tex` and `supplement.tex`: all present on disk.
 
 ## Main Evidence
 
@@ -135,6 +136,8 @@ Follow-up:
   - `06_analysis/scripts/plot_round12_collision_aware.py`
 - Round13 paper-writing route:
   - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
+- Pre-submission gap triage:
+  - `06_analysis/pre_submission_gap_triage_20260705.md`
 - One-page submission pitch:
   - `06_analysis/submission_pitch_one_page_20260705.md`
 - Progress report:
