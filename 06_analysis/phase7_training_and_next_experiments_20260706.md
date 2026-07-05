@@ -39,6 +39,20 @@
 - Purpose: emit `uniform_random` and `skyorbs_like_skip_scan` endpoint results in the same `scope=marl_transfer_evaluation` schema used by checkpoint-based MARL evaluation.
 - Plotting support: `plot_marl_transfer_results.py` now preserves `method/method_label`; `plot_marl_method_comparison.py` now supports dynamic method sets rather than only the three ISAC-MAPPO variants.
 
+### Five-Way MARL-Compatible Campaign
+
+- Script: `05_simulation/run_marl_fiveway_eval_campaign.py`
+- Default comparison: `uniform_random`, `skyorbs_like`, `mappo_no_isac`,
+  `contention_no_isac`, and `contention_actor`.
+- Default test setting: `N=100`, `B in {10, 15, 30} deg`, `3000 slots`,
+  `10 stochastic episodes`.
+- The script keeps scenario seeds paired across all five methods for each
+  `(N, B, slots)` setting and emits the same `marl_transfer_evaluation` schema
+  for protocol baselines and checkpoint-based MARL policies.
+- `contention_no_isac` defaults to the first Phase-7 100-episode checkpoint.
+  Multi-training-seed closure remains a later robustness step after all Phase-7
+  seeds complete.
+
 ## Immediate Priority
 
 1. Complete and aggregate Phase-6 `B=5`.
