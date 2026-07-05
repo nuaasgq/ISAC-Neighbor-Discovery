@@ -10,7 +10,7 @@ Template basis:
 Current status:
 
 - `main.tex` is a conservative IEEE journal draft with explicit claim boundaries; it is not yet a final submission manuscript.
-- `supplement.tex` is a compact supplementary-material draft for coverage, stress, mobility-baseline, and error-profile evidence.
+- `supplement.tex` is a compact supplementary-material draft for coverage, stress, mobility-baseline, error-profile, paired-stability, and collision-aware MAC-refinement evidence.
 - `references.bib` only includes references that were locally noted or web-verified during the workflow.
 - The current draft compiles to an 8-page PDF with `pdflatex`; the final checked log has no undefined references/citations and no overfull warnings.
 - The supplement compiles to a 9-page PDF with `pdflatex`; the final checked log has no undefined references and no overfull warnings.

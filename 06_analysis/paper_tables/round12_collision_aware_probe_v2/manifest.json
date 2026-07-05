@@ -1,0 +1,38 @@
+{
+  "created_at": "2026-07-05T08:49:07",
+  "source": "05_simulation\\results_raw\\round12_collision_aware_probe_v2",
+  "output_dir": "06_analysis\\paper_tables\\round12_collision_aware_probe_v2",
+  "figure_dir": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2",
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2\\round12_cumulative_discovery_b10.png",
+      "type": "cumulative",
+      "beamwidth_deg": 10.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2\\round12_cumulative_discovery_b15.png",
+      "type": "cumulative",
+      "beamwidth_deg": 15.0
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2\\round12_discovery_rate.png",
+      "type": "bar",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2\\round12_collision_penalized.png",
+      "type": "bar",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2\\round12_collision_count.png",
+      "type": "bar",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\round12_collision_aware_probe_v2\\round12_collision_penalized_delta.png",
+      "type": "paired_delta",
+      "metric": "collision_penalized_discovery_rate"
+    }
+  ]
+}

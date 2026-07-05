@@ -450,6 +450,7 @@ To bound this assumption, we evaluate a one-slot delayed candidate-set variant.
 The delayed variant obtains a discovery rate of 0.2989 and $\lambda_2=8.4709$, compared with 0.3655 and 12.9222 for the low-latency variant and 0.0007 for the no-ISAC learning baseline.
 It also reduces collisions from 1050.0 to 697.0, and its collision-penalized discovery rate remains 0.2620 versus 0.3015 for the low-latency variant.
 This supports interpreting the proposed protocol as a low-latency design point and the delayed variant as a practical implementation boundary.
+This B=10 result should not be read as collision optimality: the supplementary five-seed B=15 check shows that one-slot delay can be more collision-efficient, making collision-aware MAC refinement a separate protocol-layer problem.
 Fig.~\ref{fig:ablation_discovery} gives the corresponding ablation comparison.
 
 \begin{figure}[!t]
@@ -469,6 +470,7 @@ Fifth, extremely narrow beams at 3 and 5 degrees and abrupt mobility models rema
 Sixth, the efficiency metrics are scan-action and collision normalized; a Joule-level delay-power comparison would require an explicit radio-state energy model.
 Finally, the proposed ISAC-assisted policy creates more collision attempts than the no-ISAC baseline in dense finite-horizon tests.
 Therefore, collision-penalized discovery should be interpreted together with raw discovery rate in dense finite-horizon settings.
+A supplementary collision-aware role-control probe mitigates this boundary in the tested B=10/B=15 paired settings, but a complete collision- and energy-aware MAC remains outside the present scope.
 
 \section{Conclusion}
 This paper studies ISAC-assisted narrow-beam neighbor discovery for distributed-execution UAV swarms.

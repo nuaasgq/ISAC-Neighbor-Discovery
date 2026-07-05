@@ -235,7 +235,7 @@ Fig.~\ref{fig:supp_round11_stability} reports a focused N=100, B=10/B=15 five-se
 At B=10, the proposed protocol obtains discovery 0.3639 versus 0.0006 for enhanced no-ISAC, 0.0333 without candidate-set refinement, and 0.2977 with one-slot delayed candidate use.
 At B=15, the corresponding discovery values are 0.5445, 0.0034, 0.1080, and 0.5107.
 The proposed raw-discovery delta is positive in all 5/5 paired seeds against random, enhanced no-ISAC, candidate-set removal, and one-slot delay for both beamwidths.
-However, the collision-penalized panel exposes a MAC-layer boundary: at B=15 the one-slot delayed variant has collision-penalized discovery 0.2207 versus 0.2042 for the proposed low-latency variant, so collision-aware role control remains open.
+However, the collision-penalized panel exposes a MAC-layer boundary: at B=15 the one-slot delayed variant has collision-penalized discovery 0.2207 versus 0.2042 for the proposed low-latency variant, so collision-aware MAC refinement remains open.
 
 \begin{figure*}[!t]
   \centering
@@ -244,6 +244,24 @@ However, the collision-penalized panel exposes a MAC-layer boundary: at B=15 the
   \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round11_paired_seed_campaign_main/round11_collision_penalized.png}
   \caption{Focused five-seed paired stability campaign at N=100. Left: raw finite-horizon discovery rate. Right: collision-penalized discovery. The raw-discovery ordering is stable, while the B=15 collision-penalized result identifies the need for collision-aware MAC refinement.}
   \label{fig:supp_round11_stability}
+\end{figure*}
+
+\subsection{Collision-Aware MAC Refinement Probe}
+
+To test whether the B=15 collision-penalized boundary is inherent to ISAC candidate refinement or caused by role selection, we add a lightweight distributed variant, \texttt{collision\_aware\_isac}.
+It keeps the same ISAC candidate-set interface and handshake readiness rule as the proposed protocol, but stores a beam-level collision counter when multiple transmitters address the same receiver and lowers the local TX probability under candidate and collision pressure.
+In the same five-seed paired setting, the collision-aware variant obtains B=10 discovery 0.3697 and collision-penalized discovery 0.3162, compared with 0.3639 and 0.2995 for the proposed low-latency variant.
+At B=15, it obtains discovery 0.5696 and collision-penalized discovery 0.2504, compared with 0.5445 and 0.2042 for the proposed low-latency variant and 0.5107 and 0.2207 for the one-slot delayed variant.
+The collision-penalized delta is positive in all 5/5 paired seeds versus both the proposed low-latency protocol and the one-slot delayed variant for B=10 and B=15.
+This probe does not close the full MAC-design problem; it shows that the collision boundary identified in Fig.~\ref{fig:supp_round11_stability} is addressable by distributed role-control refinement.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round12_collision_aware_probe_v2/round12_collision_penalized.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/paper_figures/round12_collision_aware_probe_v2/round12_collision_count.png}
+  \caption{Collision-aware MAC refinement probe in the same N=100 five-seed paired setting. Left: collision-penalized discovery. Right: collision count. The local role-control refinement improves collision-penalized discovery while preserving the same ISAC candidate-set handshake interface.}
+  \label{fig:supp_round12_collision_aware}
 \end{figure*}
 
 \clearpage
@@ -295,6 +313,8 @@ All compact multi-seed summaries are archived under the repository paper-table d
 The normalized statistical table is the \texttt{statistical\_stability\_summary.csv} artifact.
 Rows tagged \texttt{main} support the manuscript tables and figures; rows tagged \texttt{main\_boundary}, \texttt{supplement}, or \texttt{supplement\_stress} should be used to bound claims and answer reviewer questions.
 The statistical summary includes the N=10/20/50/100 scale-grid rows where archived, but many robustness and baseline-completeness checks are intentionally N=100-only.
+The focused round11 five-seed paired endpoints are archived separately and are not part of the representative n=3 normalized stability table.
+The round12 collision-aware MAC refinement endpoints are also archived separately as a mechanism-refinement probe, not as a replacement for the main protocol table.
 
 \begin{table*}[!t]
   \centering

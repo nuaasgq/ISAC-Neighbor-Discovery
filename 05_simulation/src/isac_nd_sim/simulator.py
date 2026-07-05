@@ -16,6 +16,7 @@ MODE_IDLE = "idle"
 
 ISAC_PROTOCOLS = (
     "improved_rl_isac",
+    "collision_aware_isac",
     "isac_structured_marl",
     "ablation_isac_one_slot_delay",
     "ablation_isac_no_candidate_set",
@@ -87,6 +88,7 @@ class NeighborDiscoverySimulator:
         self.age = np.zeros_like(self.belief)
         self.success_count = np.zeros_like(self.belief)
         self.fail_count = np.zeros_like(self.belief)
+        self.collision_fail_count = np.zeros_like(self.belief)
         self.empty_beam_count = np.zeros_like(self.belief)
         self.last_positive_slot = np.full_like(self.belief, -10**9)
         self.discovered_edges: set[tuple[int, int]] = set()
@@ -116,6 +118,7 @@ class NeighborDiscoverySimulator:
         self.age.fill(0.0)
         self.success_count.fill(0.0)
         self.fail_count.fill(0.0)
+        self.collision_fail_count.fill(0.0)
         self.empty_beam_count.fill(0.0)
         self.last_positive_slot.fill(-10**9)
         self.discovered_edges.clear()
@@ -317,10 +320,13 @@ class NeighborDiscoverySimulator:
         if self.protocol in ISAC_PROTOCOLS:
             degree = sum(1 for edge in self.discovered_edges if node in edge)
             degree_need = max(0.0, self.cfg.target_degree - degree) / max(1, self.cfg.target_degree)
-            idle_prob = 0.01 + 0.03 * (1.0 - degree_need)
-            tx_prob = 0.50 + 0.05 * degree_need
-            rx_prob = max(0.05, 1.0 - idle_prob - tx_prob)
-            probs = np.asarray([tx_prob, rx_prob, idle_prob], dtype=float)
+            if self.protocol == "collision_aware_isac":
+                probs = self.collision_aware_role_probabilities(node, slot, degree_need)
+            else:
+                idle_prob = 0.01 + 0.03 * (1.0 - degree_need)
+                tx_prob = 0.50 + 0.05 * degree_need
+                rx_prob = max(0.05, 1.0 - idle_prob - tx_prob)
+                probs = np.asarray([tx_prob, rx_prob, idle_prob], dtype=float)
             probs = probs / probs.sum()
             return str(self.rng.choice([MODE_TX, MODE_RX, MODE_IDLE], p=probs))
         if self.protocol in ("isac_only", "topology_only", "itap_nd"):
@@ -345,6 +351,27 @@ class NeighborDiscoverySimulator:
         if self.protocol in ISAC_PROTOCOLS:
             return bool(staggered_periodic_sense)
         return bool(staggered_periodic_sense or stale_belief or weak_belief)
+
+    def collision_aware_role_probabilities(self, node: int, slot: int, degree_need: float) -> np.ndarray:
+        candidate_pool = self.isac_candidate_pool(node, slot)
+        candidate_pressure = min(1.0, len(candidate_pool) / max(1.0, float(self.cfg.target_degree)))
+        failure_pressure = 0.0
+        collision_pressure = 0.0
+        if len(candidate_pool) > 0:
+            success = self.success_count[node, candidate_pool]
+            fail = self.fail_count[node, candidate_pool]
+            collision_fail = self.collision_fail_count[node, candidate_pool]
+            failure_pressure = float(np.mean(fail / np.maximum(1.0, success + fail)))
+            failure_pressure = float(np.clip(failure_pressure, 0.0, 1.0))
+            collision_pressure = float(np.mean(collision_fail / np.maximum(1.0, success + collision_fail)))
+            collision_pressure = float(np.clip(collision_pressure, 0.0, 1.0))
+
+        idle_prob = 0.01 + 0.03 * (1.0 - degree_need)
+        tx_prob = 0.50 + 0.05 * degree_need
+        tx_prob -= 0.12 * candidate_pressure + 0.12 * collision_pressure + 0.04 * failure_pressure
+        tx_prob = float(np.clip(tx_prob, 0.28, 0.55))
+        rx_prob = max(0.05, 1.0 - idle_prob - tx_prob)
+        return np.asarray([tx_prob, rx_prob, idle_prob], dtype=float)
 
     def select_beam(
         self,
@@ -739,7 +766,9 @@ class NeighborDiscoverySimulator:
                 self.collision_count += len(candidates)
                 for tx_node in candidates:
                     self.fail_count[tx_node, actions[tx_node].beam] += 1.0
+                    self.collision_fail_count[tx_node, actions[tx_node].beam] += 1.0
                 self.fail_count[rx_node, actions[rx_node].beam] += 1.0
+                self.collision_fail_count[rx_node, actions[rx_node].beam] += 1.0
                 continue
             if len(candidates) == 1:
                 tx_node = candidates[0]

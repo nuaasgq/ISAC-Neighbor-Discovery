@@ -1,6 +1,6 @@
 # Submission Readiness Audit - 2026-07-05 Morning
 
-This note records the post-commit readiness state after commit `20932d9` (`Add MARL residual scale sweep evidence`) plus the current uncommitted documentation refresh.
+This note records the readiness state after commit `3eae6dd` (`Add round11 stability evidence to supplement`) plus the current collision-aware MAC refinement work in progress.
 
 ## Current Manuscript Package
 
@@ -28,6 +28,8 @@ pdflatex -interaction=nonstopmode supplement.tex
 Select-String -Path main.log,supplement.log -Pattern 'LaTeX Error|Emergency stop|Fatal error|Undefined control sequence|Citation.*undefined|Reference.*undefined|Overfull \\hbox|Overfull \\vbox'
 python -m pytest 05_simulation\tests
 python 06_analysis\scripts\build_paired_delta_summary.py
+python 06_analysis\scripts\plot_round11_stability.py
+python 06_analysis\scripts\plot_round12_collision_aware.py
 ```
 
 Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `27 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3.
@@ -47,16 +49,16 @@ Result after the latest full check: no log errors, no unresolved references or c
 
 The main manuscript now carries the concise evidence chain: training evolution, dynamic protocol comparison, N=100 transfer, area scaling, mobility boundary, range sensitivity, error robustness, and mechanism ablation.
 
-The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, and structured MARL probe results. Round10 extra seeds are archived as backup stability evidence and should not be used to strengthen the main claim without a larger seed campaign.
+The supplement now carries the reviewer-facing evidence chain: coverage matrix, training reward and score curves, N=10--100 scale/beam heatmap, N=100 density/fixed scaling, range and slot-duration sensitivity, 3-degree full-baseline stress, full-baseline mobility checks, B=15 error profiles, paired treatment-control deltas, statistical evidence-tier index, finite-horizon round10 trajectories, focused round11 five-seed paired stability, round12 collision-aware MAC refinement, and structured MARL probe results. Round10 is backup trajectory evidence; round11 is the focused paired stability evidence for N=100/B=10/B=15; round12 is a mechanism-refinement probe for the collision boundary.
 
 ## Remaining Risks Before External Submission
 
 1. The main learned method is still CEM/shared-policy search; the neural actor-critic branch is a structured MARL probe, not the strongest evidence. This is acceptable only if framed as a protocol paper with a learning-assisted extension, not as a pure MARL contribution.
-2. Collision-aware efficiency is not yet fully optimized; dense 15/30-degree cases improve raw discovery but can create many collisions.
+2. Collision-aware efficiency is only partly addressed by the round12 role-control probe; dense 15/30-degree cases still need a full MAC and energy model.
 3. The SkyOrbs-like baseline is only an inspired communication-only baseline. A complete SkyOrbs reproduction remains future work.
 4. The physical-layer ISAC service is abstracted. A TWC/TCOM reviewer may still ask for a stronger mapping from sensing parameters to waveform/estimator assumptions.
 5. The 3-degree and 5-degree cases are not success regimes under the current 600-slot horizon.
-6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive.
+6. Extra round10 seeds preserve the proposed-vs-no-ISAC ordering but show that absolute N=100/B=10 discovery can be scenario-seed sensitive; round11 strengthens the paired raw-discovery ordering while exposing the B=15 collision-penalized boundary, and round12 shows that a local role-control refinement can mitigate that boundary.
 7. The best structured stochastic actor reduces empty scanning and improves deterministic nonzero behavior, but still trails the flat stochastic actor in raw discovery rate.
 
 ## Next High-Value Work

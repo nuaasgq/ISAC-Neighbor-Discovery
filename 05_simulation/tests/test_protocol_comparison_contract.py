@@ -24,7 +24,13 @@ NO_ISAC_PROTOCOLS = [
     "uniform_random",
 ]
 
-ISAC_PROTOCOLS = ["improved_rl_isac", "ablation_isac_one_slot_delay", "isac_only", "itap_nd"]
+ISAC_PROTOCOLS = [
+    "improved_rl_isac",
+    "collision_aware_isac",
+    "ablation_isac_one_slot_delay",
+    "isac_only",
+    "itap_nd",
+]
 
 
 def compact_config() -> SimulationConfig:
@@ -144,3 +150,18 @@ def test_one_slot_delay_handshake_uses_pre_sensing_candidate_snapshot() -> None:
 
     assert target_beam in set(immediate.handshake_candidate_pool(0, 3).tolist())
     assert target_beam not in set(delayed.handshake_candidate_pool(0, 3).tolist())
+
+
+def test_collision_aware_isac_reduces_tx_probability_under_candidate_pressure() -> None:
+    cfg = replace(compact_config(), target_degree=4)
+    simulator = initialized_simulator(cfg, "collision_aware_isac")
+    simulator.belief.fill(0.0)
+    simulator.belief[0, [2, 5, 7, 11]] = 1.0
+    simulator.collision_fail_count[0, [2, 5, 7, 11]] = 2.0
+
+    collision_aware = simulator.collision_aware_role_probabilities(0, slot=12, degree_need=1.0)
+    baseline_tx_probability = 0.50 + 0.05
+
+    assert collision_aware[0] < baseline_tx_probability
+    assert collision_aware[1] > 1.0 - 0.01 - baseline_tx_probability
+    np.testing.assert_allclose(collision_aware.sum(), 1.0)
