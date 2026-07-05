@@ -22,6 +22,7 @@ def load_fiveway_module():
 
 def test_fiveway_plan_uses_paired_scenario_seeds_and_unified_outputs(tmp_path: Path) -> None:
     module = load_fiveway_module()
+    assert "phase7_contention_no_isac_strict_100ep_3seed" in str(module.DEFAULT_CONTENTION_NO_ISAC)
     args = Namespace(
         campaign="unit_fiveway",
         config=str(ROOT / "05_simulation" / "configs" / "paper_transfer_train_n10_b10_singlehop.yaml"),

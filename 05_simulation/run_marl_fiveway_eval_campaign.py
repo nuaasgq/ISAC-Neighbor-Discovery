@@ -33,7 +33,7 @@ DEFAULT_CONTENTION_NO_ISAC = (
     / "05_simulation"
     / "results_raw"
     / "marl_campaign"
-    / "phase7_contention_no_isac_100ep_3seed"
+    / "phase7_contention_no_isac_strict_100ep_3seed"
     / "train"
     / "train_n10_b10_contention_no_isac_100ep_300slot_seed20260731"
     / "final_model.pt"
