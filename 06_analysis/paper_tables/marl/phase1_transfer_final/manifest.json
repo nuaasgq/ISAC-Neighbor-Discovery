@@ -1,0 +1,144 @@
+{
+  "created_at": "2026-07-05T16:23:08",
+  "input_root": "05_simulation/results_raw/marl_campaign/phase1_short_train_long_eval/eval",
+  "run_dirs": [
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b10_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b10_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b10_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b15_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b15_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b15_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b30_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b30_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b30_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b5_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b5_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n10_b5_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b10_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b10_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b10_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b15_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b15_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b15_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b30_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b30_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b30_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b5_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b5_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n20_b5_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b10_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b10_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b10_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b15_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b15_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b15_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b30_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b30_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b30_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b5_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b5_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\isac_mappo_train_n10_b10_test_n50_b5_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b10_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b10_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b10_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b15_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b15_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b15_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b30_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b30_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b30_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b5_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b5_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n10_b5_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b10_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b10_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b10_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b15_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b15_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b15_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b30_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b30_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b30_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b5_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b5_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n20_b5_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b10_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b10_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b10_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b15_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b15_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b15_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b30_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b30_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b30_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b5_1200slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b5_3000slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\eval\\mappo_train_n10_b10_test_n50_b5_300slot"
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase1_transfer_final",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase1_transfer_final",
+  "rows": 216,
+  "runs": 72,
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_node_discovery_rate.png",
+      "type": "node_transfer_curve",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_beam_discovery_rate.png",
+      "type": "beam_transfer_curve",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_node_mean_delay_censored.png",
+      "type": "node_transfer_curve",
+      "metric": "mean_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_beam_mean_delay_censored.png",
+      "type": "beam_transfer_curve",
+      "metric": "mean_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_node_p95_delay_censored.png",
+      "type": "node_transfer_curve",
+      "metric": "p95_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_beam_p95_delay_censored.png",
+      "type": "beam_transfer_curve",
+      "metric": "p95_delay_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_node_empty_scan_ratio.png",
+      "type": "node_transfer_curve",
+      "metric": "empty_scan_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_beam_empty_scan_ratio.png",
+      "type": "beam_transfer_curve",
+      "metric": "empty_scan_ratio_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_node_lambda2.png",
+      "type": "node_transfer_curve",
+      "metric": "lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_beam_lambda2.png",
+      "type": "beam_transfer_curve",
+      "metric": "lambda2_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_node_collision_count.png",
+      "type": "node_transfer_curve",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase1_transfer_final\\marl_transfer_beam_collision_count.png",
+      "type": "beam_transfer_curve",
+      "metric": "collision_count_mean"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "created_at": "2026-07-05T15:38:20",
+  "input_root": "05_simulation/results_raw/marl",
+  "run_dirs": [
+    "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\train\\train_n10_b10_isac_mappo_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase2_scalegraph_train\\train\\train_n10_b10_isac_mappo_scalegraph_beam_300slot",
+    "05_simulation\\results_raw\\marl_campaign\\phase2_scalegraph_collision_train\\train\\train_n10_b10_isac_mappo_scalegraph_beam_collision_topology_300slot"
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase2_train_compare",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase2_train_compare",
+  "runs": 3,
+  "step_rows": 3600,
+  "episode_rows": 60,
+  "eval_rows": 90,
+  "resource_rows": 180,
+  "source_manifests": [
+    {
+      "run": "train_n10_b10_isac_mappo_300slot",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase1_short_train_long_eval\\train\\train_n10_b10_isac_mappo_300slot\\manifest.json",
+      "algorithm": "isac_mappo",
+      "network": "shared",
+      "reward_version": "legacy"
+    },
+    {
+      "run": "train_n10_b10_isac_mappo_scalegraph_beam_300slot",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase2_scalegraph_train\\train\\train_n10_b10_isac_mappo_scalegraph_beam_300slot\\manifest.json",
+      "algorithm": "isac_mappo",
+      "network": "scalegraph_beam",
+      "reward_version": "legacy"
+    },
+    {
+      "run": "train_n10_b10_isac_mappo_scalegraph_beam_collision_topology_300slot",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase2_scalegraph_collision_train\\train\\train_n10_b10_isac_mappo_scalegraph_beam_collision_topology_300slot\\manifest.json",
+      "algorithm": "isac_mappo",
+      "network": "scalegraph_beam",
+      "reward_version": "collision_topology"
+    }
+  ],
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_step_reward_curve.png",
+      "type": "step_curve",
+      "metric": "reward_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_step_discovery_curve.png",
+      "type": "step_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_step_empty_scan_curve.png",
+      "type": "step_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_episode_return_curve.png",
+      "type": "episode_curve",
+      "metric": "episode_return_mean_per_agent"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_policy_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "policy_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_value_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "value_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_entropy_curve.png",
+      "type": "episode_curve",
+      "metric": "entropy"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_episode_discovery_curve.png",
+      "type": "episode_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_episode_lambda2_curve.png",
+      "type": "episode_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_episode_collision_curve.png",
+      "type": "episode_curve",
+      "metric": "collision_count"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_episode_empty_scan_curve.png",
+      "type": "episode_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_eval_discovery_curve.png",
+      "type": "eval_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_eval_lambda2_curve.png",
+      "type": "eval_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_resource_rss_curve.png",
+      "type": "resource_curve",
+      "metric": "rss_mb"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase2_train_compare\\marl_resource_memory_curve.png",
+      "type": "resource_curve",
+      "metric": "system_memory_percent"
+    }
+  ]
+}

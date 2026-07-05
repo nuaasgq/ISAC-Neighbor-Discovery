@@ -16,7 +16,21 @@
 - `scalegraph_beam` is now available as a scale-invariant beam-set actor option via `--network scalegraph_beam`.
 - The transfer aggregator separates `train_algorithm` and `train_network`, so shared and scalegraph results will not be averaged together.
 
-## Current Phase-1 Evidence
+## Final Phase-1 Evidence
+
+The complete phase-1 matrix finished with 72 transfer evaluation runs:
+
+- 2 algorithms: `isac_mappo` and no-ISAC `mappo`.
+- 3 test horizons: 300, 1200, and 3000 slots.
+- 3 node counts: N=10, 20, and 50.
+- 4 beamwidths: 5, 10, 15, and 30 deg.
+
+The final tables and figures are regenerated at:
+
+- `06_analysis/paper_tables/marl/phase1_transfer_final/`
+- `06_analysis/paper_figures/marl/phase1_transfer_final/`
+- `06_analysis/paper_tables/marl/phase1_train_curves_final/`
+- `06_analysis/paper_figures/marl/phase1_train_curves_final/`
 
 The complete ISAC-MAPPO 3000-slot transfer rows show strong small-to-medium scale transfer and a clear large-scale bottleneck.
 
@@ -35,16 +49,33 @@ The complete ISAC-MAPPO 3000-slot transfer rows show strong small-to-medium scal
 | 50 | 15 | 0.602 | 17.055 | 0.019 | 209 |
 | 50 | 30 | 0.511 | 14.141 | 0.006 | 604 |
 
+The no-ISAC MAPPO 3000-slot rows stay near zero even with long testing:
+
+| N | Beamwidth | Discovery rate | Lambda2 | Empty-scan ratio |
+|---:|---:|---:|---:|---:|
+| 10 | 5 | 0.000 | 0.000 | 0.997 |
+| 10 | 10 | 0.000 | 0.000 | 0.986 |
+| 10 | 15 | 0.000 | 0.000 | 0.971 |
+| 10 | 30 | 0.059 | 0.000 | 0.902 |
+| 20 | 5 | 0.002 | 0.000 | 0.993 |
+| 20 | 10 | 0.000 | 0.000 | 0.972 |
+| 20 | 15 | 0.002 | 0.000 | 0.946 |
+| 20 | 30 | 0.079 | 0.000 | 0.836 |
+| 50 | 5 | 0.000 | 0.000 | 0.982 |
+| 50 | 10 | 0.000 | 0.000 | 0.940 |
+| 50 | 15 | 0.005 | 0.000 | 0.888 |
+| 50 | 30 | 0.080 | 0.299 | 0.733 |
+
 Interpretation:
 
 - ISAC candidate-space reduction is effective: the policy trained at N=10, 10 deg transfers to N=20 and N=50 without retraining.
 - Beamwidth transfer is not monotonic. Wider beams reduce empty scans, but collision and role coordination can dominate at dense settings.
 - The N=50, 15 deg case is currently the strongest large-scale row among completed 3000-slot ISAC-MAPPO results.
-- The no-ISAC MAPPO 300-slot partial rows are near zero discovery, supporting the necessity of ISAC assistance under high-dimensional blind search.
+- The no-ISAC MAPPO rows stay near zero even at 3000 slots, supporting the necessity of ISAC assistance under high-dimensional blind search.
 
 ## Risks Before Paper Use
 
-- Phase-1 is still single training seed and low eval episode count.
+- Phase-1 is still single training seed and 3 eval episodes per transfer point.
 - The current method should be described as MAPPO-style CTDE, not a full canonical MAPPO implementation.
 - Deterministic and stochastic evaluation must remain separated because deterministic argmax can collapse.
 - The current `shared` network is not yet enough as a network-structure innovation; `scalegraph_beam` was added to support the next comparison.
@@ -52,8 +83,8 @@ Interpretation:
 
 ## Next Gate
 
-1. Let the no-ISAC MAPPO transfer baseline finish.
-2. Run a focused `scalegraph_beam` campaign with the same 300-slot training rule.
-3. Add a collision/topology-aware reward variant after the scalegraph smoke campaign confirms resource safety.
+1. Use `shared + legacy + ISAC` as the strongest phase-1 discovery-rate baseline.
+2. Use no-ISAC MAPPO as a hard failure baseline, not as a competitive method.
+3. Treat `scalegraph_beam` and `collision_topology` as phase-2 method innovations; early probes show collision-efficiency gains but not discovery-rate gains.
 4. Add N=100 and 3 deg stress tests only after the N=10/20/50 matrix is stable.
 5. Add sensing/communication range and ISAC error sweeps after the main MARL comparison is defensible.
