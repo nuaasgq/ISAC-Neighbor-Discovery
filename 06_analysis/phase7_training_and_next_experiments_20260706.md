@@ -25,13 +25,28 @@
 - Methods: `legacy_shared`, `collision_reward`, `contention_actor`.
 - Purpose: produce step-indexed reward, return, policy/value loss, entropy, discovery, collision, and topology curves with multiple independent seeds.
 
+### Phase-7 Improved No-ISAC MARL Training
+
+- Campaign: `phase7_contention_no_isac_100ep_3seed`
+- Script: `05_simulation/run_marl_training_stability_campaign.py`
+- Setting: `N=10`, `B=10 deg`, `100 episodes`, `300 slots/episode`.
+- Method: `contention_no_isac`, implemented as `MAPPO + contention_shared + collision_topology` with `--disable-isac-features` and `env_protocol=structured_marl_no_isac`.
+- Purpose: provide the true-MARL counterpart for the five-class baseline closure, separating network-structure benefit from ISAC-derived occupancy/candidate priors.
+
+### Protocol Baseline Adapter
+
+- Script: `05_simulation/run_protocol_baseline_eval.py`
+- Purpose: emit `uniform_random` and `skyorbs_like_skip_scan` endpoint results in the same `scope=marl_transfer_evaluation` schema used by checkpoint-based MARL evaluation.
+- Plotting support: `plot_marl_transfer_results.py` now preserves `method/method_label`; `plot_marl_method_comparison.py` now supports dynamic method sets rather than only the three ISAC-MAPPO variants.
+
 ## Immediate Priority
 
 1. Complete and aggregate Phase-6 `B=5`.
 2. Run Phase-6 `B=3` with the same settings after `B=5`.
 3. Aggregate `B=3/5/10/15/30` into one MARL transfer table and figure set.
 4. Build Phase-7 multi-seed learning-curve figures using `training_step` as the x-axis.
-5. Update the IEEE draft so all text, tables, and figure paths use the 10-episode Phase-6 data.
+5. Build the five-class MARL-compatible comparison after `contention_no_isac` checkpoints are available.
+6. Update the IEEE draft so all text, tables, and figure paths use the 10-episode Phase-6 data.
 
 ## Next Matrix After B=3/B=5
 
@@ -50,7 +65,7 @@ Comparison classes:
 1. `uniform_random`
 2. `SkyOrbs-like` deterministic 3D reference
 3. `MAPPO no ISAC`
-4. improved RL no-ISAC actor/reward counterpart
+4. improved RL no-ISAC actor/reward counterpart (`contention_no_isac`)
 5. improved ISAC-MARL with contention-aware actor
 
 ### Scale Transfer Matrix
