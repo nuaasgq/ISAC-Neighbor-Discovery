@@ -53,7 +53,7 @@ Results:
 - Main PDF pages: 9.
 - Supplement PDF pages: 10.
 - Selected pre-11, round11, round13, and round14 evidence figures are checked at 1920x1440 (4:3); round13 contributes 8 current collision/energy figures and round14 contributes 1 current main-table stability figure.
-- Referenced figures in `main.tex` and `supplement.tex`: all present on disk.
+- Referenced figures in `main.tex` and `supplement.tex`: all present on disk. The figure audit checks 47 LaTeX figure instances, 44 unique figure files, 0 missing files, and 0 non-4:3 aspect-ratio violations.
 - The final checked LaTeX logs contain no unresolved citations/references and no overfull warnings after adding the 3GPP ISAC/channel references and the supplement PHY-to-protocol parameter table.
 
 ## Main Evidence
@@ -145,6 +145,10 @@ Follow-up:
   - `06_analysis/phy_to_protocol_isac_mapping_20260705.md`
 - SkyOrbs-like baseline-scope appendix:
   - `06_analysis/skyorbs_like_baseline_scope_appendix_20260705.md`
+- Paper figure integrity audit:
+  - `06_analysis/paper_figure_integrity_audit_20260705.md`
+  - `06_analysis/paper_figure_integrity_audit_20260705.csv`
+  - `06_analysis/scripts/audit_paper_figures.py`
 - Round13 paper-writing route:
   - `06_analysis/round13_twc_tcom_revision_route_20260705.md`
 - Pre-submission gap triage:

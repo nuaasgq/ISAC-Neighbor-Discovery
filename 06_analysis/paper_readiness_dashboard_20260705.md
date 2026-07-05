@@ -55,6 +55,7 @@ Keep round7/round8 stress figures as supplement unless the main draft expands.
 - Round11 paired-seed campaign: `06_analysis/paper_tables/round11_paired_seed_campaign_main/`.
 - Round13 collision-aware MAC/energy probe: `06_analysis/paper_tables/round13_collision_energy_10seed/`.
 - One-page submission pitch: `06_analysis/submission_pitch_one_page_20260705.md`.
+- Figure integrity audit: `06_analysis/paper_figure_integrity_audit_20260705.md` reports 47 referenced figure instances, 44 unique files, 0 missing files, and 0 non-4:3 violations.
 
 ## Literature Boundary Notes
 

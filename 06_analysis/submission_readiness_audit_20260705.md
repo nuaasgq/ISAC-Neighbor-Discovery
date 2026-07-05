@@ -8,7 +8,7 @@ This note records the readiness state after the latest round13 ten-seed collisio
 |---|---:|---|
 | `07_paper/ieee_twc_isac_nd/main.tex` | Compiles | IEEEtran draft; Table IV now uses the round14 ten-seed N=100/B=10 main comparison, and the ISAC prior paragraph now separates sensing-service support from communication-link support with 3GPP citations. |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | Compiles | IEEEtran supplement with finite-horizon backup, round11/round13, energy-accounting, structured MARL probe figures, a PHY-to-protocol ISAC parameter mapping table, and a SkyOrbs-like baseline-scope note. |
-| `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, round13, and round14 figures checked at 4:3 aspect ratio. |
+| `06_analysis/paper_figures/` | Verified | Archived figure pool with selected manuscript, round11, round13, and round14 figures checked at 4:3 aspect ratio; the LaTeX figure audit reports 47 referenced figure instances, 0 missing files, and 0 non-4:3 violations. |
 | `06_analysis/paper_tables/round14_main_table_10seed_n100_b10/` | Verified | Ten-seed N=100/B=10 main-table check with positive paired discovery deltas against all four communication-only controls. |
 | `06_analysis/paper_tables/statistical_stability_summary/` | Verified | 345 normalized rows, mapped by evidence tier in the supplement. |
 | `06_analysis/paper_tables/paired_delta_summary/` | Verified | 125 paired treatment-control delta rows with bootstrap descriptive CIs and seed-level sign counts. |
@@ -34,7 +34,7 @@ python 06_analysis\scripts\plot_round12_collision_aware.py --source 05_simulatio
 python 06_analysis\scripts\analyze_round14_main_table.py --source 05_simulation\results_raw\round14_main_table_10seed_n100_b10 --output 06_analysis\paper_tables\round14_main_table_10seed_n100_b10 --figures 06_analysis\paper_figures\round14_main_table_10seed_n100_b10
 ```
 
-Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `29 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3.
+Result after the latest full check: no log errors, no unresolved references or citations, no overfull warnings, `29 passed`, and generated paper-figure PNG files used for the latest evidence blocks are 4:3. The figure integrity audit passes with 47 referenced figure instances, 44 unique files, no missing files, and no aspect-ratio violations.
 
 ## Claim Boundaries Now Reflected in Text
 
