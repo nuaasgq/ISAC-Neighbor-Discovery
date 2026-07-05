@@ -52,6 +52,16 @@
 - `contention_no_isac` defaults to the first Phase-7 100-episode checkpoint.
   Multi-training-seed closure remains a later robustness step after all Phase-7
   seeds complete.
+- Wording boundary: `uniform_random` and `skyorbs_like` are protocol baselines;
+  `mappo_no_isac`, `contention_no_isac`, and `contention_actor` are checkpoint
+  MARL policies. The legacy `rl_no_isac`, `improved_rl_no_isac`, and
+  `improved_rl_isac` names are simulator proxy protocols and must not be called
+  MARL checkpoint baselines.
+- No-ISAC MARL wording boundary: the current no-ISAC checkpoints remove
+  ISAC-derived candidate mask/score/rule-residual assistance and piggyback
+  sensing, but the environment still has the generic sensing action and beam
+  belief state. Use "without ISAC-derived candidate features" rather than
+  "sensing disabled".
 
 ## Immediate Priority
 
@@ -104,6 +114,28 @@ Start with `N=100`, `B in {10, 15}`, `3000 slots`:
 - `false_alarm_rate`, `miss_detection_rate`, `angular_cell_offset_std`.
 - sensing period/staleness sweep.
 
+### TWC/TCOM-Style Coverage Upgrades
+
+Prioritize these after the current B=5/B=3 and three-seed training closures:
+
+- Codebook and candidate-set complexity: map `B in {3, 5, 10, 15, 30} deg`
+  to codebook size, then sweep `candidate_topk in {1, 2, 4, 8, 16}` or an
+  equivalent quantized beam subset size.
+- Multipath or clutter-misleading ISAC priors: add a stress mode where the
+  strongest sensing direction is not always the best communication direction,
+  and report wrong-prior ratio, discovery, CPD, and a post-discovery link-quality
+  proxy.
+- Processing delay and sensing staleness: evaluate `processing_delay_ms in
+  {0, 1, 3, 5, 10}` and `sensing_age_slots in {0, 1, 2, 5, 10}` under the
+  5 ms slot model.
+- Mobility stress: sweep speed bands such as `{5, 10, 20, 30} m/s` and include
+  crossing or B-spline-like trajectories to stress angular-rate tracking.
+- Self-state uncertainty: sweep localization and attitude errors separately
+  from ISAC angular-cell errors.
+- Baseline expansion for reviewer alignment: keep the five current classes, then
+  add exhaustive, hierarchical/iterative, position-aided, EKF-ISAC-prior, and
+  oracle upper-bound baselines as supplementary evidence.
+
 ## Claim Discipline
 
 - Do not claim complete `3-30 deg` support until `B=3` and `B=5` complete.
@@ -111,3 +143,6 @@ Start with `N=100`, `B in {10, 15}`, `3000 slots`:
 - Do not claim strict SkyOrbs reproduction unless the original protocol is faithfully reimplemented.
 - Do not claim physical-layer ISAC waveform validation; the current abstraction is a protocol-level occupancy/candidate prior.
 - Do not present `Rs=Rc` as physically necessary; treat it as an initial controlled single-hop setting until range sweeps and theory are added.
+- Do not describe legacy CEM/proxy protocols as MARL policies; the paper's
+  MARL claims must be tied to checkpoint-based MAPPO/actor-critic runs and
+  their step-indexed reward/return curves.

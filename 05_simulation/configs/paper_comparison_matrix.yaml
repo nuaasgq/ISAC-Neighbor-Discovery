@@ -43,8 +43,10 @@ comparison_groups:
   rl_no_isac:
     method: "rl_no_isac"
     isac_prior: false
-    learning: true
-    architecture: "vanilla_shared_actor"
+    learning: false
+    implementation_type: "protocol_proxy"
+    architecture: "rule_based_no_isac_scan_policy"
+    note: "Legacy simulator protocol/proxy baseline, not a checkpoint-trained MARL policy."
     observation:
       include_self_state: true
       include_history: true
@@ -54,8 +56,10 @@ comparison_groups:
   improved_rl_no_isac:
     method: "improved_rl_no_isac"
     isac_prior: false
-    learning: true
+    learning: false
+    implementation_type: "protocol_proxy"
     architecture: "hierarchical_mode_beam_with_memory_and_topology_reward"
+    note: "Legacy simulator protocol/proxy baseline. Use contention_no_isac for the true MARL no-ISAC checkpoint comparison."
     observation:
       include_self_state: true
       include_history: true
@@ -66,8 +70,10 @@ comparison_groups:
   improved_rl_isac:
     method: "improved_rl_isac"
     isac_prior: true
-    learning: true
+    learning: false
+    implementation_type: "protocol_proxy"
     architecture: "piggyback_isac_rule_residual_pabr_or_scalegraph_beam"
+    note: "Legacy simulator protocol/proxy baseline. Use contention_actor for the true ISAC-MARL checkpoint comparison."
     observation:
       include_self_state: true
       include_history: true

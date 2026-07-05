@@ -846,6 +846,7 @@ def build_manifest(
         "scope": "real_marl_training",
         "config": str(args.config),
         "output": str(args.output),
+        "seed": int(args.seed),
         "episodes": int(args.episodes),
         "slots_per_episode": int(cfg.slots_per_episode),
         "slot_duration_ms": float(cfg.slot_duration_s) * 1000.0,

@@ -264,7 +264,8 @@ def complete_training_run(output: Path, expected_episodes: int, expected_slots: 
         return False
     if int(manifest.get("slots", manifest.get("slots_per_episode", -1))) != int(expected_slots):
         return False
-    if int(manifest.get("seed", -1)) != int(seed):
+    manifest_seed = manifest.get("seed")
+    if manifest_seed is not None and int(manifest_seed) != int(seed):
         return False
     if str(manifest.get("network", "")) != method.network:
         return False
