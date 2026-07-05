@@ -51,6 +51,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resource-log-period", type=int, default=500)
     parser.add_argument("--max-rss-mb", type=float, default=12000.0)
     parser.add_argument("--max-system-memory-percent", type=float, default=92.0)
+    parser.add_argument(
+        "--full-step-info",
+        action="store_true",
+        help="Collect per-slot metrics and rich step info during evaluation. Disabled by default for exact fast eval.",
+    )
     return parser.parse_args()
 
 
@@ -138,6 +143,10 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "resource_limits": {
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
+        },
+        "fast_eval": {
+            "collect_slot_metrics": bool(getattr(args, "full_step_info", False)),
+            "rich_info": bool(getattr(args, "full_step_info", False)),
         },
         "final_eval": eval_rows[-1] if eval_rows else {},
         "files": ["eval_episode_metrics.csv", "resource_log.csv", "manifest.json"],
@@ -227,7 +236,14 @@ def evaluate_policy(
         for mode_index, use_stochastic in enumerate(eval_modes):
             for episode in range(int(args.eval_episodes)):
                 seed = int(args.seed) + 10_000 * mode_index + episode
-                env = MarlNeighborDiscoveryEnv(cfg, seed=seed, protocol=env_protocol, reward_version=reward_version)
+                env = MarlNeighborDiscoveryEnv(
+                    cfg,
+                    seed=seed,
+                    protocol=env_protocol,
+                    reward_version=reward_version,
+                    collect_slot_metrics=bool(getattr(args, "full_step_info", False)),
+                    rich_info=bool(getattr(args, "full_step_info", False)),
+                )
                 observations, _ = env.reset(seed=seed)
                 rewards = []
                 truncated = False

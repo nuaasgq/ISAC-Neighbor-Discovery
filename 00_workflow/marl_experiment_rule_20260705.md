@@ -83,8 +83,11 @@ The final paper-grade transfer evaluation reuses fixed 300-slot-trained MARL
 checkpoints and only extends the test horizon:
 
 ```powershell
-python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2
+python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2 --max-workers 2
 ```
 
 For a lower-cost intermediate check, use `--eval-slots 1200 3000` with fewer
 episodes or narrower beamwidth subsets. Do not use this script for training.
+The evaluator uses an exact fast-evaluation path by default: it skips per-slot
+metrics and rich step info that are not consumed by transfer evaluation, while
+keeping final `summarize()` metrics unchanged.

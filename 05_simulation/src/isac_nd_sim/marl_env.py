@@ -46,11 +46,15 @@ class MarlNeighborDiscoveryEnv:
         seed: int | None = None,
         protocol: str = "isac_structured_marl",
         reward_version: str = "legacy",
+        collect_slot_metrics: bool = True,
+        rich_info: bool = True,
     ):
         self.cfg = config
         self.seed = int(config.seed if seed is None else seed)
         self.protocol = str(protocol)
         self.reward_version = _parse_reward_version(reward_version)
+        self.collect_slot_metrics = bool(collect_slot_metrics)
+        self.rich_info = bool(rich_info)
         self._sim = NeighborDiscoverySimulator(config, protocol=self.protocol, seed=self.seed)
         self._slot = 0
         self._last_actions: list[Action] = [Action(MODE_IDLE, 0) for _ in range(config.n_nodes)]
@@ -74,7 +78,7 @@ class MarlNeighborDiscoveryEnv:
         self._sim.reset()
         self._slot = 0
         self._last_actions = [Action(MODE_IDLE, 0) for _ in range(self.n_agents)]
-        return self._observations(), self._safe_info(new_edges_count=0)
+        return self._observations(), self._info(new_edges_count=0)
 
     def step(
         self,
@@ -110,8 +114,14 @@ class MarlNeighborDiscoveryEnv:
         self._sim.update_sensing(parsed_actions, self._slot)
         self._sim._candidate_pool_cache.clear()
         new_edges = self._sim.resolve_discoveries(self._slot, parsed_actions, true_comm_edges)
-        metric_row = self._sim.slot_metrics(episode=0, slot=self._slot, true_comm_edges=true_comm_edges, new_edges=new_edges)
-        self._sim.per_slot_rows.append(metric_row)
+        if self.collect_slot_metrics:
+            metric_row = self._sim.slot_metrics(
+                episode=0,
+                slot=self._slot,
+                true_comm_edges=true_comm_edges,
+                new_edges=new_edges,
+            )
+            self._sim.per_slot_rows.append(metric_row)
 
         rewards = self._rewards(
             parsed_actions,
@@ -135,7 +145,7 @@ class MarlNeighborDiscoveryEnv:
 
         terminated = False
         truncated = self._slot >= self.cfg.slots_per_episode
-        return self._observations(), rewards, terminated, truncated, self._safe_info(new_edges_count=len(new_edges))
+        return self._observations(), rewards, terminated, truncated, self._info(new_edges_count=len(new_edges))
 
     def training_state(self) -> dict[str, Any]:
         """Return centralized-training state that may contain simulator truth.
@@ -457,6 +467,22 @@ class MarlNeighborDiscoveryEnv:
             "mobility_model": str(self.cfg.mobility.get("model", "gauss_markov")),
             "reward_version": self.reward_version,
         }
+
+    def _minimal_info(self, new_edges_count: int) -> dict[str, Any]:
+        return {
+            "slot": self._slot,
+            "seed": self.seed,
+            "n_agents": self.n_agents,
+            "n_beams": self.n_beams,
+            "mode_names": MODE_NAMES,
+            "new_edges_count": int(new_edges_count),
+            "reward_version": self.reward_version,
+        }
+
+    def _info(self, new_edges_count: int) -> dict[str, Any]:
+        if self.rich_info:
+            return self._safe_info(new_edges_count)
+        return self._minimal_info(new_edges_count)
 
     def _positions(self) -> np.ndarray:
         return np.asarray([state.position for state in self._sim.states])

@@ -167,3 +167,31 @@ def test_marl_env_truncates_at_episode_horizon() -> None:
         _, _, _, truncated, _ = env.step(actions)
 
     assert truncated is True
+
+
+def test_fast_eval_env_preserves_final_summary_without_slot_metrics() -> None:
+    cfg = _small_cfg()
+    rich = MarlNeighborDiscoveryEnv(cfg, collect_slot_metrics=True, rich_info=True)
+    fast = MarlNeighborDiscoveryEnv(cfg, collect_slot_metrics=False, rich_info=False)
+    rich.reset(seed=31)
+    fast.reset(seed=31)
+
+    for slot in range(cfg.slots_per_episode):
+        actions = []
+        for node in range(cfg.n_nodes):
+            mode = ["sense", "tx", "rx", "idle"][(node + slot) % 4]
+            actions.append({"mode": mode, "beam": (node + 2 * slot) % cfg.n_beams})
+        rich_next, rich_rewards, rich_terminated, rich_truncated, rich_info = rich.step(actions)
+        fast_next, fast_rewards, fast_terminated, fast_truncated, fast_info = fast.step(actions)
+
+        assert len(rich_next) == len(fast_next) == cfg.n_nodes
+        assert np.array_equal(rich_rewards, fast_rewards)
+        assert rich_terminated == fast_terminated
+        assert rich_truncated == fast_truncated
+        assert rich_info["new_edges_count"] == fast_info["new_edges_count"]
+        assert "lambda2" in rich_info
+        assert "lambda2" not in fast_info
+
+    assert len(rich._sim.per_slot_rows) == cfg.slots_per_episode
+    assert len(fast._sim.per_slot_rows) == 0
+    assert rich._sim.summarize(0).as_dict() == fast._sim.summarize(0).as_dict()

@@ -39,21 +39,21 @@ This keeps the experimental claim clean:
 Dry-run:
 
 ```powershell
-python 05_simulation/run_marl_final_eval_campaign.py --dry-run --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2
+python 05_simulation/run_marl_final_eval_campaign.py --dry-run --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2 --max-workers 2
 ```
 
 Full long evaluation:
 
 ```powershell
-python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2
+python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 5 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2 --max-workers 2
 ```
 
 Staged lower-risk execution:
 
 ```powershell
-python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_b10_b30_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2
-python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_b5_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 5 --methods legacy_shared collision_reward contention_actor --torch-threads 2
-python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_b3_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 --methods legacy_shared collision_reward contention_actor --torch-threads 2
+python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_b10_b30_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 10 15 30 --methods legacy_shared collision_reward contention_actor --torch-threads 2 --max-workers 2
+python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_b5_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 5 --methods legacy_shared collision_reward contention_actor --torch-threads 2 --max-workers 1
+python 05_simulation/run_marl_final_eval_campaign.py --campaign phase6_final_long_eval_b3_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 3 --methods legacy_shared collision_reward contention_actor --torch-threads 2 --max-workers 1
 ```
 
 ## Outputs
@@ -101,6 +101,14 @@ expensive. The final campaign therefore:
 
 - runs commands sequentially;
 - defaults to `--torch-threads 2`;
+- supports bounded parallel evaluation through `--max-workers`; use `2` for the
+  core `10/15/30 deg` matrix and `1` for guarded `3/5 deg` stress runs;
 - logs resources every `500` slots;
 - enforces `--max-rss-mb 10000` and `--max-system-memory-percent 90`;
 - skips completed runs unless `--force` is set.
+
+Transfer evaluation uses an exact fast path by default. It does not collect
+per-slot metrics or rich step info because those values are not consumed by
+`run_marl_evaluate.py`; final episode metrics are still produced by the same
+`summarize()` method. Use `run_marl_evaluate.py --full-step-info` only when
+debugging per-slot environment info.

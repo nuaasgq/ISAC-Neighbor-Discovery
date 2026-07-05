@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -106,6 +108,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-rss-mb", type=float, default=10000.0)
     parser.add_argument("--max-system-memory-percent", type=float, default=90.0)
     parser.add_argument("--command-timeout-seconds", type=int, default=0)
+    parser.add_argument("--max-workers", type=int, default=1, help="Bounded parallel eval subprocesses. Aggregation stays serial.")
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
     parser.add_argument("--force", action="store_true", help="Re-run completed evaluation directories.")
     parser.add_argument("--no-aggregate", action="store_true", help="Do not refresh transfer and method-comparison tables.")
@@ -136,9 +139,14 @@ def main() -> None:
     if missing:
         raise FileNotFoundError(f"Missing checkpoints: {missing}")
 
-    run_commands(plan["eval_commands"], output_root / "final_eval_run_records.json", args)
+    run_commands(
+        plan["eval_commands"],
+        output_root / "final_eval_run_records.json",
+        args,
+        max_workers=max(1, int(args.max_workers)),
+    )
     if not args.no_aggregate:
-        run_commands(plan["aggregation_commands"], output_root / "final_eval_aggregation_records.json", args)
+        run_commands(plan["aggregation_commands"], output_root / "final_eval_aggregation_records.json", args, max_workers=1)
     if not args.quiet:
         print(
             json.dumps(
@@ -255,6 +263,7 @@ def build_plan(args: argparse.Namespace, output_root: Path) -> dict[str, Any]:
         "methods": {method: method_manifest(METHOD_SPECS[method]) for method in args.methods},
         "resource_limits": {
             "torch_threads": int(args.torch_threads),
+            "max_workers": int(args.max_workers),
             "resource_log_period": int(args.resource_log_period),
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
@@ -321,8 +330,20 @@ def build_aggregation_commands(args: argparse.Namespace, run_dirs_by_method: dic
     return commands
 
 
-def run_commands(commands: list[list[str]], records_path: Path, args: argparse.Namespace) -> None:
+def run_commands(
+    commands: list[list[str]],
+    records_path: Path,
+    args: argparse.Namespace,
+    max_workers: int = 1,
+) -> None:
     records_path.parent.mkdir(parents=True, exist_ok=True)
+    if int(max_workers) <= 1 or len(commands) <= 1:
+        run_commands_serial(commands, records_path, args)
+        return
+    run_commands_parallel(commands, records_path, args, int(max_workers))
+
+
+def run_commands_serial(commands: list[list[str]], records_path: Path, args: argparse.Namespace) -> None:
     records: list[dict[str, Any]] = []
     timeout = int(args.command_timeout_seconds) if int(args.command_timeout_seconds) > 0 else None
     for index, command in enumerate(commands, start=1):
@@ -345,6 +366,117 @@ def run_commands(commands: list[list[str]], records_path: Path, args: argparse.N
             raise TimeoutError(f"Command timed out: {' '.join(command)}")
         if returncode != 0:
             raise SystemExit(returncode)
+
+
+def run_commands_parallel(
+    commands: list[list[str]],
+    records_path: Path,
+    args: argparse.Namespace,
+    max_workers: int,
+) -> None:
+    validate_unique_outputs(commands)
+    records: list[dict[str, Any]] = []
+    timeout = int(args.command_timeout_seconds) if int(args.command_timeout_seconds) > 0 else None
+    env = bounded_thread_env(args)
+    pending = list(enumerate(commands, start=1))
+    running: list[dict[str, Any]] = []
+    while pending or running:
+        while pending and len(running) < max_workers:
+            index, command = pending.pop(0)
+            output_dir = command_output_dir(command)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            stdout_path = output_dir / "subprocess_stdout.log"
+            stderr_path = output_dir / "subprocess_stderr.log"
+            stdout_handle = stdout_path.open("w", encoding="utf-8")
+            stderr_handle = stderr_path.open("w", encoding="utf-8")
+            print(f"[{index}/{len(commands)}] {' '.join(command)}", flush=True)
+            process = subprocess.Popen(
+                command,
+                cwd=ROOT,
+                text=True,
+                stdout=stdout_handle,
+                stderr=stderr_handle,
+                env=env,
+            )
+            running.append(
+                {
+                    "index": index,
+                    "command": command,
+                    "process": process,
+                    "started_at": time.time(),
+                    "stdout_handle": stdout_handle,
+                    "stderr_handle": stderr_handle,
+                    "stdout": str(stdout_path),
+                    "stderr": str(stderr_path),
+                }
+            )
+        time.sleep(2.0)
+        still_running: list[dict[str, Any]] = []
+        for item in running:
+            process: subprocess.Popen = item["process"]
+            returncode = process.poll()
+            timed_out = timeout is not None and (time.time() - float(item["started_at"])) > timeout
+            if returncode is None and timed_out:
+                process.kill()
+                returncode = "timeout"
+            if returncode is None:
+                still_running.append(item)
+                continue
+            close_process_logs(item)
+            record = {
+                "index": item["index"],
+                "updated_at": datetime.now().isoformat(timespec="seconds"),
+                "command": item["command"],
+                "returncode": returncode,
+                "stdout": item["stdout"],
+                "stderr": item["stderr"],
+            }
+            records.append(record)
+            records_path.write_text(json.dumps(sorted(records, key=lambda row: row["index"]), ensure_ascii=False, indent=2), encoding="utf-8")
+            if returncode == "timeout":
+                terminate_running(still_running)
+                raise TimeoutError(f"Command timed out: {' '.join(item['command'])}")
+            if returncode != 0:
+                terminate_running(still_running)
+                raise SystemExit(returncode)
+        running = still_running
+
+
+def bounded_thread_env(args: argparse.Namespace) -> dict[str, str]:
+    env = os.environ.copy()
+    threads = str(max(1, int(args.torch_threads)))
+    env["OMP_NUM_THREADS"] = threads
+    env["MKL_NUM_THREADS"] = threads
+    env["OPENBLAS_NUM_THREADS"] = threads
+    env["NUMEXPR_NUM_THREADS"] = threads
+    return env
+
+
+def validate_unique_outputs(commands: list[list[str]]) -> None:
+    outputs = [command_output_dir(command) for command in commands if "--output" in command]
+    duplicates = sorted({str(path) for path in outputs if outputs.count(path) > 1})
+    if duplicates:
+        raise ValueError(f"Duplicate output directories in parallel commands: {duplicates}")
+
+
+def command_output_dir(command: list[str]) -> Path:
+    try:
+        return Path(command[command.index("--output") + 1])
+    except (ValueError, IndexError) as exc:
+        raise ValueError(f"Command has no --output path: {command}") from exc
+
+
+def close_process_logs(item: dict[str, Any]) -> None:
+    item["stdout_handle"].close()
+    item["stderr_handle"].close()
+
+
+def terminate_running(running: list[dict[str, Any]]) -> None:
+    for item in running:
+        process: subprocess.Popen = item["process"]
+        if process.poll() is None:
+            process.kill()
+        close_process_logs(item)
 
 
 def complete_eval_run(output: Path, expected_rows: int, expected: dict[str, Any]) -> bool:
