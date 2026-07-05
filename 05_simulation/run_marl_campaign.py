@@ -51,7 +51,7 @@ def main() -> None:
     if args.include_n100 and 100 not in node_counts:
         node_counts.append(100)
     plan = build_plan(args, output_root, node_counts)
-    (output_root / "campaign_plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    (output_root / "campaign_plan.json").write_text(json.dumps(plan, ensure_ascii=True, indent=2), encoding="utf-8")
     if args.dry_run:
         print(json.dumps(plan, ensure_ascii=False, indent=2))
         return
@@ -61,7 +61,7 @@ def main() -> None:
         completed = subprocess.run(command, cwd=ROOT, text=True)
         run_records.append({"index": index, "command": command, "returncode": completed.returncode})
         (output_root / "campaign_run_records.json").write_text(
-            json.dumps(run_records, ensure_ascii=False, indent=2),
+            json.dumps(run_records, ensure_ascii=True, indent=2),
             encoding="utf-8",
         )
         if completed.returncode != 0:
