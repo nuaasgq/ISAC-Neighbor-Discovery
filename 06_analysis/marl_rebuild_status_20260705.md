@@ -51,7 +51,7 @@ These are pilot diagnostics, not final paper results.
 ## Immediate Next Steps
 
 1. Add a campaign runner for controlled training and transfer sweeps.
-2. Run longer training with `3000 slots` per episode.
+2. Train with short episodes (`300 slots`) and evaluate with longer horizons (`1200/3000 slots`).
 3. Compare:
    - fully random,
    - literature-like scan baseline,
@@ -63,3 +63,13 @@ These are pilot diagnostics, not final paper results.
    - beamwidth `3, 5, 10, 15, 30 deg`,
    - equal-density and fixed-area scaling.
 5. Only after stable multi-seed results should the paper draft claim MARL contribution.
+
+## Training Horizon Correction
+
+A `3000-slot` training attempt was stopped after the first trajectory exceeded practical memory limits. The working protocol is now:
+
+- Training horizon: `300 slots`.
+- Test horizons: `300`, `1200`, and `3000 slots`.
+- Rationale: learning uses short finite-time interaction windows, while long-horizon tests verify whether the learned policy sustains discovery and topology formation over more slots without making training memory scale with the full test horizon.
+
+The helper `05_simulation/run_marl_campaign.py` encodes this short-train / long-test workflow.

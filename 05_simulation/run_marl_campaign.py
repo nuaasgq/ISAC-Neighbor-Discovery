@@ -1,0 +1,179 @@
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+TRAIN_SCRIPT = ROOT / "05_simulation" / "run_marl_training.py"
+EVAL_SCRIPT = ROOT / "05_simulation" / "run_marl_evaluate.py"
+DEFAULT_CONFIG = ROOT / "05_simulation" / "configs" / "paper_transfer_train_n10_b10_singlehop.yaml"
+
+BEAMWIDTH_TO_CELLS = {
+    3: (120, 60),
+    5: (72, 36),
+    10: (36, 18),
+    15: (24, 12),
+    30: (12, 6),
+}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run a controlled short-training / long-testing MARL campaign.")
+    parser.add_argument("--campaign", default="marl_short_train_long_eval")
+    parser.add_argument("--config", default=str(DEFAULT_CONFIG))
+    parser.add_argument("--output-root", default="05_simulation/results_raw/marl_campaign")
+    parser.add_argument("--train-episodes", type=int, default=20)
+    parser.add_argument("--train-slots", type=int, default=300)
+    parser.add_argument("--eval-episodes", type=int, default=3)
+    parser.add_argument("--eval-slots", type=int, nargs="+", default=[300, 1200, 3000])
+    parser.add_argument("--node-counts", type=int, nargs="+", default=[10, 20, 50])
+    parser.add_argument("--beamwidths", type=int, nargs="+", default=[5, 10, 15, 30])
+    parser.add_argument("--include-n100", action="store_true", help="Also evaluate N=100 transfer cases.")
+    parser.add_argument("--algorithms", nargs="+", default=["isac_mappo", "mappo"])
+    parser.add_argument("--seed", type=int, default=20260705)
+    parser.add_argument("--hidden-dim", type=int, default=64)
+    parser.add_argument("--ppo-epochs", type=int, default=2)
+    parser.add_argument("--torch-threads", type=int, default=2)
+    parser.add_argument("--dry-run", action="store_true")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    output_root = Path(args.output_root) / args.campaign
+    output_root.mkdir(parents=True, exist_ok=True)
+    node_counts = list(args.node_counts)
+    if args.include_n100 and 100 not in node_counts:
+        node_counts.append(100)
+    plan = build_plan(args, output_root, node_counts)
+    (output_root / "campaign_plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    if args.dry_run:
+        print(json.dumps(plan, ensure_ascii=False, indent=2))
+        return
+    run_records = []
+    for index, command in enumerate(plan["commands"], start=1):
+        print(f"[{index}/{len(plan['commands'])}] {' '.join(command)}", flush=True)
+        completed = subprocess.run(command, cwd=ROOT, text=True)
+        run_records.append({"index": index, "command": command, "returncode": completed.returncode})
+        (output_root / "campaign_run_records.json").write_text(
+            json.dumps(run_records, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        if completed.returncode != 0:
+            raise SystemExit(completed.returncode)
+    print(json.dumps({"status": "complete", "output_root": str(output_root), "commands": len(plan["commands"])}, indent=2))
+
+
+def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[int]) -> dict:
+    commands = []
+    train_runs = {}
+    for algorithm in args.algorithms:
+        run_name = f"train_n10_b10_{algorithm}_{args.train_slots}slot"
+        output = output_root / "train" / run_name
+        command = [
+            sys.executable,
+            str(TRAIN_SCRIPT),
+            "--config",
+            str(args.config),
+            "--output",
+            str(output),
+            "--algorithm",
+            algorithm,
+            "--episodes",
+            str(args.train_episodes),
+            "--slots",
+            str(args.train_slots),
+            "--eval-episodes",
+            str(args.eval_episodes),
+            "--eval-interval",
+            str(max(1, args.train_episodes // 4)),
+            "--eval-both",
+            "--checkpoint-interval",
+            str(max(1, args.train_episodes // 2)),
+            "--hidden-dim",
+            str(args.hidden_dim),
+            "--ppo-epochs",
+            str(args.ppo_epochs),
+            "--torch-threads",
+            str(args.torch_threads),
+            "--resource-log-period",
+            "100",
+            "--step-log-period",
+            "5",
+            "--max-rss-mb",
+            "10000",
+            "--max-system-memory-percent",
+            "90",
+        ]
+        if algorithm == "mappo":
+            command.extend(["--disable-isac-features", "--env-protocol", "structured_marl_no_isac"])
+        commands.append(command)
+        train_runs[algorithm] = output
+
+    for algorithm, train_output in train_runs.items():
+        checkpoint = train_output / "final_model.pt"
+        for eval_slots in args.eval_slots:
+            for n_nodes in node_counts:
+                for beamwidth in args.beamwidths:
+                    azimuth, elevation = beam_cells(beamwidth)
+                    eval_name = f"{algorithm}_train_n10_b10_test_n{n_nodes}_b{beamwidth}_{eval_slots}slot"
+                    output = output_root / "eval" / eval_name
+                    command = [
+                        sys.executable,
+                        str(EVAL_SCRIPT),
+                        "--checkpoint",
+                        str(checkpoint),
+                        "--config",
+                        str(args.config),
+                        "--output",
+                        str(output),
+                        "--eval-episodes",
+                        str(args.eval_episodes),
+                        "--slots",
+                        str(eval_slots),
+                        "--node-count",
+                        str(n_nodes),
+                        "--azimuth-cells",
+                        str(azimuth),
+                        "--elevation-cells",
+                        str(elevation),
+                        "--communication-range",
+                        "900",
+                        "--sensing-range",
+                        "900",
+                        "--stochastic",
+                        "--seed",
+                        str(args.seed + 100_000 + n_nodes * 100 + beamwidth + eval_slots),
+                        "--torch-threads",
+                        str(args.torch_threads),
+                    ]
+                    if algorithm == "mappo":
+                        command.extend(["--env-protocol", "structured_marl_no_isac"])
+                    commands.append(command)
+    return {
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "campaign": str(args.campaign),
+        "train_slots": int(args.train_slots),
+        "train_episodes": int(args.train_episodes),
+        "eval_slots": list(args.eval_slots),
+        "eval_episodes": int(args.eval_episodes),
+        "node_counts": node_counts,
+        "beamwidths": list(args.beamwidths),
+        "algorithms": list(args.algorithms),
+        "commands": commands,
+    }
+
+
+def beam_cells(beamwidth: int) -> tuple[int, int]:
+    if int(beamwidth) not in BEAMWIDTH_TO_CELLS:
+        raise ValueError(f"Unsupported beamwidth {beamwidth}; expected one of {sorted(BEAMWIDTH_TO_CELLS)}.")
+    return BEAMWIDTH_TO_CELLS[int(beamwidth)]
+
+
+if __name__ == "__main__":
+    main()
