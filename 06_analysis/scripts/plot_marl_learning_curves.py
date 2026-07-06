@@ -174,6 +174,8 @@ def load_csv(path: Path, pd, run_name: str, manifest: dict):
 
 def infer_method(manifest: dict, run_name: str) -> str:
     run_name_lower = run_name.lower()
+    if "gated_contention_actor" in run_name_lower:
+        return "gated_contention_actor"
     for method in METHOD_LABELS:
         if method != "unknown" and method in run_name_lower:
             return method
