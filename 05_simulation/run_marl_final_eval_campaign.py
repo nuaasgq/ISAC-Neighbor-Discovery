@@ -44,13 +44,13 @@ METHOD_SPECS = {
         / "05_simulation"
         / "results_raw"
         / "marl_campaign"
-        / "phase1_short_train_long_eval"
+        / "phase7_long_training_100ep_3seed"
         / "train"
-        / "train_n10_b10_isac_mappo_300slot"
+        / "train_n10_b10_legacy_shared_100ep_300slot_seed20260731"
         / "final_model.pt",
         reward_version="legacy",
         env_protocol="isac_structured_marl",
-        description="Shared ISAC-MAPPO actor-critic with the legacy reward.",
+        description="Shared ISAC-MAPPO actor-critic with the legacy reward, 100-episode checkpoint.",
     ),
     "collision_reward": MethodSpec(
         method="collision_reward",
@@ -58,13 +58,13 @@ METHOD_SPECS = {
         / "05_simulation"
         / "results_raw"
         / "marl_campaign"
-        / "phase4_shared_collision_train"
+        / "phase7_long_training_100ep_3seed"
         / "train"
-        / "train_n10_b10_isac_mappo_shared_collision_topology_300slot"
+        / "train_n10_b10_collision_reward_100ep_300slot_seed20260731"
         / "final_model.pt",
         reward_version="collision_topology",
         env_protocol="isac_structured_marl",
-        description="Shared ISAC-MAPPO actor-critic with collision/topology reward shaping.",
+        description="Shared ISAC-MAPPO actor-critic with collision/topology reward shaping, 100-episode checkpoint.",
     ),
     "contention_actor": MethodSpec(
         method="contention_actor",
@@ -72,13 +72,13 @@ METHOD_SPECS = {
         / "05_simulation"
         / "results_raw"
         / "marl_campaign"
-        / "phase5_contention_shared_v2_train"
+        / "phase7_long_training_100ep_3seed"
         / "train"
-        / "train_n10_b10_isac_mappo_contention_shared_collision_topology_300slot"
+        / "train_n10_b10_contention_actor_100ep_300slot_seed20260731"
         / "final_model.pt",
         reward_version="collision_topology",
         env_protocol="isac_structured_marl",
-        description="Contention-aware shared ISAC-MAPPO actor-critic with collision/topology reward shaping.",
+        description="Contention-aware shared ISAC-MAPPO actor-critic with collision/topology reward shaping, 100-episode checkpoint.",
     ),
 }
 
@@ -96,6 +96,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--analysis-output-root", default="06_analysis/paper_tables/marl")
     parser.add_argument("--figure-output-root", default="06_analysis/paper_figures/marl")
     parser.add_argument("--methods", nargs="+", choices=sorted(METHOD_SPECS), default=sorted(METHOD_SPECS))
+    parser.add_argument("--legacy-shared-checkpoint", default=str(METHOD_SPECS["legacy_shared"].checkpoint))
+    parser.add_argument("--collision-reward-checkpoint", default=str(METHOD_SPECS["collision_reward"].checkpoint))
+    parser.add_argument("--contention-actor-checkpoint", default=str(METHOD_SPECS["contention_actor"].checkpoint))
     parser.add_argument("--node-counts", type=int, nargs="+", default=[100])
     parser.add_argument("--beamwidths", type=int, nargs="+", default=[3, 5, 10, 15, 30])
     parser.add_argument("--eval-slots", type=int, nargs="+", default=[3000])
@@ -172,9 +175,10 @@ def build_plan(args: argparse.Namespace, output_root: Path) -> dict[str, Any]:
     eval_modes = 2 if bool(args.eval_both) else 1
     expected_rows = int(args.eval_episodes) * eval_modes
     mode_tag = "both" if bool(args.eval_both) else "stoch"
+    method_specs = method_specs_from_args(args)
 
     for method_index, method in enumerate(args.methods):
-        spec = METHOD_SPECS[method]
+        spec = method_specs[method]
         if not spec.checkpoint.exists():
             missing_checkpoints.append({"method": method, "checkpoint": str(spec.checkpoint)})
         for slots in args.eval_slots:
@@ -260,7 +264,7 @@ def build_plan(args: argparse.Namespace, output_root: Path) -> dict[str, Any]:
         "beamwidths": list(args.beamwidths),
         "communication_range_m": float(args.communication_range),
         "sensing_range_m": float(args.sensing_range),
-        "methods": {method: method_manifest(METHOD_SPECS[method]) for method in args.methods},
+        "methods": {method: method_manifest(method_specs[method]) for method in args.methods},
         "resource_limits": {
             "torch_threads": int(args.torch_threads),
             "max_workers": int(args.max_workers),
@@ -575,6 +579,37 @@ def method_manifest(spec: MethodSpec) -> dict[str, str]:
         "env_protocol": spec.env_protocol,
         "description": spec.description,
     }
+
+
+def method_specs_from_args(args: argparse.Namespace) -> dict[str, MethodSpec]:
+    return {
+        "legacy_shared": MethodSpec(
+            method="legacy_shared",
+            checkpoint=resolve_repo_path(args.legacy_shared_checkpoint),
+            reward_version=METHOD_SPECS["legacy_shared"].reward_version,
+            env_protocol=METHOD_SPECS["legacy_shared"].env_protocol,
+            description=METHOD_SPECS["legacy_shared"].description,
+        ),
+        "collision_reward": MethodSpec(
+            method="collision_reward",
+            checkpoint=resolve_repo_path(args.collision_reward_checkpoint),
+            reward_version=METHOD_SPECS["collision_reward"].reward_version,
+            env_protocol=METHOD_SPECS["collision_reward"].env_protocol,
+            description=METHOD_SPECS["collision_reward"].description,
+        ),
+        "contention_actor": MethodSpec(
+            method="contention_actor",
+            checkpoint=resolve_repo_path(args.contention_actor_checkpoint),
+            reward_version=METHOD_SPECS["contention_actor"].reward_version,
+            env_protocol=METHOD_SPECS["contention_actor"].env_protocol,
+            description=METHOD_SPECS["contention_actor"].description,
+        ),
+    }
+
+
+def resolve_repo_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
 
 
 def eval_seed(base_seed: int, method_index: int, node_count: int, beamwidth: int, slots: int) -> int:
