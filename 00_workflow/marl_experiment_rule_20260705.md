@@ -147,3 +147,20 @@ python 05_simulation/run_marl_fiveway_eval_campaign.py --campaign phase9_fiveway
 ```
 
 Completed on 2026-07-06 with 10 stochastic 3000-slot evaluation episodes for all five methods. Tables and 4:3 figures are under `06_analysis/paper_tables/marl/phase9_fiveway_n100_b15_3000slot_10ep_stoch_*` and `06_analysis/paper_figures/marl/phase9_fiveway_n100_b15_3000slot_10ep_stoch_*`.
+
+## Phase10 Gated Contention Follow-Up
+
+Phase9 B=15 exposed a useful but incomplete result: ISAC-MARL greatly improves discovery and topology quality, but the active `contention_actor` still pays high collision cost. The next method innovation is `gated_contention_shared`, exposed as `gated_contention_actor`.
+
+Rules:
+
+- Keep the decentralized action contract as `Action(mode, beam)`.
+- Do not add hidden neighbor truth, global scheduler state, or centralized execution information to actor observations.
+- Treat 5-episode smoke data only as code-path validation, not paper evidence.
+- Paper claims require the formal 100-episode, three-seed Phase10 training and N=100 B=10/B=15 3000-slot transfer evaluation.
+
+Formal training command:
+
+```powershell
+python 05_simulation/run_marl_training_stability_campaign.py --campaign phase10_gated_contention_actor_100ep_3seed --methods gated_contention_actor --seeds 20260731 20260732 20260733 --episodes 100 --slots 300 --eval-episodes 3 --eval-interval 10 --checkpoint-interval 50 --hidden-dim 64 --ppo-epochs 2 --torch-threads 2 --step-log-period 1 --resource-log-period 100 --max-rss-mb 10000 --max-system-memory-percent 90 --command-timeout-seconds 0
+```

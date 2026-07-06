@@ -20,7 +20,10 @@ if str(SRC) not in sys.path:
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
-from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic  # noqa: E402
+from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
+    ContentionGraphActorCritic,
+    GatedContentionGraphActorCritic,
+)
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 
@@ -177,21 +180,30 @@ def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
 
 
 def ensure_resource_args(args: argparse.Namespace) -> None:
-    if not hasattr(args, "resource_log_period"):
-        args.resource_log_period = 500
-    if not hasattr(args, "max_rss_mb"):
-        args.max_rss_mb = 12000.0
-    if not hasattr(args, "max_system_memory_percent"):
-        args.max_system_memory_percent = 92.0
+    defaults = {
+        "area_size_m": None,
+        "full_step_info": False,
+        "no_resume": False,
+        "resource_log_period": 500,
+        "max_rss_mb": 12000.0,
+        "max_system_memory_percent": 92.0,
+    }
+    for name, value in defaults.items():
+        if not hasattr(args, name):
+            setattr(args, name, value)
 
 
-def build_policy(network: str, *args: Any, **kwargs: Any) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic:
+def build_policy(
+    network: str, *args: Any, **kwargs: Any
+) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic | GatedContentionGraphActorCritic:
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "gated_contention_shared":
+        return GatedContentionGraphActorCritic(*args, **kwargs)
     raise ValueError(f"Unsupported network in checkpoint: {network}")
 
 

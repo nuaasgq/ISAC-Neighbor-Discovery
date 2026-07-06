@@ -36,6 +36,7 @@ class ContentionGraphActorCritic:
         use_topology_deficit: bool = False,
         use_rule_residual: bool = False,
         rule_residual_scale: float = 1.0,
+        use_access_gate: bool = False,
     ):
         try:
             import torch
@@ -53,7 +54,8 @@ class ContentionGraphActorCritic:
         self.use_topology_deficit = bool(use_topology_deficit)
         self.use_rule_residual = bool(use_rule_residual)
         self.rule_residual_scale = float(rule_residual_scale)
-        self.model = _ContentionGraphActorCriticModule(self.n_beams, self.hidden_dim).to(self.device)
+        self.use_access_gate = bool(use_access_gate)
+        self.model = _ContentionGraphActorCriticModule(self.n_beams, self.hidden_dim, self.use_access_gate).to(self.device)
 
     def parameters(self):
         return self.model.parameters()
@@ -179,17 +181,18 @@ class ContentionGraphActorCritic:
 
 
 class _ContentionGraphActorCriticModule:
-    def __new__(cls, n_beams: int, hidden_dim: int):
+    def __new__(cls, n_beams: int, hidden_dim: int, use_access_gate: bool = False):
         import torch
         import torch.nn as nn
 
         dims = ContentionFeatures()
 
         class Module(nn.Module):
-            def __init__(self, n_beams: int, hidden_dim: int):
+            def __init__(self, n_beams: int, hidden_dim: int, use_access_gate: bool):
                 super().__init__()
                 self.n_beams = int(n_beams)
                 self.hidden_dim = int(hidden_dim)
+                self.use_access_gate = bool(use_access_gate)
                 self.beam_encoder = nn.Sequential(
                     nn.Linear(dims.beam_dim, hidden_dim),
                     nn.LayerNorm(hidden_dim),
@@ -218,6 +221,15 @@ class _ContentionGraphActorCriticModule:
                 self.contention_beam_gate = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
                 self.value_head = nn.Linear(hidden_dim, 1)
+                if self.use_access_gate:
+                    self.access_gate_head = nn.Sequential(
+                        nn.Linear(2 * hidden_dim, hidden_dim),
+                        nn.LayerNorm(hidden_dim),
+                        nn.SiLU(),
+                        nn.Linear(hidden_dim, 1),
+                    )
+                    nn.init.zeros_(self.access_gate_head[-1].weight)
+                    nn.init.zeros_(self.access_gate_head[-1].bias)
 
             def forward(self, tensors: dict[str, torch.Tensor]):
                 beam_features = tensors["beam_features"]
@@ -257,6 +269,8 @@ class _ContentionGraphActorCriticModule:
                     query = self.beam_query(self.context_encoder(context_input))
                 context = self.context_encoder(context_input)
                 mode_logits = self.mode_head(context) + self.contention_mode_residual(contention)
+                if self.use_access_gate:
+                    mode_logits = self.apply_access_gate(mode_logits, context, contention, tensors)
                 gated_query = query * (1.0 + torch.tanh(self.contention_beam_gate(contention)))
                 query_dim = 0 if beam_tokens.dim() == 2 else 1
                 beam_logits = (beam_tokens * gated_query.unsqueeze(query_dim)).sum(dim=-1) / np.sqrt(float(self.hidden_dim))
@@ -264,7 +278,50 @@ class _ContentionGraphActorCriticModule:
                 value = self.value_head(context)
                 return mode_logits, beam_logits, value
 
-        return Module(n_beams, hidden_dim)
+            def apply_access_gate(
+                self,
+                mode_logits: torch.Tensor,
+                context: torch.Tensor,
+                contention: torch.Tensor,
+                tensors: dict[str, torch.Tensor],
+            ) -> torch.Tensor:
+                """Learn a decentralized active-access gate from public local state."""
+
+                state = tensors["contention_state"]
+                topology_need = state[..., 1]
+                fail_pressure = state[..., 3]
+                collision_pressure = state[..., 4]
+                candidate_fraction = state[..., 6]
+                candidate_score_max = state[..., 8]
+                learned_logit = self.access_gate_head(torch.cat([context, contention], dim=-1)).squeeze(-1)
+                rule_logit = (
+                    0.70 * topology_need
+                    + 0.35 * candidate_score_max
+                    - 1.10 * collision_pressure
+                    - 0.45 * fail_pressure
+                    - 0.25 * candidate_fraction
+                )
+                gate = torch.tanh(learned_logit + rule_logit)
+                adjusted = mode_logits.clone()
+                tx_idx = MODE_NAMES.index("tx")
+                rx_idx = MODE_NAMES.index("rx")
+                sense_idx = MODE_NAMES.index("sense")
+                idle_idx = MODE_NAMES.index("idle")
+                adjusted[..., tx_idx] = adjusted[..., tx_idx] + 0.85 * gate
+                adjusted[..., rx_idx] = adjusted[..., rx_idx] + 0.65 * gate
+                adjusted[..., sense_idx] = adjusted[..., sense_idx] - 0.45 * gate
+                adjusted[..., idle_idx] = adjusted[..., idle_idx] - 0.75 * gate
+                return adjusted
+
+        return Module(n_beams, hidden_dim, use_access_gate)
+
+
+class GatedContentionGraphActorCritic(ContentionGraphActorCritic):
+    """Contention actor with a learned decentralized active-access gate."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs["use_access_gate"] = True
+        super().__init__(*args, **kwargs)
 
 
 def observation_to_contention_tensors(observation: dict, device, torch_module, n_beams: int) -> dict:

@@ -9,7 +9,7 @@ import pytest
 
 from isac_nd_sim.config import load_config
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
-from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic
+from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic, GatedContentionGraphActorCritic
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic
 
@@ -137,6 +137,34 @@ def test_contention_graph_actor_critic_candidate_mask_samples_valid_actions() ->
             assert observation["candidate_mask"][action.beam] > 0.5
 
 
+def test_gated_contention_graph_actor_critic_samples_valid_actions() -> None:
+    pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=124)
+    policy = GatedContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_topology_deficit=True,
+        use_rule_residual=True,
+    )
+
+    step = policy.act(observations)
+
+    assert policy.use_access_gate is True
+    assert hasattr(policy.model, "access_gate_head")
+    assert len(step.actions) == cfg.n_nodes
+    assert step.log_probs.shape == (cfg.n_nodes,)
+    assert step.values.shape == (cfg.n_nodes,)
+    for observation, action in zip(observations, step.actions, strict=True):
+        assert action.mode in env.modes
+        assert 0 <= action.beam < cfg.n_beams
+        if action.mode != "idle":
+            assert observation["candidate_mask"][action.beam] > 0.5
+
+
 def test_actor_critic_probe_writes_history(tmp_path: Path) -> None:
     pytest.importorskip("torch")
     module = load_probe_module(SCRIPT, "run_actor_critic_probe")
@@ -221,7 +249,7 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
             config=str(ROOT / "05_simulation" / "configs" / "mvp.yaml"),
             output=str(output),
             algorithm="isac_mappo",
-            network="shared",
+            network="gated_contention_shared",
             reward_version="legacy",
             episodes=1,
             slots=2,
@@ -268,6 +296,7 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
     assert manifest["logs_per_step_reward"] is True
     assert manifest["logs_episode_return"] is True
     assert manifest["centralized_training_decentralized_execution"] is True
+    assert manifest["network"] == "gated_contention_shared"
     assert (output / "step_rewards.csv").exists()
     assert (output / "episode_metrics.csv").exists()
     assert (output / "eval_episode_metrics.csv").exists()

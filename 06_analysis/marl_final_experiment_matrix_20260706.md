@@ -29,6 +29,7 @@
 | Paper-grade internal ablation | planned `phase9_internal_100ep_*` | Rerun `legacy_shared`, `collision_reward`, and `contention_actor` using Phase-7 100-episode checkpoints. |
 | Paper-grade five-way transfer | planned `phase9_fiveway_*` | Use 100-episode checkpoints for `mappo_no_isac`, `contention_no_isac`, and `contention_actor`, paired against random and SkyOrbs-like baselines. |
 | B=15 five-way follow-up | complete `phase9_fiveway_n100_b15_3000slot_10ep_stoch` | B=30 was explicitly canceled by the user on 2026-07-06; B=15 has been aggregated and reported with B=10. |
+| Gated contention actor | smoke complete, formal `phase10_gated_contention_actor_100ep_3seed` next | Adds a learned decentralized active-access gate to attack the Phase9 B15 collision bottleneck without changing the MARL action contract. |
 | Phase9 area-scaling closure | planned `phase9_fiveway_node_transfer_b10_3000slot_10ep_stoch_area_*` | `run_marl_fiveway_eval_campaign.py` now supports `--area-scale fixed` and `--area-scale density`; both variants must be kept as separate campaigns/tables. |
 
 ## Main-Paper Figure Plan
@@ -57,8 +58,9 @@
 The result set is paper-ready only when the following are all true:
 
 1. Phase-9 five-way beam transfer has complete rows and figures for `N=100`, `B=10/15`, `3000 slots`, with 100-episode MARL checkpoints. B=30 is currently excluded by user direction rather than treated as a missing result.
-2. Phase-9 node transfer has complete rows and figures for `N=10/20/50/100`, `B=10`, `3000 slots`, with 100-episode MARL checkpoints.
-3. Phase-9 `N=100` node-transfer evidence is reported under both fixed-area and equal-density scaling, without averaging the two scaling conventions.
-4. `B=3` and `B=5` are reported as stress-boundary rows with honest limitations.
-5. All main figures use 4:3 aspect ratio, Times New Roman or Times fallback, and a unified color palette.
-6. Every result table states `300-slot training` and `3000-slot evaluation` explicitly.
+2. Phase-10 gated contention actor has at least a 100-episode, three-seed training curve and N=100 B=10/B=15 3000-slot transfer table before it is used as a paper claim.
+3. Phase-9 node transfer has complete rows and figures for `N=10/20/50/100`, `B=10`, `3000 slots`, with 100-episode MARL checkpoints.
+4. Phase-9 `N=100` node-transfer evidence is reported under both fixed-area and equal-density scaling, without averaging the two scaling conventions.
+5. `B=3` and `B=5` are reported as stress-boundary rows with honest limitations.
+6. All main figures use 4:3 aspect ratio, Times New Roman or Times fallback, and a unified color palette.
+7. Every result table states `300-slot training` and `3000-slot evaluation` explicitly.

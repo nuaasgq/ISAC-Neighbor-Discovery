@@ -18,7 +18,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
-from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic  # noqa: E402
+from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
+    ContentionGraphActorCritic,
+    GatedContentionGraphActorCritic,
+)
 from isac_nd_sim.marl_env import MODE_NAMES, MODE_TO_INDEX, MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
@@ -35,7 +38,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", default="05_simulation/configs/paper_transfer_train_n10_b10_singlehop.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_training")
     parser.add_argument("--algorithm", choices=["ippo", "mappo", "isac_mappo"], default="isac_mappo")
-    parser.add_argument("--network", choices=["shared", "scalegraph_beam", "contention_shared"], default="shared")
+    parser.add_argument(
+        "--network",
+        choices=["shared", "scalegraph_beam", "contention_shared", "gated_contention_shared"],
+        default="shared",
+    )
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
     parser.add_argument("--episodes", type=int, default=200)
     parser.add_argument("--slots", type=int, default=300)
@@ -271,13 +278,17 @@ def resolved_feature_flags(args: argparse.Namespace) -> dict[str, bool]:
     }
 
 
-def build_policy(network: str, *args: Any, **kwargs: Any) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic:
+def build_policy(
+    network: str, *args: Any, **kwargs: Any
+) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic | GatedContentionGraphActorCritic:
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "gated_contention_shared":
+        return GatedContentionGraphActorCritic(*args, **kwargs)
     raise ValueError(f"Unsupported network: {network}")
 
 

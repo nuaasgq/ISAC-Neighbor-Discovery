@@ -18,6 +18,7 @@ METHOD_COLORS = {
     "legacy_shared": "#4C78A8",
     "collision_reward": "#F58518",
     "contention_actor": "#54A24B",
+    "gated_contention_actor": "#E69F00",
     "contention_no_isac": "#B279A2",
     "mappo_no_isac": "#6C757D",
     "ippo_no_isac": "#9D755D",
@@ -27,6 +28,7 @@ METHOD_LABELS = {
     "legacy_shared": "Legacy ISAC-MAPPO",
     "collision_reward": "Collision-reward ISAC-MAPPO",
     "contention_actor": "Contention-aware ISAC-MAPPO",
+    "gated_contention_actor": "Gated contention ISAC-MAPPO",
     "contention_no_isac": "Contention-aware MAPPO w/o ISAC",
     "mappo_no_isac": "MAPPO w/o ISAC",
     "ippo_no_isac": "IPPO w/o ISAC",
@@ -175,6 +177,8 @@ def infer_method(manifest: dict, run_name: str) -> str:
         if algorithm == "ippo":
             return "ippo_no_isac"
         return "mappo_no_isac"
+    if "gated_contention" in network:
+        return "gated_contention_actor"
     if "contention" in network:
         return "contention_actor"
     if "collision" in reward_version or "topology" in reward_version:
