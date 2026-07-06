@@ -50,6 +50,15 @@ METHODS = {
         reward_version="collision_topology",
         description="Contention-aware shared ISAC-MAPPO actor.",
     ),
+    "mappo_no_isac": TrainMethod(
+        name="mappo_no_isac",
+        algorithm="mappo",
+        network="shared",
+        reward_version="legacy",
+        description="Shared MAPPO actor without ISAC-derived features.",
+        disable_isac_features=True,
+        env_protocol="structured_marl_no_isac",
+    ),
     "contention_no_isac": TrainMethod(
         name="contention_no_isac",
         algorithm="mappo",
