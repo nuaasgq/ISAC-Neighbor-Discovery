@@ -135,3 +135,13 @@ This campaign is the current entry point for the B=10, N=100 five-way evidence:
 ```powershell
 python 05_simulation/run_marl_fiveway_eval_campaign.py --campaign phase9_fiveway_n100_b10_3000slot_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 10 --methods uniform_random skyorbs_like mappo_no_isac contention_no_isac contention_actor --mappo-no-isac-checkpoint 05_simulation/results_raw/marl_campaign/phase9_mappo_no_isac_strict_100ep_3seed/train/train_n10_b10_mappo_no_isac_100ep_300slot_seed20260731/final_model.pt --contention-no-isac-checkpoint 05_simulation/results_raw/marl_campaign/phase7_contention_no_isac_strict_100ep_3seed/train/train_n10_b10_contention_no_isac_100ep_300slot_seed20260731/final_model.pt --contention-actor-checkpoint 05_simulation/results_raw/marl_campaign/phase7_long_training_100ep_3seed/train/train_n10_b10_contention_actor_100ep_300slot_seed20260731/final_model.pt --torch-threads 2 --resource-log-period 500 --max-rss-mb 10000 --max-system-memory-percent 90 --command-timeout-seconds 7200
 ```
+
+## Phase9 B=15-Only Follow-Up
+
+On 2026-07-06, the user explicitly canceled the planned B=30 five-way run.
+Do not continue `phase9_fiveway_n100_b15_b30_3000slot_10ep_stoch` into B=30.
+The active follow-up campaign is B=15 only:
+
+```powershell
+python 05_simulation/run_marl_fiveway_eval_campaign.py --campaign phase9_fiveway_n100_b15_3000slot_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 15 --methods uniform_random skyorbs_like mappo_no_isac contention_no_isac contention_actor --mappo-no-isac-checkpoint 05_simulation/results_raw/marl_campaign/phase9_mappo_no_isac_strict_100ep_3seed/train/train_n10_b10_mappo_no_isac_100ep_300slot_seed20260731/final_model.pt --contention-no-isac-checkpoint 05_simulation/results_raw/marl_campaign/phase7_contention_no_isac_strict_100ep_3seed/train/train_n10_b10_contention_no_isac_100ep_300slot_seed20260731/final_model.pt --contention-actor-checkpoint 05_simulation/results_raw/marl_campaign/phase7_long_training_100ep_3seed/train/train_n10_b10_contention_actor_100ep_300slot_seed20260731/final_model.pt --torch-threads 2 --resource-log-period 500 --max-rss-mb 10000 --max-system-memory-percent 90 --command-timeout-seconds 0
+```
