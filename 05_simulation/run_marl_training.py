@@ -19,6 +19,7 @@ if str(SRC) not in sys.path:
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
+    AdaptiveGatedContentionGraphActorCritic,
     ContentionGraphActorCritic,
     GatedContentionGraphActorCritic,
 )
@@ -40,7 +41,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--algorithm", choices=["ippo", "mappo", "isac_mappo"], default="isac_mappo")
     parser.add_argument(
         "--network",
-        choices=["shared", "scalegraph_beam", "contention_shared", "gated_contention_shared"],
+        choices=[
+            "shared",
+            "scalegraph_beam",
+            "contention_shared",
+            "gated_contention_shared",
+            "adaptive_gated_contention_shared",
+        ],
         default="shared",
     )
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
@@ -280,7 +287,13 @@ def resolved_feature_flags(args: argparse.Namespace) -> dict[str, bool]:
 
 def build_policy(
     network: str, *args: Any, **kwargs: Any
-) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic | GatedContentionGraphActorCritic:
+) -> (
+    SharedBeamActorCritic
+    | ScaleGraphBeamActorCritic
+    | ContentionGraphActorCritic
+    | GatedContentionGraphActorCritic
+    | AdaptiveGatedContentionGraphActorCritic
+):
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
@@ -289,6 +302,8 @@ def build_policy(
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "adaptive_gated_contention_shared":
+        return AdaptiveGatedContentionGraphActorCritic(*args, **kwargs)
     raise ValueError(f"Unsupported network: {network}")
 
 

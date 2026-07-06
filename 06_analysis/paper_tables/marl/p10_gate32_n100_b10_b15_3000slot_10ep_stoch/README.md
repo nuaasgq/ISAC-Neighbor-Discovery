@@ -1,0 +1,15 @@
+# MARL Transfer Evaluation
+
+- Created: 2026-07-07T01:58:29
+- Runs loaded: 2
+- Rows loaded: 20
+
+This table aggregates zero-shot evaluations of trained shared MARL policies under changed node counts and beam codebooks.
+
+## Summary
+
+```csv
+method,method_label,train_algorithm,train_network,train_reward_version,env_protocol,phase,node_count,beamwidth_deg,beam_count,slots_per_episode,communication_range_m,sensing_range_m,eval_n,episodes,run_n,discovery_rate_mean,discovery_rate_std,discovery_rate_ci95,collision_penalized_discovery_rate_mean,collision_penalized_discovery_rate_std,collision_penalized_discovery_rate_ci95,mean_delay_censored_mean,mean_delay_censored_std,mean_delay_censored_ci95,p95_delay_censored_mean,p95_delay_censored_std,p95_delay_censored_ci95,empty_scan_ratio_mean,empty_scan_ratio_std,empty_scan_ratio_ci95,lambda2_mean,lambda2_std,lambda2_ci95,largest_component_size_mean,largest_component_size_std,largest_component_size_ci95,lcc_ratio_mean,lcc_ratio_std,lcc_ratio_ci95,isolated_node_ratio_mean,isolated_node_ratio_std,isolated_node_ratio_ci95,collision_count_mean,collision_count_std,collision_count_ci95,collisions_per_discovery_censored_mean,collisions_per_discovery_censored_std,collisions_per_discovery_censored_ci95,discoveries_per_1000_scan_actions_mean,discoveries_per_1000_scan_actions_std,discoveries_per_1000_scan_actions_ci95,discoveries_per_joule_mean,discoveries_per_joule_std,discoveries_per_joule_ci95
+gated_contention_actor,gated_contention_actor,isac_mappo,gated_contention_shared,collision_topology,isac_structured_marl,eval_stochastic,100,10.0,648,3000,900.0,900.0,10,10,1,0.3652525252525253,0.01028827534392004,0.00637673912322094,0.1658322516710889,0.007160337474324826,0.004438023145927479,2245.0783434343434,21.696957378206502,13.447913507702669,3000.0,0.0,0.0,0.04963252420031948,0.0012869036823838543,0.0007976311660558136,17.442810001725768,1.3543190321678054,0.8394156327523619,100.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,5965.8,443.0956254955958,274.63351397331917,3.300441245850142,0.23803001058243878,0.14753252904323985,12.950850538055354,0.391012912009702,0.2423523137111903,1.3475104799365218,0.03846404892243668,0.023840264514900848
+gated_contention_actor,gated_contention_actor,isac_mappo,gated_contention_shared,collision_topology,isac_structured_marl,eval_stochastic,100,15.0,288,3000,900.0,900.0,10,10,1,0.39369696969696966,0.013973607550986273,0.008660931690127037,0.11061779302374894,0.0064568243009791035,0.004001981163553232,2146.2984646464647,32.50467997871995,20.14660937613518,3000.0,0.0,0.0,0.019477815171727208,0.0005632613530831455,0.0003491130035634448,19.50427668642436,4.532254479347256,2.8091204296866277,100.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,12712.1,1064.8459930379083,659.9983842795039,6.524106232730134,0.49839815618563676,0.3089103776142902,17.24992344600643,0.7160482841741749,0.4438113245585949,1.5462232539766556,0.057130499328866956,0.03540985034142034
+```

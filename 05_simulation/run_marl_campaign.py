@@ -37,7 +37,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--algorithms", nargs="+", default=["isac_mappo", "mappo"])
     parser.add_argument(
         "--network",
-        choices=["shared", "scalegraph_beam", "contention_shared", "gated_contention_shared"],
+        choices=[
+            "shared",
+            "scalegraph_beam",
+            "contention_shared",
+            "gated_contention_shared",
+            "adaptive_gated_contention_shared",
+        ],
         default="shared",
     )
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")

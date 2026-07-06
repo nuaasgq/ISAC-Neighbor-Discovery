@@ -21,6 +21,7 @@ if str(SRC) not in sys.path:
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
+    AdaptiveGatedContentionGraphActorCritic,
     ContentionGraphActorCritic,
     GatedContentionGraphActorCritic,
 )
@@ -195,7 +196,13 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
 
 def build_policy(
     network: str, *args: Any, **kwargs: Any
-) -> SharedBeamActorCritic | ScaleGraphBeamActorCritic | ContentionGraphActorCritic | GatedContentionGraphActorCritic:
+) -> (
+    SharedBeamActorCritic
+    | ScaleGraphBeamActorCritic
+    | ContentionGraphActorCritic
+    | GatedContentionGraphActorCritic
+    | AdaptiveGatedContentionGraphActorCritic
+):
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
@@ -204,6 +211,8 @@ def build_policy(
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "adaptive_gated_contention_shared":
+        return AdaptiveGatedContentionGraphActorCritic(*args, **kwargs)
     raise ValueError(f"Unsupported network in checkpoint: {network}")
 
 

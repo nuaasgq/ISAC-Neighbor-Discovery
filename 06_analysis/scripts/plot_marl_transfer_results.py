@@ -164,6 +164,8 @@ def infer_method(manifest: dict) -> str:
         return "mappo_no_isac"
     if algorithm == "mappo" and env_protocol == "structured_marl_no_isac" and network == "contention_shared":
         return "contention_no_isac"
+    if network == "adaptive_gated_contention_shared" and reward == "collision_topology":
+        return "adaptive_gated_contention_actor"
     if network == "gated_contention_shared" and reward == "collision_topology":
         return "gated_contention_actor"
     if network == "contention_shared" and reward == "collision_topology":

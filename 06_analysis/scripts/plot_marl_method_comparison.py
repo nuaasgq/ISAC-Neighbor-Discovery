@@ -18,6 +18,7 @@ METHOD_STYLES = {
     "collision_reward": ("Collision reward", "#009E73", "--"),
     "contention_actor": ("Contention actor", "#D55E00", "-."),
     "gated_contention_actor": ("Gated contention actor", "#E69F00", "-"),
+    "adaptive_gated_contention_actor": ("Adaptive gated contention actor", "#7E57C2", "-"),
 }
 FALLBACK_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#56B4E9", "#6C757D", "#E69F00"]
 FALLBACK_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1))]
@@ -117,6 +118,8 @@ def infer_method(row: Any) -> str:
     network = str(row.get("train_network", "shared"))
     reward = str(row.get("train_reward_version", "legacy"))
     algorithm = str(row.get("train_algorithm", "unknown"))
+    if network == "adaptive_gated_contention_shared" and reward == "collision_topology":
+        return "adaptive_gated_contention_actor"
     if network == "gated_contention_shared" and reward == "collision_topology":
         return "gated_contention_actor"
     if network == "contention_shared" and reward == "collision_topology":
@@ -216,6 +219,7 @@ def method_order(frame) -> list[str]:
         "collision_reward",
         "contention_actor",
         "gated_contention_actor",
+        "adaptive_gated_contention_actor",
     ]
     available = [str(value) for value in frame["method"].dropna().unique()]
     ordered = [method for method in preferred if method in available]

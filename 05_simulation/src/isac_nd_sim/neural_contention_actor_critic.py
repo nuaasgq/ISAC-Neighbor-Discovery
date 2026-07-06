@@ -37,6 +37,7 @@ class ContentionGraphActorCritic:
         use_rule_residual: bool = False,
         rule_residual_scale: float = 1.0,
         use_access_gate: bool = False,
+        access_gate_variant: str = "legacy",
     ):
         try:
             import torch
@@ -55,7 +56,13 @@ class ContentionGraphActorCritic:
         self.use_rule_residual = bool(use_rule_residual)
         self.rule_residual_scale = float(rule_residual_scale)
         self.use_access_gate = bool(use_access_gate)
-        self.model = _ContentionGraphActorCriticModule(self.n_beams, self.hidden_dim, self.use_access_gate).to(self.device)
+        self.access_gate_variant = str(access_gate_variant)
+        self.model = _ContentionGraphActorCriticModule(
+            self.n_beams,
+            self.hidden_dim,
+            self.use_access_gate,
+            self.access_gate_variant,
+        ).to(self.device)
 
     def parameters(self):
         return self.model.parameters()
@@ -181,11 +188,20 @@ class ContentionGraphActorCritic:
 
 
 class _ContentionGraphActorCriticModule:
-    def __new__(cls, n_beams: int, hidden_dim: int, use_access_gate: bool = False):
+    def __new__(
+        cls,
+        n_beams: int,
+        hidden_dim: int,
+        use_access_gate: bool = False,
+        access_gate_variant: str = "legacy",
+    ):
         import torch
         import torch.nn as nn
 
         dims = ContentionFeatures()
+        gate_variant = str(access_gate_variant)
+        if gate_variant not in {"legacy", "adaptive"}:
+            raise ValueError("access_gate_variant must be 'legacy' or 'adaptive'.")
 
         class Module(nn.Module):
             def __init__(self, n_beams: int, hidden_dim: int, use_access_gate: bool):
@@ -193,6 +209,7 @@ class _ContentionGraphActorCriticModule:
                 self.n_beams = int(n_beams)
                 self.hidden_dim = int(hidden_dim)
                 self.use_access_gate = bool(use_access_gate)
+                self.access_gate_variant = gate_variant
                 self.beam_encoder = nn.Sequential(
                     nn.Linear(dims.beam_dim, hidden_dim),
                     nn.LayerNorm(hidden_dim),
@@ -294,23 +311,41 @@ class _ContentionGraphActorCriticModule:
                 candidate_fraction = state[..., 6]
                 candidate_score_max = state[..., 8]
                 learned_logit = self.access_gate_head(torch.cat([context, contention], dim=-1)).squeeze(-1)
-                rule_logit = (
-                    0.70 * topology_need
-                    + 0.35 * candidate_score_max
-                    - 1.10 * collision_pressure
-                    - 0.45 * fail_pressure
-                    - 0.25 * candidate_fraction
-                )
+                if self.access_gate_variant == "adaptive":
+                    collision_guard = collision_pressure * (0.55 + 0.45 * candidate_fraction)
+                    rule_logit = (
+                        0.95 * topology_need
+                        + 0.55 * candidate_score_max
+                        - 1.35 * collision_guard
+                        - 0.55 * fail_pressure
+                        - 0.15 * candidate_fraction
+                    )
+                else:
+                    rule_logit = (
+                        0.70 * topology_need
+                        + 0.35 * candidate_score_max
+                        - 1.10 * collision_pressure
+                        - 0.45 * fail_pressure
+                        - 0.25 * candidate_fraction
+                    )
                 gate = torch.tanh(learned_logit + rule_logit)
                 adjusted = mode_logits.clone()
                 tx_idx = MODE_NAMES.index("tx")
                 rx_idx = MODE_NAMES.index("rx")
                 sense_idx = MODE_NAMES.index("sense")
                 idle_idx = MODE_NAMES.index("idle")
-                adjusted[..., tx_idx] = adjusted[..., tx_idx] + 0.85 * gate
-                adjusted[..., rx_idx] = adjusted[..., rx_idx] + 0.65 * gate
-                adjusted[..., sense_idx] = adjusted[..., sense_idx] - 0.45 * gate
-                adjusted[..., idle_idx] = adjusted[..., idle_idx] - 0.75 * gate
+                if self.access_gate_variant == "adaptive":
+                    active_gate = torch.clamp(gate, min=0.0)
+                    throttle_gate = torch.clamp(-gate, min=0.0)
+                    adjusted[..., tx_idx] = adjusted[..., tx_idx] + 0.65 * active_gate - 0.30 * throttle_gate
+                    adjusted[..., rx_idx] = adjusted[..., rx_idx] + 0.80 * active_gate - 0.15 * throttle_gate
+                    adjusted[..., sense_idx] = adjusted[..., sense_idx] - 0.35 * active_gate + 0.40 * throttle_gate
+                    adjusted[..., idle_idx] = adjusted[..., idle_idx] - 0.60 * active_gate + 0.45 * throttle_gate
+                else:
+                    adjusted[..., tx_idx] = adjusted[..., tx_idx] + 0.85 * gate
+                    adjusted[..., rx_idx] = adjusted[..., rx_idx] + 0.65 * gate
+                    adjusted[..., sense_idx] = adjusted[..., sense_idx] - 0.45 * gate
+                    adjusted[..., idle_idx] = adjusted[..., idle_idx] - 0.75 * gate
                 return adjusted
 
         return Module(n_beams, hidden_dim, use_access_gate)
@@ -321,6 +356,15 @@ class GatedContentionGraphActorCritic(ContentionGraphActorCritic):
 
     def __init__(self, *args, **kwargs):
         kwargs["use_access_gate"] = True
+        super().__init__(*args, **kwargs)
+
+
+class AdaptiveGatedContentionGraphActorCritic(ContentionGraphActorCritic):
+    """Gated contention actor with a collision-adaptive decentralized access rule."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs["use_access_gate"] = True
+        kwargs["access_gate_variant"] = "adaptive"
         super().__init__(*args, **kwargs)
 
 
