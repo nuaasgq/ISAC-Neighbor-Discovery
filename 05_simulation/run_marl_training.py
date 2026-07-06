@@ -622,6 +622,7 @@ def evaluate_policy(
     policy.eval()
     with torch_module.no_grad():
         eval_modes = (False, True) if bool(args.eval_both) else (bool(stochastic_eval),)
+        eval_training_step = int(start_episode) * int(getattr(args, "slots", 1) or 1)
         for mode_index, use_stochastic in enumerate(eval_modes):
             for offset in range(int(args.eval_episodes)):
                 seed = seed_start + 10_000 * mode_index + offset
@@ -643,6 +644,7 @@ def evaluate_policy(
                 row = {
                     "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
                     "eval_after_episode": start_episode,
+                    "training_step": eval_training_step,
                     "eval_episode": offset,
                     "seed": seed,
                     "algorithm": str(args.algorithm),

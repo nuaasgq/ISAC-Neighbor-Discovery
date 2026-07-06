@@ -159,6 +159,16 @@ def load_csv(path: Path, pd, run_name: str, manifest: dict):
     if "training_step" not in frame.columns and "eval_after_episode" in frame.columns:
         slots = int(manifest.get("slots_per_episode", manifest.get("slots", 1)) or 1)
         frame["training_step"] = pd.to_numeric(frame["eval_after_episode"], errors="coerce") * slots
+    elif "training_step" in frame.columns and "eval_after_episode" in frame.columns:
+        parsed_steps = pd.to_numeric(frame["training_step"], errors="coerce")
+        if parsed_steps.isna().any():
+            slots = int(manifest.get("slots_per_episode", manifest.get("slots", 1)) or 1)
+            inferred_steps = pd.to_numeric(frame["eval_after_episode"], errors="coerce") * slots
+            frame["training_step"] = parsed_steps.fillna(inferred_steps)
+        else:
+            frame["training_step"] = parsed_steps
+    elif "training_step" in frame.columns:
+        frame["training_step"] = pd.to_numeric(frame["training_step"], errors="coerce")
     return frame
 
 
@@ -283,7 +293,13 @@ def write_figures(step_rows, episode_rows, eval_rows, resources, figure_dir: Pat
             ("value_loss", "Value loss", "marl_value_loss_curve.png"),
             ("entropy", "Policy entropy", "marl_entropy_curve.png"),
             ("discovery_rate", "Discovery rate", "marl_episode_discovery_curve.png"),
+            (
+                "collision_penalized_discovery_rate",
+                "Collision-penalized discovery rate",
+                "marl_episode_cpd_curve.png",
+            ),
             ("lambda2", r"$\lambda_2$", "marl_episode_lambda2_curve.png"),
+            ("lcc_ratio", "Largest-component ratio", "marl_episode_lcc_curve.png"),
             ("collision_count", "Collisions per episode", "marl_episode_collision_curve.png"),
             ("empty_scan_ratio", "Empty-scan ratio", "marl_episode_empty_scan_curve.png"),
         ]:
@@ -291,8 +307,28 @@ def write_figures(step_rows, episode_rows, eval_rows, resources, figure_dir: Pat
                 figures.append(plot_episode_curve(episode_rows, metric, ylabel, figure_dir / filename, plt))
     if not eval_rows.empty:
         figures.append(plot_eval_curve(eval_rows, "discovery_rate", "Eval discovery rate", figure_dir / "marl_eval_discovery_curve.png", plt))
+        if "collision_penalized_discovery_rate" in eval_rows.columns:
+            figures.append(
+                plot_eval_curve(
+                    eval_rows,
+                    "collision_penalized_discovery_rate",
+                    "Eval collision-penalized discovery rate",
+                    figure_dir / "marl_eval_cpd_curve.png",
+                    plt,
+                )
+            )
         if "lambda2" in eval_rows.columns:
             figures.append(plot_eval_curve(eval_rows, "lambda2", r"Eval $\lambda_2$", figure_dir / "marl_eval_lambda2_curve.png", plt))
+        if "collision_count" in eval_rows.columns:
+            figures.append(
+                plot_eval_curve(
+                    eval_rows,
+                    "collision_count",
+                    "Eval collisions per episode",
+                    figure_dir / "marl_eval_collision_curve.png",
+                    plt,
+                )
+            )
     if not resources.empty:
         if "rss_mb" in resources.columns:
             figures.append(plot_resource_curve(resources, "rss_mb", "RSS memory (MB)", figure_dir / "marl_resource_rss_curve.png", plt))
