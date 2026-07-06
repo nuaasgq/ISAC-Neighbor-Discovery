@@ -22,9 +22,12 @@
 
 | Gap | Running campaign | Success condition |
 |---|---|---|
-| `B=3` narrow-beam stress | `phase6_final_long_eval_b3_10ep_stoch` | Complete 10 stochastic `3000-slot` episodes for `legacy_shared`, `collision_reward`, and `contention_actor`; aggregate the same figures as B=5. |
-| Five-way large-scale beam transfer | `phase8_fiveway_n100_b10_b15_b30_3000slot_10ep_stoch` | Complete `uniform_random`, `SkyOrbs-like`, `mappo_no_isac`, `contention_no_isac`, and `contention_actor` at `N=100`, `B=10/15/30`. |
-| Five-way node-count transfer | `phase8_fiveway_node_transfer_b10_3000slot_10ep_stoch` | Complete the same five methods at `B=10`, `N=10/20/50/100`. |
+| Shared no-ISAC MAPPO 100-episode checkpoint | `phase9_mappo_no_isac_strict_100ep_3seed` | Complete `mappo_no_isac` at `N=10`, `B=10`, `300 slots`, `100 episodes`, preferably 3 seeds. |
+| `B=3` narrow-beam stress | `phase6_final_long_eval_b3_10ep_stoch` | Complete 10 stochastic `3000-slot` episodes for `legacy_shared`, `collision_reward`, and `contention_actor`; report as early-checkpoint diagnostic unless rerun with Phase-7 100-episode checkpoints. |
+| Five-way large-scale beam transfer | `phase8_fiveway_n100_b10_b15_b30_3000slot_10ep_stoch` | Diagnostic only because `mappo_no_isac` and `contention_actor` use older checkpoints. Use it for sanity checks, then rerun as Phase-9 with 100-episode checkpoints. |
+| Five-way node-count transfer | `phase8_fiveway_node_transfer_b10_3000slot_10ep_stoch` | Diagnostic only for the same checkpoint-budget reason. Rerun as Phase-9 after shared no-ISAC 100-episode training completes. |
+| Paper-grade internal ablation | planned `phase9_internal_100ep_*` | Rerun `legacy_shared`, `collision_reward`, and `contention_actor` using Phase-7 100-episode checkpoints. |
+| Paper-grade five-way transfer | planned `phase9_fiveway_*` | Use 100-episode checkpoints for `mappo_no_isac`, `contention_no_isac`, and `contention_actor`, paired against random and SkyOrbs-like baselines. |
 
 ## Main-Paper Figure Plan
 
@@ -51,8 +54,8 @@
 
 The result set is paper-ready only when the following are all true:
 
-1. Phase-8 five-way beam transfer has complete rows and figures for `N=100`, `B=10/15/30`, `3000 slots`.
-2. Phase-8 node transfer has complete rows and figures for `N=10/20/50/100`, `B=10`, `3000 slots`.
+1. Phase-9 five-way beam transfer has complete rows and figures for `N=100`, `B=10/15/30`, `3000 slots`, with 100-episode MARL checkpoints.
+2. Phase-9 node transfer has complete rows and figures for `N=10/20/50/100`, `B=10`, `3000 slots`, with 100-episode MARL checkpoints.
 3. `B=3` and `B=5` are reported as stress-boundary rows with honest limitations.
 4. All main figures use 4:3 aspect ratio, Times New Roman or Times fallback, and a unified color palette.
 5. Every result table states `300-slot training` and `3000-slot evaluation` explicitly.
