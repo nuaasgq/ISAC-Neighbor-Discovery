@@ -1,0 +1,58 @@
+# MARL + ISAC Final Experiment Matrix - 2026-07-06
+
+## Fixed Experimental Contract
+
+- Training source: `N=10`, `B=10 deg`, `300 slots/episode`, `5 ms/slot`.
+- Training budget for paper learning curves: `100 episodes`, `3 seeds` where available.
+- Transfer/testing horizon: `3000 slots/episode` for the main paper tables.
+- Execution: stochastic decentralized policy execution; deterministic rows are diagnostics only unless reported separately.
+- Primary metrics: `discovery_rate`, `collision_penalized_discovery_rate`, `collision_count`, `collisions_per_discovery_censored`, `lambda2`, `lcc_ratio`, and censored delay.
+- Method identity: checkpoint MAPPO/actor-critic runs are the only MARL evidence. CEM and protocol heuristics are background, baselines, or supplementary probes only.
+
+## Evidence Already Ready
+
+| Evidence block | Status | Main files |
+|---|---|---|
+| ISAC-MARL multi-seed training curves | Ready | `06_analysis/marl_phase7_isac_multiseed_results_20260706.md`; `06_analysis/paper_figures/marl/phase7_long_training_100ep_3seed_learning_curves/` |
+| Strict no-ISAC training curves | Ready as lower-bound baseline | `06_analysis/marl_phase7_strict_no_isac_results_20260706.md`; `06_analysis/paper_figures/marl/phase7_contention_no_isac_strict_100ep_3seed_learning_curves/` |
+| Internal ISAC-MARL ablation at `N=100`, `B=10/15/30`, `3000 slots` | Ready | `06_analysis/marl_phase6_final_long_eval_results_20260706.md`; `06_analysis/paper_figures/marl/phase6_final_long_eval_b10_b30_10ep_stoch_method_comparison/` |
+| `B=5` stress boundary | Ready | `06_analysis/marl_phase6_b5_long_eval_results_20260706.md`; `06_analysis/paper_figures/marl/phase6_final_long_eval_b5_10ep_stoch_method_comparison/` |
+
+## Active Result Gaps
+
+| Gap | Running campaign | Success condition |
+|---|---|---|
+| `B=3` narrow-beam stress | `phase6_final_long_eval_b3_10ep_stoch` | Complete 10 stochastic `3000-slot` episodes for `legacy_shared`, `collision_reward`, and `contention_actor`; aggregate the same figures as B=5. |
+| Five-way large-scale beam transfer | `phase8_fiveway_n100_b10_b15_b30_3000slot_10ep_stoch` | Complete `uniform_random`, `SkyOrbs-like`, `mappo_no_isac`, `contention_no_isac`, and `contention_actor` at `N=100`, `B=10/15/30`. |
+| Five-way node-count transfer | `phase8_fiveway_node_transfer_b10_3000slot_10ep_stoch` | Complete the same five methods at `B=10`, `N=10/20/50/100`. |
+
+## Main-Paper Figure Plan
+
+| Figure | Claim supported | Source |
+|---|---|---|
+| System model and ISAC-assisted ND workflow | Cross-layer problem formulation, not pure PHY beam prediction | `06_analysis/paper_figures/concept/` |
+| Contention-aware ISAC-MARL actor-critic structure | Network-structure innovation | Regenerate/update from `06_analysis/scripts/draw_concept_figures.py` if labels lag current model |
+| Step reward and episode return curves | Real MARL learning evidence under 300-slot training | Phase-7 learning-curve figures |
+| Training discovery/CPD/collision curves | Learning behavior and mechanism tradeoff | Phase-7 learning-curve figures |
+| Five-way `N=100, B=10` comparison | Main baseline closure | Phase-8 five-way beam campaign |
+| Beamwidth transfer `B=3/5/10/15/30` | Zero-shot beamwidth generalization and stress boundary | Phase-6 plus Phase-8 beam campaigns |
+| Node transfer `N=10/20/50/100` | Small-to-large scalable policy transfer | Phase-8 node campaign |
+| Internal ablation `legacy -> reward -> contention actor` | Separates reward shaping from network structure | Phase-6 long evaluation |
+
+## Claim Discipline
+
+- ISAC contribution: protocol-layer occupancy/candidate prior that reduces empty-beam exploration and supplies local beam evidence before handshake alignment.
+- MARL contribution: shared-parameter CTDE actor-critic trained on slot-level observations/actions/rewards. Current implementation is MAPPO-style PPO with a centralized critic, not a full reference MAPPO stack with GAE/minibatch/parallel rollout.
+- Network-structure contribution: contention-aware beam-token actor. The strongest current result is lower collision load and higher collision-penalized discovery, not universal raw-discovery dominance.
+- Scalability contribution: train at `N=10`, deploy without fine-tuning to larger `N` and different beamwidths. The claim is zero-shot transfer, not retraining at every test scale.
+- No-ISAC baseline: strict no-ISAC is a lower-bound learning baseline under high-dimensional blind search. It should be paired with random and SkyOrbs-like protocol baselines to avoid relying on an artificially weak comparator.
+
+## Paper-Ready Threshold
+
+The result set is paper-ready only when the following are all true:
+
+1. Phase-8 five-way beam transfer has complete rows and figures for `N=100`, `B=10/15/30`, `3000 slots`.
+2. Phase-8 node transfer has complete rows and figures for `N=10/20/50/100`, `B=10`, `3000 slots`.
+3. `B=3` and `B=5` are reported as stress-boundary rows with honest limitations.
+4. All main figures use 4:3 aspect ratio, Times New Roman or Times fallback, and a unified color palette.
+5. Every result table states `300-slot training` and `3000-slot evaluation` explicitly.

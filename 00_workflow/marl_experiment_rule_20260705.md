@@ -18,10 +18,14 @@ This file is the active rule for the rebuilt MARL + ISAC experiment line.
 - Training configs and commands must keep `300 slots` as the default episode length.
   Do not extend MARL training episodes to `1200` or `3000` slots unless a separate
   ablation is explicitly marked as long-horizon training.
-- Long horizons are evaluation-only:
+- Long horizons are evaluation-only. The current paper-grade long test uses
+  `3000 slots` after fixed `300-slot` training:
   - `300 slots`
   - `1200 slots`
   - `3000 slots`
+- Reports must state the distinction explicitly as "train with 300-slot
+  episodes, test/transfer with longer horizons"; do not describe a 3000-slot
+  evaluation as 3000-slot MARL training.
 - Treat older `600-slot` figures as historical or supplementary stress-window
   evidence only. New MARL transfer claims should be based on the 300-slot-trained
   policies evaluated at the declared test horizons above.
@@ -37,14 +41,16 @@ This file is the active rule for the rebuilt MARL + ISAC experiment line.
 ## Transfer Tests
 
 - Train small and test large without fine-tuning.
-- Phase-1 transfer matrix:
-  - `N = 10, 20, 50`
-  - beamwidth `5, 10, 15, 30 deg`
-  - evaluation horizon `300, 1200, 3000 slots`
-- Phase-2 stress matrix after resource validation:
-  - add `N = 100`
-  - add beamwidth `3 deg`
-  - compare fixed-area and equal-density scaling.
+- Paper-grade transfer matrix:
+  - training source: `N = 10`, beamwidth `10 deg`, `300 slots/episode`
+  - node transfer: `N = 10, 20, 50, 100`
+  - beamwidth transfer: `3, 5, 10, 15, 30 deg`
+  - primary evaluation horizon: `3000 slots`
+  - compare fixed-area and equal-density scaling for the `N = 100` rows when
+    both variants are available.
+- Treat `3 deg` and `5 deg` as stress-boundary regimes unless results support a
+  stronger claim. The reliable operating-regime claim should be driven by the
+  completed `10/15/30 deg` transfer rows.
 
 ## Required Logs
 
@@ -68,6 +74,11 @@ Every MARL run must save:
 - Report stochastic and deterministic evaluation separately when both are available.
 - If deterministic argmax decoding collapses, the paper must state this and justify stochastic decentralized execution.
 - Stochastic results must not be silently relabeled as deterministic results.
+- Five-way comparison must keep the method identities separate:
+  `uniform_random`, `SkyOrbs-like`, checkpoint MAPPO without ISAC, improved
+  checkpoint MAPPO without ISAC, and improved checkpoint ISAC-MARL. Legacy CEM,
+  proxy, or heuristic policies may be supplementary only and must not be
+  relabeled as MARL.
 
 ## Current Campaign
 
