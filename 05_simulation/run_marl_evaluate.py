@@ -58,6 +58,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Collect per-slot metrics and rich step info during evaluation. Disabled by default for exact fast eval.",
     )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Disable resume from an existing partial eval_episode_metrics.csv in the output directory.",
+    )
     return parser.parse_args()
 
 
@@ -149,6 +154,10 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
         },
+        "resume": {
+            "enabled": not bool(args.no_resume),
+            "existing_rows_used": int(getattr(args, "_resume_existing_rows", 0)),
+        },
         "fast_eval": {
             "collect_slot_metrics": bool(getattr(args, "full_step_info", False)),
             "rich_info": bool(getattr(args, "full_step_info", False)),
@@ -232,7 +241,13 @@ def evaluate_policy(
     progress_dir: Path | None = None,
     resource_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    rows = []
+    rows = existing_eval_rows(progress_dir) if progress_dir is not None and not bool(args.no_resume) else []
+    args._resume_existing_rows = len(rows)
+    completed = {
+        (str(row.get("phase", "")), int(row.get("eval_episode", -1)))
+        for row in rows
+        if str(row.get("eval_episode", "")).strip() != ""
+    }
     if bool(args.eval_both):
         eval_modes = (False, True)
     elif bool(args.stochastic):
@@ -241,7 +256,10 @@ def evaluate_policy(
         eval_modes = (False,)
     with torch_module.no_grad():
         for mode_index, use_stochastic in enumerate(eval_modes):
+            phase = "eval_stochastic" if use_stochastic else "eval_deterministic"
             for episode in range(int(args.eval_episodes)):
+                if (phase, int(episode)) in completed:
+                    continue
                 seed = int(args.seed) + 10_000 * mode_index + episode
                 torch_module.manual_seed(seed)
                 np.random.seed(seed % (2**32 - 1))
@@ -283,7 +301,7 @@ def evaluate_policy(
                 rewards_tensor = torch_module.stack(rewards)
                 summary = env._sim.summarize(episode).as_dict()
                 row = {
-                    "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
+                    "phase": phase,
                     "eval_episode": episode,
                     "seed": seed,
                     "env_protocol": env_protocol,
@@ -298,6 +316,7 @@ def evaluate_policy(
                     progress = {
                         "updated_at": datetime.now().isoformat(timespec="seconds"),
                         "completed_rows": len(rows),
+                        "resumed_existing_rows": int(getattr(args, "_resume_existing_rows", 0)),
                         "eval_episodes": int(args.eval_episodes),
                         "mode": "stochastic" if use_stochastic else "deterministic",
                         "eval_episode": episode,
@@ -454,6 +473,17 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def existing_eval_rows(progress_dir: Path) -> list[dict[str, Any]]:
+    data_path = progress_dir / "eval_episode_metrics.csv"
+    if not data_path.exists() or data_path.stat().st_size == 0:
+        return []
+    try:
+        with data_path.open("r", newline="", encoding="utf-8-sig") as handle:
+            return list(csv.DictReader(handle))
+    except OSError:
+        return []
 
 
 def main() -> None:
