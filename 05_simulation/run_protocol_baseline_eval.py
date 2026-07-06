@@ -45,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-episodes", type=int, default=10)
     parser.add_argument("--slots", type=int, default=3000)
     parser.add_argument("--node-count", type=int, default=None)
+    parser.add_argument("--area-size-m", type=float, nargs=3, default=None, metavar=("X", "Y", "Z"))
     parser.add_argument("--beamwidth-deg", type=int, choices=sorted(BEAMWIDTH_TO_CELLS), default=None)
     parser.add_argument("--azimuth-cells", type=int, default=None)
     parser.add_argument("--elevation-cells", type=int, default=None)
@@ -104,6 +105,8 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
     }
     if args.node_count is not None:
         replacements["n_nodes"] = int(args.node_count)
+    if args.area_size_m is not None:
+        replacements["area_size_m"] = tuple(float(value) for value in args.area_size_m)
     if args.beamwidth_deg is not None:
         replacements["azimuth_cells"], replacements["elevation_cells"] = BEAMWIDTH_TO_CELLS[int(args.beamwidth_deg)]
     if args.azimuth_cells is not None:
@@ -180,6 +183,8 @@ def build_manifest(
         "eval_episodes": int(args.eval_episodes),
         "slots_per_episode": int(cfg.slots_per_episode),
         "node_count": int(cfg.n_nodes),
+        "area_size_m": [float(value) for value in cfg.area_size_m],
+        "area_diagonal_m": math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m)),
         "beam_count": int(cfg.n_beams),
         "beamwidth_deg": float(beamwidth),
         "azimuth_cells": int(cfg.azimuth_cells),

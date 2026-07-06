@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import os
 from dataclasses import replace
 from datetime import datetime
@@ -32,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-episodes", type=int, default=10)
     parser.add_argument("--slots", type=int, default=3000)
     parser.add_argument("--node-count", type=int, default=None)
+    parser.add_argument("--area-size-m", type=float, nargs=3, default=None, metavar=("X", "Y", "Z"))
     parser.add_argument("--azimuth-cells", type=int, default=None)
     parser.add_argument("--elevation-cells", type=int, default=None)
     parser.add_argument("--communication-range", type=float, default=None)
@@ -130,6 +132,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "eval_episodes": int(args.eval_episodes),
         "slots_per_episode": int(cfg.slots_per_episode),
         "node_count": int(cfg.n_nodes),
+        "area_size_m": [float(value) for value in cfg.area_size_m],
+        "area_diagonal_m": math.sqrt(sum(float(value) ** 2 for value in cfg.area_size_m)),
         "beam_count": int(cfg.n_beams),
         "azimuth_cells": int(cfg.azimuth_cells),
         "elevation_cells": int(cfg.elevation_cells),
@@ -207,6 +211,8 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
     if args.mobility_model is not None:
         mobility["model"] = str(args.mobility_model)
     replacements["mobility"] = mobility
+    if args.area_size_m is not None:
+        replacements["area_size_m"] = tuple(float(value) for value in args.area_size_m)
     return replace(config, **replacements)
 
 

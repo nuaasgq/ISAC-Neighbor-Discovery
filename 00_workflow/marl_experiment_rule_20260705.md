@@ -48,6 +48,16 @@ This file is the active rule for the rebuilt MARL + ISAC experiment line.
   - primary evaluation horizon: `3000 slots`
   - compare fixed-area and equal-density scaling for the `N = 100` rows when
     both variants are available.
+- For Phase9 five-way runs, use `run_marl_fiveway_eval_campaign.py --area-scale`
+  to make the area-scaling convention explicit:
+  - `--area-scale config`: keep the YAML area unchanged; this preserves older
+    Phase9 directory names and is only a compatibility mode.
+  - `--area-scale fixed`: use the base training area for every test node count.
+  - `--area-scale density`: scale side lengths by
+    `(test_N / train_N)^(1/3)` so the 3-D node density is preserved.
+- Fixed-area and equal-density runs must use different campaign names or the
+  generated `_area_fixed` / `_area_density` output suffixes; do not average them
+  together unless the table explicitly groups by area-scaling convention.
 - Treat `3 deg` and `5 deg` as stress-boundary regimes unless results support a
   stronger claim. The reliable operating-regime claim should be driven by the
   completed `10/15/30 deg` transfer rows.

@@ -3,12 +3,15 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,6 +95,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--beamwidths", type=int, nargs="+", default=[10, 15, 30])
     parser.add_argument("--eval-slots", type=int, nargs="+", default=[3000])
     parser.add_argument("--eval-episodes", type=int, default=10)
+    parser.add_argument(
+        "--area-scale",
+        choices=["config", "fixed", "density"],
+        default="config",
+        help=(
+            "config keeps the YAML area unchanged. fixed sends the base YAML area to every case. "
+            "density scales area side lengths by (N/train_node_count)^(1/3)."
+        ),
+    )
+    parser.add_argument(
+        "--base-area-size-m",
+        type=float,
+        nargs=3,
+        default=None,
+        metavar=("X", "Y", "Z"),
+        help="Optional base area for fixed/density scaling. Defaults to network.area_size_m in --config.",
+    )
+    parser.add_argument("--train-node-count", type=int, default=10)
     parser.add_argument("--communication-range", type=float, default=900.0)
     parser.add_argument("--sensing-range", type=float, default=900.0)
     parser.add_argument("--seed", type=int, default=20364205)
@@ -155,6 +176,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--eval-episodes must be positive.")
     if any(int(value) <= 0 for value in args.eval_slots):
         raise ValueError("--eval-slots values must be positive.")
+    if int(args.train_node_count) <= 0:
+        raise ValueError("--train-node-count must be positive.")
 
 
 def build_plan(args: argparse.Namespace, output_root: Path) -> dict[str, Any]:
@@ -169,7 +192,14 @@ def build_plan(args: argparse.Namespace, output_root: Path) -> dict[str, Any]:
         for node_count in args.node_counts:
             for beamwidth in args.beamwidths:
                 for method in methods:
-                    output = output_root / "eval" / method / eval_name(method, node_count, beamwidth, slots, args.eval_episodes)
+                    output = output_root / "eval" / method / eval_name(
+                        method,
+                        node_count,
+                        beamwidth,
+                        slots,
+                        args.eval_episodes,
+                        args.area_scale,
+                    )
                     run_dirs.append(str(output))
                     if complete_eval_run(output, int(args.eval_episodes)) and not bool(args.force):
                         skipped_complete.append({"method": method, "output": str(output), "expected_rows": int(args.eval_episodes)})
@@ -186,10 +216,13 @@ def build_plan(args: argparse.Namespace, output_root: Path) -> dict[str, Any]:
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "campaign": str(args.campaign),
-        "train_node_count": 10,
+        "train_node_count": int(args.train_node_count),
         "train_beamwidth_deg": 10,
         "train_slots_per_episode": 300,
         "scenario_seed_policy": "paired_across_methods_for_each_node_beamwidth_slot_setting",
+        "area_scale": str(args.area_scale),
+        "base_area_size_m": list(base_area_size(args)),
+        "case_area_size_policy": area_size_policy_manifest(args),
         "methods": methods,
         "neural_methods": {name: spec_manifest(spec) for name, spec in neural_methods.items() if name in methods},
         "node_counts": [int(value) for value in args.node_counts],
@@ -238,7 +271,7 @@ def resolve_repo_path(value: str | Path) -> Path:
 
 def protocol_command(method: str, args: argparse.Namespace, output: Path, node_count: int, beamwidth: int, slots: int) -> list[str]:
     protocol = "skyorbs_like_skip_scan" if method == "skyorbs_like" else method
-    return [
+    command = [
         sys.executable,
         str(PROTOCOL_EVAL_SCRIPT),
         "--config",
@@ -265,11 +298,13 @@ def protocol_command(method: str, args: argparse.Namespace, output: Path, node_c
         "0",
         "--quiet",
     ]
+    append_area_size_args(command, args, node_count)
+    return command
 
 
 def neural_command(spec: NeuralMethod, args: argparse.Namespace, output: Path, node_count: int, beamwidth: int, slots: int) -> list[str]:
     azimuth, elevation = BEAMWIDTH_TO_CELLS[int(beamwidth)]
-    return [
+    command = [
         sys.executable,
         str(EVAL_SCRIPT),
         "--checkpoint",
@@ -308,6 +343,8 @@ def neural_command(spec: NeuralMethod, args: argparse.Namespace, output: Path, n
         str(args.max_system_memory_percent),
         "--stochastic",
     ]
+    append_area_size_args(command, args, node_count)
+    return command
 
 
 def aggregation_commands_for(args: argparse.Namespace, run_dirs: list[str]) -> list[list[str]]:
@@ -392,8 +429,9 @@ def complete_eval_run(output: Path, expected_rows: int) -> bool:
     return len(rows) == int(expected_rows) and bool(rows)
 
 
-def eval_name(method: str, node_count: int, beamwidth: int, slots: int, episodes: int) -> str:
-    return f"{method}_train_n10_b10_test_n{node_count}_b{beamwidth}_{slots}slot_{episodes}ep_stoch"
+def eval_name(method: str, node_count: int, beamwidth: int, slots: int, episodes: int, area_scale: str = "config") -> str:
+    suffix = "" if str(area_scale) == "config" else f"_area_{area_scale}"
+    return f"{method}_train_n10_b10_test_n{node_count}_b{beamwidth}_{slots}slot_{episodes}ep_stoch{suffix}"
 
 
 def eval_seed(base_seed: int, node_count: int, beamwidth: int, slots: int) -> int:
@@ -406,6 +444,50 @@ def spec_manifest(spec: NeuralMethod) -> dict[str, str]:
         "reward_version": spec.reward_version,
         "env_protocol": spec.env_protocol,
         "description": spec.description,
+    }
+
+
+def append_area_size_args(command: list[str], args: argparse.Namespace, node_count: int) -> None:
+    area = case_area_size(args, node_count)
+    if area is None:
+        return
+    command.extend(["--area-size-m"])
+    command.extend(f"{float(value):g}" for value in area)
+
+
+def case_area_size(args: argparse.Namespace, node_count: int) -> tuple[float, float, float] | None:
+    if str(args.area_scale) == "config":
+        return None
+    base = base_area_size(args)
+    if str(args.area_scale) == "fixed":
+        return base
+    if str(args.area_scale) == "density":
+        factor = (max(1, int(node_count)) / max(1, int(args.train_node_count))) ** (1.0 / 3.0)
+        return tuple(float(value) * factor for value in base)
+    raise ValueError(f"Unsupported area scale: {args.area_scale}")
+
+
+def base_area_size(args: argparse.Namespace) -> tuple[float, float, float]:
+    if args.base_area_size_m is not None:
+        return tuple(float(value) for value in args.base_area_size_m)
+    config_path = resolve_repo_path(args.config)
+    raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    values = raw["network"]["area_size_m"]
+    if len(values) != 3:
+        raise ValueError(f"network.area_size_m must contain exactly 3 values in {config_path}.")
+    return tuple(float(value) for value in values)
+
+
+def area_size_policy_manifest(args: argparse.Namespace) -> dict[str, Any]:
+    base = base_area_size(args)
+    base_diagonal = math.sqrt(sum(float(value) ** 2 for value in base))
+    return {
+        "mode": str(args.area_scale),
+        "base_area_size_m": list(base),
+        "base_area_diagonal_m": base_diagonal,
+        "train_node_count": int(args.train_node_count),
+        "communication_range_m": float(args.communication_range),
+        "sensing_range_m": float(args.sensing_range),
     }
 
 
