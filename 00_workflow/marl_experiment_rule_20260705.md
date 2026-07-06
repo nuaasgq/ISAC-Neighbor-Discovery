@@ -102,3 +102,26 @@ episodes or narrower beamwidth subsets. Do not use this script for training.
 The evaluator uses an exact fast-evaluation path by default: it skips per-slot
 metrics and rich step info that are not consumed by transfer evaluation, while
 keeping final `summarize()` metrics unchanged.
+
+## Phase9 Five-Way Paper-Grade Check
+
+The current primary five-way comparison is `phase9_fiveway_n100_b10_3000slot_10ep_stoch`.
+It is the first paper-grade large-cluster sanity check because all MARL
+checkpoints are trained with `N = 10`, beamwidth `10 deg`, and `300 slots` per
+episode, then tested without fine-tuning at `N = 100`, beamwidth `10 deg`, and
+`3000 slots`.
+
+The five methods are:
+
+- `uniform_random`: fully random blind baseline.
+- `skyorbs_like`: reference-inspired protocol baseline.
+- `mappo_no_isac`: strict shared MAPPO without ISAC observations.
+- `contention_no_isac`: improved contention-aware MAPPO structure without ISAC.
+- `contention_actor`: improved contention-aware MAPPO structure with ISAC
+  beam evidence and empty-beam suppression.
+
+This campaign is the current entry point for the B=10, N=100 five-way evidence:
+
+```powershell
+python 05_simulation/run_marl_fiveway_eval_campaign.py --campaign phase9_fiveway_n100_b10_3000slot_10ep_stoch --eval-episodes 10 --eval-slots 3000 --node-counts 100 --beamwidths 10 --methods uniform_random skyorbs_like mappo_no_isac contention_no_isac contention_actor --mappo-no-isac-checkpoint 05_simulation/results_raw/marl_campaign/phase9_mappo_no_isac_strict_100ep_3seed/train/train_n10_b10_mappo_no_isac_100ep_300slot_seed20260731/final_model.pt --contention-no-isac-checkpoint 05_simulation/results_raw/marl_campaign/phase7_contention_no_isac_strict_100ep_3seed/train/train_n10_b10_contention_no_isac_100ep_300slot_seed20260731/final_model.pt --contention-actor-checkpoint 05_simulation/results_raw/marl_campaign/phase7_long_training_100ep_3seed/train/train_n10_b10_contention_actor_100ep_300slot_seed20260731/final_model.pt --torch-threads 2 --resource-log-period 500 --max-rss-mb 10000 --max-system-memory-percent 90 --command-timeout-seconds 7200
+```
