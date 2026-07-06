@@ -28,7 +28,7 @@
 | Five-way node-count transfer | `phase8_fiveway_node_transfer_b10_3000slot_10ep_stoch` | Diagnostic only for the same checkpoint-budget reason. Rerun as Phase-9 after shared no-ISAC 100-episode training completes. |
 | Paper-grade internal ablation | planned `phase9_internal_100ep_*` | Rerun `legacy_shared`, `collision_reward`, and `contention_actor` using Phase-7 100-episode checkpoints. |
 | Paper-grade five-way transfer | planned `phase9_fiveway_*` | Use 100-episode checkpoints for `mappo_no_isac`, `contention_no_isac`, and `contention_actor`, paired against random and SkyOrbs-like baselines. |
-| B=15 five-way follow-up | running `phase9_fiveway_n100_b15_3000slot_10ep_stoch` | B=30 was explicitly canceled by the user on 2026-07-06; finish B=15 only, then aggregate and report with B=10. |
+| B=15 five-way follow-up | complete `phase9_fiveway_n100_b15_3000slot_10ep_stoch` | B=30 was explicitly canceled by the user on 2026-07-06; B=15 has been aggregated and reported with B=10. |
 | Phase9 area-scaling closure | planned `phase9_fiveway_node_transfer_b10_3000slot_10ep_stoch_area_*` | `run_marl_fiveway_eval_campaign.py` now supports `--area-scale fixed` and `--area-scale density`; both variants must be kept as separate campaigns/tables. |
 
 ## Main-Paper Figure Plan
