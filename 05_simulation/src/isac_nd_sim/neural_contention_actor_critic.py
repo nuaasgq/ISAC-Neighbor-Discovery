@@ -200,8 +200,10 @@ class _ContentionGraphActorCriticModule:
 
         dims = ContentionFeatures()
         gate_variant = str(access_gate_variant)
-        if gate_variant not in {"legacy", "adaptive"}:
-            raise ValueError("access_gate_variant must be 'legacy' or 'adaptive'.")
+        if gate_variant not in {"legacy", "adaptive", "topology_preserving", "balanced_topology"}:
+            raise ValueError(
+                "access_gate_variant must be 'legacy', 'adaptive', 'topology_preserving', or 'balanced_topology'."
+            )
 
         class Module(nn.Module):
             def __init__(self, n_beams: int, hidden_dim: int, use_access_gate: bool):
@@ -320,6 +322,29 @@ class _ContentionGraphActorCriticModule:
                         - 0.55 * fail_pressure
                         - 0.15 * candidate_fraction
                     )
+                elif self.access_gate_variant == "topology_preserving":
+                    topology_evidence = torch.clamp(topology_need * candidate_score_max, min=0.0, max=1.0)
+                    collision_relief = 1.0 - 0.45 * topology_evidence
+                    collision_guard = collision_pressure * torch.clamp(collision_relief, min=0.45, max=1.0)
+                    rule_logit = (
+                        0.85 * topology_need
+                        + 0.50 * candidate_score_max
+                        + 0.35 * topology_evidence
+                        - 0.95 * collision_guard
+                        - 0.42 * fail_pressure
+                        - 0.10 * candidate_fraction
+                    )
+                elif self.access_gate_variant == "balanced_topology":
+                    topology_evidence = torch.clamp(topology_need * candidate_score_max, min=0.0, max=1.0)
+                    crowding_guard = collision_pressure * (0.62 + 0.38 * candidate_fraction)
+                    rule_logit = (
+                        0.82 * topology_need
+                        + 0.44 * candidate_score_max
+                        + 0.18 * topology_evidence
+                        - 1.18 * crowding_guard
+                        - 0.46 * fail_pressure
+                        - 0.14 * candidate_fraction
+                    )
                 else:
                     rule_logit = (
                         0.70 * topology_need
@@ -341,6 +366,38 @@ class _ContentionGraphActorCriticModule:
                     adjusted[..., rx_idx] = adjusted[..., rx_idx] + 0.80 * active_gate - 0.15 * throttle_gate
                     adjusted[..., sense_idx] = adjusted[..., sense_idx] - 0.35 * active_gate + 0.40 * throttle_gate
                     adjusted[..., idle_idx] = adjusted[..., idle_idx] - 0.60 * active_gate + 0.45 * throttle_gate
+                elif self.access_gate_variant == "topology_preserving":
+                    topology_evidence = torch.clamp(topology_need * candidate_score_max, min=0.0, max=1.0)
+                    active_gate = torch.clamp(gate, min=0.0)
+                    throttle_gate = torch.clamp(-gate, min=0.0)
+                    adjusted[..., tx_idx] = (
+                        adjusted[..., tx_idx] + 0.72 * active_gate + 0.20 * topology_evidence - 0.18 * throttle_gate
+                    )
+                    adjusted[..., rx_idx] = (
+                        adjusted[..., rx_idx] + 0.86 * active_gate + 0.24 * topology_evidence - 0.10 * throttle_gate
+                    )
+                    adjusted[..., sense_idx] = (
+                        adjusted[..., sense_idx] - 0.28 * active_gate + 0.25 * throttle_gate - 0.08 * topology_evidence
+                    )
+                    adjusted[..., idle_idx] = (
+                        adjusted[..., idle_idx] - 0.55 * active_gate + 0.25 * throttle_gate - 0.18 * topology_evidence
+                    )
+                elif self.access_gate_variant == "balanced_topology":
+                    topology_evidence = torch.clamp(topology_need * candidate_score_max, min=0.0, max=1.0)
+                    active_gate = torch.clamp(gate, min=0.0)
+                    throttle_gate = torch.clamp(-gate, min=0.0)
+                    adjusted[..., tx_idx] = (
+                        adjusted[..., tx_idx] + 0.62 * active_gate + 0.10 * topology_evidence - 0.26 * throttle_gate
+                    )
+                    adjusted[..., rx_idx] = (
+                        adjusted[..., rx_idx] + 0.74 * active_gate + 0.14 * topology_evidence - 0.18 * throttle_gate
+                    )
+                    adjusted[..., sense_idx] = (
+                        adjusted[..., sense_idx] - 0.26 * active_gate + 0.36 * throttle_gate - 0.05 * topology_evidence
+                    )
+                    adjusted[..., idle_idx] = (
+                        adjusted[..., idle_idx] - 0.48 * active_gate + 0.36 * throttle_gate - 0.08 * topology_evidence
+                    )
                 else:
                     adjusted[..., tx_idx] = adjusted[..., tx_idx] + 0.85 * gate
                     adjusted[..., rx_idx] = adjusted[..., rx_idx] + 0.65 * gate
@@ -365,6 +422,24 @@ class AdaptiveGatedContentionGraphActorCritic(ContentionGraphActorCritic):
     def __init__(self, *args, **kwargs):
         kwargs["use_access_gate"] = True
         kwargs["access_gate_variant"] = "adaptive"
+        super().__init__(*args, **kwargs)
+
+
+class TopologyAdaptiveGatedContentionGraphActorCritic(ContentionGraphActorCritic):
+    """Adaptive gated actor that preserves active access under strong topology evidence."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs["use_access_gate"] = True
+        kwargs["access_gate_variant"] = "topology_preserving"
+        super().__init__(*args, **kwargs)
+
+
+class BalancedTopologyGatedContentionGraphActorCritic(ContentionGraphActorCritic):
+    """Adaptive gated actor balancing collision suppression with topology growth evidence."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs["use_access_gate"] = True
+        kwargs["access_gate_variant"] = "balanced_topology"
         super().__init__(*args, **kwargs)
 
 

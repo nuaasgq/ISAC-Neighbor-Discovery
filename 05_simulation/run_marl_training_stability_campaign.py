@@ -64,6 +64,20 @@ METHODS = {
         reward_version="collision_topology",
         description="Contention-aware ISAC-MAPPO actor with a collision-adaptive decentralized access gate.",
     ),
+    "topology_adaptive_gated_contention_actor": TrainMethod(
+        name="topology_adaptive_gated_contention_actor",
+        algorithm="isac_mappo",
+        network="topology_adaptive_gated_contention_shared",
+        reward_version="collision_topology",
+        description="Contention-aware ISAC-MAPPO actor with a topology-preserving adaptive access gate.",
+    ),
+    "balanced_topology_gated_contention_actor": TrainMethod(
+        name="balanced_topology_gated_contention_actor",
+        algorithm="isac_mappo",
+        network="balanced_topology_gated_contention_shared",
+        reward_version="collision_topology",
+        description="Contention-aware ISAC-MAPPO actor with a balanced collision/topology adaptive access gate.",
+    ),
     "mappo_no_isac": TrainMethod(
         name="mappo_no_isac",
         algorithm="mappo",

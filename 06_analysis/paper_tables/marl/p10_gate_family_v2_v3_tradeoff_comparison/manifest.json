@@ -1,0 +1,54 @@
+{
+  "created_at": "2026-07-07T04:37:29",
+  "baseline_summary": [
+    "06_analysis/paper_tables/marl/phase9_fiveway_n100_b10_3000slot_10ep_stoch_all_methods/marl_transfer_summary.csv",
+    "06_analysis/paper_tables/marl/phase9_fiveway_n100_b15_3000slot_10ep_stoch_all_methods/marl_transfer_summary.csv"
+  ],
+  "gated_summary": [
+    {
+      "label": "seed31",
+      "path": "06_analysis\\paper_tables\\marl\\p10_gate31_n100_b10_b15_3000slot_10ep_stoch\\marl_transfer_summary.csv"
+    },
+    {
+      "label": "seed32",
+      "path": "06_analysis\\paper_tables\\marl\\p10_gate32_n100_b10_b15_3000slot_10ep_stoch\\marl_transfer_summary.csv"
+    },
+    {
+      "label": "seed33",
+      "path": "06_analysis\\paper_tables\\marl\\p10_gate33_n100_b10_b15_3000slot_10ep_stoch\\marl_transfer_summary.csv"
+    },
+    {
+      "label": "adaptive",
+      "path": "06_analysis\\paper_tables\\marl\\p10_adaptive_gate_v2_n100_b10_b15_3000slot_10ep_stoch\\marl_transfer_summary.csv"
+    },
+    {
+      "label": "topology_v3",
+      "path": "06_analysis\\paper_tables\\marl\\p10_topology_gate_v3_n100_b10_b15_3000slot_10ep_stoch\\marl_transfer_summary.csv"
+    }
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\p10_gate_family_v2_v3_tradeoff_comparison",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\p10_gate_family_v2_v3_tradeoff_comparison",
+  "rows": 20,
+  "figures": [
+    {
+      "metric": "discovery_rate_mean",
+      "path": "06_analysis\\paper_figures\\marl\\p10_gate_family_v2_v3_tradeoff_comparison\\seed_tradeoff_discovery_rate_mean.png"
+    },
+    {
+      "metric": "collision_penalized_discovery_rate_mean",
+      "path": "06_analysis\\paper_figures\\marl\\p10_gate_family_v2_v3_tradeoff_comparison\\seed_tradeoff_collision_penalized_discovery_rate_mean.png"
+    },
+    {
+      "metric": "lambda2_mean",
+      "path": "06_analysis\\paper_figures\\marl\\p10_gate_family_v2_v3_tradeoff_comparison\\seed_tradeoff_lambda2_mean.png"
+    },
+    {
+      "metric": "collision_count_mean",
+      "path": "06_analysis\\paper_figures\\marl\\p10_gate_family_v2_v3_tradeoff_comparison\\seed_tradeoff_collision_count_mean.png"
+    },
+    {
+      "metric": "collisions_per_discovery_censored_mean",
+      "path": "06_analysis\\paper_figures\\marl\\p10_gate_family_v2_v3_tradeoff_comparison\\seed_tradeoff_collisions_per_discovery_censored_mean.png"
+    }
+  ]
+}

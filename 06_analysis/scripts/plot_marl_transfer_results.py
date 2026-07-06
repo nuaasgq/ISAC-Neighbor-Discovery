@@ -166,6 +166,8 @@ def infer_method(manifest: dict) -> str:
         return "contention_no_isac"
     if network == "adaptive_gated_contention_shared" and reward == "collision_topology":
         return "adaptive_gated_contention_actor"
+    if network == "topology_adaptive_gated_contention_shared" and reward == "collision_topology":
+        return "topology_adaptive_gated_contention_actor"
     if network == "gated_contention_shared" and reward == "collision_topology":
         return "gated_contention_actor"
     if network == "contention_shared" and reward == "collision_topology":

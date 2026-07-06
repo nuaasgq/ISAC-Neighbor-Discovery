@@ -22,8 +22,10 @@ from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     AdaptiveGatedContentionGraphActorCritic,
+    BalancedTopologyGatedContentionGraphActorCritic,
     ContentionGraphActorCritic,
     GatedContentionGraphActorCritic,
+    TopologyAdaptiveGatedContentionGraphActorCritic,
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
@@ -202,6 +204,7 @@ def build_policy(
     | ContentionGraphActorCritic
     | GatedContentionGraphActorCritic
     | AdaptiveGatedContentionGraphActorCritic
+    | TopologyAdaptiveGatedContentionGraphActorCritic
 ):
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
@@ -213,6 +216,10 @@ def build_policy(
         return GatedContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "adaptive_gated_contention_shared":
         return AdaptiveGatedContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "topology_adaptive_gated_contention_shared":
+        return TopologyAdaptiveGatedContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "balanced_topology_gated_contention_shared":
+        return BalancedTopologyGatedContentionGraphActorCritic(*args, **kwargs)
     raise ValueError(f"Unsupported network in checkpoint: {network}")
 
 

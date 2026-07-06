@@ -43,6 +43,8 @@ def parse_args() -> argparse.Namespace:
             "contention_shared",
             "gated_contention_shared",
             "adaptive_gated_contention_shared",
+            "topology_adaptive_gated_contention_shared",
+            "balanced_topology_gated_contention_shared",
         ],
         default="shared",
     )

@@ -1,0 +1,122 @@
+{
+  "created_at": "2026-07-07T03:30:28",
+  "input_root": "05_simulation/results_raw/marl",
+  "run_dirs": [
+    "05_simulation\\results_raw\\marl_campaign\\p10_topology_gate_v3\\train\\train_n10_b10_topology_adaptive_gated_contention_actor_100ep_300slot_seed20260742"
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\p10_topology_gate_v3_seed20260742_training_curves",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves",
+  "runs": 1,
+  "step_rows": 30000,
+  "episode_rows": 100,
+  "eval_rows": 66,
+  "resource_rows": 300,
+  "source_manifests": [
+    {
+      "run": "train_n10_b10_topology_adaptive_gated_contention_actor_100ep_300slot_seed20260742",
+      "path": "05_simulation\\results_raw\\marl_campaign\\p10_topology_gate_v3\\train\\train_n10_b10_topology_adaptive_gated_contention_actor_100ep_300slot_seed20260742\\manifest.json",
+      "algorithm": "isac_mappo",
+      "network": "topology_adaptive_gated_contention_shared",
+      "reward_version": "collision_topology",
+      "method": "topology_adaptive_gated_contention_actor",
+      "method_label": "Topology-adaptive gated ISAC-MAPPO"
+    }
+  ],
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_step_reward_curve.png",
+      "type": "step_curve",
+      "metric": "reward_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_step_discovery_curve.png",
+      "type": "step_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_step_empty_scan_curve.png",
+      "type": "step_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_return_curve.png",
+      "type": "episode_curve",
+      "metric": "episode_return_mean_per_agent"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_policy_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "policy_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_value_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "value_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_entropy_curve.png",
+      "type": "episode_curve",
+      "metric": "entropy"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_discovery_curve.png",
+      "type": "episode_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_cpd_curve.png",
+      "type": "episode_curve",
+      "metric": "collision_penalized_discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_lambda2_curve.png",
+      "type": "episode_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_lcc_curve.png",
+      "type": "episode_curve",
+      "metric": "lcc_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_collision_curve.png",
+      "type": "episode_curve",
+      "metric": "collision_count"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_episode_empty_scan_curve.png",
+      "type": "episode_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_eval_discovery_curve.png",
+      "type": "eval_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_eval_cpd_curve.png",
+      "type": "eval_curve",
+      "metric": "collision_penalized_discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_eval_lambda2_curve.png",
+      "type": "eval_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_eval_collision_curve.png",
+      "type": "eval_curve",
+      "metric": "collision_count"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_resource_rss_curve.png",
+      "type": "resource_curve",
+      "metric": "rss_mb"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_topology_gate_v3_seed20260742_training_curves\\marl_resource_memory_curve.png",
+      "type": "resource_curve",
+      "metric": "system_memory_percent"
+    }
+  ]
+}

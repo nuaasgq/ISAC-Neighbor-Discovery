@@ -11,8 +11,10 @@ from isac_nd_sim.config import load_config
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
 from isac_nd_sim.neural_contention_actor_critic import (
     AdaptiveGatedContentionGraphActorCritic,
+    BalancedTopologyGatedContentionGraphActorCritic,
     ContentionGraphActorCritic,
     GatedContentionGraphActorCritic,
+    TopologyAdaptiveGatedContentionGraphActorCritic,
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic
@@ -188,6 +190,64 @@ def test_adaptive_gated_contention_graph_actor_critic_samples_valid_actions() ->
     assert policy.use_access_gate is True
     assert policy.access_gate_variant == "adaptive"
     assert policy.model.access_gate_variant == "adaptive"
+    assert len(step.actions) == cfg.n_nodes
+    assert step.log_probs.shape == (cfg.n_nodes,)
+    assert step.values.shape == (cfg.n_nodes,)
+    for observation, action in zip(observations, step.actions, strict=True):
+        assert action.mode in env.modes
+        assert 0 <= action.beam < cfg.n_beams
+        if action.mode != "idle":
+            assert observation["candidate_mask"][action.beam] > 0.5
+
+
+def test_topology_adaptive_gated_contention_graph_actor_critic_samples_valid_actions() -> None:
+    pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=126)
+    policy = TopologyAdaptiveGatedContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_topology_deficit=True,
+        use_rule_residual=True,
+    )
+
+    step = policy.act(observations)
+
+    assert policy.use_access_gate is True
+    assert policy.access_gate_variant == "topology_preserving"
+    assert policy.model.access_gate_variant == "topology_preserving"
+    assert len(step.actions) == cfg.n_nodes
+    assert step.log_probs.shape == (cfg.n_nodes,)
+    assert step.values.shape == (cfg.n_nodes,)
+    for observation, action in zip(observations, step.actions, strict=True):
+        assert action.mode in env.modes
+        assert 0 <= action.beam < cfg.n_beams
+        if action.mode != "idle":
+            assert observation["candidate_mask"][action.beam] > 0.5
+
+
+def test_balanced_topology_gated_contention_graph_actor_critic_samples_valid_actions() -> None:
+    pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=127)
+    policy = BalancedTopologyGatedContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_topology_deficit=True,
+        use_rule_residual=True,
+    )
+
+    step = policy.act(observations)
+
+    assert policy.use_access_gate is True
+    assert policy.access_gate_variant == "balanced_topology"
+    assert policy.model.access_gate_variant == "balanced_topology"
     assert len(step.actions) == cfg.n_nodes
     assert step.log_probs.shape == (cfg.n_nodes,)
     assert step.values.shape == (cfg.n_nodes,)

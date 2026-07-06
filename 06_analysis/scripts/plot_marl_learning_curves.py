@@ -20,6 +20,7 @@ METHOD_COLORS = {
     "contention_actor": "#54A24B",
     "gated_contention_actor": "#E69F00",
     "adaptive_gated_contention_actor": "#7E57C2",
+    "topology_adaptive_gated_contention_actor": "#C77CFF",
     "contention_no_isac": "#B279A2",
     "mappo_no_isac": "#6C757D",
     "ippo_no_isac": "#9D755D",
@@ -31,6 +32,7 @@ METHOD_LABELS = {
     "contention_actor": "Contention-aware ISAC-MAPPO",
     "gated_contention_actor": "Gated contention ISAC-MAPPO",
     "adaptive_gated_contention_actor": "Adaptive gated contention ISAC-MAPPO",
+    "topology_adaptive_gated_contention_actor": "Topology-adaptive gated ISAC-MAPPO",
     "contention_no_isac": "Contention-aware MAPPO w/o ISAC",
     "mappo_no_isac": "MAPPO w/o ISAC",
     "ippo_no_isac": "IPPO w/o ISAC",
@@ -176,6 +178,8 @@ def load_csv(path: Path, pd, run_name: str, manifest: dict):
 
 def infer_method(manifest: dict, run_name: str) -> str:
     run_name_lower = run_name.lower()
+    if "topology_adaptive_gated_contention_actor" in run_name_lower:
+        return "topology_adaptive_gated_contention_actor"
     if "adaptive_gated_contention_actor" in run_name_lower:
         return "adaptive_gated_contention_actor"
     if "gated_contention_actor" in run_name_lower:
@@ -193,6 +197,8 @@ def infer_method(manifest: dict, run_name: str) -> str:
         if algorithm == "ippo":
             return "ippo_no_isac"
         return "mappo_no_isac"
+    if "topology_adaptive_gated_contention" in network:
+        return "topology_adaptive_gated_contention_actor"
     if "adaptive_gated_contention" in network:
         return "adaptive_gated_contention_actor"
     if "gated_contention" in network:
