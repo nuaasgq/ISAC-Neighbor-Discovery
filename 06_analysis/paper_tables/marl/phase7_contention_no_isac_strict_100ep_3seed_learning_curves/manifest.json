@@ -1,0 +1,122 @@
+{
+  "created_at": "2026-07-06T08:10:29",
+  "input_root": "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train",
+  "run_dirs": [
+    "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train\\train_n10_b10_contention_no_isac_100ep_300slot_seed20260731",
+    "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train\\train_n10_b10_contention_no_isac_100ep_300slot_seed20260732",
+    "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train\\train_n10_b10_contention_no_isac_100ep_300slot_seed20260733"
+  ],
+  "output_dir": "06_analysis\\paper_tables\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves",
+  "runs": 3,
+  "step_rows": 90000,
+  "episode_rows": 300,
+  "eval_rows": 198,
+  "resource_rows": 900,
+  "source_manifests": [
+    {
+      "run": "train_n10_b10_contention_no_isac_100ep_300slot_seed20260731",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train\\train_n10_b10_contention_no_isac_100ep_300slot_seed20260731\\manifest.json",
+      "algorithm": "mappo",
+      "network": "contention_shared",
+      "reward_version": "collision_topology",
+      "method": "contention_no_isac",
+      "method_label": "Contention-aware MAPPO w/o ISAC"
+    },
+    {
+      "run": "train_n10_b10_contention_no_isac_100ep_300slot_seed20260732",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train\\train_n10_b10_contention_no_isac_100ep_300slot_seed20260732\\manifest.json",
+      "algorithm": "mappo",
+      "network": "contention_shared",
+      "reward_version": "collision_topology",
+      "method": "contention_no_isac",
+      "method_label": "Contention-aware MAPPO w/o ISAC"
+    },
+    {
+      "run": "train_n10_b10_contention_no_isac_100ep_300slot_seed20260733",
+      "path": "05_simulation\\results_raw\\marl_campaign\\phase7_contention_no_isac_strict_100ep_3seed\\train\\train_n10_b10_contention_no_isac_100ep_300slot_seed20260733\\manifest.json",
+      "algorithm": "mappo",
+      "network": "contention_shared",
+      "reward_version": "collision_topology",
+      "method": "contention_no_isac",
+      "method_label": "Contention-aware MAPPO w/o ISAC"
+    }
+  ],
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_step_reward_curve.png",
+      "type": "step_curve",
+      "metric": "reward_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_step_discovery_curve.png",
+      "type": "step_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_step_empty_scan_curve.png",
+      "type": "step_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_episode_return_curve.png",
+      "type": "episode_curve",
+      "metric": "episode_return_mean_per_agent"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_policy_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "policy_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_value_loss_curve.png",
+      "type": "episode_curve",
+      "metric": "value_loss"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_entropy_curve.png",
+      "type": "episode_curve",
+      "metric": "entropy"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_episode_discovery_curve.png",
+      "type": "episode_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_episode_lambda2_curve.png",
+      "type": "episode_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_episode_collision_curve.png",
+      "type": "episode_curve",
+      "metric": "collision_count"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_episode_empty_scan_curve.png",
+      "type": "episode_curve",
+      "metric": "empty_scan_ratio"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_eval_discovery_curve.png",
+      "type": "eval_curve",
+      "metric": "discovery_rate"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_eval_lambda2_curve.png",
+      "type": "eval_curve",
+      "metric": "lambda2"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_resource_rss_curve.png",
+      "type": "resource_curve",
+      "metric": "rss_mb"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\phase7_contention_no_isac_strict_100ep_3seed_learning_curves\\marl_resource_memory_curve.png",
+      "type": "resource_curve",
+      "metric": "system_memory_percent"
+    }
+  ]
+}
