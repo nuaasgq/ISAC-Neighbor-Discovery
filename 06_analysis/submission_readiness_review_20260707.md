@@ -33,11 +33,12 @@ Reviewer posture: IEEE TWC/TCOM-style pre-submission audit focused on claim stre
 - Added `p10_final_method_manifest_trace/` and a supplementary method-trace index table that maps every final Phase10 method group to training and transfer manifest sources.
 - Added `research_goal_coverage_audit_20260707.md` and generated coverage/risk CSVs that map the active MARL+ISAC research objective to current PASS/CAUTION/OPEN evidence status.
 - Added `phase10_independent_rerun_validation_20260707.md` and a hash-tracked validation table for an independent stochastic re-run of `gated_contention_actor` at N=100, B=10, 3000 slots.
+- Added `phase10_learned_component_ablation_report_20260707.md` and 3-episode B=10 learned-component ablations covering trained, random-weight, zero-weight/rule-only, no-rule-residual, and no-candidate-mask variants.
 
 ## Remaining Submission Tasks
 
-1. Add a learned-vs-rule ablation, such as random-weight, frozen-rule, no-residual, or no-candidate-mask variants, before claiming that neural learning rather than structured priors alone drives the gain.
-2. Extend independent re-runs to B=15 or another method only if page-review risk justifies the extra compute; the current status is partial, not full-campaign, verification.
+1. Tighten learned-component wording: the current ablation supports collision suppression and tradeoff shaping, not universal learned-policy dominance in raw discovery/lambda2.
+2. Extend independent re-runs or learned ablations to B=15/more seeds only if page-review risk justifies the extra compute; the current status is focused, not full-campaign, verification.
 3. Add a concise algorithm box if page budget allows; the current prose/equation form is clear but a reviewer may prefer pseudocode.
 4. Add a short "Data and Code Availability" statement only after deciding whether anonymous review will use an anonymized repository or post-acceptance release.
 5. Before submission, run one final pass for line-level IEEE style, title concision, abstract length, duplicate labels, and BibTeX journal abbreviation consistency.

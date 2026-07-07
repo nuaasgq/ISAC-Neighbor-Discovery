@@ -30,6 +30,8 @@ FIGURE_AUDIT = Path("06_analysis/figure_table_provenance_audit_20260707.md")
 SUBMISSION_REVIEW = Path("06_analysis/submission_readiness_review_20260707.md")
 RERUN_VALIDATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/manifest.json")
 RERUN_VALIDATION_REPORT = Path("06_analysis/phase10_independent_rerun_validation_20260707.md")
+LEARNED_ABLATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json")
+LEARNED_ABLATION_REPORT = Path("06_analysis/phase10_learned_component_ablation_report_20260707.md")
 
 CODE_EVIDENCE = [
     Path("05_simulation/src/isac_nd_sim/marl_env.py"),
@@ -162,6 +164,7 @@ def requirement_rows(
     training_manifest: dict,
     artifact_manifest: dict,
     rerun_validation: dict,
+    learned_ablation: dict,
 ) -> tuple[list[Requirement], list[Risk], dict[str, object]]:
     final_methods = {row.get("method", "") for row in final_rows}
     final_beams = {as_float(row.get("beamwidth_deg")) for row in final_rows}
@@ -230,6 +233,15 @@ def requirement_rows(
     rerun_status_counts = rerun_validation.get("status_counts", {})
     rerun_method = str(rerun_validation.get("method", ""))
     rerun_beam = as_float(rerun_validation.get("beamwidth_deg"))
+    learned_ablation_labels = set(learned_ablation.get("labels", []))
+    required_learned_ablation_labels = {
+        "trained_full",
+        "random_weights_full",
+        "zero_weights_rule_only",
+        "trained_no_rule_residual",
+        "trained_no_candidate_mask",
+    }
+    learned_ablation_complete = required_learned_ablation_labels.issubset(learned_ablation_labels)
 
     stability_beams = {as_float(row.get("beamwidth_deg")) for row in stability_rows if row.get("beamwidth_deg")}
     stability_nodes = {as_int(row.get("node_count")) for row in stability_rows if row.get("node_count")}
@@ -432,15 +444,17 @@ def requirement_rows(
         "R17",
         "Learned component ablation",
         "Separate learned actor contribution from strong rule priors, residual logits, candidate masks, and decentralized gates.",
-        "OPEN",
-        "missing_ablation",
-        "The code contains PPO/MAPPO-style learning and neural actors, but the final evidence does not yet include random-weight, frozen-rule, zero-residual, or no-candidate-mask ablations.",
+        "CAUTION" if learned_ablation_complete else "OPEN",
+        "focused_ablation_mixed" if learned_ablation_complete else "missing_ablation",
+        f"Focused B=10/N=100/3000-slot learned-component ablation covers labels={sorted(learned_ablation_labels)}. Results separate learned weights from rule priors, but support a collision-efficiency claim rather than universal learned-policy dominance.",
         [
             Path("05_simulation/src/isac_nd_sim/neural_contention_actor_critic.py"),
             Path("05_simulation/src/isac_nd_sim/marl_env.py"),
             Path("05_simulation/run_marl_training.py"),
+            Path("05_simulation/run_marl_evaluate.py"),
+            LEARNED_ABLATION_REPORT,
         ],
-        "Run a focused learned-vs-rule ablation before making any claim that the neural component, rather than the structured prior alone, drives the performance gain.",
+        "Use conservative wording: learned weights suppress collisions versus random/zero-weight policies, while candidate masking and rule residuals define the discovery/collision/empty-scan tradeoff. Extend to B=15 or more seeds only if needed.",
     )
     add(
         "R18",
@@ -505,6 +519,8 @@ def requirement_rows(
         "independent_rerun_status_counts": rerun_status_counts,
         "independent_rerun_method": rerun_method,
         "independent_rerun_beamwidth_deg": rerun_beam,
+        "learned_ablation_labels": sorted(learned_ablation_labels),
+        "learned_ablation_required_labels_present": learned_ablation_complete,
         "code_evidence_files_present": code_files_present,
         "code_evidence_files_total": len(CODE_EVIDENCE),
     }
@@ -597,7 +613,7 @@ def write_report(requirements: list[Requirement], risks: list[Risk], inventory: 
             "## Boundary Interpretation",
             "",
             "The current evidence is strong enough to support a manuscript draft centered on a real MAPPO-style MARL+ISAC neighbor-discovery method, small-to-large transfer, and gate-family collision/topology tradeoffs.",
-            "The evidence is still not a fully verified replication package: the strongest remaining unresolved item is a learned-vs-rule ablation that separates neural learning from structured priors. The independent re-run now verifies one key Phase10 transfer point only, so full-campaign reproducibility should remain a bounded claim.",
+            "The evidence is still not a fully verified replication package: independent re-run coverage is partial, learned-component evidence is a focused mixed ablation, and full-campaign reproducibility plus broader ablation seeds should remain bounded claims.",
             "",
             "## Generated Files",
             "",
@@ -618,6 +634,7 @@ def main() -> None:
     training_manifest = read_json(TRAINING_MANIFEST)
     artifact_manifest = read_json(ARTIFACT_MANIFEST)
     rerun_validation = read_json(RERUN_VALIDATION_MANIFEST)
+    learned_ablation = read_json(LEARNED_ABLATION_MANIFEST)
 
     requirements, risks, inventory = requirement_rows(
         final_rows,
@@ -626,6 +643,7 @@ def main() -> None:
         training_manifest,
         artifact_manifest,
         rerun_validation,
+        learned_ablation,
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -701,6 +719,8 @@ def main() -> None:
             SUBMISSION_REVIEW.as_posix(),
             RERUN_VALIDATION_MANIFEST.as_posix(),
             RERUN_VALIDATION_REPORT.as_posix(),
+            LEARNED_ABLATION_MANIFEST.as_posix(),
+            LEARNED_ABLATION_REPORT.as_posix(),
         ]
         + [path.as_posix() for path in CODE_EVIDENCE],
         "output_files": [path.as_posix() for path in output_files],

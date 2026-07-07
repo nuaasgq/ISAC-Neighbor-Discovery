@@ -27,6 +27,7 @@ The performance direction is strong in the current simulator evidence, especiall
 | B=15 adaptive gate collision-penalized discovery | Descriptive comparison | 0.2265 +/- 0.0051 vs ungated 0.1387 +/- 0.0066 | Highest B=15 CPD among current gate-family points, but lower raw discovery/lambda2 than topology-heavy profiles | CAUTION |
 | Graph connectivity separation | Descriptive comparison | actor/gated lambda2 is 11.90-19.89 for main rows; communication-only baselines are numerically zero | Strong graph-level separation in simulator | CAUTION |
 | Training trace coverage | Artifact-manifest check | 90,000 step rows, 300 episode rows, 198 eval rows across three N=10/B=10 training seeds | Supports step-indexed convergence diagnostics, not formal optimality | CAUTION |
+| Learned-component ablation | Focused 3-episode B=10 transfer ablation | trained CPD 0.2297 vs random-weight 0.1599 and zero-weight/rule-only 0.1464 | Supports collision-efficiency contribution, not universal learned dominance in raw discovery/lambda2 | CAUTION |
 
 ### Warnings
 
@@ -37,6 +38,7 @@ The performance direction is strong in the current simulator evidence, especiall
 | Mixed horizon evidence | Main Phase10 claims use 3000-slot N=100 transfer, while several robustness/boundary figures come from earlier 600-slot campaigns. The manuscript currently labels those as boundary/supplementary evidence; this boundary should remain explicit. | Mobility, range, error, ablation figures |
 | Simulator-to-platform gap | ISAC sensing, energy accounting, and slot timing are protocol-level abstractions. The results support protocol feasibility in the simulator, not hardware-calibrated energy or PHY-optimal claims. | PHY/protocol interpretation and energy discussion |
 | Multiple comparisons | Many scenarios, metrics, and profiles were evaluated. There is no global multiple-comparison correction. Main claims should remain conservative and tied to the Phase10 primary table. | All broad superiority claims |
+| Learned contribution boundary | Random/zero-weight policies can obtain higher raw discovery and lambda2 by accepting much higher collision load. | Learned-component claims should emphasize collision suppression and tradeoff shaping, not raw discovery dominance. |
 
 ### Fallacy Scan
 
@@ -60,7 +62,7 @@ The performance direction is strong in the current simulator evidence, especiall
 
 - Method: artifact hashing plus manifest/provenance verification, with one independent stochastic re-run for `gated_contention_actor` at N=100, B=10, 3000 slots, and 10 episodes.
 - Verdict: VERIFIED_PARTIAL for the selected B=10 gated transfer point; CANNOT_VERIFY for full stochastic Phase10 campaign reproduction.
-- Artifact result: `06_analysis/scripts/build_manuscript_artifact_manifest.py` generated 124 current manuscript-facing artifacts with 0 missing paths.
+- Artifact result: `06_analysis/scripts/build_manuscript_artifact_manifest.py` generated 139 current manuscript-facing artifacts with 0 missing paths.
 - Figure result: the current figure audit checked 51 referenced PNG instances, with 0 missing files and 0 approximate 4:3 aspect-ratio violations.
 - LaTeX result: the current `main.tex` and `supplement.tex` compiled to 9 and 13 pages respectively with no undefined references/citations, no overfull warnings, and no LaTeX hard errors in the checked logs.
 

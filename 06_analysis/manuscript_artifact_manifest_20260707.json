@@ -1,8 +1,8 @@
 {
-  "created_at_utc": "2026-07-07T08:59:39.220198+00:00",
+  "created_at_utc": "2026-07-07T10:49:18.607430+00:00",
   "scope": "current manuscript-facing LaTeX figures plus Phase10 main evidence artifacts",
   "csv": "06_analysis/manuscript_artifact_manifest_20260707.csv",
-  "artifact_count": 124,
+  "artifact_count": 139,
   "missing_count": 0,
   "roles": [
     "direct_evidence_artifact",
@@ -31,8 +31,24 @@
       "source": "default_main_chain",
       "path": "06_analysis/figure_table_provenance_audit_20260707.md",
       "exists": true,
-      "size_bytes": 9340,
-      "sha256": "e67e9044533c1e44e13df2491cbf3264234a59d9a5ccb75bf6bf855f0ba4135f"
+      "size_bytes": 9368,
+      "sha256": "26784d78d165c9cb5fac447f7cad91853cd433eb6e8393f1bfec5b54481f4859"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_collision_tradeoff.png",
+      "exists": true,
+      "size_bytes": 81806,
+      "sha256": "bb51da32388a5bfce50968d68f75c5069133543e99c11fca3baa57b87cf5ebbe"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_discovery_efficiency.png",
+      "exists": true,
+      "size_bytes": 69363,
+      "sha256": "8a564efcbe5f8a44eea57d184814159afbb09baf889b1ba8e9fd39529285563a"
     },
     {
       "role": "direct_evidence_artifact",
@@ -173,26 +189,66 @@
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_metric_summary.csv",
+      "exists": true,
+      "size_bytes": 7117,
+      "sha256": "3dc59ac4bc33926056d42776edb37cf87e0c9c5e9c92909654509dc1c2dd0448"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_run_index.csv",
+      "exists": true,
+      "size_bytes": 1599,
+      "sha256": "cbe3f2d91f7f4ffde2e093c8fdce27860ca8eb769a90d0d75991865f8455e72c"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_source_file_hashes.csv",
+      "exists": true,
+      "size_bytes": 3508,
+      "sha256": "09c8f28c1b653cc17c8273e36884983827323bc69975c2172503205851cc96b7"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_vs_trained_full.csv",
+      "exists": true,
+      "size_bytes": 3294,
+      "sha256": "30d42291a289757ef15435a631363c8b92ddfd92598e0f1ad0613a2f3604c8c8"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json",
+      "exists": true,
+      "size_bytes": 2915,
+      "sha256": "0082a2fc0dbc779804e807046198d2e47616ee33ae94733a8ffb507c405e44d2"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv",
       "exists": true,
-      "size_bytes": 2567,
-      "sha256": "3bb3cb0617b669bd8e95cc2d1b6116a794eea200f6a01ceda3417b3d7d7730ae"
+      "size_bytes": 2802,
+      "sha256": "7dae44d0110cb342690ab02cd6adead0cb2983b565e698edd08280a74f05c8c5"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv",
       "exists": true,
-      "size_bytes": 1724,
-      "sha256": "2fa0d1ee1f737c9562af0d6b82a0faebf26ccbc77bb8e179a3d93aabced09cef"
+      "size_bytes": 1931,
+      "sha256": "70b4cb05721e6346056315ce32c518ef38c1b74cbf38b338edc20bb1e712154e"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/manifest.json",
       "exists": true,
-      "size_bytes": 3337,
-      "sha256": "2037bbab75b4903721999011b78048c3a3cb6477c49bbb1b4e8b3c80ab1a1bba"
+      "size_bytes": 3502,
+      "sha256": "8e80a0112647a2532516afdc72db06711ab32b95ba6ac3f2e159dc8e42d0aed8"
     },
     {
       "role": "direct_evidence_artifact",
@@ -215,8 +271,8 @@
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv",
       "exists": true,
-      "size_bytes": 8809,
-      "sha256": "ea4bbf7c33fcf5ebded006a0efafeacbaea2819251f4aa16e3c02bcd33c6e8f8"
+      "size_bytes": 9151,
+      "sha256": "290a8dd4980a38ce19869f0f889bad404c514ff6c3b5aa3c7c73257e2939dde1"
     },
     {
       "role": "direct_evidence_artifact",
@@ -229,26 +285,34 @@
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
+      "path": "06_analysis/phase10_learned_component_ablation_report_20260707.md",
+      "exists": true,
+      "size_bytes": 2600,
+      "sha256": "cb9a402b635910429fa2cc3f478027d39e9c4a55e7af811d2a22f208f5100151"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
       "path": "06_analysis/phase10_statistical_validation_report_20260707.md",
       "exists": true,
-      "size_bytes": 8901,
-      "sha256": "98b9945b59db81b021acef09cc36768957f329313eacafbf2bfd93bbefb0199b"
+      "size_bytes": 9432,
+      "sha256": "553e04dd3906d167aabb0df5f18352d7fdf22194dcd9ad940352790d32e6b1f3"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/research_goal_coverage_audit_20260707.md",
       "exists": true,
-      "size_bytes": 6328,
-      "sha256": "4a8ef288af60a17630ba666d4b69e4f0e5c8fe1728de43c51558d64ab8ae76eb"
+      "size_bytes": 6498,
+      "sha256": "02b0376e54023860b7429df742f8ffe695d8d9c000f51655b8c7d0ac8b365061"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/scripts/build_manuscript_artifact_manifest.py",
       "exists": true,
-      "size_bytes": 10173,
-      "sha256": "a2094c743e3b31eb37590f6878ca715b8e967d15c6dffe57b45400c58d4643a4"
+      "size_bytes": 11109,
+      "sha256": "a71512d102b8edb64ee1c74df3a1e81cc9e34f2a0ceb03d8bed2662bf1c07fb9"
     },
     {
       "role": "direct_evidence_artifact",
@@ -257,6 +321,14 @@
       "exists": true,
       "size_bytes": 11957,
       "sha256": "9d6fa26714de429c45c727a0259ae63f26d62996456292f465eb9ea27a7d78eb"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/scripts/build_phase10_learned_component_ablation.py",
+      "exists": true,
+      "size_bytes": 17208,
+      "sha256": "df11dae093229327b920cfff6a97cdd68b60b2c6a46dce3501ffcb09007e8da1"
     },
     {
       "role": "direct_evidence_artifact",
@@ -271,16 +343,16 @@
       "source": "default_main_chain",
       "path": "06_analysis/scripts/build_research_goal_coverage_audit.py",
       "exists": true,
-      "size_bytes": 33178,
-      "sha256": "463bcb826eb7a1eb6aba945d48efd306d7f647ebc879ff5e2c26526578169650"
+      "size_bytes": 34400,
+      "sha256": "867dc18c20198086f57df0e9df25e1e8fdcdd185de46c0d86471b2d2e84b9c6e"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/submission_readiness_review_20260707.md",
       "exists": true,
-      "size_bytes": 4743,
-      "sha256": "13a94bbc8ddc09d49edb459fc18e233a5273c90bb0027d6ce606ba74dfb307c9"
+      "size_bytes": 4946,
+      "sha256": "830fe9d7bb872346b60e1bee3ae8294731df4045a79d322de8d609082d06612a"
     },
     {
       "role": "direct_evidence_artifact",
@@ -295,8 +367,8 @@
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/README.md",
       "exists": true,
-      "size_bytes": 3814,
-      "sha256": "5a04a0e80d0194eab13f369671374fae72020e0cb5c7e4b8a21c847aa2ec063a"
+      "size_bytes": 4138,
+      "sha256": "185173d4085fdd81959993e09fcd59c1bfd1d0a255c94ad10517a25f491293fa"
     },
     {
       "role": "direct_evidence_artifact",
@@ -375,16 +447,16 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[5]",
       "path": "06_analysis/figure_table_provenance_audit_20260707.md",
       "exists": true,
-      "size_bytes": 9340,
-      "sha256": "e67e9044533c1e44e13df2491cbf3264234a59d9a5ccb75bf6bf855f0ba4135f"
+      "size_bytes": 9368,
+      "sha256": "26784d78d165c9cb5fac447f7cad91853cd433eb6e8393f1bfec5b54481f4859"
     },
     {
       "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[4]",
       "path": "06_analysis/manuscript_artifact_manifest_20260707.json",
       "exists": true,
-      "size_bytes": 53039,
-      "sha256": "852f5e7ecb8f8d77bfad5fbc12544cbc0725e6e77ab074c924336f156f70442c"
+      "size_bytes": 59048,
+      "sha256": "f99933301b05e5a3a2b5acd9913c7892ee4c04f0ec2d6f2d4f361d30cb573a32"
     },
     {
       "role": "manifest_reference",
@@ -492,6 +564,46 @@
     },
     {
       "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json:outputs[0]",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_metric_summary.csv",
+      "exists": true,
+      "size_bytes": 7117,
+      "sha256": "3dc59ac4bc33926056d42776edb37cf87e0c9c5e9c92909654509dc1c2dd0448"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json:outputs[2]",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_run_index.csv",
+      "exists": true,
+      "size_bytes": 1599,
+      "sha256": "cbe3f2d91f7f4ffde2e093c8fdce27860ca8eb769a90d0d75991865f8455e72c"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json:outputs[3]",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_source_file_hashes.csv",
+      "exists": true,
+      "size_bytes": 3508,
+      "sha256": "09c8f28c1b653cc17c8273e36884983827323bc69975c2172503205851cc96b7"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json:outputs[1]",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_vs_trained_full.csv",
+      "exists": true,
+      "size_bytes": 3294,
+      "sha256": "30d42291a289757ef15435a631363c8b92ddfd92598e0f1ad0613a2f3604c8c8"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[9]",
+      "path": "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json",
+      "exists": true,
+      "size_bytes": 2915,
+      "sha256": "0082a2fc0dbc779804e807046198d2e47616ee33ae94733a8ffb507c405e44d2"
+    },
+    {
+      "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/manifest.json:combined_summary[4]",
       "path": "06_analysis/paper_tables/marl/p10_topology_gate_v3_n100_b10_b15_3000slot_10ep_stoch/marl_transfer_summary.csv",
       "exists": true,
@@ -543,16 +655,16 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[2]",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv",
       "exists": true,
-      "size_bytes": 2567,
-      "sha256": "3bb3cb0617b669bd8e95cc2d1b6116a794eea200f6a01ceda3417b3d7d7730ae"
+      "size_bytes": 2802,
+      "sha256": "7dae44d0110cb342690ab02cd6adead0cb2983b565e698edd08280a74f05c8c5"
     },
     {
       "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[1]",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv",
       "exists": true,
-      "size_bytes": 1724,
-      "sha256": "2fa0d1ee1f737c9562af0d6b82a0faebf26ccbc77bb8e179a3d93aabced09cef"
+      "size_bytes": 1931,
+      "sha256": "70b4cb05721e6346056315ce32c518ef38c1b74cbf38b338edc20bb1e712154e"
     },
     {
       "role": "manifest_reference",
@@ -575,8 +687,8 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[0]",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv",
       "exists": true,
-      "size_bytes": 8809,
-      "sha256": "ea4bbf7c33fcf5ebded006a0efafeacbaea2819251f4aa16e3c02bcd33c6e8f8"
+      "size_bytes": 9151,
+      "sha256": "290a8dd4980a38ce19869f0f889bad404c514ff6c3b5aa3c7c73257e2939dde1"
     },
     {
       "role": "manifest_reference",
@@ -596,19 +708,27 @@
     },
     {
       "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[10]",
+      "path": "06_analysis/phase10_learned_component_ablation_report_20260707.md",
+      "exists": true,
+      "size_bytes": 2600,
+      "sha256": "cb9a402b635910429fa2cc3f478027d39e9c4a55e7af811d2a22f208f5100151"
+    },
+    {
+      "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[5]",
       "path": "06_analysis/research_goal_coverage_audit_20260707.md",
       "exists": true,
-      "size_bytes": 6328,
-      "sha256": "4a8ef288af60a17630ba666d4b69e4f0e5c8fe1728de43c51558d64ab8ae76eb"
+      "size_bytes": 6498,
+      "sha256": "02b0376e54023860b7429df742f8ffe695d8d9c000f51655b8c7d0ac8b365061"
     },
     {
       "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[6]",
       "path": "06_analysis/submission_readiness_review_20260707.md",
       "exists": true,
-      "size_bytes": 4743,
-      "sha256": "13a94bbc8ddc09d49edb459fc18e233a5273c90bb0027d6ce606ba74dfb307c9"
+      "size_bytes": 4946,
+      "sha256": "830fe9d7bb872346b60e1bee3ae8294731df4045a79d322de8d609082d06612a"
     },
     {
       "role": "manuscript_figure",

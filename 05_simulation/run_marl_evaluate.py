@@ -53,6 +53,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--deterministic", action="store_true", help="Use argmax actions.")
     parser.add_argument("--stochastic", action="store_true", help="Sample actions.")
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
+    parser.add_argument(
+        "--policy-ablation",
+        choices=["trained", "random_weights", "zero_weights"],
+        default="trained",
+        help="Evaluate the trained checkpoint, a randomly initialized policy, or a zero-weight rule-only policy.",
+    )
+    parser.add_argument("--ablation-label", default=None, help="Optional label recorded in the evaluation manifest.")
+    parser.add_argument("--ablation-seed", type=int, default=None, help="Seed used for random/zero-weight ablations.")
+    parser.add_argument("--disable-candidate-mask", action="store_true", help="Disable hard ISAC candidate beam masking at evaluation time.")
+    parser.add_argument("--disable-candidate-score", action="store_true", help="Zero ISAC candidate confidence features at evaluation time.")
+    parser.add_argument("--disable-topology-deficit", action="store_true", help="Zero topology-deficit features at evaluation time.")
+    parser.add_argument("--disable-rule-residual", action="store_true", help="Disable handcrafted rule residual logits at evaluation time.")
+    parser.add_argument("--eval-rule-residual-scale", type=float, default=None, help="Override rule residual scale at evaluation time.")
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default=None)
     parser.add_argument("--seed", type=int, default=30260705)
     parser.add_argument("--torch-threads", type=int, default=2)
@@ -84,22 +97,20 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     cfg = override_config(load_config(args.config), args)
     checkpoint = load_checkpoint(args.checkpoint, torch)
     train_args = checkpoint.get("args", {})
-    feature_flags = {
-        "candidate_mask": bool(train_args.get("candidate_mask", False)),
-        "candidate_score": bool(train_args.get("candidate_score", False)),
-        "topology_deficit": bool(train_args.get("topology_deficit", False)),
-        "rule_residual": bool(train_args.get("rule_residual", False)),
-    }
-    if str(train_args.get("algorithm", "")) == "isac_mappo" and not bool(train_args.get("disable_isac_features", False)):
-        feature_flags = {
-            "candidate_mask": True,
-            "candidate_score": True,
-            "topology_deficit": True,
-            "rule_residual": True,
-    }
+    checkpoint_feature_flags = checkpoint_feature_flags_from_args(train_args)
+    feature_flags = apply_eval_feature_overrides(checkpoint_feature_flags, args)
     hidden_dim = int(train_args.get("hidden_dim", 128))
     train_network = str(train_args.get("network", "shared"))
     reward_version = str(args.reward_version or train_args.get("reward_version", "legacy"))
+    ablation_seed = int(args.ablation_seed) if args.ablation_seed is not None else int(args.seed) + 9173
+    if str(args.policy_ablation) in {"random_weights", "zero_weights"}:
+        torch.manual_seed(ablation_seed)
+        np.random.seed(ablation_seed % (2**32 - 1))
+    rule_residual_scale = (
+        float(args.eval_rule_residual_scale)
+        if args.eval_rule_residual_scale is not None
+        else float(train_args.get("rule_residual_scale", 1.0))
+    )
     policy = build_policy(
         train_network,
         cfg.n_beams,
@@ -109,9 +120,13 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_candidate_score=feature_flags["candidate_score"],
         use_topology_deficit=feature_flags["topology_deficit"],
         use_rule_residual=feature_flags["rule_residual"],
-        rule_residual_scale=float(train_args.get("rule_residual_scale", 1.0)),
+        rule_residual_scale=rule_residual_scale,
     )
-    policy.model.load_state_dict(checkpoint["policy_state_dict"])
+    checkpoint_loaded = str(args.policy_ablation) == "trained"
+    if checkpoint_loaded:
+        policy.model.load_state_dict(checkpoint["policy_state_dict"])
+    elif str(args.policy_ablation) == "zero_weights":
+        zero_policy_weights(policy, torch)
     policy.eval()
 
     output = Path(args.output)
@@ -151,7 +166,13 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
+        "policy_ablation": str(args.policy_ablation),
+        "ablation_label": str(args.ablation_label or args.policy_ablation),
+        "ablation_seed": ablation_seed,
+        "checkpoint_loaded": checkpoint_loaded,
+        "checkpoint_feature_flags": checkpoint_feature_flags,
         "feature_flags": feature_flags,
+        "rule_residual_scale": rule_residual_scale,
         "deterministic": bool(args.deterministic),
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
@@ -175,6 +196,42 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     return manifest
 
 
+def checkpoint_feature_flags_from_args(train_args: dict[str, Any]) -> dict[str, bool]:
+    feature_flags = {
+        "candidate_mask": bool(train_args.get("candidate_mask", False)),
+        "candidate_score": bool(train_args.get("candidate_score", False)),
+        "topology_deficit": bool(train_args.get("topology_deficit", False)),
+        "rule_residual": bool(train_args.get("rule_residual", False)),
+    }
+    if str(train_args.get("algorithm", "")) == "isac_mappo" and not bool(train_args.get("disable_isac_features", False)):
+        feature_flags = {
+            "candidate_mask": True,
+            "candidate_score": True,
+            "topology_deficit": True,
+            "rule_residual": True,
+        }
+    return feature_flags
+
+
+def apply_eval_feature_overrides(feature_flags: dict[str, bool], args: argparse.Namespace) -> dict[str, bool]:
+    resolved = dict(feature_flags)
+    if bool(getattr(args, "disable_candidate_mask", False)):
+        resolved["candidate_mask"] = False
+    if bool(getattr(args, "disable_candidate_score", False)):
+        resolved["candidate_score"] = False
+    if bool(getattr(args, "disable_topology_deficit", False)):
+        resolved["topology_deficit"] = False
+    if bool(getattr(args, "disable_rule_residual", False)):
+        resolved["rule_residual"] = False
+    return resolved
+
+
+def zero_policy_weights(policy: Any, torch_module: Any) -> None:
+    with torch_module.no_grad():
+        for parameter in policy.model.parameters():
+            parameter.zero_()
+
+
 def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
     try:
         return torch_module.load(path, map_location="cpu", weights_only=False)
@@ -190,6 +247,14 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "resource_log_period": 500,
         "max_rss_mb": 12000.0,
         "max_system_memory_percent": 92.0,
+        "policy_ablation": "trained",
+        "ablation_label": None,
+        "ablation_seed": None,
+        "disable_candidate_mask": False,
+        "disable_candidate_score": False,
+        "disable_topology_deficit": False,
+        "disable_rule_residual": False,
+        "eval_rule_residual_scale": None,
     }
     for name, value in defaults.items():
         if not hasattr(args, name):

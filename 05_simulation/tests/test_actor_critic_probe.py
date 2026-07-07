@@ -430,6 +430,55 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
     assert eval_manifest["beam_count"] == 10
     assert (eval_output / "eval_episode_metrics.csv").exists()
 
+    ablation_output = tmp_path / "marl_transfer_eval_zero_ablation"
+    ablation_manifest = eval_module.run_evaluation(
+        Namespace(
+            checkpoint=str(output / "final_model.pt"),
+            config=str(ROOT / "05_simulation" / "configs" / "mvp.yaml"),
+            output=str(ablation_output),
+            eval_episodes=1,
+            slots=2,
+            node_count=5,
+            azimuth_cells=5,
+            elevation_cells=2,
+            communication_range=900.0,
+            sensing_range=900.0,
+            false_alarm_rate=0.0,
+            miss_detection_rate=0.0,
+            angular_cell_offset_std=0.0,
+            sensing_period_slots=1,
+            mobility_model=None,
+            env_protocol=None,
+            deterministic=False,
+            stochastic=True,
+            eval_both=False,
+            policy_ablation="zero_weights",
+            ablation_label="zero_no_rule_mask",
+            ablation_seed=1234,
+            disable_candidate_mask=True,
+            disable_candidate_score=False,
+            disable_topology_deficit=False,
+            disable_rule_residual=True,
+            eval_rule_residual_scale=None,
+            reward_version=None,
+            seed=180,
+            torch_threads=1,
+            resource_log_period=0,
+            max_rss_mb=12000.0,
+            max_system_memory_percent=99.0,
+            full_step_info=False,
+            no_resume=True,
+        )
+    )
+
+    assert ablation_manifest["policy_ablation"] == "zero_weights"
+    assert ablation_manifest["ablation_label"] == "zero_no_rule_mask"
+    assert ablation_manifest["checkpoint_loaded"] is False
+    assert ablation_manifest["ablation_seed"] == 1234
+    assert ablation_manifest["feature_flags"]["candidate_mask"] is False
+    assert ablation_manifest["feature_flags"]["rule_residual"] is False
+    assert (ablation_output / "eval_episode_metrics.csv").exists()
+
 
 def load_probe_module(path: Path, name: str):
     spec = importlib.util.spec_from_file_location(name, path)

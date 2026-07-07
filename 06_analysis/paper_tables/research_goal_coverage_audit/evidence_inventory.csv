@@ -28,11 +28,13 @@ stability_nodes,"[10, 20, 50, 100]"
 stability_protocols,"[""ablation_isac_no_beam_lock"", ""ablation_isac_no_candidate_set"", ""ablation_isac_no_topology"", ""ablation_isac_one_slot_delay"", ""improved_rl_isac"", ""improved_rl_no_isac"", ""rl_no_isac"", ""skyorbs_like_skip_scan"", ""uniform_random""]"
 stability_mobility_models,"[""gauss_markov"", ""random_direction"", ""random_walk"", ""random_waypoint""]"
 stability_slot_durations_ms,"[1.0, 5.0, 10.0, 20.0, 100.0]"
-artifact_count,124
+artifact_count,139
 artifact_missing_count,0
 independent_rerun_all_metrics_match,True
 independent_rerun_status_counts,{'MATCH': 5}
 independent_rerun_method,gated_contention_actor
 independent_rerun_beamwidth_deg,10.0
+learned_ablation_labels,"[""random_weights_full"", ""trained_full"", ""trained_no_candidate_mask"", ""trained_no_rule_residual"", ""zero_weights_rule_only""]"
+learned_ablation_required_labels_present,True
 code_evidence_files_present,6
 code_evidence_files_total,6

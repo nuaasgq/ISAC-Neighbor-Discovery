@@ -1,0 +1,45 @@
+{
+  "created_at_utc": "2026-07-07T10:44:52.781347+00:00",
+  "scope": "Phase10 learned-component ablation",
+  "raw_root": "05_simulation/results_raw/marl_campaign/phase10_learned_component_ablation_b10_5ep",
+  "labels": [
+    "trained_full",
+    "random_weights_full",
+    "zero_weights_rule_only",
+    "trained_no_rule_residual",
+    "trained_no_candidate_mask"
+  ],
+  "metrics": [
+    "discovery_rate",
+    "collision_penalized_discovery_rate",
+    "collision_count",
+    "collisions_per_discovery_censored",
+    "empty_scan_ratio",
+    "lambda2",
+    "energy_per_discovery_censored_j",
+    "discoveries_per_joule",
+    "episode_return_mean_per_agent"
+  ],
+  "figures": [
+    "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_discovery_efficiency.png",
+    "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_collision_tradeoff.png"
+  ],
+  "outputs": [
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_metric_summary.csv",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_vs_trained_full.csv",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_run_index.csv",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_source_file_hashes.csv",
+    "06_analysis/phase10_learned_component_ablation_report_20260707.md",
+    "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_discovery_efficiency.png",
+    "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_collision_tradeoff.png"
+  ],
+  "output_hashes": {
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_metric_summary.csv": "3dc59ac4bc33926056d42776edb37cf87e0c9c5e9c92909654509dc1c2dd0448",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_vs_trained_full.csv": "30d42291a289757ef15435a631363c8b92ddfd92598e0f1ad0613a2f3604c8c8",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_run_index.csv": "cbe3f2d91f7f4ffde2e093c8fdce27860ca8eb769a90d0d75991865f8455e72c",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_source_file_hashes.csv": "09c8f28c1b653cc17c8273e36884983827323bc69975c2172503205851cc96b7",
+    "06_analysis/phase10_learned_component_ablation_report_20260707.md": "cb9a402b635910429fa2cc3f478027d39e9c4a55e7af811d2a22f208f5100151",
+    "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_discovery_efficiency.png": "8a564efcbe5f8a44eea57d184814159afbb09baf889b1ba8e9fd39529285563a",
+    "06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_collision_tradeoff.png": "bb51da32388a5bfce50968d68f75c5069133543e99c11fca3baa57b87cf5ebbe"
+  }
+}
