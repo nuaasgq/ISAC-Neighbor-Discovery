@@ -29,9 +29,9 @@ This paper studies a distributed-execution UAV-UAV setting in which nodes share 
 We abstract integrated sensing and communication (ISAC) as a link-layer beam-cell occupancy prior, rather than as an oracle position estimator, and propose \method{}, an ISAC-assisted topology-aware protocol that uses sensing feedback to suppress empty beam cells, preserve exploration under sensing errors, and prioritize candidate beams for nodes with local discovered-degree deficits.
 We further develop \learnedmethod{}, a real slot-level shared-parameter actor-critic MARL policy trained with centralized training and decentralized execution.
 Its contention-aware actor uses local collision memory, candidate sparsity, topology-deficit features, and role/beam residual priors so that learning addresses the post-ISAC contention bottleneck rather than only empty-beam avoidance.
-All learned policies in the current MARL evidence line are trained at $N=10$, 10-degree beams, and 300 slots per episode, then evaluated without fine-tuning at $N=100$ over 3000-slot long-horizon tests.
-In the tested single-hop $N=100$ transfer setting, the contention-aware actor reduces collisions by 48--70\% relative to the legacy ISAC-MAPPO actor across 10-, 15-, and 30-degree beams and improves collision-penalized discovery at every tested beamwidth.
-Additional robustness experiments evaluate communication range, sensing range, sensing errors, mechanism ablations, and diagnostic radio-state accounting.
+All learned policies in the final evidence line are trained at $N=10$, 10-degree beams, and 300 slots per episode, then evaluated without fine-tuning at $N=100$ over 3000-slot long-horizon tests.
+In the tested single-hop $N=100$ transfer setting, the ISAC-aware contention actor outperforms random scanning, a SkyOrbs-like directional baseline, and no-ISAC MARL by more than two orders of magnitude in discovery rate.
+A decentralized contention gate further exposes a collision--topology operating frontier: the default gated profile gives the best 10-degree collision-penalized discovery and a balanced 15-degree topology/collision tradeoff, while aggressive and topology-heavy gates provide complementary ablation points.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -60,8 +60,8 @@ This paper makes the following contributions.
   \item We formulate distributed-execution, self-localized, neighbor-unknown UAV-UAV narrow-beam ND. Each UAV knows its own position and attitude, but before discovery it does not know neighbor identities, positions, beams, or the global topology.
   \item We abstract ISAC as an imperfect beam-cell occupancy prior with false alarms, missed detections, angular cell offsets, staleness, and finite sensing range. The prior affects action selection but never directly creates a neighbor edge.
   \item We design \method{}, an ISAC-assisted ND protocol that combines occupancy belief, exploration floors, beam-lock refinement, and local discovered-degree/topology-deficit proxies for finite-time discovered-graph formation.
-  \item We develop \learnedmethod{}, a slot-level shared-parameter actor-critic MARL method with centralized training and decentralized execution. Its contention-aware actor introduces local collision memory, candidate sparsity features, topology-deficit features, and role/beam residual priors for scalable small-to-large transfer.
-  \item We implement a reproducible simulation workflow covering dynamic mobility, random and directional baselines, ISAC/no-ISAC MARL comparisons, node counts from 10 to 100, beamwidths from 3 to 30 degrees, 300-slot training, and 3000-slot long-horizon transfer tests. The current evidence identifies 10--30 degrees as the main useful operating region and 3--5 degrees as stress cases.
+  \item We develop \learnedmethod{}, a slot-level shared-parameter actor-critic MARL method with centralized training and decentralized execution. Its contention-aware actor introduces local collision memory, candidate sparsity features, topology-deficit features, role/beam residual priors, and decentralized access gates for scalable small-to-large transfer.
+  \item We implement a reproducible simulation workflow covering dynamic mobility, random and directional baselines, ISAC/no-ISAC MARL comparisons, $N=10$ training, $N=100$ zero-shot transfer, 10- and 15-degree narrow beams, 300-slot training, and 3000-slot long-horizon tests. Extremely narrow 3--5 degree cases and 30-degree legacy sweeps are retained only as supplementary boundary evidence.
 \end{itemize}
 
 \begin{figure}[!t]
@@ -241,10 +241,11 @@ Each UAV selects a radio mode from $\{\mathrm{sense},\mathrm{tx},\mathrm{rx},\ma
 The actor is shared across UAVs, so the number of trainable parameters does not grow with $N$ and the same policy can be executed by larger swarms without retraining.
 Training follows a centralized-training/decentralized-execution actor-critic form: the decentralized actor receives only local self-state, beam prior, candidate, uncertainty, history, and contention features, while the critic can use pooled training-time summaries for credit assignment.
 
-The contention-aware actor used in the strongest MARL evidence line adds three problem-specific structures.
+The contention-aware actor used in the strongest MARL evidence line adds four problem-specific structures.
 First, per-beam collision memory records repeatedly risky beam cells.
 Second, a local contention-state vector summarizes recent success, failure, collision, empty-beam feedback, candidate sparsity, and topology deficit.
 Third, a role-gating residual suppresses excessive transmit/receive actions under local collision pressure while preserving ISAC-driven candidate attraction.
+Fourth, a decentralized access gate converts the same local evidence into tunable radio-role profiles, ranging from low-collision discovery to topology-heavy exploration.
 These structures make the neural policy a residual controller over the ISAC/topology rule prior rather than an unconstrained black-box replacement.
 
 \begin{figure}[!t]
@@ -261,14 +262,15 @@ The slot duration is set to 5 ms so that ISAC observations remain meaningful wit
 The primary MARL training configuration uses $N=10$ UAVs, 10-degree beams, and 300 slots per episode.
 Long horizons are evaluation-only: the main transfer probes evaluate 300-slot-trained policies at 3000 slots, corresponding to 15 s at the assumed 5 ms slot duration.
 The 5 ms slot duration is an explicit modeling assumption rather than a physical-layer timing result.
-Unless otherwise noted, the large-scale MARL transfer tables report four stochastic evaluation episodes per beamwidth; deterministic decoding is reported separately when available because deterministic argmax policies can collapse under this sparse rendezvous task.
+Unless otherwise noted, the large-scale MARL transfer tables report ten stochastic evaluation episodes per beamwidth for each trained checkpoint; deterministic decoding is reported separately when available because deterministic argmax policies can collapse under this sparse rendezvous task.
 
 \subsection{Baselines}
-The comparison set includes uniform random scanning, a SkyOrbs-like directional baseline, communication-only MAPPO, legacy ISAC-MAPPO, collision-reward ISAC-MAPPO, and the proposed contention-aware ISAC-MAPPO actor.
+The comparison set includes uniform random scanning, a SkyOrbs-like directional baseline, communication-only MAPPO, communication-only contention MAPPO, the ISAC contention actor, and four ISAC gate profiles.
 The SkyOrbs-like baseline implements a deterministic three-dimensional skip-scan schedule inspired by SkyOrbs, but it is not a strict reproduction of the complete SkyOrbs protocol.
 The no-ISAC learning baselines disable sensing-derived occupancy priors, candidate masks, and beam-lock updates at execution.
-The collision-reward variant uses the same shared actor family but changes the reward to penalize dense-regime contention.
-The contention-aware actor adds the local contention and beam-risk structures described above.
+The ungated contention actor uses ISAC candidate memory and local contention features but no access gate.
+The default gated actor is selected as the main low-collision balanced profile.
+The adaptive, topology-preserving, and balanced-topology gates are reported as operating-point ablations rather than as universally dominant replacements.
 Mechanism ablations remove candidate-set refinement, beam-lock refinement, or topology-deficit scoring from the proposed protocol.
 
 \subsection{Metrics}
@@ -293,7 +295,7 @@ Table~\ref{tab:settings} summarizes the main information boundary and evaluation
     Link confirmation & Bidirectional narrow-beam handshake only \\
     ISAC abstraction & Imperfect beam-cell occupancy prior \\
     Main MARL training & $N=10$, 10-degree beams, 300 slots/episode \\
-    Long transfer tests & $N=100$, 3000 slots, 3--30 degree beams; 10--30 degrees as the main useful region and 3--5 degrees as stress cases \\
+    Long transfer tests & $N=100$, 3000 slots, 10- and 15-degree beams for the final MARL evidence; 3--5 and 30 degrees retained as supplementary boundary sweeps \\
     Mobility models & Gauss-Markov, random walk, random direction, random waypoint \\
     Range variables & $\Rc/D$ and $\Rs/\Rc$ swept separately \\
     Error variables & False alarm, missed detection, angular-cell offset \\
@@ -306,52 +308,59 @@ Table~\ref{tab:settings} summarizes the main information boundary and evaluation
 Fig.~\ref{fig:training_reward} reports the step-indexed reward trajectory of the contention-aware ISAC-MAPPO run.
 The policy is trained only in the small source setting with $N=10$, 10-degree beams, and 300 slots per episode; the plotted horizontal axis is the cumulative environment step.
 The curve is empirical training-diagnostic evidence, not a proof of convergence.
-The supplementary material reports per-episode return, discovery, $\lambda_2$, collision, policy-loss, value-loss, entropy, and memory curves from the same 6000-step training trace.
+The supplementary material reports per-episode return, discovery, $\lambda_2$, collision, policy-loss, value-loss, entropy, and memory curves from the same 100-episode, 30000-step training trace.
 
 \begin{figure}[!t]
   \centering
-  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/marl/phase5_contention_shared_v2_train_curves/marl_step_reward_curve.png}
-  \caption{Step-indexed MARL reward trajectory for the contention-aware ISAC-MAPPO actor trained at $N=10$, 10-degree beams, and 300 slots per episode.}
+  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_step_reward_curve.png}
+  \caption{Step-indexed MARL reward trajectory for the gated contention actor trained at $N=10$, 10-degree beams, and 300 slots per episode.}
   \label{fig:training_reward}
 \end{figure}
 
 \subsection{N=100 Long-Horizon Transfer}
-Table~\ref{tab:n100_transfer} first shows the legacy shared ISAC-MAPPO transfer behavior before explicit collision control.
-The policy is trained at $N=10$ and 10-degree beams, then evaluated without fine-tuning at $N=100$ for 3000 slots.
-The 10--30 degree cases form connected discovered graphs in the tested single-hop setting, but the collision count grows rapidly as beamwidth increases.
-This exposes the post-ISAC bottleneck: sensing-assisted candidate reduction reduces empty-beam waste, while dense large-swarm operation still requires contention-aware action selection.
+Table~\ref{tab:n100_transfer} reports the final $N=100$, 3000-slot zero-shot transfer comparison for 10- and 15-degree beams.
+All learned policies are trained in the small source scenario with $N=10$, 10-degree beams, and 300 slots per episode.
+The communication-only baselines fail in this sparse rendezvous task: uniform random, the SkyOrbs-like skip scan, MAPPO without ISAC, and contention MAPPO without ISAC all remain close to zero discovery in the $N=100$ tests.
+In contrast, the ISAC contention actor reaches discovery rates of 0.3429 and 0.4233 at 10 and 15 degrees, respectively, with nonzero discovered-graph algebraic connectivity.
+This confirms the primary role of ISAC as a search-space compression mechanism: empty-scan ratios fall from about 0.84--0.90 for communication-only policies to 0.02--0.07 for ISAC-aware policies.
+The remaining design question is therefore not whether ISAC helps, but how the link-layer policy should regulate contention after ISAC has concentrated many nodes onto a smaller candidate set.
 
 \begin{table}[!t]
   \centering
-  \caption{Legacy Shared ISAC-MAPPO Zero-Shot N=100 Transfer after 300-Slot Training}
+  \caption{Final $N=100$, 3000-Slot Transfer Comparison after Small-Scale Training}
   \label{tab:n100_transfer}
   \tiny
   \setlength{\tabcolsep}{3pt}
   \begin{tabular}{lccccc}
     \toprule
-    Beam & Disc. & CPD & $\lambda_2$ & Empty & Coll. \\
+    Method & Beam & Disc. & CPD & $\lambda_2$ & Coll. \\
     \midrule
-    3$^\circ$  & 0.1368 & 0.1122 & 4.660  & 0.358 & 1082 \\
-    5$^\circ$  & 0.2648 & 0.1375 & 13.077 & 0.118 & 4583 \\
-    10$^\circ$ & 0.3830 & 0.0768 & 16.200 & 0.038 & 19969 \\
-    15$^\circ$ & 0.4265 & 0.0323 & 23.406 & 0.010 & 60814 \\
-    30$^\circ$ & 0.3219 & 0.0088 & 13.044 & 0.004 & 178328 \\
+    Uniform random & 10$^\circ$ & 0.0028 & 0.0028 & 0.000 & 0.0 \\
+    SkyOrbs-like & 10$^\circ$ & 0.0031 & 0.0031 & 0.000 & 0.0 \\
+    MAPPO no ISAC & 10$^\circ$ & 0.0005 & 0.0005 & 0.000 & 0.0 \\
+    MARL+ISAC actor & 10$^\circ$ & 0.3429 & 0.2263 & 14.381 & 2563.7 \\
+    Default gated actor & 10$^\circ$ & 0.3020 & 0.2353 & 11.904 & 1403.3 \\
+    \midrule
+    Uniform random & 15$^\circ$ & 0.0129 & 0.0129 & 0.000 & 0.4 \\
+    SkyOrbs-like & 15$^\circ$ & 0.0190 & 0.0190 & 0.000 & 0.4 \\
+    MAPPO no ISAC & 15$^\circ$ & 0.0022 & 0.0022 & 0.000 & 0.0 \\
+    MARL+ISAC actor & 15$^\circ$ & 0.4233 & 0.1387 & 19.889 & 10226.9 \\
+    Default gated actor & 15$^\circ$ & 0.3618 & 0.2114 & 16.173 & 3535.0 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \subsection{Contention-Aware MARL Structure}
-Table~\ref{tab:n100_baseline} compares three ISAC-MAPPO variants under the same $N=100$, 3000-slot transfer setting.
-Legacy shared ISAC-MAPPO uses the original shared actor and reward.
-Collision-reward ISAC-MAPPO adds collision/topology reward shaping.
-The contention-aware actor keeps the collision-aware reward and adds local contention memory plus mode/beam residual priors.
-Compared with the legacy actor, the contention-aware actor reduces collisions by 70.5\%, 62.2\%, and 48.3\% at 10, 15, and 30 degrees, respectively.
-It also improves collision-penalized discovery at all three beamwidths.
-The tradeoff is explicit: at 10 and 15 degrees, the reward-only actor has slightly higher raw discovery, whereas the contention-aware actor is more efficient under collision cost.
+Table~\ref{tab:n100_baseline} compares the gate-family operating points.
+The ungated MARL+ISAC actor maximizes raw discovery and $\lambda_2$ among the main actors, but it pays for this topology growth with many collisions.
+The default gated actor is selected as the paper-facing profile because it gives the best 10-degree collision-penalized discovery and a strong 15-degree compromise between CPD, topology, and collision count.
+The adaptive gate is a stricter collision-suppression profile: at 15 degrees it reaches the highest CPD, but its $\lambda_2$ is much lower than the default gate.
+The topology-preserving and balanced-topology variants fill out the ablation frontier, showing that stronger topology preservation usually restores raw discovery and $\lambda_2$ at the cost of additional collisions.
+Thus the supported claim is a tunable cross-layer operating frontier, not a single gate that dominates every metric.
 
 \begin{table}[!t]
   \centering
-  \caption{N=100, 3000-Slot ISAC-MAPPO Method Comparison after 300-Slot Training}
+  \caption{Gate-Family Operating Points under $N=100$, 3000-Slot Transfer}
   \label{tab:n100_baseline}
   \tiny
   \setlength{\tabcolsep}{3pt}
@@ -359,31 +368,33 @@ The tradeoff is explicit: at 10 and 15 degrees, the reward-only actor has slight
     \toprule
     Method & Beam & Disc. & CPD & Coll. \\
     \midrule
-    Legacy shared & 10$^\circ$ & 0.3830 & 0.0768 & 19969 \\
-    Collision reward & 10$^\circ$ & 0.3867 & 0.1018 & 13862 \\
-    Contention actor & 10$^\circ$ & 0.3611 & 0.1648 & 5892 \\
-    Legacy shared & 15$^\circ$ & 0.4265 & 0.0323 & 60814 \\
-    Collision reward & 15$^\circ$ & 0.4495 & 0.0374 & 54573 \\
-    Contention actor & 15$^\circ$ & 0.4249 & 0.0753 & 23018 \\
-    Legacy shared & 30$^\circ$ & 0.3219 & 0.0088 & 178328 \\
-    Collision reward & 30$^\circ$ & 0.3476 & 0.0100 & 168078 \\
-    Contention actor & 30$^\circ$ & 0.3635 & 0.0186 & 92277 \\
+    MARL+ISAC actor & 10$^\circ$ & 0.3429 & 0.2263 & 2563.7 \\
+    Default gated & 10$^\circ$ & 0.3020 & 0.2353 & 1403.3 \\
+    Adaptive gate & 10$^\circ$ & 0.2203 & 0.2027 & 429.6 \\
+    Topology gate & 10$^\circ$ & 0.3451 & 0.2000 & 3606.5 \\
+    Balanced gate & 10$^\circ$ & 0.3127 & 0.2086 & 2477.3 \\
+    \midrule
+    MARL+ISAC actor & 15$^\circ$ & 0.4233 & 0.1387 & 10226.9 \\
+    Default gated & 15$^\circ$ & 0.3618 & 0.2114 & 3535.0 \\
+    Adaptive gate & 15$^\circ$ & 0.2935 & 0.2265 & 1463.7 \\
+    Topology gate & 15$^\circ$ & 0.3857 & 0.1425 & 8476.1 \\
+    Balanced gate & 15$^\circ$ & 0.3716 & 0.1598 & 6730.9 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \begin{figure}[!t]
   \centering
-  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/marl/phase5_method_comparison/marl_method_comparison_collision_penalized_discovery_rate.png}
-  \caption{Collision-penalized discovery in the $N=100$, 3000-slot transfer comparison. The contention-aware actor improves the efficiency metric at all tested beamwidths.}
+  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison_collision_penalized_discovery_rate.png}
+  \caption{Collision-penalized discovery in the final $N=100$, 3000-slot transfer comparison. ISAC-assisted MARL creates the discovery advantage over communication-only baselines, while the default and adaptive gates trade topology growth against collision efficiency.}
   \label{fig:marl_cpd}
 \end{figure}
 
 \begin{figure}[!t]
   \centering
-  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/marl/phase5_method_comparison/marl_method_comparison_collision_count.png}
-  \caption{Collision count in the $N=100$, 3000-slot transfer comparison. The contention-aware actor directly addresses the dense-regime collision bottleneck exposed by the legacy ISAC-MAPPO policy.}
-  \label{fig:marl_collision}
+  \includegraphics[width=\linewidth]{../../06_analysis/paper_figures/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_lambda2_mean.png}
+  \caption{Gate-family topology tradeoff under $N=100$ transfer. Topology-heavy profiles improve discovered-graph connectivity but generally incur more collisions; the default gated actor is used as the balanced protocol profile.}
+  \label{fig:gate_topology_tradeoff}
 \end{figure}
 
 Mobility-model transfer is more nuanced.
@@ -456,21 +467,21 @@ Fig.~\ref{fig:ablation_discovery} gives the corresponding ablation comparison.
 
 \section{Limitations}
 This study has several important limitations.
-First, the learning evidence is a lightweight shared-parameter actor-critic MARL line with 20-episode small-scale training runs; it should be interpreted as structured MARL evidence for ISAC-assisted contention control, not as an exhaustive comparison against all MAPPO, QMIX, HAPPO, MAT, or graph-neural MARL variants.
+First, the learning evidence is a shared-parameter actor-critic MARL line trained in the $N=10$, 10-degree, 300-slot source setting and transferred to $N=100$ tests; it should be interpreted as structured MARL evidence for ISAC-assisted contention control, not as an exhaustive comparison against all MAPPO, QMIX, HAPPO, MAT, transformer-based, or graph-neural MARL variants.
 Second, the SkyOrbs-like comparison is an inspired baseline rather than a strict reproduction of the complete original algorithm.
 Third, ISAC is represented by an abstract beam-cell occupancy prior; physical waveform design and estimator implementation are outside the scope.
 Fourth, candidate-set refinement abstracts sub-slot or readiness behavior; the one-slot delayed candidate-set ablation bounds this implementation assumption but does not replace a hardware-specific timing study.
-Fifth, extremely narrow beams at 3 and 5 degrees and abrupt mobility models remain stress regions and should be discussed as such.
+Fifth, extremely narrow beams at 3 and 5 degrees, the archived 30-degree boundary sweep, and abrupt mobility models remain stress or boundary regions and should be discussed as such.
 Sixth, the supplement includes assumed radio-state energy accounting, but calibrated delay-power optimization would require platform-specific power states and traffic models.
-Finally, the proposed ISAC-assisted policy creates more collision attempts than the no-ISAC baseline in dense finite-horizon tests.
-Therefore, collision-penalized discovery should be interpreted together with raw discovery rate in dense finite-horizon settings.
-A supplementary collision-aware role-control probe mitigates this boundary in the tested B=10/B=15 paired settings, but a complete collision- and energy-aware MAC remains outside the present scope.
+Finally, ISAC-assisted policies deliberately concentrate action probability on non-empty candidate beams, so they can create more contention than communication-only policies that mostly scan empty cells.
+Therefore, collision-penalized discovery, raw discovery rate, and $\lambda_2$ should be interpreted together in dense finite-horizon settings.
+The gate-family results mitigate this boundary by exposing low-collision, balanced, and topology-heavy operating points, but a complete collision- and energy-aware MAC remains outside the present scope.
 
 \section{Conclusion}
 This paper studies ISAC-assisted narrow-beam neighbor discovery for distributed-execution UAV swarms.
 The central idea is to use ISAC not as an oracle, but as an imperfect beam-cell prior that reduces empty scanning in the evaluated regimes while preserving link-layer handshake confirmation.
 The simulation workflow supports the feasibility of this direction in the evaluated single-hop, finite-horizon regimes and provides transfer, range, sensing-error, and implementation-boundary evidence for a cross-layer ISAC-assisted neighbor-discovery protocol.
-The results also identify clear boundaries: extremely narrow 3--5 degree beams, abrupt mobility, strict physical-layer ISAC realization, and collision-aware efficiency remain open issues rather than solved cases.
+The results also identify clear boundaries: extremely narrow 3--5 degree beams, archived wide-beam boundary cases, abrupt mobility, strict physical-layer ISAC realization, and collision-/energy-aware MAC integration remain open issues rather than solved cases.
 
 \section*{Acknowledgment}
 The acknowledgment is omitted for anonymous review.

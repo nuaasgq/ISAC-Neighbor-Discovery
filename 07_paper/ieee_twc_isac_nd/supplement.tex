@@ -42,9 +42,9 @@ The complete evidence map is maintained in the repository coverage matrix.
     \toprule
     Requirement & Status & Primary artifacts & Boundary \\
     \midrule
-    Beamwidths 3--30 deg & Main+stress & MARL phase3/5 N=100 transfer tables cover 3--30 deg, with phase5 focused on 10/15/30 deg contention-aware transfer. & 3 and 5 deg are stress regimes. \\
+    Beamwidths 3--30 deg & Main+stress & Phase10 final MARL evidence focuses on 10/15 deg, while archived phase3/5 sweeps retain 3--5 and 30 deg as boundary evidence. & 3 and 5 deg are stress regimes; 30 deg is not part of the final main comparison. \\
     Node counts 10--100 & Partially crossed & MARL training at $N=10$ and zero-shot transfer to $N=100$; older grid sweeps remain as mechanism-boundary evidence. & Not a full Cartesian cross with every mobility and error setting. \\
-    Small-to-large transfer & Bounded & Training at $N=10$, 10 deg, 300 slots/episode; N=100, 3000-slot zero-shot tables and figures. & Current MARL evidence uses 20 training episodes and four eval episodes per main beamwidth. \\
+    Small-to-large transfer & Bounded & Training at $N=10$, 10 deg, 300 slots/episode; N=100, 3000-slot zero-shot tables and figures. & Final MARL evidence uses 100 training episodes and 10 stochastic transfer episodes per checkpoint/beamwidth. \\
     Baselines & Main+stress & Uniform random, SkyOrbs-like, communication-only MAPPO, legacy ISAC-MAPPO, collision-reward ISAC-MAPPO, and contention-aware ISAC-MAPPO. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
     Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
     Range and timing & Sensitivity & Range grid, slot-duration sensitivity, and 3000-slot long-horizon check. & Protocol-level abstraction, not calibrated RF range law. \\
@@ -63,15 +63,15 @@ Accordingly, the main claim is not a head-to-head claim against complete SkyOrbs
 
 \section{Training and Scale Transfer Evidence}
 
-Fig.~\ref{fig:supp_training} reports the MARL training trace of the contention-aware ISAC-MAPPO actor.
-The source run uses $N=10$, 10-degree beams, 300 slots per episode, and 20 training episodes, producing 6000 logged environment steps.
+Fig.~\ref{fig:supp_training} reports the MARL training trace of the gated contention ISAC-MAPPO actor.
+The source runs use $N=10$, 10-degree beams, 300 slots per episode, and 100 training episodes, producing 30000 logged environment steps per seed.
 The curves are used as empirical training diagnostics only; they are not a theoretical convergence proof and should not be interpreted as evidence of a globally optimal MAC policy.
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/marl/phase5_contention_shared_v2_train_curves/marl_step_reward_curve.png}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_step_reward_curve.png}
   \hfill
-  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/marl/phase5_contention_shared_v2_train_curves/marl_episode_return_curve.png}
+  \includegraphics[width=0.45\textwidth]{../../06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_episode_return_curve.png}
   \caption{Training traces for the contention-aware ISAC-MAPPO actor. Left: step-indexed reward. Right: per-episode return. Both curves are empirical diagnostics from the 300-slot training setup.}
   \label{fig:supp_training}
 \end{figure*}
@@ -139,9 +139,9 @@ The range sweep treats $\Rc$ and $\Rs$ as protocol-level support parameters; the
 
 \section{Beamwidth Stress}
 
-The main paper reports 5--30 degree transfer values in the compact N=100 table.
-Fig.~\ref{fig:supp_beam_stress} shows the broader N=100 stress sweep including 3 degrees.
-The 3-degree case is intentionally treated as a failure-boundary regime.
+The main paper reports final 10- and 15-degree transfer values.
+Fig.~\ref{fig:supp_beam_stress} shows the archived broader N=100 stress sweep including 3, 5, and 30 degrees.
+The 3- and 5-degree cases are intentionally treated as failure-boundary regimes, while the 30-degree point is retained only as historical boundary evidence outside the final main comparison.
 
 \begin{figure*}[!t]
   \centering
@@ -150,13 +150,13 @@ The 3-degree case is intentionally treated as a failure-boundary regime.
   \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_collision_penalized_discovery_n100.png}
   \hfill
   \includegraphics[width=0.32\textwidth]{../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_beamwidth_lambda2_n100.png}
-  \caption{N=100 beamwidth stress evidence. Left: raw discovery rate. Middle: collision-penalized discovery. Right: algebraic connectivity. The 3-degree and 5-degree points are stress regimes, while the 10--30 degree region provides the main useful operating range in the current finite horizon.}
+  \caption{Archived N=100 beamwidth stress evidence. Left: raw discovery rate. Middle: collision-penalized discovery. Right: algebraic connectivity. The 3-degree and 5-degree points are stress regimes; the final main MARL comparison focuses on 10- and 15-degree narrow beams.}
   \label{fig:supp_beam_stress}
 \end{figure*}
 
 Table~\ref{tab:supp_b3} gives the targeted five-baseline check at $N=100$, 3-degree beams.
 All baselines remain near zero, and the ISAC-assisted policy only reaches a small nonzero discovery rate.
-This supports writing ``evaluated over 3--30 degrees,'' not ``effective over 3--30 degrees.''
+This supports writing ``boundary sweeps include 3--30 degrees,'' not ``the final method is effective over all 3--30 degree beams.''
 
 \begin{table}[!t]
   \centering
