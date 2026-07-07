@@ -30,7 +30,7 @@ We abstract integrated sensing and communication (ISAC) as a link-layer beam-cel
 We further develop \learnedmethod{}, a real slot-level shared-parameter actor-critic MARL policy trained with centralized training and decentralized execution.
 Its contention-aware actor uses local collision memory, candidate sparsity, topology-deficit features, and role/beam residual priors so that learning addresses the post-ISAC contention bottleneck rather than only empty-beam avoidance.
 All learned policies in the final evidence line are trained at $N=10$, 10-degree beams, and 300 slots per episode, then evaluated without fine-tuning at $N=100$ over 3000-slot long-horizon tests.
-In the tested single-hop $N=100$ transfer setting, the ISAC-aware contention actor outperforms random scanning, a SkyOrbs-like directional baseline, and no-ISAC MARL by more than two orders of magnitude in discovery rate.
+In the tested single-hop $N=100$ transfer setting, the ISAC-aware contention actor improves discovery rate by at least 110$\times$ over random and directional baselines at 10-degree beams and by at least 22$\times$ over the same communication-only baselines at 15-degree beams.
 A decentralized contention gate further exposes a collision--topology operating frontier: the default gated profile gives the best 10-degree collision-penalized discovery and a balanced 15-degree topology/collision tradeoff, while aggressive and topology-heavy gates provide complementary ablation points.
 \end{abstract}
 
@@ -322,7 +322,7 @@ Table~\ref{tab:n100_transfer} reports the final $N=100$, 3000-slot zero-shot tra
 All learned policies are trained in the small source scenario with $N=10$, 10-degree beams, and 300 slots per episode.
 The communication-only baselines fail in this sparse rendezvous task: uniform random, the SkyOrbs-like skip scan, MAPPO without ISAC, and contention MAPPO without ISAC all remain close to zero discovery in the $N=100$ tests.
 In contrast, the ISAC contention actor reaches discovery rates of 0.3429 and 0.4233 at 10 and 15 degrees, respectively, with nonzero discovered-graph algebraic connectivity.
-This confirms the primary role of ISAC as a search-space compression mechanism: empty-scan ratios fall from about 0.84--0.90 for communication-only policies to 0.02--0.07 for ISAC-aware policies.
+This confirms the primary role of ISAC as a search-space compression mechanism: empty-scan ratios fall from about 0.84--0.90 for communication-only policies to 0.02--0.07 for the main ISAC contention and default-gated profiles.
 The remaining design question is therefore not whether ISAC helps, but how the link-layer policy should regulate contention after ISAC has concentrated many nodes onto a smaller candidate set.
 
 \begin{table}[!t]
@@ -352,7 +352,7 @@ The remaining design question is therefore not whether ISAC helps, but how the l
 
 \subsection{Contention-Aware MARL Structure}
 Table~\ref{tab:n100_baseline} compares the gate-family operating points.
-The ungated MARL+ISAC actor maximizes raw discovery and $\lambda_2$ among the main actors, but it pays for this topology growth with many collisions.
+The ungated MARL+ISAC actor is the most aggressive profile: it attains the highest 15-degree raw discovery and $\lambda_2$, and remains close to the best raw-discovery point at 10 degrees, but it pays for this topology growth with many collisions.
 The default gated actor is selected as the paper-facing profile because it gives the best 10-degree collision-penalized discovery and a strong 15-degree compromise between CPD, topology, and collision count.
 The adaptive gate is a stricter collision-suppression profile: at 15 degrees it reaches the highest CPD, but its $\lambda_2$ is much lower than the default gate.
 The topology-preserving and balanced-topology variants fill out the ablation frontier, showing that stronger topology preservation usually restores raw discovery and $\lambda_2$ at the cost of additional collisions.

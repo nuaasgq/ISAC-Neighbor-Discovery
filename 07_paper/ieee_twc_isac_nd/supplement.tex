@@ -42,14 +42,14 @@ The complete evidence map is maintained in the repository coverage matrix.
     \toprule
     Requirement & Status & Primary artifacts & Boundary \\
     \midrule
-    Beamwidths 3--30 deg & Main+stress & Phase10 final MARL evidence focuses on 10/15 deg, while archived phase3/5 sweeps retain 3--5 and 30 deg as boundary evidence. & 3 and 5 deg are stress regimes; 30 deg is not part of the final main comparison. \\
+    Beamwidths 3--30 deg & Main+stress & Phase10 final MARL evidence focuses on 10/15 deg, while archived earlier sweeps retain 3--5 and 30 deg as boundary evidence. & 3 and 5 deg are stress regimes; 30 deg is not part of the final main comparison. \\
     Node counts 10--100 & Partially crossed & MARL training at $N=10$ and zero-shot transfer to $N=100$; older grid sweeps remain as mechanism-boundary evidence. & Not a full Cartesian cross with every mobility and error setting. \\
     Small-to-large transfer & Bounded & Training at $N=10$, 10 deg, 300 slots/episode; N=100, 3000-slot zero-shot tables and figures. & Final MARL evidence uses 100 training episodes and 10 stochastic transfer episodes per checkpoint/beamwidth. \\
-    Baselines & Main+stress & Uniform random, SkyOrbs-like, communication-only MAPPO, legacy ISAC-MAPPO, collision-reward ISAC-MAPPO, and contention-aware ISAC-MAPPO. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
+    Baselines & Main+stress & Uniform random, SkyOrbs-like, communication-only MAPPO, communication-only contention MAPPO, ISAC contention actor, and ISAC gate-family variants. & SkyOrbs-like is not a full SkyOrbs reproduction. \\
     Mobility models & Boundary & Round5 main mobility, round7 mobility stress, round8 missing-baseline table. & Abrupt mobility remains a boundary. \\
     Range and timing & Sensitivity & Range grid, slot-duration sensitivity, and 3000-slot long-horizon check. & Protocol-level abstraction, not calibrated RF range law. \\
     ISAC errors & Configured & B=10 main error profiles, B=15 Gauss-Markov/random-walk extension. & Does not imply estimator immunity. \\
-    Training curves & Trace & MARL phase5 step reward, episode return, discovery, loss, entropy, evaluation, and resource curves. & Empirical stability evidence only, not a theoretical convergence proof. \\
+    Training curves & Trace & Phase10 step reward, episode return, discovery, loss, entropy, evaluation, and resource curves from 100-episode small-scale training. & Empirical stability evidence only, not a theoretical convergence proof. \\
     \bottomrule
   \end{tabular}
 \end{table*}
@@ -343,7 +343,7 @@ Fig.~\ref{fig:supp_round13_energy} reports these two accounting metrics.
 Before the current slot-level MARL evidence line, we implemented a smaller structured shared actor-critic probe to test whether the ISAC candidate-set mechanism could be exposed to a neural policy without violating decentralized execution.
 The actor observes only local belief, beam memory, candidate masks, candidate scores, local discovered-degree deficit, and rule-prior logits.
 The centralized truth interface remains separate and is not used by the actor.
-This historical probe is retained for traceability only and is superseded by the phase5 contention-aware MARL results used in the main manuscript.
+This historical probe is retained for traceability only and is superseded by the Phase10 contention-aware and gate-family MARL results used in the main manuscript.
 
 In a N=10, B=72, 80-slot behavior-cloning probe with three training seeds and five held-out evaluation episodes per seed, stochastic evaluation is nonzero for all evaluated variants.
 The flat stochastic actor reaches a mean discovery rate of 0.632, while the full candidate-score/topology/rule-residual actor reaches 0.557.
