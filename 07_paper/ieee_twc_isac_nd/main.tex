@@ -278,6 +278,8 @@ We report finite-time discovery rate, discovered edge count, mean discovery dela
 Because high-percentile discovery delays can be censored by a finite simulation horizon, the main claims emphasize discovery rate, empty-scan ratio, edge count, and connectivity metrics.
 We also report collision-penalized discovery in supplementary dense-regime analyses and assumed radio-state accounting as diagnostic evidence; these metrics are not presented as a platform-calibrated energy-optimality result.
 For range sweeps, $D$ denotes the region diagonal.
+The replication package records the manuscript-facing result CSVs, figure-generation manifests, training-curve tables, and a SHA256 artifact manifest; the supplementary material identifies which archived rows are main evidence, boundary evidence, and stress evidence.
+The reported confidence intervals are descriptive uncertainty summaries over stochastic evaluation episodes or paired seed-level deltas, not global multiple-comparison-corrected hypothesis tests.
 Table~\ref{tab:settings} summarizes the main information boundary and evaluation settings.
 
 \begin{table}[!t]
@@ -322,7 +324,7 @@ Table~\ref{tab:n100_transfer} reports the final $N=100$, 3000-slot zero-shot tra
 All learned policies are trained in the small source scenario with $N=10$, 10-degree beams, and 300 slots per episode.
 The communication-only baselines fail in this sparse rendezvous task: uniform random, the SkyOrbs-like skip scan, MAPPO without ISAC, and contention MAPPO without ISAC all remain close to zero discovery in the $N=100$ tests.
 In contrast, the ISAC contention actor reaches discovery rates of 0.3429 and 0.4233 at 10 and 15 degrees, respectively, with nonzero discovered-graph algebraic connectivity.
-This confirms the primary role of ISAC as a search-space compression mechanism: empty-scan ratios fall from about 0.84--0.90 for communication-only policies to 0.02--0.07 for the main ISAC contention and default-gated profiles.
+This supports the primary role of ISAC as a search-space compression mechanism in the evaluated setting: empty-scan ratios fall from about 0.84--0.90 for communication-only policies to 0.02--0.07 for the main ISAC contention and default-gated profiles.
 The remaining design question is therefore not whether ISAC helps, but how the link-layer policy should regulate contention after ISAC has concentrated many nodes onto a smaller candidate set.
 
 \begin{table}[!t]

@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-07-07T07:15:21.343426+00:00",
+  "created_at_utc": "2026-07-07T07:26:37.138501+00:00",
   "scope": "current manuscript-facing LaTeX figures plus Phase10 main evidence artifacts",
   "csv": "06_analysis/manuscript_artifact_manifest_20260707.csv",
   "artifact_count": 82,
@@ -135,16 +135,16 @@
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/main.tex",
       "exists": true,
-      "size_bytes": 43218,
-      "sha256": "706ba8f0f40c1f28f58efd2f4bacaea534308e72b5dd1d7d1ee4134654fa7579"
+      "size_bytes": 43707,
+      "sha256": "f38dd7fa4c3698b6f9c59059433132ab6713af78c07bf214ba333a122ba3713f"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/README.md",
       "exists": true,
-      "size_bytes": 3088,
-      "sha256": "94ed633c4e533a67349b86c1cc54f8053064fecfcba5f576ee297dd405315813"
+      "size_bytes": 3203,
+      "sha256": "5d03ccff0a8be51761d2b7946a432cfacea7519419a47cb106aef8ad911098ec"
     },
     {
       "role": "direct_evidence_artifact",
@@ -159,8 +159,8 @@
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/supplement.tex",
       "exists": true,
-      "size_bytes": 32979,
-      "sha256": "eb34b99ecb955cc6c8fcfd56f4ac21a32a2f48a8793a031567745f1d309a8ead"
+      "size_bytes": 33444,
+      "sha256": "131cd2135745bf2e890f49c6a14e87c3b61424292c340301fa0711b0ba756301"
     },
     {
       "role": "manifest_reference",
@@ -300,7 +300,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:388",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:390",
       "path": "06_analysis/paper_figures/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison_collision_penalized_discovery_rate.png",
       "exists": true,
       "size_bytes": 199423,
@@ -308,7 +308,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:395",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:397",
       "path": "06_analysis/paper_figures/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_lambda2_mean.png",
       "exists": true,
       "size_bytes": 97342,
@@ -324,7 +324,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:315",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:317",
       "path": "06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_step_reward_curve.png",
       "exists": true,
       "size_bytes": 271163,
@@ -476,7 +476,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:445",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:447",
       "path": "06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 90010,
@@ -484,7 +484,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:431",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:433",
       "path": "06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 79547,
@@ -500,7 +500,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:463",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:465",
       "path": "06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 109665,
@@ -508,7 +508,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:409",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:411",
       "path": "06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 109785,
