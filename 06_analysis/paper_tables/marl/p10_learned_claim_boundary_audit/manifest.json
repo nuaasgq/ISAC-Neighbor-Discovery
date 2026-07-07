@@ -1,0 +1,36 @@
+{
+  "created_at_utc": "2026-07-07T12:07:03.173266+00:00",
+  "scope": "bounded learned-component claim audit",
+  "source_files": [
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_metric_summary.csv",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_run_index.csv",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/ablation_source_file_hashes.csv",
+    "06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json",
+    "07_paper/ieee_twc_isac_nd/main.tex",
+    "07_paper/ieee_twc_isac_nd/supplement.tex"
+  ],
+  "check_count": 9,
+  "passed_check_count": 9,
+  "paired_control_comparison_count": 6,
+  "paired_collision_cpd_improvement_count": 6,
+  "bounded_learned_claim_pass": true,
+  "raw_episode_labels": [
+    "random_weights_full",
+    "trained_full",
+    "trained_no_candidate_mask",
+    "trained_no_rule_residual",
+    "zero_weights_rule_only"
+  ],
+  "outputs": {
+    "checks_csv": "06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/learned_claim_checks.csv",
+    "paired_episode_claim_checks_csv": "06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/paired_episode_claim_checks.csv",
+    "report": "06_analysis/phase10_learned_claim_boundary_audit_20260707.md",
+    "readme": "06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/README.md"
+  },
+  "output_hashes": {
+    "06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/learned_claim_checks.csv": "39a9044afbf724749a64940b2b6593ee2a976f1de1420f32af3697cce6f85c79",
+    "06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/paired_episode_claim_checks.csv": "ec90d91a0884b008903ecc22f4bbf88820904f03cc2234744e7475c2b65abc4e",
+    "06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/README.md": "4828b3b1d979405b04480a42d2d5027558bc6623a56d9b273dfa57d531aa1d48",
+    "06_analysis/phase10_learned_claim_boundary_audit_20260707.md": "68b1291da91cab5e2e5bcac2084309c909737a115f99e7485df9e817c5c58996"
+  }
+}

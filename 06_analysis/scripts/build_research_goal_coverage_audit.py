@@ -32,6 +32,8 @@ RERUN_VALIDATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_independent_
 RERUN_VALIDATION_REPORT = Path("06_analysis/phase10_independent_rerun_validation_20260707.md")
 LEARNED_ABLATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json")
 LEARNED_ABLATION_REPORT = Path("06_analysis/phase10_learned_component_ablation_report_20260707.md")
+LEARNED_CLAIM_AUDIT_MANIFEST = Path("06_analysis/paper_tables/marl/p10_learned_claim_boundary_audit/manifest.json")
+LEARNED_CLAIM_AUDIT_REPORT = Path("06_analysis/phase10_learned_claim_boundary_audit_20260707.md")
 PAIRED_SIGNIFICANCE_MANIFEST = Path("06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json")
 PAIRED_SIGNIFICANCE_REPORT = Path("06_analysis/phase10_paired_significance_report_20260707.md")
 CLAIM_STRENGTH_MANIFEST = Path("06_analysis/paper_tables/submission_claim_strength_audit/manifest.json")
@@ -182,6 +184,7 @@ def requirement_rows(
     artifact_manifest: dict,
     rerun_validation: dict,
     learned_ablation: dict,
+    learned_claim_audit: dict,
     paired_significance: dict,
     claim_strength: dict,
     raw_bundle_archive: dict,
@@ -262,6 +265,9 @@ def requirement_rows(
         "trained_no_candidate_mask",
     }
     learned_ablation_complete = required_learned_ablation_labels.issubset(learned_ablation_labels)
+    learned_claim_pass = bool(learned_claim_audit.get("bounded_learned_claim_pass")) and as_int(
+        learned_claim_audit.get("passed_check_count")
+    ) == as_int(learned_claim_audit.get("check_count")) and as_int(learned_claim_audit.get("paired_collision_cpd_improvement_count")) >= 6
     paired_significance_pass = bool(paired_significance.get("all_confirmatory_tests_pass")) and as_int(
         paired_significance.get("confirmatory_test_count")
     ) >= 16
@@ -501,17 +507,19 @@ def requirement_rows(
         "R17",
         "Learned component ablation",
         "Separate learned actor contribution from strong rule priors, residual logits, candidate masks, and decentralized gates.",
-        "CAUTION" if learned_ablation_complete else "OPEN",
-        "focused_ablation_mixed" if learned_ablation_complete else "missing_ablation",
-        f"Focused B=10/N=100/3000-slot learned-component ablation covers labels={sorted(learned_ablation_labels)}. Results separate learned weights from rule priors, but support a collision-efficiency claim rather than universal learned-policy dominance.",
+        "PASS" if learned_ablation_complete and learned_claim_pass else ("CAUTION" if learned_ablation_complete else "OPEN"),
+        "bounded_learned_claim_audit" if learned_ablation_complete and learned_claim_pass else ("focused_ablation_mixed" if learned_ablation_complete else "missing_ablation"),
+        f"Focused B=10/N=100/3000-slot learned-component ablation covers labels={sorted(learned_ablation_labels)}; learned-claim audit passes {as_int(learned_claim_audit.get('passed_check_count'))}/{as_int(learned_claim_audit.get('check_count'))} checks with {as_int(learned_claim_audit.get('paired_collision_cpd_improvement_count'))}/{as_int(learned_claim_audit.get('paired_control_comparison_count'))} paired collision/CPD improvements. This supports a bounded collision-efficiency claim, not universal raw-discovery dominance.",
         [
             Path("05_simulation/src/isac_nd_sim/neural_contention_actor_critic.py"),
             Path("05_simulation/src/isac_nd_sim/marl_env.py"),
             Path("05_simulation/run_marl_training.py"),
             Path("05_simulation/run_marl_evaluate.py"),
             LEARNED_ABLATION_REPORT,
+            LEARNED_CLAIM_AUDIT_REPORT,
+            LEARNED_CLAIM_AUDIT_MANIFEST,
         ],
-        "Use conservative wording: learned weights suppress collisions versus random/zero-weight policies, while candidate masking and rule residuals define the discovery/collision/empty-scan tradeoff. Extend to B=15 or more seeds only if needed.",
+        "Keep conservative wording: learned weights suppress collisions versus random/zero-weight policies, while candidate masking and rule residuals define the discovery/collision/empty-scan tradeoff. Extend to B=15 or more seeds only for a stronger broad-ablation claim.",
     )
     add(
         "R18",
@@ -579,6 +587,11 @@ def requirement_rows(
         "independent_rerun_beamwidth_deg": rerun_beam,
         "learned_ablation_labels": sorted(learned_ablation_labels),
         "learned_ablation_required_labels_present": learned_ablation_complete,
+        "learned_claim_audit_checks": as_int(learned_claim_audit.get("check_count")),
+        "learned_claim_audit_passed_checks": as_int(learned_claim_audit.get("passed_check_count")),
+        "learned_claim_paired_collision_cpd_improvements": as_int(learned_claim_audit.get("paired_collision_cpd_improvement_count")),
+        "learned_claim_paired_control_comparisons": as_int(learned_claim_audit.get("paired_control_comparison_count")),
+        "learned_claim_pass": learned_claim_pass,
         "claim_strength_required_checks": as_int(claim_strength.get("required_check_count")),
         "claim_strength_passed_required_checks": as_int(claim_strength.get("passed_required_checks")),
         "claim_strength_review_required_risk_hits": as_int(claim_strength.get("review_required_risk_hits"), default=-1),
@@ -701,6 +714,7 @@ def main() -> None:
     artifact_manifest = read_json(ARTIFACT_MANIFEST)
     rerun_validation = read_json(RERUN_VALIDATION_MANIFEST)
     learned_ablation = read_json(LEARNED_ABLATION_MANIFEST)
+    learned_claim_audit = read_json(LEARNED_CLAIM_AUDIT_MANIFEST)
     paired_significance = read_json(PAIRED_SIGNIFICANCE_MANIFEST)
     claim_strength = read_json(CLAIM_STRENGTH_MANIFEST)
     raw_bundle_archive = read_json(RAW_BUNDLE_MANIFEST)
@@ -713,6 +727,7 @@ def main() -> None:
         artifact_manifest,
         rerun_validation,
         learned_ablation,
+        learned_claim_audit,
         paired_significance,
         claim_strength,
         raw_bundle_archive,
@@ -793,6 +808,8 @@ def main() -> None:
             RERUN_VALIDATION_REPORT.as_posix(),
             LEARNED_ABLATION_MANIFEST.as_posix(),
             LEARNED_ABLATION_REPORT.as_posix(),
+            LEARNED_CLAIM_AUDIT_MANIFEST.as_posix(),
+            LEARNED_CLAIM_AUDIT_REPORT.as_posix(),
             PAIRED_SIGNIFICANCE_MANIFEST.as_posix(),
             PAIRED_SIGNIFICANCE_REPORT.as_posix(),
             CLAIM_STRENGTH_MANIFEST.as_posix(),

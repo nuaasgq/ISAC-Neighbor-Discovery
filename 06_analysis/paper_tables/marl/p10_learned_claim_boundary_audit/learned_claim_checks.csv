@@ -1,0 +1,10 @@
+check_id,theme,status,evidence,boundary
+L01,required ablation variants,PASS,5/5 labels present,"All learned/control feature variants needed to separate weights, mask, and residual priors are present."
+L02,minimum paired episodes,PASS,"episode_counts=[3, 3, 3, 3, 3]","This is a focused three-episode probe, not a broad stochastic dominance test."
+L03,collision reduction vs random and zero weights,PASS,"trained=1415.3, random=7624.7, zero=9552.3",Supports collision-suppression contribution under the same structured interface.
+L04,CPD improvement vs random and zero weights,PASS,"trained=0.2297, random=0.1599, zero=0.1464","Supports collision-efficiency, not raw discovery dominance."
+L05,paired seed sign consistency,PASS,6/6 paired control comparisons improve collision and CPD,"Paired controls: random=3, zero=3."
+L06,raw discovery non-dominance acknowledged,PASS,"trained=0.2958, random=0.4054, zero=0.4265",Prevents overclaiming learned raw-discovery superiority.
+L07,candidate-mask tradeoff,PASS,"no_mask_cpd=0.2826, trained_cpd=0.2297, no_mask_empty=0.8173",No-mask CPD is a boundary signal because empty scans increase sharply.
+L08,rule-residual tradeoff,PASS,"no_rule_collision=536.7, trained_collision=1415.3, no_rule_discovery=0.2574, trained_discovery=0.2958",Rule residual raises raw discovery/topology while increasing collisions.
+L09,manuscript claim boundary,PASS,07_paper/ieee_twc_isac_nd/main.tex:366; 07_paper/ieee_twc_isac_nd/supplement.tex:347; 07_paper/ieee_twc_isac_nd/supplement.tex:351; 07_paper/ieee_twc_isac_nd/supplement.tex:352; 07_paper/ieee_twc_isac_nd/supplement.tex:352,
