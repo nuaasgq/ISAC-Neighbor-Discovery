@@ -22,6 +22,7 @@ Current status:
 - A manuscript-facing SHA256 artifact manifest is available at `../../06_analysis/manuscript_artifact_manifest_20260707.csv` and `../../06_analysis/manuscript_artifact_manifest_20260707.json`.
 - Phase10 statistical interpretation and fallacy-scan notes are recorded in `../../06_analysis/phase10_statistical_validation_report_20260707.md`.
 - Final Phase10 method-to-manifest trace files are in `../../06_analysis/paper_tables/marl/p10_final_method_manifest_trace/`.
+- The research-goal coverage audit is in `../../06_analysis/research_goal_coverage_audit_20260707.md` with machine-readable CSVs under `../../06_analysis/paper_tables/research_goal_coverage_audit/`.
 - Submission-readiness risks and edits are tracked in `../../06_analysis/submission_readiness_review_20260707.md`.
 - Mean/std/95% CI summaries for archived multi-seed sweeps are in `../../06_analysis/paper_tables/statistical_stability_summary/`.
 - Experiment coverage against the requested variables is tracked in `../../06_analysis/experiment_coverage_matrix_20260705.md`.

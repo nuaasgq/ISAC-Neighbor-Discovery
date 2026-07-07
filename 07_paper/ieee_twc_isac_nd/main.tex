@@ -27,7 +27,7 @@ Narrow beams improve the link budget of millimeter-wave unmanned aerial vehicle 
 Deterministic directional neighbor discovery protocols can provide bounded delay but are tightly coupled with network scale and scan schedules, while random protocols are flexible but suffer from long-tail discovery latency and weak topology quality within a finite discovery window.
 This paper studies a distributed-execution UAV-UAV setting in which nodes share no central scheduler or undiscovered-neighbor state, while each UAV has its own navigation-frame pose and position from onboard localization.
 We abstract integrated sensing and communication (ISAC) as a link-layer beam-cell occupancy prior, rather than as an oracle position estimator, and propose \method{}, an ISAC-assisted topology-aware protocol that uses sensing feedback to suppress empty beam cells, preserve exploration under sensing errors, and prioritize candidate beams for nodes with local discovered-degree deficits.
-We further develop \learnedmethod{}, a real slot-level shared-parameter actor-critic MARL policy trained with centralized training and decentralized execution.
+We further develop \learnedmethod{}, an implemented slot-level shared-parameter actor-critic MARL policy trained with centralized training and decentralized execution.
 Its contention-aware actor uses local collision memory, candidate sparsity, topology-deficit features, and role/beam residual priors so that learning addresses the post-ISAC contention bottleneck rather than only empty-beam avoidance.
 All learned policies in the final evidence line are trained at $N=10$, 10-degree beams, and 300 slots per episode, then evaluated without fine-tuning at $N=100$ over 3000-slot long-horizon tests.
 In the tested single-hop $N=100$ transfer setting, the ISAC-aware contention actor improves discovery rate by at least 110$\times$ over random and directional baselines at 10-degree beams and by at least 22$\times$ over the same communication-only baselines at 15-degree beams.
@@ -325,7 +325,8 @@ All learned policies are trained in the small source scenario with $N=10$, 10-de
 The communication-only baselines fail in this sparse rendezvous task: uniform random, the SkyOrbs-like skip scan, MAPPO without ISAC, and contention MAPPO without ISAC all remain close to zero discovery in the $N=100$ tests.
 In contrast, the ISAC contention actor reaches discovery rates of 0.3429 and 0.4233 at 10 and 15 degrees, respectively, with nonzero discovered-graph algebraic connectivity.
 This supports the primary role of ISAC as a search-space compression mechanism in the evaluated setting: empty-scan ratios fall from about 0.84--0.90 for communication-only policies to 0.02--0.07 for the main ISAC contention and default-gated profiles.
-The remaining design question is therefore not whether ISAC helps, but how the link-layer policy should regulate contention after ISAC has concentrated many nodes onto a smaller candidate set.
+Within the Phase10 $N=100$, 10-/15-degree transfer setting, the remaining design question therefore shifts to how the link-layer policy should regulate contention after ISAC has concentrated many nodes onto a smaller candidate set.
+The compact table reports means; the source CSV stores standard deviations, descriptive 95\% confidence intervals, episode counts, and manifest links.
 
 \begin{table}[!t]
   \centering
@@ -340,12 +341,14 @@ The remaining design question is therefore not whether ISAC helps, but how the l
     Uniform random & 10$^\circ$ & 0.0028 & 0.0028 & 0.000 & 0.0 \\
     SkyOrbs-like & 10$^\circ$ & 0.0031 & 0.0031 & 0.000 & 0.0 \\
     MAPPO no ISAC & 10$^\circ$ & 0.0005 & 0.0005 & 0.000 & 0.0 \\
+    Contention no ISAC & 10$^\circ$ & 0.0008 & 0.0008 & 0.000 & 0.0 \\
     MARL+ISAC actor & 10$^\circ$ & 0.3429 & 0.2263 & 14.381 & 2563.7 \\
     Default gated actor & 10$^\circ$ & 0.3020 & 0.2353 & 11.904 & 1403.3 \\
     \midrule
     Uniform random & 15$^\circ$ & 0.0129 & 0.0129 & 0.000 & 0.4 \\
     SkyOrbs-like & 15$^\circ$ & 0.0190 & 0.0190 & 0.000 & 0.4 \\
     MAPPO no ISAC & 15$^\circ$ & 0.0022 & 0.0022 & 0.000 & 0.0 \\
+    Contention no ISAC & 15$^\circ$ & 0.0043 & 0.0043 & 0.000 & 0.0 \\
     MARL+ISAC actor & 15$^\circ$ & 0.4233 & 0.1387 & 19.889 & 10226.9 \\
     Default gated actor & 15$^\circ$ & 0.3618 & 0.2114 & 16.173 & 3535.0 \\
     \bottomrule

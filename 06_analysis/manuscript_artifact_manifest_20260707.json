@@ -1,8 +1,8 @@
 {
-  "created_at_utc": "2026-07-07T07:37:15.829398+00:00",
+  "created_at_utc": "2026-07-07T07:54:16.067958+00:00",
   "scope": "current manuscript-facing LaTeX figures plus Phase10 main evidence artifacts",
   "csv": "06_analysis/manuscript_artifact_manifest_20260707.csv",
-  "artifact_count": 90,
+  "artifact_count": 109,
   "missing_count": 0,
   "roles": [
     "direct_evidence_artifact",
@@ -31,8 +31,8 @@
       "source": "default_main_chain",
       "path": "06_analysis/figure_table_provenance_audit_20260707.md",
       "exists": true,
-      "size_bytes": 9278,
-      "sha256": "5052e07bb6d19875681f4b848d74a526bde398349e99ec008475d859211760a3"
+      "size_bytes": 9309,
+      "sha256": "898a05f15e8115c8d1b6c130ddf037ec2d576906a5e24131b26d7a1803328aa2"
     },
     {
       "role": "direct_evidence_artifact",
@@ -56,7 +56,7 @@
       "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json",
       "exists": true,
       "size_bytes": 609,
-      "sha256": "edbf80d846d64c5e2ee7772d9561950498f0e440ce6f7c94254a134dd4d95976"
+      "sha256": "ceaf482a68121a1587ef370d452cd1b1bf8f7fb7b35e27b5a830956b7fe3b9c4"
     },
     {
       "role": "direct_evidence_artifact",
@@ -72,7 +72,7 @@
       "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/README.md",
       "exists": true,
       "size_bytes": 578,
-      "sha256": "b130b535bdd1d769d1cb09208c49762a65927ae8d2cdd19f21c35232017888da"
+      "sha256": "833bcd63054e1940e97f5dface1460ad6fc67c2df920597fc9d9891b77e0982e"
     },
     {
       "role": "direct_evidence_artifact",
@@ -141,18 +141,74 @@
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv",
+      "exists": true,
+      "size_bytes": 2909,
+      "sha256": "c49ca1996920d93c9833aed77c8af2f527ddbfbf63aa2b75a04988cbd0679ca4"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv",
+      "exists": true,
+      "size_bytes": 1549,
+      "sha256": "35fb3535fe6ddeda87654ffa8d31b7763468f5bd768e62337f970d778b73fc4d"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/manifest.json",
+      "exists": true,
+      "size_bytes": 3172,
+      "sha256": "1b2fd8992c88ae6cc36445187e5aa90acd5e08b1db7509983dc4e421965603a0"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv",
+      "exists": true,
+      "size_bytes": 8605,
+      "sha256": "bbe935920d7136921ba63c9b5374a400d749effcdfe33aeea619b621b9827878"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/README.md",
+      "exists": true,
+      "size_bytes": 660,
+      "sha256": "073855d57e3a3aa4d7173041580fc9197b54d46ff52bd540588fee4ee358848b"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv",
+      "exists": true,
+      "size_bytes": 8682,
+      "sha256": "87bb0d116fdbbb2750d3d5a2c013964fe43cb090974fdbf3eefd78e16ccae0ff"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
       "path": "06_analysis/phase10_statistical_validation_report_20260707.md",
       "exists": true,
-      "size_bytes": 8453,
-      "sha256": "65e4f905eb49a6081ada4c617cf3ae136b190b722ed2365524f40f9e35dc2ff4"
+      "size_bytes": 8454,
+      "sha256": "e74061478e300cf952f7331a66539c1f28d4075f2e6aaf7ce1af9ae2f46a6433"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/research_goal_coverage_audit_20260707.md",
+      "exists": true,
+      "size_bytes": 6500,
+      "sha256": "1c9155454f223aa5e53ee70827da3aba23760f4ac76d91930451e6e28ac5abd6"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/scripts/build_manuscript_artifact_manifest.py",
       "exists": true,
-      "size_bytes": 8657,
-      "sha256": "765c56a54ce00e29688c4e2f962b6017e60d226218fde77ee888539798ea2713"
+      "size_bytes": 9320,
+      "sha256": "4bb362861cf0c959e13f718e25e0da08df3d454c993d75463418bc248891cb46"
     },
     {
       "role": "direct_evidence_artifact",
@@ -165,26 +221,34 @@
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
+      "path": "06_analysis/scripts/build_research_goal_coverage_audit.py",
+      "exists": true,
+      "size_bytes": 32052,
+      "sha256": "6c6ec96727213ae906a98841cac0d26cbe0eac9bd83fd608292bdaeba97bb70c"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
       "path": "06_analysis/submission_readiness_review_20260707.md",
       "exists": true,
-      "size_bytes": 4199,
-      "sha256": "d8aecc9901dd386a1cf908b605925fc6926f641f3220a74d3915f89bacc78e45"
+      "size_bytes": 4557,
+      "sha256": "4973d584386c23b09111a366750ecbc0c7948e0b75174040fc7297943438ac83"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/main.tex",
       "exists": true,
-      "size_bytes": 43707,
-      "sha256": "f38dd7fa4c3698b6f9c59059433132ab6713af78c07bf214ba333a122ba3713f"
+      "size_bytes": 44047,
+      "sha256": "b43b6376411932377a893702af29345642abbf6293793d67ea35ca051daf2925"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/README.md",
       "exists": true,
-      "size_bytes": 3329,
-      "sha256": "649fce35f0f90e9ebf5b06551d3a689744a21d98c75552af5260badd892d0c6d"
+      "size_bytes": 3528,
+      "sha256": "01247db457f3c6a951c5b3ea11fbd9be6f9aa7f764e1dc98562aa73b4b0f0c59"
     },
     {
       "role": "direct_evidence_artifact",
@@ -228,6 +292,22 @@
     },
     {
       "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[5]",
+      "path": "06_analysis/figure_table_provenance_audit_20260707.md",
+      "exists": true,
+      "size_bytes": 9309,
+      "sha256": "898a05f15e8115c8d1b6c130ddf037ec2d576906a5e24131b26d7a1803328aa2"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[4]",
+      "path": "06_analysis/manuscript_artifact_manifest_20260707.json",
+      "exists": true,
+      "size_bytes": 46461,
+      "sha256": "fcbcb852b9c6a8b17748567ed0c5f8354da92ec55d8e0d3dd4d1cff5424a7e0c"
+    },
+    {
+      "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/manifest.json:combined_summary[3]",
       "path": "06_analysis/paper_tables/marl/p10_adaptive_gate_v2_n100_b10_b15_3000slot_10ep_stoch/marl_transfer_summary.csv",
       "exists": true,
@@ -252,7 +332,7 @@
     },
     {
       "role": "manifest_reference",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json:final_csv",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[0]",
       "path": "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv",
       "exists": true,
       "size_bytes": 14518,
@@ -260,7 +340,7 @@
     },
     {
       "role": "manifest_reference",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json:output_csv",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[1]",
       "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv",
       "exists": true,
       "size_bytes": 17202,
@@ -289,6 +369,14 @@
       "exists": true,
       "size_bytes": 2692,
       "sha256": "5dfdc1660fd93fc53507738f0df825111a5826e3f6c000eda57fab65e607ac4b"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[3]",
+      "path": "06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/manifest.json",
+      "exists": true,
+      "size_bytes": 6301,
+      "sha256": "981159d89fe42f94a19520b895375474de9ea1b423dd0a93570bbf1dcfe3dfe6"
     },
     {
       "role": "manifest_reference",
@@ -339,6 +427,70 @@
       "sha256": "86e486ea35195dc7790fa75a57318c6dc87e9c08bcc378859d71b30e1896b3c6"
     },
     {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[2]",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv",
+      "exists": true,
+      "size_bytes": 2909,
+      "sha256": "c49ca1996920d93c9833aed77c8af2f527ddbfbf63aa2b75a04988cbd0679ca4"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[1]",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv",
+      "exists": true,
+      "size_bytes": 1549,
+      "sha256": "35fb3535fe6ddeda87654ffa8d31b7763468f5bd768e62337f970d778b73fc4d"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[3]",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv",
+      "exists": true,
+      "size_bytes": 8605,
+      "sha256": "bbe935920d7136921ba63c9b5374a400d749effcdfe33aeea619b621b9827878"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[4]",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/README.md",
+      "exists": true,
+      "size_bytes": 660,
+      "sha256": "073855d57e3a3aa4d7173041580fc9197b54d46ff52bd540588fee4ee358848b"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[0]",
+      "path": "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv",
+      "exists": true,
+      "size_bytes": 8682,
+      "sha256": "87bb0d116fdbbb2750d3d5a2c013964fe43cb090974fdbf3eefd78e16ccae0ff"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[2]",
+      "path": "06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv",
+      "exists": true,
+      "size_bytes": 123335,
+      "sha256": "6f11be678418e517946181d674893cfa081471d10f6d9b8a7d4af1e649ecd7f5"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[5]",
+      "path": "06_analysis/research_goal_coverage_audit_20260707.md",
+      "exists": true,
+      "size_bytes": 6500,
+      "sha256": "1c9155454f223aa5e53ee70827da3aba23760f4ac76d91930451e6e28ac5abd6"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[6]",
+      "path": "06_analysis/submission_readiness_review_20260707.md",
+      "exists": true,
+      "size_bytes": 4557,
+      "sha256": "4973d584386c23b09111a366750ecbc0c7948e0b75174040fc7297943438ac83"
+    },
+    {
       "role": "manuscript_figure",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:253",
       "path": "06_analysis/paper_figures/concept/policy_architecture_shared_agent.png",
@@ -364,7 +516,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:390",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:393",
       "path": "06_analysis/paper_figures/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison_collision_penalized_discovery_rate.png",
       "exists": true,
       "size_bytes": 199423,
@@ -372,7 +524,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:397",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:400",
       "path": "06_analysis/paper_figures/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_lambda2_mean.png",
       "exists": true,
       "size_bytes": 97342,
@@ -540,7 +692,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:447",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:450",
       "path": "06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 90010,
@@ -548,7 +700,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:433",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:436",
       "path": "06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 79547,
@@ -564,7 +716,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:465",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:468",
       "path": "06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 109665,
@@ -572,7 +724,7 @@
     },
     {
       "role": "manuscript_figure",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:411",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/07_paper/ieee_twc_isac_nd/main.tex:414",
       "path": "06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png",
       "exists": true,
       "size_bytes": 109785,
