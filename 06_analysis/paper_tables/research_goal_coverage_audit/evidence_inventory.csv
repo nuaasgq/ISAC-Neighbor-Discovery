@@ -28,7 +28,7 @@ stability_nodes,"[10, 20, 50, 100]"
 stability_protocols,"[""ablation_isac_no_beam_lock"", ""ablation_isac_no_candidate_set"", ""ablation_isac_no_topology"", ""ablation_isac_one_slot_delay"", ""improved_rl_isac"", ""improved_rl_no_isac"", ""rl_no_isac"", ""skyorbs_like_skip_scan"", ""uniform_random""]"
 stability_mobility_models,"[""gauss_markov"", ""random_direction"", ""random_walk"", ""random_waypoint""]"
 stability_slot_durations_ms,"[1.0, 5.0, 10.0, 20.0, 100.0]"
-artifact_count,139
+artifact_count,142
 artifact_missing_count,0
 independent_rerun_all_metrics_match,True
 independent_rerun_status_counts,{'MATCH': 5}

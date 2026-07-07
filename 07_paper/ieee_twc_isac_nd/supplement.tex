@@ -103,6 +103,8 @@ The heatmap and B=10 node-count curve show the intended small-to-large transfer 
 
 Fig.~\ref{fig:supp_range_timing} records the two implementation-sensitivity checks most directly tied to the ISAC abstraction.
 The range sweep treats $\Rc$ and $\Rs$ as protocol-level support parameters; the slot-duration sweep evaluates the 5 ms slot assumption against nearby time scales under Gauss-Markov mobility.
+The final long-horizon tables use $\Rc=\Rs$ as a matched-support single-hop operating point, not as a calibrated hardware statement.
+The broader sweep separately covers $\Rc/D\in\{0.65,0.85,1.05\}$ and $\Rs/\Rc\in\{0.5,0.75,1.0,1.25\}$ so that the protocol claim does not depend on assuming equal communication and sensing supports.
 
 \begin{table}[!t]
   \centering

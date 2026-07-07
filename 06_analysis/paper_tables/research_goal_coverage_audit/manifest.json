@@ -1,9 +1,9 @@
 {
-  "created_at_utc": "2026-07-07T10:59:39.569607+00:00",
+  "created_at_utc": "2026-07-07T11:12:13.746499+00:00",
   "scope": "active MARL+ISAC research-goal evidence coverage",
   "status_counts": {
-    "PASS": 12,
-    "CAUTION": 6,
+    "PASS": 13,
+    "CAUTION": 5,
     "OPEN": 0
   },
   "input_files": [
@@ -42,11 +42,11 @@
     "readme": "06_analysis/paper_tables/research_goal_coverage_audit/README.md"
   },
   "output_hashes": {
-    "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv": "290a8dd4980a38ce19869f0f889bad404c514ff6c3b5aa3c7c73257e2939dde1",
-    "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv": "70b4cb05721e6346056315ce32c518ef38c1b74cbf38b338edc20bb1e712154e",
-    "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv": "7dae44d0110cb342690ab02cd6adead0cb2983b565e698edd08280a74f05c8c5",
+    "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv": "a2e73236e7e2a096b7e0fc9bfa2878679e6770b84004c9d6c28f08a84e7b7449",
+    "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv": "a7971ded097009be7d7a9496df586a45c70357d0083acd044073df352f90ab3e",
+    "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv": "2c703735a88006cda3d5aaa7570b4e6678032435cfa082719d76b4a98b1021aa",
     "06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv": "bbe935920d7136921ba63c9b5374a400d749effcdfe33aeea619b621b9827878",
     "06_analysis/paper_tables/research_goal_coverage_audit/README.md": "073855d57e3a3aa4d7173041580fc9197b54d46ff52bd540588fee4ee358848b",
-    "06_analysis/research_goal_coverage_audit_20260707.md": "02b0376e54023860b7429df742f8ffe695d8d9c000f51655b8c7d0ac8b365061"
+    "06_analysis/research_goal_coverage_audit_20260707.md": "57ddfd4e27f57896eaff0d8892f3e2b55c90644bb5b36c0b26deac2874179231"
   }
 }

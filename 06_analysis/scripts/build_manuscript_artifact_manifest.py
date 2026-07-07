@@ -41,6 +41,7 @@ DEFAULT_DIRECT_ARTIFACTS = [
     Path("06_analysis/phase10_statistical_validation_report_20260707.md"),
     Path("06_analysis/phase10_independent_rerun_validation_20260707.md"),
     Path("06_analysis/phase10_learned_component_ablation_report_20260707.md"),
+    Path("06_analysis/range_abstraction_theory_note_20260707.md"),
     Path("06_analysis/research_goal_coverage_audit_20260707.md"),
     Path("06_analysis/submission_readiness_review_20260707.md"),
     Path("06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv"),

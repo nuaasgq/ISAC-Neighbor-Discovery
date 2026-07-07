@@ -32,6 +32,11 @@ RERUN_VALIDATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_independent_
 RERUN_VALIDATION_REPORT = Path("06_analysis/phase10_independent_rerun_validation_20260707.md")
 LEARNED_ABLATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json")
 LEARNED_ABLATION_REPORT = Path("06_analysis/phase10_learned_component_ablation_report_20260707.md")
+RANGE_NOTE = Path("06_analysis/range_abstraction_theory_note_20260707.md")
+RANGE_GRID_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rc_rs_grid/aggregate_metrics.csv")
+RANGE_RATIO_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rs_ratio/aggregate_metrics.csv")
+MAIN_TEX = Path("07_paper/ieee_twc_isac_nd/main.tex")
+SUPPLEMENT_TEX = Path("07_paper/ieee_twc_isac_nd/supplement.tex")
 
 CODE_EVIDENCE = [
     Path("05_simulation/src/isac_nd_sim/marl_env.py"),
@@ -75,6 +80,12 @@ def read_json(path: Path) -> dict:
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def read_text(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8-sig")
 
 
 def as_float(value: str | int | float | None, default: float = 0.0) -> float:
@@ -243,6 +254,29 @@ def requirement_rows(
     }
     learned_ablation_complete = required_learned_ablation_labels.issubset(learned_ablation_labels)
 
+    range_rows = read_csv(RANGE_GRID_CSV) + read_csv(RANGE_RATIO_CSV)
+    range_rc_ratios = {round(as_float(row.get("communication_range_to_diagonal_ratio")), 3) for row in range_rows if row.get("communication_range_to_diagonal_ratio")}
+    range_rs_ratios = {round(as_float(row.get("sensing_to_comm_range_ratio")), 3) for row in range_rows if row.get("sensing_to_comm_range_ratio")}
+    range_sweep_complete = {0.5, 0.75, 1.0, 1.25}.issubset(range_rs_ratios) and len(range_rc_ratios) >= 1
+    range_note_text = read_text(RANGE_NOTE)
+    range_main_text = read_text(MAIN_TEX)
+    range_supp_text = read_text(SUPPLEMENT_TEX)
+    range_theory_supported = all(
+        token in range_note_text
+        for token in (
+            "protocol support parameters",
+            "not a platform-calibrated statement",
+            "Bomfin2024SystemISAC",
+            "Rs/Rc",
+        )
+    )
+    range_manuscript_bounded = (
+        "do not set $\\Rs=\\Rc$ by default" in range_main_text
+        and "matched-support operating point" in range_main_text
+        and "not as a calibrated hardware statement" in range_supp_text
+    )
+    range_status = "PASS" if range_sweep_complete and range_theory_supported and range_manuscript_bounded else "CAUTION"
+
     stability_beams = {as_float(row.get("beamwidth_deg")) for row in stability_rows if row.get("beamwidth_deg")}
     stability_nodes = {as_int(row.get("node_count")) for row in stability_rows if row.get("node_count")}
     stability_protocols = {row.get("protocol", "") for row in stability_rows}
@@ -374,11 +408,11 @@ def requirement_rows(
         "R10",
         "Range abstraction",
         "Make communication/sensing range assumptions explicit and test range sensitivity.",
-        "CAUTION",
-        "supplement",
-        "Final Phase10 rows use Rc=900 m and Rs=900 m under single-hop transfer; range-grid evidence exists in robustness tables.",
-        [FINAL_METHOD_CSV, STABILITY_CSV],
-        "Add or preserve theoretical/citation support for when Rs can equal Rc; avoid claiming this is hardware-calibrated.",
+        range_status,
+        "main+supplement+theory_note" if range_status == "PASS" else "supplement",
+        f"Final Phase10 rows use Rc=900 m and Rs=900 m as a matched-support single-hop setting; range sweeps cover Rc/D={fmt_set(range_rc_ratios)} and Rs/Rc={fmt_set(range_rs_ratios)}.",
+        [FINAL_METHOD_CSV, STABILITY_CSV, RANGE_GRID_CSV, RANGE_RATIO_CSV, RANGE_NOTE, MAIN_TEX, SUPPLEMENT_TEX],
+        "Keep the equal-range final setting described as matched-support and protocol-level; do not claim hardware-calibrated communication/sensing range equality.",
     )
     add(
         "R11",

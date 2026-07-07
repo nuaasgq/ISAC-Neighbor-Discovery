@@ -10,11 +10,11 @@
 ## Summary
 
 - Requirements checked: 18.
-- Status counts: PASS=12, CAUTION=6, OPEN=0.
+- Status counts: PASS=13, CAUTION=5, OPEN=0.
 - Final Phase10 method rows: 18 across beams [10.0, 15.0].
 - Training trace: 3 runs, 90000 step rows, 300 episode rows.
 - Method trace completeness: 18/18.
-- Artifact manifest: 139 artifacts, 0 missing.
+- Artifact manifest: 142 artifacts, 0 missing.
 
 ## Requirement Coverage
 
@@ -29,11 +29,11 @@
 | R07 | Beamwidth coverage and transfer | CAUTION | main+boundary | Stability summary beams=10.0;15.0;3.0;30.0;5.0; final Phase10 beams=10.0;15.0. B=30 exists only as archived boundary evidence. |
 | R08 | Node-count scalability | PASS | main+supplement | Stability summary nodes=10;100;20;50; final main table is N=100 transfer. |
 | R09 | Dynamic mobility | PASS | main+supplement | Mobility models in stability summary: gauss_markov;random_direction;random_walk;random_waypoint. |
-| R10 | Range abstraction | CAUTION | supplement | Final Phase10 rows use Rc=900 m and Rs=900 m under single-hop transfer; range-grid evidence exists in robustness tables. |
+| R10 | Range abstraction | PASS | main+supplement+theory_note | Final Phase10 rows use Rc=900 m and Rs=900 m as a matched-support single-hop setting; range sweeps cover Rc/D=0.65;0.85;1.05 and Rs/Rc=0.5;0.75;1.0;1.25. |
 | R11 | Time-scale assumption | PASS | main+supplement | Slot-duration values in stability summary: 1.0;10.0;100.0;20.0;5.0. |
 | R12 | Statistical reliability | CAUTION | analyzed_not_verified | Final transfer episodes range 10-20; stability rows=345 with main rows=126. |
 | R13 | Reproducibility trace | PASS | main | Method trace rows complete: 18/18. |
-| R14 | Figure and artifact integrity | PASS | artifact_hash | Artifact manifest reports 139 artifacts and 0 missing paths; training manifest lists 19 training/resource figures. |
+| R14 | Figure and artifact integrity | PASS | artifact_hash | Artifact manifest reports 142 artifacts and 0 missing paths; training manifest lists 19 training/resource figures. |
 | R15 | Submission wording boundary | CAUTION | reviewer_audit | Existing readiness review records 195 supplement/supplement-stress rows and flags SkyOrbs-like/reproduction limits. |
 | R16 | Independent reproduction | PASS | verified_partial_rerun | Independent stochastic re-run for gated_contention_actor at B=10 has status_counts={'MATCH': 5}; this verifies one key final-transfer point, not the full campaign. |
 | R17 | Learned component ablation | CAUTION | focused_ablation_mixed | Focused B=10/N=100/3000-slot learned-component ablation covers labels=['random_weights_full', 'trained_full', 'trained_no_candidate_mask', 'trained_no_rule_residual', 'zero_weights_rule_only']. Results separate learned weights from rule priors, but support a collision-efficiency claim rather than universal learned-policy dominance. |
@@ -42,7 +42,6 @@
 ## Highest-Value Remaining Work
 
 - P2 `CAUTION`: Cover narrow beamwidths around 3-15 degrees, with final main transfer at 10->15 degrees. Next: If reviewers demand full stress coverage, rerun B=3/B=5 with the final Phase10 method set; B=30 is intentionally excluded from the final line.
-- P2 `CAUTION`: Make communication/sensing range assumptions explicit and test range sensitivity. Next: Add or preserve theoretical/citation support for when Rs can equal Rc; avoid claiming this is hardware-calibrated.
 - P2 `CAUTION`: Provide multi-seed/statistical summaries rather than single-run-only claims. Next: For stronger statistical evidence, extend independent re-runs to additional method/beam pairs or add a paired significance protocol with a predeclared correction boundary.
 - P2 `CAUTION`: Keep claims aligned with simulator, protocol-level ISAC abstraction, and approximate literature baseline scope. Next: Before submission, run a line-level IEEE style and claim-strength pass.
 - P2 `CAUTION`: Separate learned actor contribution from strong rule priors, residual logits, candidate masks, and decentralized gates. Next: Use conservative wording: learned weights suppress collisions versus random/zero-weight policies, while candidate masking and rule residuals define the discovery/collision/empty-scan tradeoff. Extend to B=15 or more seeds only if needed.
