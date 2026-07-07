@@ -7,9 +7,9 @@ Scope: figure references used by the current IEEE main manuscript and supplement
 ## Summary
 
 - Figure instances in `main.tex`: 10
-- Figure instances in `supplement.tex`: 43
-- Total figure instances: 53
-- Unique existing figure files: 51
+- Figure instances in `supplement.tex`: 45
+- Total figure instances: 55
+- Unique existing figure files: 53
 - Missing figure files: 0
 - Non-4:3 figures outside tolerance 0.02: 0
 - Requirement check for no fewer than 16 result/concept figures: PASS
@@ -80,3 +80,5 @@ The manuscript package satisfies the current figure-count and 4:3-ratio requirem
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 416 | `../../06_analysis/paper_figures/structured_marl_probe/marl_bc_loss_curve.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 418 | `../../06_analysis/paper_figures/structured_marl_probe/marl_reward_curve.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 420 | `../../06_analysis/paper_figures/structured_marl_probe/marl_rule_residual_scale_sweep.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 526 | `../../06_analysis/figures/marl/p10_paired_significance_primary/phase10_primary_discovery_paired_deltas.png` | 1536x1152 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 528 | `../../06_analysis/figures/marl/p10_paired_significance_primary/phase10_empty_scan_paired_deltas.png` | 1536x1152 | 1.3333 | True |

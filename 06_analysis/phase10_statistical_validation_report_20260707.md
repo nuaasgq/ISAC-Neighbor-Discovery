@@ -12,9 +12,9 @@
 - Primary CSV: `06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv`
 - Gate-family CSV: `06_analysis/paper_tables/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_core_metrics.csv`
 - Artifact manifest: `06_analysis/manuscript_artifact_manifest_20260707.csv`
-- Overall Confidence: CAUTION
+- Overall Confidence: CAUTION for global campaign breadth; PASS for the primary paired ISAC-vs-communication-only discovery/empty-scan test boundary
 
-The performance direction is strong in the current simulator evidence, especially for the ISAC-assisted MARL actor against communication-only baselines. The confidence rating remains CAUTION because the final Phase10 transfer table uses stochastic evaluation summaries with 10 episodes for most methods, 20 for balanced v4, and descriptive normal-approximation confidence intervals rather than a preregistered paired significance test.
+The performance direction is strong in the current simulator evidence, especially for the ISAC-assisted MARL actor against communication-only baselines. A follow-up paired sign-test addendum now predeclares the primary discovery-rate and empty-scan-ratio families for the final B=10/B=15 ISAC-vs-communication-only comparison; all 16 confirmatory tests pass Holm-adjusted alpha=0.05. The global confidence rating remains CAUTION because gate-family operating points, mobility stress, beamwidth stress, and hardware-facing PHY abstractions are not globally multiple-comparison-corrected claims.
 
 ### Statistical Findings
 
@@ -22,6 +22,7 @@ The performance direction is strong in the current simulator evidence, especiall
 |---|---|---:|---|---|
 | B=10 discovery gain over random/directional baselines | Ratio from final CSV | min 110.94x; actor discovery 0.3429 +/- 0.0054 CI95 | Very large practical effect; limiting baseline is SkyOrbs-like at 0.0031 | CAUTION |
 | B=15 discovery gain over random/directional baselines | Ratio from final CSV | min 22.31x; actor discovery 0.4233 +/- 0.0081 CI95 | Very large practical effect; limiting baseline is SkyOrbs-like at 0.0190 | CAUTION |
+| Primary paired discovery/empty-scan tests | Exact paired sign tests with Holm correction | 16/16 confirmatory tests pass; all paired discovery deltas are positive and all paired empty-scan deltas are negative across 10/10 scenario seeds | Strong seed-paired support for the primary simulator claim, restricted to ISAC actor vs communication-only controls | SOLID within stated boundary |
 | B=10 default gate collision-penalized discovery | Descriptive comparison | 0.2353 +/- 0.0058 vs ungated 0.2263 +/- 0.0067 | +3.99% CPD with 45.26% fewer collisions | CAUTION |
 | B=15 default gate collision-penalized discovery | Descriptive comparison | 0.2114 +/- 0.0061 vs ungated 0.1387 +/- 0.0066 | +52.35% CPD with 65.43% fewer collisions | CAUTION |
 | B=15 adaptive gate collision-penalized discovery | Descriptive comparison | 0.2265 +/- 0.0051 vs ungated 0.1387 +/- 0.0066 | Highest B=15 CPD among current gate-family points, but lower raw discovery/lambda2 than topology-heavy profiles | CAUTION |
@@ -33,11 +34,11 @@ The performance direction is strong in the current simulator evidence, especiall
 
 | Type | Detail | Affected |
 |---|---|---|
-| Sample size | The final Phase10 transfer table mostly uses 10 stochastic evaluation episodes. The CIs are useful descriptive uncertainty markers but should not be presented as formal hypothesis-test evidence. | Final B=10/B=15 method comparison |
+| Sample size | The final Phase10 transfer table mostly uses 10 stochastic evaluation episodes. The primary ISAC-vs-communication-only comparison now has exact paired sign tests, but most gate-family and robustness comparisons remain descriptive. | Final B=10/B=15 method comparison |
 | Variant selection | The project iteratively explored multiple gate profiles and reward/network variants. The final manuscript must keep the distinction between selected main profile, aggressive profile, adaptive profile, topology-heavy profile, and supplementary probes. | Gate-family claims |
 | Mixed horizon evidence | Main Phase10 claims use 3000-slot N=100 transfer, while several robustness/boundary figures come from earlier 600-slot campaigns. The manuscript currently labels those as boundary/supplementary evidence; this boundary should remain explicit. | Mobility, range, error, ablation figures |
 | Simulator-to-platform gap | ISAC sensing, energy accounting, and slot timing are protocol-level abstractions. The results support protocol feasibility in the simulator, not hardware-calibrated energy or PHY-optimal claims. | PHY/protocol interpretation and energy discussion |
-| Multiple comparisons | Many scenarios, metrics, and profiles were evaluated. There is no global multiple-comparison correction. Main claims should remain conservative and tied to the Phase10 primary table. | All broad superiority claims |
+| Multiple comparisons | Many scenarios, metrics, and profiles were evaluated. The new paired sign-test addendum corrects only the primary discovery and empty-scan families; there is still no global correction over every explored profile and robustness setting. | All broad superiority claims |
 | Learned contribution boundary | Random/zero-weight policies can obtain higher raw discovery and lambda2 by accepting much higher collision load. | Learned-component claims should emphasize collision suppression and tradeoff shaping, not raw discovery dominance. |
 
 ### Fallacy Scan

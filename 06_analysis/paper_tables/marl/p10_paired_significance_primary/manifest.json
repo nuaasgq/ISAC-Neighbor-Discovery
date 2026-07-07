@@ -1,0 +1,25 @@
+{
+  "created_at_utc": "2026-07-07T11:27:55.790315+00:00",
+  "scope": "Phase10 N=100 3000-slot paired significance for primary ISAC-vs-communication-only comparisons.",
+  "source_files": [
+    "06_analysis/paper_tables/marl/phase9_fiveway_n100_b10_3000slot_10ep_stoch_all_methods/marl_transfer_eval_rows.csv",
+    "06_analysis/paper_tables/marl/phase9_fiveway_n100_b15_3000slot_10ep_stoch_all_methods/marl_transfer_eval_rows.csv"
+  ],
+  "tables": [
+    "06_analysis/paper_tables/marl/p10_paired_significance_primary/primary_paired_sign_tests.csv",
+    "06_analysis/paper_tables/marl/p10_paired_significance_primary/primary_paired_delta_values.csv",
+    "06_analysis/paper_tables/marl/p10_paired_significance_primary/source_file_hashes.csv"
+  ],
+  "figures": [
+    "06_analysis/figures/marl/p10_paired_significance_primary/phase10_primary_discovery_paired_deltas.png",
+    "06_analysis/figures/marl/p10_paired_significance_primary/phase10_empty_scan_paired_deltas.png"
+  ],
+  "report": "06_analysis/phase10_paired_significance_report_20260707.md",
+  "confirmatory_families": [
+    "mechanism_empty_scan",
+    "primary_discovery"
+  ],
+  "all_confirmatory_tests_pass": true,
+  "confirmatory_test_count": 16,
+  "holm_alpha": 0.05
+}

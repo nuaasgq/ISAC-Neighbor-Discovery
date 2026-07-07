@@ -495,6 +495,41 @@ The earlier round12 pilot and the current round13 ten-seed collision-aware MAC r
   \end{tabular}
 \end{table*}
 
+\subsection{Confirmatory Paired Sign-Test Boundary for the Primary Comparison}
+
+For the final 3000-slot Phase10 primary comparison, we add a narrow paired significance protocol for the main ISAC-benefit claim.
+The confirmatory tests use identical scenario seeds and compare the ungated ISAC contention actor against uniform random, SkyOrbs-like, MAPPO without ISAC, and contention MAPPO without ISAC at B=10 and B=15.
+Two metric families are predeclared: discovery-rate improvement and empty-scan-ratio reduction.
+Within each family, we use exact two-sided paired sign tests and Holm correction over the eight beam/control comparisons.
+The gate-family operating points remain descriptive because their archived evaluations use different seed blocks.
+
+\begin{table*}[!t]
+  \centering
+  \caption{Confirmatory Paired Sign-Test Summary for the Phase10 Primary ISAC-Benefit Comparison}
+  \label{tab:supp_paired_significance}
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{llccc}
+    \toprule
+    Metric family & Beam & Controls & Sign pattern & Mean paired-delta range; Holm $p$ \\
+    \midrule
+    Discovery rate & 10$^\circ$ & Random/SkyOrbs/MAPPO/no-ISAC contention & 10/10 positive for all four controls & +0.3398 to +0.3424; $p\leq0.0156$ \\
+    Discovery rate & 15$^\circ$ & Random/SkyOrbs/MAPPO/no-ISAC contention & 10/10 positive for all four controls & +0.4043 to +0.4211; $p\leq0.0156$ \\
+    Empty-scan ratio & 10$^\circ$ & Random/SkyOrbs/MAPPO/no-ISAC contention & 10/10 negative for all four controls & -0.8480 to -0.8476; $p\leq0.0156$ \\
+    Empty-scan ratio & 15$^\circ$ & Random/SkyOrbs/MAPPO/no-ISAC contention & 10/10 negative for all four controls & -0.8165 to -0.8113; $p\leq0.0156$ \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/figures/marl/p10_paired_significance_primary/phase10_primary_discovery_paired_deltas.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/figures/marl/p10_paired_significance_primary/phase10_empty_scan_paired_deltas.png}
+  \caption{Confirmatory paired sign-test visualization for the Phase10 primary ISAC-benefit comparison. Left: paired discovery-rate deltas. Right: paired empty-scan-ratio deltas. Asterisks mark Holm-corrected exact paired sign tests that pass within the predeclared metric family.}
+  \label{fig:supp_paired_significance}
+\end{figure*}
+
 \begin{table*}[!t]
   \centering
   \caption{Normalized Statistical Evidence Index}
@@ -516,5 +551,6 @@ The earlier round12 pilot and the current round13 ten-seed collision-aware MAC r
 
 The paired-delta table is generated from \texttt{paired\_delta\_summary.csv}; every row pairs protocols by identical scenario seeds and matching scenario parameters.
 The intervals are descriptive bootstrap percentile intervals over paired seed-level deltas and should be interpreted together with the small number of seeds.
+The confirmatory sign-test table and Fig.~\ref{fig:supp_paired_significance} are generated from \texttt{primary\_paired\_sign\_tests.csv}; they strengthen only the primary ISAC-versus-communication-only comparison and do not convert the gate-family frontier into a globally corrected superiority claim.
 
 \end{document}

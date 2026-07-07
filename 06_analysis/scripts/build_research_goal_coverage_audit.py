@@ -32,6 +32,8 @@ RERUN_VALIDATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_independent_
 RERUN_VALIDATION_REPORT = Path("06_analysis/phase10_independent_rerun_validation_20260707.md")
 LEARNED_ABLATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_learned_component_ablation_b10_3ep/manifest.json")
 LEARNED_ABLATION_REPORT = Path("06_analysis/phase10_learned_component_ablation_report_20260707.md")
+PAIRED_SIGNIFICANCE_MANIFEST = Path("06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json")
+PAIRED_SIGNIFICANCE_REPORT = Path("06_analysis/phase10_paired_significance_report_20260707.md")
 RANGE_NOTE = Path("06_analysis/range_abstraction_theory_note_20260707.md")
 RANGE_GRID_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rc_rs_grid/aggregate_metrics.csv")
 RANGE_RATIO_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rs_ratio/aggregate_metrics.csv")
@@ -176,6 +178,7 @@ def requirement_rows(
     artifact_manifest: dict,
     rerun_validation: dict,
     learned_ablation: dict,
+    paired_significance: dict,
 ) -> tuple[list[Requirement], list[Risk], dict[str, object]]:
     final_methods = {row.get("method", "") for row in final_rows}
     final_beams = {as_float(row.get("beamwidth_deg")) for row in final_rows}
@@ -253,6 +256,9 @@ def requirement_rows(
         "trained_no_candidate_mask",
     }
     learned_ablation_complete = required_learned_ablation_labels.issubset(learned_ablation_labels)
+    paired_significance_pass = bool(paired_significance.get("all_confirmatory_tests_pass")) and as_int(
+        paired_significance.get("confirmatory_test_count")
+    ) >= 16
 
     range_rows = read_csv(RANGE_GRID_CSV) + read_csv(RANGE_RATIO_CSV)
     range_rc_ratios = {round(as_float(row.get("communication_range_to_diagonal_ratio")), 3) for row in range_rows if row.get("communication_range_to_diagonal_ratio")}
@@ -428,11 +434,11 @@ def requirement_rows(
         "R12",
         "Statistical reliability",
         "Provide multi-seed/statistical summaries rather than single-run-only claims.",
-        "CAUTION",
-        "analyzed_not_verified",
-        f"Final transfer episodes range {min(final_episodes) if final_episodes else 0}-{max(final_episodes) if final_episodes else 0}; stability rows={len(stability_rows)} with main rows={len(main_stability_rows)}.",
-        [FINAL_METHOD_CSV, STABILITY_CSV],
-        "For stronger statistical evidence, extend independent re-runs to additional method/beam pairs or add a paired significance protocol with a predeclared correction boundary.",
+        "PASS" if paired_significance_pass else "CAUTION",
+        "paired_significance_primary" if paired_significance_pass else "analyzed_not_verified",
+        f"Final transfer episodes range {min(final_episodes) if final_episodes else 0}-{max(final_episodes) if final_episodes else 0}; primary paired significance manifest reports {as_int(paired_significance.get('confirmatory_test_count'))} confirmatory tests with pass={paired_significance_pass}.",
+        [FINAL_METHOD_CSV, STABILITY_CSV, PAIRED_SIGNIFICANCE_MANIFEST, PAIRED_SIGNIFICANCE_REPORT],
+        "Keep paired significance wording restricted to primary ISAC-vs-communication-only discovery and empty-scan comparisons; gate-family results remain descriptive.",
     )
     add(
         "R13",
@@ -669,6 +675,7 @@ def main() -> None:
     artifact_manifest = read_json(ARTIFACT_MANIFEST)
     rerun_validation = read_json(RERUN_VALIDATION_MANIFEST)
     learned_ablation = read_json(LEARNED_ABLATION_MANIFEST)
+    paired_significance = read_json(PAIRED_SIGNIFICANCE_MANIFEST)
 
     requirements, risks, inventory = requirement_rows(
         final_rows,
@@ -678,6 +685,7 @@ def main() -> None:
         artifact_manifest,
         rerun_validation,
         learned_ablation,
+        paired_significance,
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
