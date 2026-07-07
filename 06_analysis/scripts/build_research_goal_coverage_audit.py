@@ -28,6 +28,8 @@ TRAINING_MANIFEST = Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_
 ARTIFACT_MANIFEST = Path("06_analysis/manuscript_artifact_manifest_20260707.json")
 FIGURE_AUDIT = Path("06_analysis/figure_table_provenance_audit_20260707.md")
 SUBMISSION_REVIEW = Path("06_analysis/submission_readiness_review_20260707.md")
+RERUN_VALIDATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/manifest.json")
+RERUN_VALIDATION_REPORT = Path("06_analysis/phase10_independent_rerun_validation_20260707.md")
 
 CODE_EVIDENCE = [
     Path("05_simulation/src/isac_nd_sim/marl_env.py"),
@@ -159,6 +161,7 @@ def requirement_rows(
     stability_rows: list[dict[str, str]],
     training_manifest: dict,
     artifact_manifest: dict,
+    rerun_validation: dict,
 ) -> tuple[list[Requirement], list[Risk], dict[str, object]]:
     final_methods = {row.get("method", "") for row in final_rows}
     final_beams = {as_float(row.get("beamwidth_deg")) for row in final_rows}
@@ -223,6 +226,10 @@ def requirement_rows(
     training_figures = training_manifest.get("figures", [])
     artifact_count = as_int(artifact_manifest.get("artifact_count"))
     missing_count = as_int(artifact_manifest.get("missing_count"), default=-1)
+    rerun_all_match = bool(rerun_validation.get("all_metrics_match", False))
+    rerun_status_counts = rerun_validation.get("status_counts", {})
+    rerun_method = str(rerun_validation.get("method", ""))
+    rerun_beam = as_float(rerun_validation.get("beamwidth_deg"))
 
     stability_beams = {as_float(row.get("beamwidth_deg")) for row in stability_rows if row.get("beamwidth_deg")}
     stability_nodes = {as_int(row.get("node_count")) for row in stability_rows if row.get("node_count")}
@@ -379,7 +386,7 @@ def requirement_rows(
         "analyzed_not_verified",
         f"Final transfer episodes range {min(final_episodes) if final_episodes else 0}-{max(final_episodes) if final_episodes else 0}; stability rows={len(stability_rows)} with main rows={len(main_stability_rows)}.",
         [FINAL_METHOD_CSV, STABILITY_CSV],
-        "The next strongest evidence upgrade is one independent Phase10 transfer re-run for a key method/beam pair.",
+        "For stronger statistical evidence, extend independent re-runs to additional method/beam pairs or add a paired significance protocol with a predeclared correction boundary.",
     )
     add(
         "R13",
@@ -415,11 +422,11 @@ def requirement_rows(
         "R16",
         "Independent reproduction",
         "Convert at least part of the current status from ANALYZED to VERIFIED by re-running a selected final experiment.",
-        "OPEN",
-        "missing_re_run",
-        "Current validation is artifact/hash and statistical analysis; no independent full stochastic Phase10 re-run is recorded in the validation report.",
-        [Path("06_analysis/phase10_statistical_validation_report_20260707.md")],
-        "Run one small independent final-transfer re-run, e.g., gated_contention_actor at B=10 or B=15, and compare within a predeclared tolerance.",
+        "PASS" if rerun_all_match else "OPEN",
+        "verified_partial_rerun" if rerun_all_match else "missing_re_run",
+        f"Independent stochastic re-run for {rerun_method or 'N/A'} at B={rerun_beam:g} has status_counts={rerun_status_counts}; this verifies one key final-transfer point, not the full campaign.",
+        [Path("06_analysis/phase10_statistical_validation_report_20260707.md"), RERUN_VALIDATION_REPORT],
+        "Extend independent re-runs to additional methods/beams only if reviewers demand a stronger replication package.",
     )
     add(
         "R17",
@@ -494,6 +501,10 @@ def requirement_rows(
         "stability_slot_durations_ms": sorted(stability_slots_ms),
         "artifact_count": artifact_count,
         "artifact_missing_count": missing_count,
+        "independent_rerun_all_metrics_match": rerun_all_match,
+        "independent_rerun_status_counts": rerun_status_counts,
+        "independent_rerun_method": rerun_method,
+        "independent_rerun_beamwidth_deg": rerun_beam,
         "code_evidence_files_present": code_files_present,
         "code_evidence_files_total": len(CODE_EVIDENCE),
     }
@@ -586,7 +597,7 @@ def write_report(requirements: list[Requirement], risks: list[Risk], inventory: 
             "## Boundary Interpretation",
             "",
             "The current evidence is strong enough to support a manuscript draft centered on a real MAPPO-style MARL+ISAC neighbor-discovery method, small-to-large transfer, and gate-family collision/topology tradeoffs.",
-            "The evidence is not yet a fully verified replication package: the most important unresolved items are an independent re-run of a selected final Phase10 transfer experiment and a learned-vs-rule ablation that separates neural learning from structured priors, followed by line-level claim tightening before submission.",
+            "The evidence is still not a fully verified replication package: the strongest remaining unresolved item is a learned-vs-rule ablation that separates neural learning from structured priors. The independent re-run now verifies one key Phase10 transfer point only, so full-campaign reproducibility should remain a bounded claim.",
             "",
             "## Generated Files",
             "",
@@ -606,6 +617,7 @@ def main() -> None:
     stability_rows = read_csv(STABILITY_CSV)
     training_manifest = read_json(TRAINING_MANIFEST)
     artifact_manifest = read_json(ARTIFACT_MANIFEST)
+    rerun_validation = read_json(RERUN_VALIDATION_MANIFEST)
 
     requirements, risks, inventory = requirement_rows(
         final_rows,
@@ -613,6 +625,7 @@ def main() -> None:
         stability_rows,
         training_manifest,
         artifact_manifest,
+        rerun_validation,
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -686,6 +699,8 @@ def main() -> None:
             ARTIFACT_MANIFEST.as_posix(),
             FIGURE_AUDIT.as_posix(),
             SUBMISSION_REVIEW.as_posix(),
+            RERUN_VALIDATION_MANIFEST.as_posix(),
+            RERUN_VALIDATION_REPORT.as_posix(),
         ]
         + [path.as_posix() for path in CODE_EVIDENCE],
         "output_files": [path.as_posix() for path in output_files],

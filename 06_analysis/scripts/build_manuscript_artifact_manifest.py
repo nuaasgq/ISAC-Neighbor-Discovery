@@ -32,11 +32,13 @@ DEFAULT_DIRECT_ARTIFACTS = [
     Path("07_paper/ieee_twc_isac_nd/README.md"),
     Path("06_analysis/scripts/build_manuscript_artifact_manifest.py"),
     Path("06_analysis/scripts/build_phase10_method_manifest_trace.py"),
+    Path("06_analysis/scripts/build_phase10_independent_rerun_validation.py"),
     Path("06_analysis/scripts/build_research_goal_coverage_audit.py"),
     Path("06_analysis/figure_table_provenance_audit_20260707.md"),
     Path("06_analysis/claim_evidence_audit_20260707.md"),
     Path("06_analysis/citation_integrity_audit_20260707.md"),
     Path("06_analysis/phase10_statistical_validation_report_20260707.md"),
+    Path("06_analysis/phase10_independent_rerun_validation_20260707.md"),
     Path("06_analysis/research_goal_coverage_audit_20260707.md"),
     Path("06_analysis/submission_readiness_review_20260707.md"),
     Path("06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv"),
@@ -45,6 +47,10 @@ DEFAULT_DIRECT_ARTIFACTS = [
     Path("06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv"),
     Path("06_analysis/paper_tables/research_goal_coverage_audit/manifest.json"),
     Path("06_analysis/paper_tables/research_goal_coverage_audit/README.md"),
+    Path("06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_metric_summary.csv"),
+    Path("06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_vs_original_comparison.csv"),
+    Path("06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_source_file_hashes.csv"),
+    Path("06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/manifest.json"),
     Path("06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv"),
     Path("06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json"),
     Path("06_analysis/paper_tables/marl/p10_final_method_manifest_trace/README.md"),
@@ -128,7 +134,11 @@ def collect_manifest_references(manifest_path: Path) -> list[Artifact]:
     for label, raw_path in candidates:
         candidate = Path(raw_path)
         if not candidate.is_absolute():
-            candidate = Path(raw_path.replace("\\", "/"))
+            rerun_dir = payload.get("rerun_dir")
+            if label.startswith("manifest.files[") and rerun_dir and candidate.parent == Path("."):
+                candidate = Path(str(rerun_dir).replace("\\", "/")) / candidate
+            else:
+                candidate = Path(raw_path.replace("\\", "/"))
         artifacts.append(
             Artifact(
                 role="manifest_reference",

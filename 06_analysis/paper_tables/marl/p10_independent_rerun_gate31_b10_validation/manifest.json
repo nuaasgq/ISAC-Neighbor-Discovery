@@ -1,0 +1,123 @@
+{
+  "created_at_utc": "2026-07-07T08:59:13.332947+00:00",
+  "scope": "Phase10 independent rerun validation",
+  "method": "gated_contention_actor",
+  "beamwidth_deg": 10.0,
+  "rerun_dir": "05_simulation/results_raw/marl_campaign/p10_independent_rerun_gate31_b10_3000slot_10ep_seed41260731",
+  "final_csv": "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv",
+  "relative_tolerance": 0.05,
+  "status_counts": {
+    "MATCH": 5
+  },
+  "all_metrics_match": true,
+  "manifest": {
+    "created_at": "2026-07-07T16:44:44",
+    "scope": "marl_transfer_evaluation",
+    "checkpoint": "05_simulation/results_raw/marl_campaign/phase10_gated_contention_actor_100ep_3seed/train/train_n10_b10_gated_contention_actor_100ep_300slot_seed20260731/final_model.pt",
+    "train_algorithm": "isac_mappo",
+    "train_network": "gated_contention_shared",
+    "train_reward_version": "collision_topology",
+    "eval_reward_version": "collision_topology",
+    "config": "05_simulation/configs/paper_transfer_train_n10_b10_singlehop.yaml",
+    "output": "05_simulation/results_raw/marl_campaign/p10_independent_rerun_gate31_b10_3000slot_10ep_seed41260731",
+    "eval_episodes": 10,
+    "slots_per_episode": 3000,
+    "node_count": 100,
+    "area_size_m": [
+      260.0,
+      260.0,
+      90.0
+    ],
+    "area_diagonal_m": 378.549864614954,
+    "beam_count": 648,
+    "azimuth_cells": 36,
+    "elevation_cells": 18,
+    "communication_range_m": 900.0,
+    "sensing_range_m": 900.0,
+    "env_protocol": "isac_structured_marl",
+    "feature_flags": {
+      "candidate_mask": true,
+      "candidate_score": true,
+      "topology_deficit": true,
+      "rule_residual": true
+    },
+    "deterministic": false,
+    "stochastic": true,
+    "eval_both": false,
+    "policy_rng_seed_policy": "torch_and_numpy_episode_seed",
+    "resource_limits": {
+      "max_rss_mb": 10000.0,
+      "max_system_memory_percent": 90.0
+    },
+    "resume": {
+      "enabled": true,
+      "existing_rows_used": 5
+    },
+    "fast_eval": {
+      "collect_slot_metrics": false,
+      "rich_info": false
+    },
+    "final_eval": {
+      "phase": "eval_stochastic",
+      "eval_episode": 9,
+      "seed": 41260740,
+      "env_protocol": "isac_structured_marl",
+      "episode_return_sum": -3290.149658203125,
+      "episode_return_mean_per_agent": -32.901493072509766,
+      "step_reward_mean": -0.010967165231704712,
+      "protocol": "isac_structured_marl",
+      "episode": 9,
+      "scenario_seed": 41260740,
+      "slots": 3000,
+      "mobility_model": "gauss_markov",
+      "true_edges_seen": 4950,
+      "discovered_edges": 1493,
+      "discovery_rate": 0.3016161616161616,
+      "mean_delay_censored": 2395.5583838383836,
+      "p90_delay_censored": 3000.0,
+      "p95_delay_censored": 3000.0,
+      "p99_delay_censored": 3000.0,
+      "empty_scan_ratio": 0.06814365418991387,
+      "collision_count": 1353,
+      "empty_scan_count": 6290,
+      "scan_actions": 92305,
+      "tx_actions": 33725,
+      "rx_actions": 58580,
+      "sense_actions": 90557,
+      "idle_actions": 117138,
+      "piggyback_sense_actions": 92305,
+      "discovery_per_scan_action": 0.01617463842695412,
+      "discoveries_per_1000_scan_actions": 16.174638426954118,
+      "scan_actions_per_discovery_censored": 61.8251841929002,
+      "collisions_per_discovery_censored": 0.9062290689886136,
+      "collision_normalized_efficiency": 0.5245959241040056,
+      "collision_penalized_discovery_rate": 0.23687133111216882,
+      "energy_j": 1009.2964999999999,
+      "discoveries_per_joule": 1.479248169393236,
+      "energy_per_discovery_censored_j": 0.6760190890823844,
+      "moved_distance_mean_m": 8.89280639409272,
+      "largest_component_size": 100,
+      "connected_components": 1,
+      "lcc_ratio": 1.0,
+      "isolated_node_ratio": 0.0,
+      "lambda2": 12.508551211804212
+    },
+    "files": [
+      "eval_episode_metrics.csv",
+      "resource_log.csv",
+      "manifest.json"
+    ]
+  },
+  "outputs": [
+    "06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_metric_summary.csv",
+    "06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_vs_original_comparison.csv",
+    "06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_source_file_hashes.csv",
+    "06_analysis/phase10_independent_rerun_validation_20260707.md"
+  ],
+  "output_hashes": {
+    "06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_metric_summary.csv": "be3e3134cc218a554fcd71c9e51154f4526446696ce2ef00257ab81305cd87ce",
+    "06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_vs_original_comparison.csv": "9fd6ab13aa50ff859a2461d8fcfa502201b6308b322877a6c9eb0d3f3d0def7f",
+    "06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/rerun_source_file_hashes.csv": "fa7807cc32f86bba303cbebee22b00f68c069215670f92927be8f288b1a129a8",
+    "06_analysis/phase10_independent_rerun_validation_20260707.md": "9caa6d386546ba937406bb22f51f198dfc4cfd6a5b3d7106eb3a27d3244e5c62"
+  }
+}

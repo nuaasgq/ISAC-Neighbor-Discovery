@@ -3,12 +3,12 @@
 - Origin Skill: experiment-agent
 - Origin Mode: validate
 - Origin Date: 2026-07-07
-- Verification Status: ANALYZED
+- Verification Status: VERIFIED_PARTIAL
 - Version Label: validation_v1
 
 ## Validation Report
 
-- Source: Phase10 manuscript-facing MARL result tables, final manuscript figure/table provenance, and the generated manuscript artifact hash manifest.
+- Source: Phase10 manuscript-facing MARL result tables, final manuscript figure/table provenance, the generated manuscript artifact hash manifest, and one independent stochastic Phase10 transfer re-run.
 - Primary CSV: `06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv`
 - Gate-family CSV: `06_analysis/paper_tables/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_core_metrics.csv`
 - Artifact manifest: `06_analysis/manuscript_artifact_manifest_20260707.csv`
@@ -58,9 +58,9 @@ The performance direction is strong in the current simulator evidence, especiall
 
 ### Reproducibility
 
-- Method: artifact hashing plus manifest/provenance verification; no full experiment re-run in this validation pass.
-- Verdict: CANNOT_VERIFY for full stochastic experiment reproduction; ANALYZED for current artifact integrity.
-- Artifact result: `06_analysis/scripts/build_manuscript_artifact_manifest.py` generated 109 current manuscript-facing artifacts with 0 missing paths.
+- Method: artifact hashing plus manifest/provenance verification, with one independent stochastic re-run for `gated_contention_actor` at N=100, B=10, 3000 slots, and 10 episodes.
+- Verdict: VERIFIED_PARTIAL for the selected B=10 gated transfer point; CANNOT_VERIFY for full stochastic Phase10 campaign reproduction.
+- Artifact result: `06_analysis/scripts/build_manuscript_artifact_manifest.py` generated 124 current manuscript-facing artifacts with 0 missing paths.
 - Figure result: the current figure audit checked 51 referenced PNG instances, with 0 missing files and 0 approximate 4:3 aspect-ratio violations.
 - LaTeX result: the current `main.tex` and `supplement.tex` compiled to 9 and 13 pages respectively with no undefined references/citations, no overfull warnings, and no LaTeX hard errors in the checked logs.
 
@@ -69,7 +69,10 @@ The performance direction is strong in the current simulator evidence, especiall
 | Artifact paths missing | N/A | 0 | N/A | MATCH |
 | Manuscript PNG references | N/A | 51 instances | N/A | MATCH |
 | Non-4:3 PNG aspect violations | N/A | 0 | N/A | MATCH |
-| Full MARL transfer reproduction | Existing Phase10 summaries | Not re-run in this pass | N/A | CANNOT_VERIFY |
+| gated_contention_actor B=10 discovery_rate | 0.301980 | 0.299475 | 0.83% relative | MATCH |
+| gated_contention_actor B=10 collision-penalized discovery | 0.235312 | 0.232290 | 1.28% relative | MATCH |
+| gated_contention_actor B=10 lambda2 | 11.904328 | 12.061005 | 1.32% relative | MATCH |
+| Full MARL transfer reproduction | Existing Phase10 summaries | One selected point re-run only | N/A | CANNOT_VERIFY |
 
 ### Interpretation Boundary
 

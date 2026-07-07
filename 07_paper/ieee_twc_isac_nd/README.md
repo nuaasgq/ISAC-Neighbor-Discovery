@@ -21,6 +21,7 @@ Current status:
 - A fresh LaTeX figure audit checked 51 referenced PNG files for presence and approximate 4:3 aspect compliance; it supersedes the earlier `../../06_analysis/paper_figure_integrity_audit_20260705.md`.
 - A manuscript-facing SHA256 artifact manifest is available at `../../06_analysis/manuscript_artifact_manifest_20260707.csv` and `../../06_analysis/manuscript_artifact_manifest_20260707.json`.
 - Phase10 statistical interpretation and fallacy-scan notes are recorded in `../../06_analysis/phase10_statistical_validation_report_20260707.md`.
+- Partial independent re-run validation for the default gated B=10 transfer point is recorded in `../../06_analysis/phase10_independent_rerun_validation_20260707.md`, with machine-readable tables under `../../06_analysis/paper_tables/marl/p10_independent_rerun_gate31_b10_validation/`.
 - Final Phase10 method-to-manifest trace files are in `../../06_analysis/paper_tables/marl/p10_final_method_manifest_trace/`.
 - The research-goal coverage audit is in `../../06_analysis/research_goal_coverage_audit_20260707.md` with machine-readable CSVs under `../../06_analysis/paper_tables/research_goal_coverage_audit/`.
 - Submission-readiness risks and edits are tracked in `../../06_analysis/submission_readiness_review_20260707.md`.
