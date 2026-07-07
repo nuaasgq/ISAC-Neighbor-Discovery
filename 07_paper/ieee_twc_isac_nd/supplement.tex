@@ -336,6 +336,47 @@ Fig.~\ref{fig:supp_round13_energy} reports these two accounting metrics.
   \label{fig:supp_round13_energy}
 \end{figure*}
 
+\section{Learned-Component Ablation of the Phase10 Actor}
+
+To separate learned actor weights from the structured ISAC candidate interface and rule residuals, we add a focused evaluation-time ablation at $N=100$, 10-degree beams, and 3000 slots.
+All variants use the same decentralized observation boundary and the same final evaluation setting; the ablation changes only the loaded policy weights or the selected structured feature path.
+This probe is deliberately interpreted as component evidence rather than as a replacement for the multi-seed transfer table.
+
+Table~\ref{tab:supp_learned_ablation} and Fig.~\ref{fig:supp_learned_ablation} show that random-weight and zero-weight/rule-only policies can produce higher raw discovery and $\lambda_2$ because they access the channel aggressively.
+That behavior is not the same as a better protocol: their collision counts increase by factors of 5.4 and 6.7 relative to the trained full actor.
+The trained actor reduces mean collisions by 81.4\% relative to random weights and by 85.2\% relative to the zero-weight/rule-only control, yielding a higher collision-penalized discovery rate than both controls.
+Removing the rule residual lowers collision count but also lowers raw discovery and $\lambda_2$.
+Disabling the hard candidate mask gives a high CPD value in this three-episode probe, but its empty-scan ratio rises to 0.8173, so it is treated as a boundary signal for mask design rather than as a ready replacement for the final actor.
+The defensible conclusion is therefore narrow: learned weights help shape the collision-efficiency operating point under strong ISAC/rule priors, while the candidate mask and residual priors define the broader discovery/collision/empty-scan tradeoff.
+
+\begin{table*}[!t]
+  \centering
+  \caption{Focused Learned-Component Ablation at $N=100$, 10-Degree Beams, and 3000 Slots}
+  \label{tab:supp_learned_ablation}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Variant & Disc. & CPD & Coll. & Coll./disc. & Empty & $\lambda_2$ \\
+    \midrule
+    Trained full & 0.2958 & 0.2297 & 1415.3 & 0.962 & 0.0661 & 10.779 \\
+    Random weights & 0.4054 & 0.1599 & 7624.7 & 3.791 & 0.0447 & 18.714 \\
+    Zero weights/rule only & 0.4265 & 0.1464 & 9552.3 & 4.517 & 0.0438 & 21.261 \\
+    No rule residual & 0.2574 & 0.2321 & 536.7 & 0.420 & 0.0947 & 9.214 \\
+    No candidate mask & 0.2998 & 0.2826 & 299.3 & 0.201 & 0.8173 & 12.782 \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_discovery_efficiency.png}
+  \hfill
+  \includegraphics[width=0.48\textwidth]{../../06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_collision_tradeoff.png}
+  \caption{Focused learned-component ablation for the Phase10 actor. Left: raw discovery and collision-penalized discovery. Right: collision and empty-scan tradeoff. Random or zero-weight policies can improve raw discovery by aggressive access, but the trained actor provides the cleaner collision-efficiency point among the full-feature controls.}
+  \label{fig:supp_learned_ablation}
+\end{figure*}
+
 \clearpage
 
 \section{Historical Structured Neural MARL Probe}

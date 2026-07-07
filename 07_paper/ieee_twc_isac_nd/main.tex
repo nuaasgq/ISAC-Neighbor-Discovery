@@ -362,6 +362,7 @@ The default gated actor is selected as the paper-facing profile because it gives
 The adaptive gate is a stricter collision-suppression profile: at 15 degrees it reaches the highest CPD, but its $\lambda_2$ is much lower than the default gate.
 The topology-preserving and balanced-topology variants fill out the ablation frontier, showing that stronger topology preservation usually restores raw discovery and $\lambda_2$ at the cost of additional collisions.
 Thus the supported claim is a tunable cross-layer operating frontier, not a single gate that dominates every metric.
+The supplementary learned-component ablation further separates trained weights from structured priors: random or zero-weight policies can increase raw discovery through aggressive access, whereas the trained actor reduces collisions by 81.4\%--85.2\% in the focused probe, supporting a collision-efficiency claim rather than a universal raw-discovery dominance claim.
 
 \begin{table}[!t]
   \centering

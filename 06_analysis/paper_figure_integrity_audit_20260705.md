@@ -7,9 +7,9 @@ Scope: figure references used by the current IEEE main manuscript and supplement
 ## Summary
 
 - Figure instances in `main.tex`: 10
-- Figure instances in `supplement.tex`: 41
-- Total figure instances: 51
-- Unique existing figure files: 48
+- Figure instances in `supplement.tex`: 43
+- Total figure instances: 53
+- Unique existing figure files: 51
 - Missing figure files: 0
 - Non-4:3 figures outside tolerance 0.02: 0
 - Requirement check for no fewer than 16 result/concept figures: PASS
@@ -27,18 +27,18 @@ The manuscript package satisfies the current figure-count and 4:3-ratio requirem
 
 | Source | Line | Figure | Pixels | Aspect | 4:3 ok |
 |---|---:|---|---:|---:|---:|
-| `07_paper/ieee_twc_isac_nd/main.tex` | 68 | `../../06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 231 | `../../06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 245 | `../../06_analysis/paper_figures/concept/policy_architecture_shared_agent.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 302 | `../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_reward_curve.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 386 | `../../06_analysis/paper_figures/round3_n100_transfer/density_beamwidth_discovery_rate_n100.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 393 | `../../06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_lambda2.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 407 | `../../06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 429 | `../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 443 | `../../06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/main.tex` | 461 | `../../06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 72 | `../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_reward_curve.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 74 | `../../06_analysis/paper_figures/training_candidate_trajectory_20260705/cem_step_score_curve.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 69 | `../../06_analysis/paper_figures/concept/system_model_isac_uav_swarm.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 233 | `../../06_analysis/paper_figures/concept/protocol_mechanism_itap_nd.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 253 | `../../06_analysis/paper_figures/concept/policy_architecture_shared_agent.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 317 | `../../06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_step_reward_curve.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 394 | `../../06_analysis/paper_figures/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison_collision_penalized_discovery_rate.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 401 | `../../06_analysis/paper_figures/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_lambda2_mean.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 415 | `../../06_analysis/paper_figures/round5_mobility_transfer/mobility_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 437 | `../../06_analysis/paper_figures/round3_robustness/range_gain_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 451 | `../../06_analysis/paper_figures/round3_robustness/error_profile_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/main.tex` | 469 | `../../06_analysis/paper_figures/round4_delay_ablation/ablation_discovery_n100_b10.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 72 | `../../06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_step_reward_curve.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 74 | `../../06_analysis/paper_figures/marl/p10_gate_training_3seed_100ep_step_curves/marl_episode_return_curve.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 86 | `../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_heatmap_proposed_discovery_rate.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 88 | `../../06_analysis/paper_figures/round7_scale_beam_grid_light/density_node_count_discovery_rate_b10.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 95 | `../../06_analysis/paper_figures/round3_n100_transfer/area_scale_n100_discovery_rate.png` | 1920x1440 | 1.3333 | True |
@@ -72,9 +72,11 @@ The manuscript package satisfies the current figure-count and 4:3-ratio requirem
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 317 | `../../06_analysis/paper_figures/round13_collision_energy_10seed/round13_collision_count.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 332 | `../../06_analysis/paper_figures/round13_collision_energy_10seed/round13_discoveries_per_joule.png` | 1920x1440 | 1.3333 | True |
 | `07_paper/ieee_twc_isac_nd/supplement.tex` | 334 | `../../06_analysis/paper_figures/round13_collision_energy_10seed/round13_energy_per_discovery.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 362 | `../../06_analysis/paper_figures/structured_marl_probe/marl_eval_discovery_rate.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 364 | `../../06_analysis/paper_figures/structured_marl_probe/marl_eval_empty_scan_ratio.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 366 | `../../06_analysis/paper_figures/structured_marl_probe/marl_empty_collision_tradeoff.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 373 | `../../06_analysis/paper_figures/structured_marl_probe/marl_bc_loss_curve.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 375 | `../../06_analysis/paper_figures/structured_marl_probe/marl_reward_curve.png` | 1920x1440 | 1.3333 | True |
-| `07_paper/ieee_twc_isac_nd/supplement.tex` | 377 | `../../06_analysis/paper_figures/structured_marl_probe/marl_rule_residual_scale_sweep.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 373 | `../../06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_discovery_efficiency.png` | 1536x1152 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 375 | `../../06_analysis/figures/marl/p10_learned_component_ablation_b10_3ep/learned_ablation_b10_collision_tradeoff.png` | 1536x1152 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 403 | `../../06_analysis/paper_figures/structured_marl_probe/marl_eval_discovery_rate.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 405 | `../../06_analysis/paper_figures/structured_marl_probe/marl_eval_empty_scan_ratio.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 407 | `../../06_analysis/paper_figures/structured_marl_probe/marl_empty_collision_tradeoff.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 414 | `../../06_analysis/paper_figures/structured_marl_probe/marl_bc_loss_curve.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 416 | `../../06_analysis/paper_figures/structured_marl_probe/marl_reward_curve.png` | 1920x1440 | 1.3333 | True |
+| `07_paper/ieee_twc_isac_nd/supplement.tex` | 418 | `../../06_analysis/paper_figures/structured_marl_probe/marl_rule_residual_scale_sweep.png` | 1920x1440 | 1.3333 | True |
