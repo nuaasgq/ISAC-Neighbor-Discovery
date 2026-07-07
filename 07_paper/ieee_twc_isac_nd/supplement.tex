@@ -386,9 +386,33 @@ The normalized statistical table is the \texttt{statistical\_stability\_summary.
 Rows tagged \texttt{main} support the manuscript tables and figures; rows tagged \texttt{main\_boundary}, \texttt{supplement}, or \texttt{supplement\_stress} should be used to bound claims and answer reviewer questions.
 The manuscript-facing SHA256 hash manifest is archived as a CSV/JSON pair under the analysis directory; it records artifact counts, path-existence status, role labels, and file hashes for figures, direct evidence files, and manifest-derived references.
 The companion Phase10 statistical validation note records the gain-ratio checks, fallacy-scan coverage, and the distinction between analyzed artifact integrity and full stochastic experiment re-run verification.
+The final-method trace table is archived as \texttt{phase10\_method\_manifest\_trace.csv}; Table~\ref{tab:supp_method_trace} summarizes its row groups while the CSV stores the exact analysis, raw-evaluation, checkpoint, and training-manifest paths.
 The statistical summary includes the N=10/20/50/100 scale-grid rows where archived, but many robustness and baseline-completeness checks are intentionally N=100-only.
 The focused round11 five-seed paired endpoints are archived separately and are not part of the representative n=3 normalized stability table.
 The earlier round12 pilot and the current round13 ten-seed collision-aware MAC refinement endpoints are also archived separately as mechanism-refinement probes, not as replacements for the main protocol table.
+
+\begin{table*}[!t]
+  \centering
+  \caption{Final Phase10 Method-Manifest Trace Index}
+  \label{tab:supp_method_trace}
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{@{}p{0.18\textwidth}p{0.19\textwidth}p{0.19\textwidth}p{0.33\textwidth}@{}}
+    \toprule
+    Row group & Training source & Transfer source & Trace note \\
+    \midrule
+    Uniform random & None & Phase9 five-way B10/B15 & Protocol baseline; raw evaluation manifest only. \\
+    SkyOrbs-like & None & Phase9 five-way B10/B15 & Directional skip-scan baseline; not a full SkyOrbs reproduction. \\
+    MAPPO no ISAC & N10/B10 no-ISAC MAPPO checkpoint & Phase9 five-way B10/B15 & Checkpoint-parent training manifest plus B10/B15 raw evaluation manifests. \\
+    Contention no ISAC & N10/B10 no-ISAC contention checkpoint & Phase9 five-way B10/B15 & Communication-only contention actor without ISAC candidate features. \\
+    MARL+ISAC actor & N10/B10 contention ISAC-MAPPO checkpoint & Phase9 five-way B10/B15 & Ungated ISAC contention actor used as the aggressive profile. \\
+    Default gated & N10/B10 gated contention checkpoint & Phase10 gate31 B10/B15 & Paper-facing low-collision balanced profile. \\
+    Adaptive gate & N10/B10 adaptive gate checkpoint & Phase10 adaptive-v2 B10/B15 & Strict collision-suppression operating point. \\
+    Topology gate & N10/B10 topology gate checkpoint & Phase10 topology-v3 B10/B15 & Topology-preserving operating point. \\
+    Balanced gate & Two N10/B10 balanced-v4 checkpoints & Phase10 balanced-v4 B10/B15 & Two checkpoint/evaluation runs per beamwidth are averaged in the final table. \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
 
 \begin{table*}[!t]
   \centering

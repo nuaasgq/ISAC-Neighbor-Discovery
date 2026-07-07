@@ -1,8 +1,8 @@
 {
-  "created_at_utc": "2026-07-07T07:26:37.138501+00:00",
+  "created_at_utc": "2026-07-07T07:37:15.829398+00:00",
   "scope": "current manuscript-facing LaTeX figures plus Phase10 main evidence artifacts",
   "csv": "06_analysis/manuscript_artifact_manifest_20260707.csv",
-  "artifact_count": 82,
+  "artifact_count": 90,
   "missing_count": 0,
   "roles": [
     "direct_evidence_artifact",
@@ -31,8 +31,8 @@
       "source": "default_main_chain",
       "path": "06_analysis/figure_table_provenance_audit_20260707.md",
       "exists": true,
-      "size_bytes": 9257,
-      "sha256": "50d2c73cdda58aa6fb7f81faf13fbab99b20f177651cc19e97927c941557dc2b"
+      "size_bytes": 9278,
+      "sha256": "5052e07bb6d19875681f4b848d74a526bde398349e99ec008475d859211760a3"
     },
     {
       "role": "direct_evidence_artifact",
@@ -49,6 +49,30 @@
       "exists": true,
       "size_bytes": 14518,
       "sha256": "8235ba09bc2709921a8d1c80f29b31e850c56f43338475d61874f24de3a805bf"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json",
+      "exists": true,
+      "size_bytes": 609,
+      "sha256": "edbf80d846d64c5e2ee7772d9561950498f0e440ce6f7c94254a134dd4d95976"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv",
+      "exists": true,
+      "size_bytes": 17202,
+      "sha256": "e49474b057dd4d6dd84fece0eae7c9a16ee39aa55968b1c0f958891390828020"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/README.md",
+      "exists": true,
+      "size_bytes": 578,
+      "sha256": "b130b535bdd1d769d1cb09208c49762a65927ae8d2cdd19f21c35232017888da"
     },
     {
       "role": "direct_evidence_artifact",
@@ -120,15 +144,31 @@
       "path": "06_analysis/phase10_statistical_validation_report_20260707.md",
       "exists": true,
       "size_bytes": 8453,
-      "sha256": "d7eed40840e6f7465031fc5f856b69f833064decfa243b9beead560a5af39e9b"
+      "sha256": "65e4f905eb49a6081ada4c617cf3ae136b190b722ed2365524f40f9e35dc2ff4"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/scripts/build_manuscript_artifact_manifest.py",
       "exists": true,
-      "size_bytes": 8237,
-      "sha256": "b9cff85007876f6af638dc4c409aa1e6604940fb7fa45d2635901f6cbb656930"
+      "size_bytes": 8657,
+      "sha256": "765c56a54ce00e29688c4e2f962b6017e60d226218fde77ee888539798ea2713"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/scripts/build_phase10_method_manifest_trace.py",
+      "exists": true,
+      "size_bytes": 10601,
+      "sha256": "b5c88b438c5cc025044ab11e35daa896aafd12c2aa98d0a82ec4b2d3d31d1d6b"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/submission_readiness_review_20260707.md",
+      "exists": true,
+      "size_bytes": 4199,
+      "sha256": "d8aecc9901dd386a1cf908b605925fc6926f641f3220a74d3915f89bacc78e45"
     },
     {
       "role": "direct_evidence_artifact",
@@ -143,8 +183,8 @@
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/README.md",
       "exists": true,
-      "size_bytes": 3203,
-      "sha256": "5d03ccff0a8be51761d2b7946a432cfacea7519419a47cb106aef8ad911098ec"
+      "size_bytes": 3329,
+      "sha256": "649fce35f0f90e9ebf5b06551d3a689744a21d98c75552af5260badd892d0c6d"
     },
     {
       "role": "direct_evidence_artifact",
@@ -159,8 +199,8 @@
       "source": "default_main_chain",
       "path": "07_paper/ieee_twc_isac_nd/supplement.tex",
       "exists": true,
-      "size_bytes": 33444,
-      "sha256": "131cd2135745bf2e890f49c6a14e87c3b61424292c340301fa0711b0ba756301"
+      "size_bytes": 35350,
+      "sha256": "1baa76b2559719e6e3cda713ea6fcd0f8fda86fa842469bf0bf3cc5039572db3"
     },
     {
       "role": "manifest_reference",
@@ -201,6 +241,30 @@
       "exists": true,
       "size_bytes": 2799,
       "sha256": "9a961368ae51aac3d4c2f9f3d076b5aff1991cd970cdcb81ada8391489361973"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json:final_manifest",
+      "path": "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/manifest.json",
+      "exists": true,
+      "size_bytes": 2525,
+      "sha256": "bc8742f9ddd1bc93e37eaa6e81b45e251bb619b60b931a411fdc1248aa4de914"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json:final_csv",
+      "path": "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv",
+      "exists": true,
+      "size_bytes": 14518,
+      "sha256": "8235ba09bc2709921a8d1c80f29b31e850c56f43338475d61874f24de3a805bf"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_final_method_manifest_trace/manifest.json:output_csv",
+      "path": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv",
+      "exists": true,
+      "size_bytes": 17202,
+      "sha256": "e49474b057dd4d6dd84fece0eae7c9a16ee39aa55968b1c0f958891390828020"
     },
     {
       "role": "manifest_reference",

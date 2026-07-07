@@ -1,0 +1,13 @@
+{
+  "created_at_utc": "2026-07-07T07:37:15.659792+00:00",
+  "scope": "Phase10 final N=100 B=10/B=15 method rows to analysis/raw/train manifests",
+  "final_csv": "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv",
+  "final_manifest": "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/manifest.json",
+  "output_csv": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv",
+  "rows": 18,
+  "complete_rows": 18,
+  "incomplete_rows": 0,
+  "status_counts": {
+    "complete": 18
+  }
+}

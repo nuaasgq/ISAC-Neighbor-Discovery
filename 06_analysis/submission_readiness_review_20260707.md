@@ -30,11 +30,11 @@ Reviewer posture: IEEE TWC/TCOM-style pre-submission audit focused on claim stre
 - Added a main-text statistical boundary note: confidence intervals are descriptive summaries, not global multiple-comparison-corrected hypothesis tests.
 - Changed "This confirms..." to "This supports..." for the ISAC search-space compression interpretation.
 - Added supplement Reproducibility Notes for `manuscript_artifact_manifest_20260707.csv` / JSON and `phase10_statistical_validation_report_20260707.md`.
+- Added `p10_final_method_manifest_trace/` and a supplementary method-trace index table that maps every final Phase10 method group to training and transfer manifest sources.
 
 ## Remaining Submission Tasks
 
 1. Add a concise algorithm box if page budget allows; the current prose/equation form is clear but a reviewer may prefer pseudocode.
 2. Add a short "Data and Code Availability" statement only after deciding whether anonymous review will use an anonymized repository or post-acceptance release.
-3. Consider a small table in the supplement that maps final Phase10 methods to exact train/eval manifests, not only to analysis-table directories.
-4. If compute budget allows, run a small independent re-run of the final Phase10 transfer evaluation for one method/beam pair to convert part of the artifact-integrity status from ANALYZED to VERIFIED.
-5. Before submission, run one final pass for line-level IEEE style, title concision, abstract length, duplicate labels, and BibTeX journal abbreviation consistency.
+3. If compute budget allows, run a small independent re-run of the final Phase10 transfer evaluation for one method/beam pair to convert part of the artifact-integrity status from ANALYZED to VERIFIED.
+4. Before submission, run one final pass for line-level IEEE style, title concision, abstract length, duplicate labels, and BibTeX journal abbreviation consistency.

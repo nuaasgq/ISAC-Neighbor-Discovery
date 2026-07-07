@@ -12,7 +12,7 @@ This audit supersedes `06_analysis/paper_figure_integrity_audit_20260705.md`, wh
 - Missing image files: 0.
 - Approximate 4:3 aspect-ratio violations: 0.
 - Check method: parse `\includegraphics{...}` entries from `main.tex` and `supplement.tex`, resolve each path from the LaTeX workspace, and inspect PNG width/height with `System.Drawing`.
-- Artifact hash manifest: `06_analysis/manuscript_artifact_manifest_20260707.csv` and `06_analysis/manuscript_artifact_manifest_20260707.json` cover the current manuscript-facing figures, LaTeX sources, references, Phase10 main CSVs/manifests, and training-curve tables. The generated manifest contains 82 artifacts with 0 missing paths.
+- Artifact hash manifest: `06_analysis/manuscript_artifact_manifest_20260707.csv` and `06_analysis/manuscript_artifact_manifest_20260707.json` cover the current manuscript-facing figures, LaTeX sources, references, Phase10 main CSVs/manifests, method-trace tables, and training-curve tables. The generated manifest contains 90 artifacts with 0 missing paths.
 - Statistical validation report: `06_analysis/phase10_statistical_validation_report_20260707.md` records Phase10 gain checks, confidence boundaries, fallacy scan coverage, and reproducibility status.
 
 ## Main Evidence Chain

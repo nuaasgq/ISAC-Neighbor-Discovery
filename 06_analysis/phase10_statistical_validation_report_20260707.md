@@ -60,7 +60,7 @@ The performance direction is strong in the current simulator evidence, especiall
 
 - Method: artifact hashing plus manifest/provenance verification; no full experiment re-run in this validation pass.
 - Verdict: CANNOT_VERIFY for full stochastic experiment reproduction; ANALYZED for current artifact integrity.
-- Artifact result: `06_analysis/scripts/build_manuscript_artifact_manifest.py` generated 82 current manuscript-facing artifacts with 0 missing paths.
+- Artifact result: `06_analysis/scripts/build_manuscript_artifact_manifest.py` generated 90 current manuscript-facing artifacts with 0 missing paths.
 - Figure result: the current figure audit checked 51 referenced PNG instances, with 0 missing files and 0 approximate 4:3 aspect-ratio violations.
 - LaTeX result: the current `main.tex` and `supplement.tex` compiled to 9 and 13 pages respectively with no undefined references/citations, no overfull warnings, and no LaTeX hard errors in the checked logs.
 
