@@ -190,8 +190,10 @@ def write_figures(frame, figure_dir: Path) -> list[dict]:
             group = frame[frame["method"] == method].sort_values("beamwidth_deg")
             if group.empty:
                 continue
-            if "method_label" in group.columns and str(group["method_label"].iloc[0]) not in {"", "nan"}:
-                label = str(group["method_label"].iloc[0])
+            if "method_label" in group.columns:
+                raw_label = str(group["method_label"].iloc[0])
+                if raw_label not in {"", "nan", method}:
+                    label = raw_label
             ci_col = metric.replace("_mean", "_ci95")
             yerr = group[ci_col] if ci_col in group.columns else None
             ax.errorbar(

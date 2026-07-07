@@ -1,0 +1,48 @@
+{
+  "created_at": "2026-07-07T14:22:51",
+  "legacy": "06_analysis/paper_tables/marl/phase3_n100_stress/marl_transfer_summary.csv",
+  "collision": "06_analysis/paper_tables/marl/phase4_shared_collision_transfer_probe/marl_transfer_summary.csv",
+  "contention": "06_analysis/paper_tables/marl/phase5_contention_shared_v2_transfer_probe/marl_transfer_summary.csv",
+  "combined_summary": [
+    "06_analysis/paper_tables/marl/phase9_fiveway_n100_b10_3000slot_10ep_stoch_all_methods/marl_transfer_summary.csv",
+    "06_analysis/paper_tables/marl/phase9_fiveway_n100_b15_3000slot_10ep_stoch_all_methods/marl_transfer_summary.csv",
+    "06_analysis/paper_tables/marl/p10_gate31_n100_b10_b15_3000slot_10ep_stoch/marl_transfer_summary.csv",
+    "06_analysis/paper_tables/marl/p10_adaptive_gate_v2_n100_b10_b15_3000slot_10ep_stoch/marl_transfer_summary.csv",
+    "06_analysis/paper_tables/marl/p10_topology_gate_v3_n100_b10_b15_3000slot_10ep_stoch/marl_transfer_summary.csv",
+    "06_analysis/paper_tables/marl/p10_balanced_gate_v4_n100_b10_b15_3000slot_10ep_stoch/marl_transfer_summary.csv"
+  ],
+  "filters": {
+    "slots_per_episode": 3000,
+    "node_count": 100,
+    "phase": "eval_stochastic",
+    "beamwidths": [
+      10.0,
+      15.0
+    ]
+  },
+  "output_dir": "06_analysis\\paper_tables\\marl\\p10_final_b10_b15_method_comparison_with_v4",
+  "figure_dir": "06_analysis\\paper_figures\\marl\\p10_final_b10_b15_method_comparison_with_v4",
+  "rows": 18,
+  "figures": [
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_final_b10_b15_method_comparison_with_v4\\marl_method_comparison_discovery_rate.png",
+      "metric": "discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_final_b10_b15_method_comparison_with_v4\\marl_method_comparison_collision_penalized_discovery_rate.png",
+      "metric": "collision_penalized_discovery_rate_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_final_b10_b15_method_comparison_with_v4\\marl_method_comparison_collision_count.png",
+      "metric": "collision_count_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_final_b10_b15_method_comparison_with_v4\\marl_method_comparison_collisions_per_discovery_censored.png",
+      "metric": "collisions_per_discovery_censored_mean"
+    },
+    {
+      "path": "06_analysis\\paper_figures\\marl\\p10_final_b10_b15_method_comparison_with_v4\\marl_method_comparison_lambda2.png",
+      "metric": "lambda2_mean"
+    }
+  ]
+}
