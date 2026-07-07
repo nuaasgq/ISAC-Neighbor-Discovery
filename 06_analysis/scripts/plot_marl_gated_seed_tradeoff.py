@@ -40,6 +40,7 @@ COLORS = {
     "seed33": "#E6550D",
     "adaptive": "#C77CFF",
     "topology_v3": "#2CA25F",
+    "balanced_v4": "#238B45",
 }
 
 

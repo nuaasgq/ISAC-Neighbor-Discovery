@@ -20,6 +20,7 @@ METHOD_STYLES = {
     "gated_contention_actor": ("Gated contention actor", "#E69F00", "-"),
     "adaptive_gated_contention_actor": ("Adaptive gated contention actor", "#7E57C2", "-"),
     "topology_adaptive_gated_contention_actor": ("Topology-adaptive gated actor", "#C77CFF", "-."),
+    "balanced_topology_gated_contention_actor": ("Balanced topology gated actor", "#2CA25F", "--"),
 }
 FALLBACK_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#56B4E9", "#6C757D", "#E69F00"]
 FALLBACK_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1))]
@@ -123,6 +124,8 @@ def infer_method(row: Any) -> str:
         return "adaptive_gated_contention_actor"
     if network == "topology_adaptive_gated_contention_shared" and reward == "collision_topology":
         return "topology_adaptive_gated_contention_actor"
+    if network == "balanced_topology_gated_contention_shared" and reward == "collision_topology":
+        return "balanced_topology_gated_contention_actor"
     if network == "gated_contention_shared" and reward == "collision_topology":
         return "gated_contention_actor"
     if network == "contention_shared" and reward == "collision_topology":
@@ -224,6 +227,7 @@ def method_order(frame) -> list[str]:
         "gated_contention_actor",
         "adaptive_gated_contention_actor",
         "topology_adaptive_gated_contention_actor",
+        "balanced_topology_gated_contention_actor",
     ]
     available = [str(value) for value in frame["method"].dropna().unique()]
     ordered = [method for method in preferred if method in available]

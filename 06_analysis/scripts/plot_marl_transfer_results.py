@@ -168,6 +168,8 @@ def infer_method(manifest: dict) -> str:
         return "adaptive_gated_contention_actor"
     if network == "topology_adaptive_gated_contention_shared" and reward == "collision_topology":
         return "topology_adaptive_gated_contention_actor"
+    if network == "balanced_topology_gated_contention_shared" and reward == "collision_topology":
+        return "balanced_topology_gated_contention_actor"
     if network == "gated_contention_shared" and reward == "collision_topology":
         return "gated_contention_actor"
     if network == "contention_shared" and reward == "collision_topology":
@@ -280,6 +282,12 @@ def method_label(algorithm: object, network: object, reward_version: object = "l
     algorithm_text = str(algorithm)
     network_text = str(network)
     reward_text = str(reward_version)
+    if network_text == "balanced_topology_gated_contention_shared":
+        return "Balanced topology gated ISAC-MAPPO"
+    if network_text == "topology_adaptive_gated_contention_shared":
+        return "Topology-adaptive gated ISAC-MAPPO"
+    if network_text == "adaptive_gated_contention_shared":
+        return "Adaptive gated ISAC-MAPPO"
     if network_text in {"", "shared", "nan"}:
         label = algorithm_text
     else:
@@ -290,6 +298,12 @@ def method_label(algorithm: object, network: object, reward_version: object = "l
 
 
 def line_style(network: object, reward_version: object = "legacy") -> str:
+    if str(network) == "balanced_topology_gated_contention_shared":
+        return "--"
+    if str(network) == "topology_adaptive_gated_contention_shared":
+        return "-."
+    if str(network) == "adaptive_gated_contention_shared":
+        return ":"
     return "--" if str(network) not in {"", "shared", "nan"} or str(reward_version) not in {"", "legacy", "nan"} else "-"
 
 
