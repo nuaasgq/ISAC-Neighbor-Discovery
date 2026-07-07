@@ -15,7 +15,7 @@ trace_raw_manifests_existing,28
 trace_checkpoint_paths,8
 trace_checkpoints_existing,8
 raw_bundle_trace_files,36
-raw_bundle_trace_files_git_tracked,0
+raw_bundle_trace_files_git_tracked,36
 training_runs,3
 training_step_rows,90000
 training_episode_rows,300
@@ -28,7 +28,7 @@ stability_nodes,"[10, 20, 50, 100]"
 stability_protocols,"[""ablation_isac_no_beam_lock"", ""ablation_isac_no_candidate_set"", ""ablation_isac_no_topology"", ""ablation_isac_one_slot_delay"", ""improved_rl_isac"", ""improved_rl_no_isac"", ""rl_no_isac"", ""skyorbs_like_skip_scan"", ""uniform_random""]"
 stability_mobility_models,"[""gauss_markov"", ""random_direction"", ""random_walk"", ""random_waypoint""]"
 stability_slot_durations_ms,"[1.0, 5.0, 10.0, 20.0, 100.0]"
-artifact_count,170
+artifact_count,206
 artifact_missing_count,0
 independent_rerun_all_metrics_match,True
 independent_rerun_status_counts,{'MATCH': 5}
@@ -40,5 +40,9 @@ claim_strength_required_checks,12
 claim_strength_passed_required_checks,12
 claim_strength_review_required_risk_hits,0
 claim_strength_pass,True
+raw_bundle_archive_file_count,36
+raw_bundle_archive_existing_file_count,36
+raw_bundle_archive_git_tracked_file_count,36
+raw_bundle_archive_pass,True
 code_evidence_files_present,6
 code_evidence_files_total,6

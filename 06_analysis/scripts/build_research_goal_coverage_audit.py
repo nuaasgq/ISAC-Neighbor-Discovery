@@ -36,6 +36,8 @@ PAIRED_SIGNIFICANCE_MANIFEST = Path("06_analysis/paper_tables/marl/p10_paired_si
 PAIRED_SIGNIFICANCE_REPORT = Path("06_analysis/phase10_paired_significance_report_20260707.md")
 CLAIM_STRENGTH_MANIFEST = Path("06_analysis/paper_tables/submission_claim_strength_audit/manifest.json")
 CLAIM_STRENGTH_REPORT = Path("06_analysis/submission_claim_strength_audit_20260707.md")
+RAW_BUNDLE_MANIFEST = Path("06_analysis/paper_tables/marl/p10_raw_bundle_archive/manifest.json")
+RAW_BUNDLE_REPORT = Path("06_analysis/phase10_raw_bundle_archive_report_20260707.md")
 RANGE_NOTE = Path("06_analysis/range_abstraction_theory_note_20260707.md")
 RANGE_GRID_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rc_rs_grid/aggregate_metrics.csv")
 RANGE_RATIO_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rs_ratio/aggregate_metrics.csv")
@@ -182,6 +184,7 @@ def requirement_rows(
     learned_ablation: dict,
     paired_significance: dict,
     claim_strength: dict,
+    raw_bundle_archive: dict,
 ) -> tuple[list[Requirement], list[Risk], dict[str, object]]:
     final_methods = {row.get("method", "") for row in final_rows}
     final_beams = {as_float(row.get("beamwidth_deg")) for row in final_rows}
@@ -266,6 +269,12 @@ def requirement_rows(
         bool(claim_strength.get("all_required_checks_pass"))
         and as_int(claim_strength.get("required_check_count")) > 0
         and as_int(claim_strength.get("review_required_risk_hits"), default=-1) == 0
+    )
+    raw_bundle_archive_pass = (
+        bool(raw_bundle_archive.get("archive_complete"))
+        and as_int(raw_bundle_archive.get("raw_file_count")) == len(raw_bundle_paths)
+        and as_int(raw_bundle_archive.get("existing_file_count")) == len(raw_bundle_paths)
+        and as_int(raw_bundle_archive.get("git_tracked_file_count")) == len(raw_bundle_paths)
     )
 
     range_rows = read_csv(RANGE_GRID_CSV) + read_csv(RANGE_RATIO_CSV)
@@ -508,11 +517,11 @@ def requirement_rows(
         "R18",
         "Raw bundle availability",
         "Retain a local or archived raw-result bundle with manifests and checkpoint hashes for the final Phase10 evidence line.",
-        "CAUTION" if trace_raw_manifests_existing == len(trace_raw_manifest_paths) and trace_checkpoints_existing == len(trace_checkpoint_paths) else "OPEN",
-        "local_trace_not_git_archive",
-        f"Local method trace paths exist for {trace_raw_manifests_existing}/{len(trace_raw_manifest_paths)} raw manifests and {trace_checkpoints_existing}/{len(trace_checkpoint_paths)} checkpoints; {raw_bundle_git_tracked}/{len(raw_bundle_paths)} raw trace files are tracked by Git.",
-        [TRACE_CSV],
-        "Before submission or external release, decide whether to archive checkpoints or publish a separate checksum manifest for raw state_dict files.",
+        "PASS" if raw_bundle_archive_pass else ("CAUTION" if trace_raw_manifests_existing == len(trace_raw_manifest_paths) and trace_checkpoints_existing == len(trace_checkpoint_paths) else "OPEN"),
+        "git_tracked_raw_bundle" if raw_bundle_archive_pass else "local_trace_not_git_archive",
+        f"Local method trace paths exist for {trace_raw_manifests_existing}/{len(trace_raw_manifest_paths)} raw manifests and {trace_checkpoints_existing}/{len(trace_checkpoint_paths)} checkpoints; {raw_bundle_git_tracked}/{len(raw_bundle_paths)} raw trace files are tracked by Git; raw-bundle archive reports {as_int(raw_bundle_archive.get('git_tracked_file_count'))}/{as_int(raw_bundle_archive.get('raw_file_count'))} tracked files.",
+        [TRACE_CSV, RAW_BUNDLE_REPORT, RAW_BUNDLE_MANIFEST],
+        "Keep the raw-bundle archive manifest synchronized with the Phase10 method trace whenever final methods or checkpoints change.",
     )
 
     risks: list[Risk] = []
@@ -574,6 +583,10 @@ def requirement_rows(
         "claim_strength_passed_required_checks": as_int(claim_strength.get("passed_required_checks")),
         "claim_strength_review_required_risk_hits": as_int(claim_strength.get("review_required_risk_hits"), default=-1),
         "claim_strength_pass": claim_strength_pass,
+        "raw_bundle_archive_file_count": as_int(raw_bundle_archive.get("raw_file_count")),
+        "raw_bundle_archive_existing_file_count": as_int(raw_bundle_archive.get("existing_file_count")),
+        "raw_bundle_archive_git_tracked_file_count": as_int(raw_bundle_archive.get("git_tracked_file_count")),
+        "raw_bundle_archive_pass": raw_bundle_archive_pass,
         "code_evidence_files_present": code_files_present,
         "code_evidence_files_total": len(CODE_EVIDENCE),
     }
@@ -690,6 +703,7 @@ def main() -> None:
     learned_ablation = read_json(LEARNED_ABLATION_MANIFEST)
     paired_significance = read_json(PAIRED_SIGNIFICANCE_MANIFEST)
     claim_strength = read_json(CLAIM_STRENGTH_MANIFEST)
+    raw_bundle_archive = read_json(RAW_BUNDLE_MANIFEST)
 
     requirements, risks, inventory = requirement_rows(
         final_rows,
@@ -701,6 +715,7 @@ def main() -> None:
         learned_ablation,
         paired_significance,
         claim_strength,
+        raw_bundle_archive,
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -782,6 +797,8 @@ def main() -> None:
             PAIRED_SIGNIFICANCE_REPORT.as_posix(),
             CLAIM_STRENGTH_MANIFEST.as_posix(),
             CLAIM_STRENGTH_REPORT.as_posix(),
+            RAW_BUNDLE_MANIFEST.as_posix(),
+            RAW_BUNDLE_REPORT.as_posix(),
         ]
         + [path.as_posix() for path in CODE_EVIDENCE],
         "output_files": [path.as_posix() for path in output_files],

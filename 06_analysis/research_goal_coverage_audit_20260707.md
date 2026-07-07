@@ -10,11 +10,11 @@
 ## Summary
 
 - Requirements checked: 18.
-- Status counts: PASS=15, CAUTION=3, OPEN=0.
+- Status counts: PASS=16, CAUTION=2, OPEN=0.
 - Final Phase10 method rows: 18 across beams [10.0, 15.0].
 - Training trace: 3 runs, 90000 step rows, 300 episode rows.
 - Method trace completeness: 18/18.
-- Artifact manifest: 170 artifacts, 0 missing.
+- Artifact manifest: 206 artifacts, 0 missing.
 
 ## Requirement Coverage
 
@@ -33,17 +33,16 @@
 | R11 | Time-scale assumption | PASS | main+supplement | Slot-duration values in stability summary: 1.0;10.0;100.0;20.0;5.0. |
 | R12 | Statistical reliability | PASS | paired_significance_primary | Final transfer episodes range 10-20; primary paired significance manifest reports 16 confirmatory tests with pass=True. |
 | R13 | Reproducibility trace | PASS | main | Method trace rows complete: 18/18. |
-| R14 | Figure and artifact integrity | PASS | artifact_hash | Artifact manifest reports 170 artifacts and 0 missing paths; training manifest lists 19 training/resource figures. |
+| R14 | Figure and artifact integrity | PASS | artifact_hash | Artifact manifest reports 206 artifacts and 0 missing paths; training manifest lists 19 training/resource figures. |
 | R15 | Submission wording boundary | PASS | claim_strength_audit | Claim-strength audit passes 12/12 required boundary checks and reports 0 review-required risk hits; readiness review records 195 supplement/supplement-stress rows. |
 | R16 | Independent reproduction | PASS | verified_partial_rerun | Independent stochastic re-run for gated_contention_actor at B=10 has status_counts={'MATCH': 5}; this verifies one key final-transfer point, not the full campaign. |
 | R17 | Learned component ablation | CAUTION | focused_ablation_mixed | Focused B=10/N=100/3000-slot learned-component ablation covers labels=['random_weights_full', 'trained_full', 'trained_no_candidate_mask', 'trained_no_rule_residual', 'zero_weights_rule_only']. Results separate learned weights from rule priors, but support a collision-efficiency claim rather than universal learned-policy dominance. |
-| R18 | Raw bundle availability | CAUTION | local_trace_not_git_archive | Local method trace paths exist for 28/28 raw manifests and 8/8 checkpoints; 0/36 raw trace files are tracked by Git. |
+| R18 | Raw bundle availability | PASS | git_tracked_raw_bundle | Local method trace paths exist for 28/28 raw manifests and 8/8 checkpoints; 36/36 raw trace files are tracked by Git; raw-bundle archive reports 36/36 tracked files. |
 
 ## Highest-Value Remaining Work
 
 - P2 `CAUTION`: Cover narrow beamwidths around 3-15 degrees, with final main transfer at 10->15 degrees. Next: If reviewers demand full stress coverage, rerun B=3/B=5 with the final Phase10 method set; B=30 is intentionally excluded from the final line.
 - P2 `CAUTION`: Separate learned actor contribution from strong rule priors, residual logits, candidate masks, and decentralized gates. Next: Use conservative wording: learned weights suppress collisions versus random/zero-weight policies, while candidate masking and rule residuals define the discovery/collision/empty-scan tradeoff. Extend to B=15 or more seeds only if needed.
-- P2 `CAUTION`: Retain a local or archived raw-result bundle with manifests and checkpoint hashes for the final Phase10 evidence line. Next: Before submission or external release, decide whether to archive checkpoints or publish a separate checksum manifest for raw state_dict files.
 
 ## Boundary Interpretation
 

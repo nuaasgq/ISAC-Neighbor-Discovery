@@ -1,0 +1,238 @@
+{
+  "created_at_utc": "2026-07-07T11:51:11.189828+00:00",
+  "scope": "raw files referenced by the Phase10 final method trace",
+  "source_trace_csv": "06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv",
+  "raw_file_count": 36,
+  "existing_file_count": 36,
+  "git_tracked_file_count": 36,
+  "total_size_bytes": 4512512,
+  "archive_complete": true,
+  "outputs": {
+    "inventory_csv": "06_analysis/paper_tables/marl/p10_raw_bundle_archive/phase10_raw_bundle_inventory.csv",
+    "report": "06_analysis/phase10_raw_bundle_archive_report_20260707.md",
+    "readme": "06_analysis/paper_tables/marl/p10_raw_bundle_archive/README.md"
+  },
+  "raw_files": [
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/p10_adaptive_gate_v2/train/train_n10_b10_adaptive_gated_contention_actor_100ep_300slot_seed20260741/final_model.pt",
+      "size_bytes": 614683,
+      "sha256": "62a09f8a4c4c64d0f68e2d464eb333e2e036f26b3d2afee429dd76f780a0f3d8"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4/train_seed20260743/final_model.pt",
+      "size_bytes": 614619,
+      "sha256": "e53b53145389bb2bed4b27ed812e02727c2c97de2c2ffd262f22c30c892b0d67"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4/train_seed20260744/final_model.pt",
+      "size_bytes": 614619,
+      "sha256": "461864e6f9427f79df665588fa128532e90b1044117c551c7df0933b0fa93088"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/p10_topology_gate_v3/train/train_n10_b10_topology_adaptive_gated_contention_actor_100ep_300slot_seed20260742/final_model.pt",
+      "size_bytes": 614683,
+      "sha256": "1f6be44d705ef340fbbf90211a96e2677f3cf726d87697c1aa8eab1b8e51832e"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/phase10_gated_contention_actor_100ep_3seed/train/train_n10_b10_gated_contention_actor_100ep_300slot_seed20260731/final_model.pt",
+      "size_bytes": 614747,
+      "sha256": "765fed05c75ed0aa18fb74f54f01c0a0e75ea9a0546a9964c076e6ddaad288c9"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/phase7_contention_no_isac_strict_100ep_3seed/train/train_n10_b10_contention_no_isac_100ep_300slot_seed20260731/final_model.pt",
+      "size_bytes": 506475,
+      "sha256": "07459bcc5cb0bc102f35a5a29b6b5232fb7693d13774775ee1fc3e30de7111db"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/phase7_long_training_100ep_3seed/train/train_n10_b10_contention_actor_100ep_300slot_seed20260731/final_model.pt",
+      "size_bytes": 506475,
+      "sha256": "0c71004c4626e57165302044c711e9e008b6d021d173c9418a796814c91c04e1"
+    },
+    {
+      "artifact_type": "checkpoint",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_mappo_no_isac_strict_100ep_3seed/train/train_n10_b10_mappo_no_isac_100ep_300slot_seed20260731/final_model.pt",
+      "size_bytes": 319757,
+      "sha256": "2e57a5b11cf49371e4ebccdcdd8ab4342a8a233a158310204359b89a611503a6"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_adaptive_gate_v2_n100/b10/manifest.json",
+      "size_bytes": 3304,
+      "sha256": "eeb84c68d305c57838a0f85688b662c6707802df629ae3edaf2c08f3de8e84fb"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_adaptive_gate_v2_n100/b15/manifest.json",
+      "size_bytes": 3299,
+      "sha256": "866440ec228f7c0d9861ddafe4b150a261e3f0425aa0e3266345cb74a9cce991"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4_n100/seed20260743_b10/manifest.json",
+      "size_bytes": 3272,
+      "sha256": "977e2adc9db3d2a1b79878106e42f820a5a7472bd2f6489a9a68523b535836ee"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4_n100/seed20260743_b15/manifest.json",
+      "size_bytes": 3273,
+      "sha256": "ab99f92218f1a8819d3537f5bacd5f6185cefcb9b9e34c9ab51830b3afacb096"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4_n100/seed20260744_b10/manifest.json",
+      "size_bytes": 3273,
+      "sha256": "03baa010cb84205f7de483c3030f1bd790132e2e8d84f712f5de5a534c7d081f"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4_n100/seed20260744_b15/manifest.json",
+      "size_bytes": 3268,
+      "sha256": "7981a6fc9f835810272948c00d472aae345c9db0caaa7b692ff255e81210e74a"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_gate31_n100/b10/manifest.json",
+      "size_bytes": 3303,
+      "sha256": "5716201e96510112e52c626d5b37700068ce9310754f8c1cf5d9de12d7c65678"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_gate31_n100/b15/manifest.json",
+      "size_bytes": 3310,
+      "sha256": "66ce4ba8ccb62b528d3068611bf918232af6ea1ee676004b779e4043ec6636ff"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_topology_gate_v3_n100/b10/manifest.json",
+      "size_bytes": 3321,
+      "sha256": "23a324e56804a3e39c81ad3a3bd28a2581ecb74bca514b94343c9069218b3d5d"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_topology_gate_v3_n100/b15/manifest.json",
+      "size_bytes": 3333,
+      "sha256": "0a0992137714ef0e9448d2ce11f0040156a7f3a8d5fd359df62b794c93d50bdf"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b10_3000slot_10ep_stoch/eval/contention_actor/contention_actor_train_n10_b10_test_n100_b10_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3421,
+      "sha256": "60514b7e186bf75894b54e9a498dba9159533b89da0a7e1ed31bb07c5e22481c"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b10_3000slot_10ep_stoch/eval/contention_no_isac/contention_no_isac_train_n10_b10_test_n100_b10_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3397,
+      "sha256": "14ec3532df9a22ed2c63d81785ef1efb1a6a8c1cec27fdfd07e5303200b38542"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b10_3000slot_10ep_stoch/eval/mappo_no_isac/mappo_no_isac_train_n10_b10_test_n100_b10_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3342,
+      "sha256": "cf72fe9e0a326afbe4750e12330f0703ea0e121bb64faae787731cb887a19c03"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b10_3000slot_10ep_stoch/eval/skyorbs_like/skyorbs_like_train_n10_b10_test_n100_b10_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 2994,
+      "sha256": "3bf8ff3f80a316c4cf12fd5762ea4b4276a5398de5f73338ad3db44a9bbba355"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b10_3000slot_10ep_stoch/eval/uniform_random/uniform_random_train_n10_b10_test_n100_b10_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 2993,
+      "sha256": "33d8c78ccae2a67666318f90789f2f33f994c9b16a178a39a4e3225599cd89bc"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b15_3000slot_10ep_stoch/eval/contention_actor/contention_actor_train_n10_b10_test_n100_b15_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3583,
+      "sha256": "cf89ba8a631ab1244005a6dc07c35c73cf05b8dfbfa02db26f246c890f2482b0"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b15_3000slot_10ep_stoch/eval/contention_no_isac/contention_no_isac_train_n10_b10_test_n100_b15_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3584,
+      "sha256": "19a1185e55b38f6f8c2a555c615e5667e9014df919b011eb6c004a931ceeeaea"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b15_3000slot_10ep_stoch/eval/mappo_no_isac/mappo_no_isac_train_n10_b10_test_n100_b15_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3515,
+      "sha256": "76ae3f4a882d0963ced1807c8319a2efcba99a24b950cfba26b5790a20104452"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b15_3000slot_10ep_stoch/eval/skyorbs_like/skyorbs_like_train_n10_b10_test_n100_b15_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3038,
+      "sha256": "7d88826e1ce680281609df4c4d80858502d52c1fa400dac05423eb6e94559076"
+    },
+    {
+      "artifact_type": "raw_eval_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_fiveway_n100_b15_3000slot_10ep_stoch/eval/uniform_random/uniform_random_train_n10_b10_test_n100_b15_3000slot_10ep_stoch/manifest.json",
+      "size_bytes": 3038,
+      "sha256": "e4762fd9da4c648738fee6eb6406b43ca438764466224c8be7790e88945f19b6"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_adaptive_gate_v2/train/train_n10_b10_adaptive_gated_contention_actor_100ep_300slot_seed20260741/manifest.json",
+      "size_bytes": 5114,
+      "sha256": "0fc3dfbe4a1a7ae72bf942c04391a13a728e3ec331964a90f01551d4514fd349"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4/train_seed20260743/manifest.json",
+      "size_bytes": 5094,
+      "sha256": "571ad9c80dab7321244c5d90c67083c9850133a34fade82e448d1a6c230706d1"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_balanced_gate_v4/train_seed20260744/manifest.json",
+      "size_bytes": 5096,
+      "sha256": "7f8f8a0b90fa5152f7f3833dad994d011c4d752ce94dfc467939f4a7b041a45b"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/p10_topology_gate_v3/train/train_n10_b10_topology_adaptive_gated_contention_actor_100ep_300slot_seed20260742/manifest.json",
+      "size_bytes": 5155,
+      "sha256": "486d15e0c39b708b17b273dc99d61dd9bd5156e065a9b0f07ab5de635ef05fc9"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase10_gated_contention_actor_100ep_3seed/train/train_n10_b10_gated_contention_actor_100ep_300slot_seed20260731/manifest.json",
+      "size_bytes": 5192,
+      "sha256": "8b96601683c5496b9c1b297219f704fa8dfec7bd82c32cdd66ad661d866cefe0"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase7_contention_no_isac_strict_100ep_3seed/train/train_n10_b10_contention_no_isac_100ep_300slot_seed20260731/manifest.json",
+      "size_bytes": 4892,
+      "sha256": "8e031576a54a99d37188a73bdd3aa5e3fa59511119364cd260c635b2432d69ef"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase7_long_training_100ep_3seed/train/train_n10_b10_contention_actor_100ep_300slot_seed20260731/manifest.json",
+      "size_bytes": 5165,
+      "sha256": "ba56632049013689507afb00a64d49e34e543c05eb4bb9532a8ba144b395c79d"
+    },
+    {
+      "artifact_type": "training_manifest",
+      "path": "05_simulation/results_raw/marl_campaign/phase9_mappo_no_isac_strict_100ep_3seed/train/train_n10_b10_mappo_no_isac_100ep_300slot_seed20260731/manifest.json",
+      "size_bytes": 4885,
+      "sha256": "eba6c195c912316cfbd337a935a0a30f91383330ac50f314c4d9bba61c4f39db"
+    }
+  ],
+  "output_hashes": {
+    "06_analysis/paper_tables/marl/p10_raw_bundle_archive/phase10_raw_bundle_inventory.csv": "008f71468d4b1303d60bf505848bf6351b3e1fd546a240f154abf03e3f64582b",
+    "06_analysis/paper_tables/marl/p10_raw_bundle_archive/README.md": "00981cb00a669289f63907a506a0ce6ea07e00dd3f053927a804a847c0ba63d0",
+    "06_analysis/phase10_raw_bundle_archive_report_20260707.md": "7ac490a3179edb15ec8dd2859f620619f5d143768f896d02c0e746dded26f262"
+  }
+}

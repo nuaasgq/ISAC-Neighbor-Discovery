@@ -1,9 +1,9 @@
 {
-  "created_at_utc": "2026-07-07T11:45:32.346331+00:00",
+  "created_at_utc": "2026-07-07T11:51:11.692968+00:00",
   "scope": "active MARL+ISAC research-goal evidence coverage",
   "status_counts": {
-    "PASS": 15,
-    "CAUTION": 3,
+    "PASS": 16,
+    "CAUTION": 2,
     "OPEN": 0
   },
   "input_files": [
@@ -22,6 +22,8 @@
     "06_analysis/phase10_paired_significance_report_20260707.md",
     "06_analysis/paper_tables/submission_claim_strength_audit/manifest.json",
     "06_analysis/submission_claim_strength_audit_20260707.md",
+    "06_analysis/paper_tables/marl/p10_raw_bundle_archive/manifest.json",
+    "06_analysis/phase10_raw_bundle_archive_report_20260707.md",
     "05_simulation/src/isac_nd_sim/marl_env.py",
     "05_simulation/run_marl_training.py",
     "05_simulation/run_marl_evaluate.py",
@@ -46,11 +48,11 @@
     "readme": "06_analysis/paper_tables/research_goal_coverage_audit/README.md"
   },
   "output_hashes": {
-    "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv": "681ef4a0de1211d61b3f661f6e79c0f87b69a5d82a26eeb2ce4dcc88c371562c",
-    "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv": "62677b8827fa80ebec2f0bbdfb6eb3849cc030d646a86b63206402376b87e995",
-    "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv": "09610c7190a0c4db8ff7bfedb265a46a557b50333daad96298fe707f3daabce7",
-    "06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv": "bbe935920d7136921ba63c9b5374a400d749effcdfe33aeea619b621b9827878",
+    "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv": "4c1f1a90dfd86ff449933cfd8802af23355df674e4ca826df8440c007901ddc2",
+    "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv": "0c04772138e3e9423f811d8d927cdb02ca732159f77268aa7425011db179f8b2",
+    "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv": "9b61c2ad53a49c1be131e976d9ee4bc5192d583680c385dc93d51c902db24007",
+    "06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv": "008f71468d4b1303d60bf505848bf6351b3e1fd546a240f154abf03e3f64582b",
     "06_analysis/paper_tables/research_goal_coverage_audit/README.md": "073855d57e3a3aa4d7173041580fc9197b54d46ff52bd540588fee4ee358848b",
-    "06_analysis/research_goal_coverage_audit_20260707.md": "bb04b7196141df56c96d70af23d009aa8699a55d83ea3a56210cd1a7fada28aa"
+    "06_analysis/research_goal_coverage_audit_20260707.md": "4880b721930555be965455008b3f28547005a0352eeb36e8883cad73c420537a"
   }
 }
