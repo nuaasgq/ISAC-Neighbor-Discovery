@@ -1,0 +1,34 @@
+{
+  "created_at_utc": "2026-07-07T12:13:15.802481+00:00",
+  "scope": "bounded beamwidth coverage audit",
+  "source_files": [
+    "06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv",
+    "06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv",
+    "07_paper/ieee_twc_isac_nd/main.tex",
+    "07_paper/ieee_twc_isac_nd/supplement.tex"
+  ],
+  "check_count": 6,
+  "passed_check_count": 6,
+  "final_beams": [
+    10.0,
+    15.0
+  ],
+  "stability_beams": [
+    3.0,
+    5.0,
+    10.0,
+    15.0,
+    30.0
+  ],
+  "bounded_beamwidth_pass": true,
+  "outputs": {
+    "checks_csv": "06_analysis/paper_tables/marl/p10_beamwidth_boundary_audit/beamwidth_boundary_checks.csv",
+    "report": "06_analysis/phase10_beamwidth_boundary_audit_20260707.md",
+    "readme": "06_analysis/paper_tables/marl/p10_beamwidth_boundary_audit/README.md"
+  },
+  "output_hashes": {
+    "06_analysis/paper_tables/marl/p10_beamwidth_boundary_audit/beamwidth_boundary_checks.csv": "9dfb4b40e0142cb0ba0d9ca5495dfec22fb7e181de894a9878d6b5619f9df8a4",
+    "06_analysis/paper_tables/marl/p10_beamwidth_boundary_audit/README.md": "66835d7018cba5660642b84b18370296412643c3d918cbd14645995679171527",
+    "06_analysis/phase10_beamwidth_boundary_audit_20260707.md": "fca3539c6c6f2372d4d8502729cba37556bc164b46bb9e236b17d18ac3ff12af"
+  }
+}

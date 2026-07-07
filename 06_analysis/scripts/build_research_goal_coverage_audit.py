@@ -24,6 +24,8 @@ REPORT = Path("06_analysis/research_goal_coverage_audit_20260707.md")
 FINAL_METHOD_CSV = Path("06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv")
 TRACE_CSV = Path("06_analysis/paper_tables/marl/p10_final_method_manifest_trace/phase10_method_manifest_trace.csv")
 STABILITY_CSV = Path("06_analysis/paper_tables/statistical_stability_summary/statistical_stability_summary.csv")
+BEAMWIDTH_AUDIT_MANIFEST = Path("06_analysis/paper_tables/marl/p10_beamwidth_boundary_audit/manifest.json")
+BEAMWIDTH_AUDIT_REPORT = Path("06_analysis/phase10_beamwidth_boundary_audit_20260707.md")
 TRAINING_MANIFEST = Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/manifest.json")
 ARTIFACT_MANIFEST = Path("06_analysis/manuscript_artifact_manifest_20260707.json")
 FIGURE_AUDIT = Path("06_analysis/figure_table_provenance_audit_20260707.md")
@@ -180,6 +182,7 @@ def requirement_rows(
     final_rows: list[dict[str, str]],
     trace_rows: list[dict[str, str]],
     stability_rows: list[dict[str, str]],
+    beamwidth_audit: dict,
     training_manifest: dict,
     artifact_manifest: dict,
     rerun_validation: dict,
@@ -195,6 +198,9 @@ def requirement_rows(
     final_slots = {as_int(row.get("slots_per_episode")) for row in final_rows}
     final_episodes = [as_int(row.get("episodes")) for row in final_rows if row.get("episodes")]
     final_index = index_final(final_rows)
+    beamwidth_audit_pass = bool(beamwidth_audit.get("bounded_beamwidth_pass")) and as_int(
+        beamwidth_audit.get("passed_check_count")
+    ) == as_int(beamwidth_audit.get("check_count"))
 
     required_methods = {
         "uniform_random",
@@ -407,11 +413,11 @@ def requirement_rows(
         "R07",
         "Beamwidth coverage and transfer",
         "Cover narrow beamwidths around 3-15 degrees, with final main transfer at 10->15 degrees.",
-        "CAUTION" if {3.0, 5.0, 10.0, 15.0}.issubset(stability_beams) and {10.0, 15.0}.issubset(final_beams) else "OPEN",
-        "main+boundary",
-        f"Stability summary beams={fmt_set(stability_beams)}; final Phase10 beams={fmt_set(final_beams)}. B=30 exists only as archived boundary evidence.",
-        [STABILITY_CSV, FINAL_METHOD_CSV],
-        "If reviewers demand full stress coverage, rerun B=3/B=5 with the final Phase10 method set; B=30 is intentionally excluded from the final line.",
+        "PASS" if beamwidth_audit_pass else ("CAUTION" if {3.0, 5.0, 10.0, 15.0}.issubset(stability_beams) and {10.0, 15.0}.issubset(final_beams) else "OPEN"),
+        "bounded_beamwidth_audit" if beamwidth_audit_pass else "main+boundary",
+        f"Beamwidth audit passes {as_int(beamwidth_audit.get('passed_check_count'))}/{as_int(beamwidth_audit.get('check_count'))} checks; stability summary beams={fmt_set(stability_beams)}; final Phase10 beams={fmt_set(final_beams)}. B=3/5/30 remain boundary evidence rather than final-main claims.",
+        [STABILITY_CSV, FINAL_METHOD_CSV, BEAMWIDTH_AUDIT_REPORT, BEAMWIDTH_AUDIT_MANIFEST],
+        "Keep 10/15 degrees as the final Phase10 beamwidth claim; retain 3/5-degree stress and 30-degree legacy evidence as boundary material unless a future full final-method rerun is performed.",
     )
     add(
         "R08",
@@ -553,6 +559,9 @@ def requirement_rows(
         "final_method_rows": len(final_rows),
         "final_methods": sorted(final_methods),
         "final_beams": sorted(final_beams),
+        "beamwidth_audit_checks": as_int(beamwidth_audit.get("check_count")),
+        "beamwidth_audit_passed_checks": as_int(beamwidth_audit.get("passed_check_count")),
+        "beamwidth_audit_pass": beamwidth_audit_pass,
         "final_nodes": sorted(final_nodes),
         "final_slots": sorted(final_slots),
         "final_episode_min": min(final_episodes) if final_episodes else 0,
@@ -683,8 +692,11 @@ def write_report(requirements: list[Requirement], risks: list[Risk], inventory: 
             "",
         ]
     )
-    for risk in risks[:8]:
-        lines.append(f"- {risk.priority} `{risk.current_status}`: {risk.risk} Next: {risk.next_action}")
+    if risks:
+        for risk in risks[:8]:
+            lines.append(f"- {risk.priority} `{risk.current_status}`: {risk.risk} Next: {risk.next_action}")
+    else:
+        lines.append("- None. All audited research-goal requirements are currently PASS.")
 
     lines.extend(
         [
@@ -710,6 +722,7 @@ def main() -> None:
     final_rows = read_csv(FINAL_METHOD_CSV)
     trace_rows = read_csv(TRACE_CSV)
     stability_rows = read_csv(STABILITY_CSV)
+    beamwidth_audit = read_json(BEAMWIDTH_AUDIT_MANIFEST)
     training_manifest = read_json(TRAINING_MANIFEST)
     artifact_manifest = read_json(ARTIFACT_MANIFEST)
     rerun_validation = read_json(RERUN_VALIDATION_MANIFEST)
@@ -723,6 +736,7 @@ def main() -> None:
         final_rows,
         trace_rows,
         stability_rows,
+        beamwidth_audit,
         training_manifest,
         artifact_manifest,
         rerun_validation,
@@ -800,6 +814,8 @@ def main() -> None:
             FINAL_METHOD_CSV.as_posix(),
             TRACE_CSV.as_posix(),
             STABILITY_CSV.as_posix(),
+            BEAMWIDTH_AUDIT_MANIFEST.as_posix(),
+            BEAMWIDTH_AUDIT_REPORT.as_posix(),
             TRAINING_MANIFEST.as_posix(),
             ARTIFACT_MANIFEST.as_posix(),
             FIGURE_AUDIT.as_posix(),

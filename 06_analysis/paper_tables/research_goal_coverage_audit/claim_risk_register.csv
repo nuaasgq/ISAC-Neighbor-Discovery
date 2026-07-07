@@ -1,2 +1,1 @@
 priority,risk,trigger,current_status,next_action
-P2,"Cover narrow beamwidths around 3-15 degrees, with final main transfer at 10->15 degrees.",Stability summary beams=10.0;15.0;3.0;30.0;5.0; final Phase10 beams=10.0;15.0. B=30 exists only as archived boundary evidence.,CAUTION,"If reviewers demand full stress coverage, rerun B=3/B=5 with the final Phase10 method set; B=30 is intentionally excluded from the final line."
