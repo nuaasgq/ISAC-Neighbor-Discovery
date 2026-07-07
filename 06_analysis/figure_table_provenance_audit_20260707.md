@@ -12,6 +12,8 @@ This audit supersedes `06_analysis/paper_figure_integrity_audit_20260705.md`, wh
 - Missing image files: 0.
 - Approximate 4:3 aspect-ratio violations: 0.
 - Check method: parse `\includegraphics{...}` entries from `main.tex` and `supplement.tex`, resolve each path from the LaTeX workspace, and inspect PNG width/height with `System.Drawing`.
+- Artifact hash manifest: `06_analysis/manuscript_artifact_manifest_20260707.csv` and `06_analysis/manuscript_artifact_manifest_20260707.json` cover the current manuscript-facing figures, LaTeX sources, references, Phase10 main CSVs/manifests, and training-curve tables. The generated manifest contains 82 artifacts with 0 missing paths.
+- Statistical validation report: `06_analysis/phase10_statistical_validation_report_20260707.md` records Phase10 gain checks, confidence boundaries, fallacy scan coverage, and reproducibility status.
 
 ## Main Evidence Chain
 
@@ -56,4 +58,4 @@ This audit supersedes `06_analysis/paper_figure_integrity_audit_20260705.md`, wh
 ## Residual Risk Before Submission
 
 - Some supplement-only figures summarize earlier 600-slot campaigns. The current manuscript labels those as boundary or robustness evidence, while the main numerical claim uses 3000-slot Phase10 transfer.
-- The current audit is group-level. A stricter pre-submission archive can add per-file SHA256 hashes for every referenced image, CSV, and manifest.
+- The current hash manifest covers the manuscript-facing evidence chain, but not every historical experiment artifact in the repository. A stricter pre-submission archive can extend SHA256 coverage to the full raw-result tree if needed.

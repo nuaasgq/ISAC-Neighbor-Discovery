@@ -19,6 +19,8 @@ Current status:
 - Main figures are selected in `../../06_analysis/manuscript_figure_selection.md`; current figure/table provenance is audited in `../../06_analysis/figure_table_provenance_audit_20260707.md`.
 - The current closeout workflow and repository synchronization rule are recorded in `../../00_workflow/current_execution_workflow.md`.
 - A fresh LaTeX figure audit checked 51 referenced PNG files for presence and approximate 4:3 aspect compliance; it supersedes the earlier `../../06_analysis/paper_figure_integrity_audit_20260705.md`.
+- A manuscript-facing SHA256 artifact manifest is available at `../../06_analysis/manuscript_artifact_manifest_20260707.csv` and `../../06_analysis/manuscript_artifact_manifest_20260707.json`.
+- Phase10 statistical interpretation and fallacy-scan notes are recorded in `../../06_analysis/phase10_statistical_validation_report_20260707.md`.
 - Mean/std/95% CI summaries for archived multi-seed sweeps are in `../../06_analysis/paper_tables/statistical_stability_summary/`.
 - Experiment coverage against the requested variables is tracked in `../../06_analysis/experiment_coverage_matrix_20260705.md`.
 - Round7 outputs are treated as robustness and audit support unless explicitly promoted in `../../06_analysis/round7_results_index.md`.

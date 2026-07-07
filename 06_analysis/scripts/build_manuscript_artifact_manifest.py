@@ -1,0 +1,210 @@
+"""Build a hash manifest for the current manuscript-facing artifacts.
+
+The manifest is intentionally tied to the LaTeX sources and the Phase10 main
+evidence chain. It does not walk the whole experiment archive because older
+campaigns are retained for boundary evidence and should not be mixed into the
+primary manuscript claim chain by accident.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import re
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+INCLUDE_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
+
+DEFAULT_TEX_FILES = [
+    Path("07_paper/ieee_twc_isac_nd/main.tex"),
+    Path("07_paper/ieee_twc_isac_nd/supplement.tex"),
+]
+
+DEFAULT_DIRECT_ARTIFACTS = [
+    Path("07_paper/ieee_twc_isac_nd/main.tex"),
+    Path("07_paper/ieee_twc_isac_nd/supplement.tex"),
+    Path("07_paper/ieee_twc_isac_nd/references.bib"),
+    Path("07_paper/ieee_twc_isac_nd/README.md"),
+    Path("06_analysis/scripts/build_manuscript_artifact_manifest.py"),
+    Path("06_analysis/figure_table_provenance_audit_20260707.md"),
+    Path("06_analysis/claim_evidence_audit_20260707.md"),
+    Path("06_analysis/citation_integrity_audit_20260707.md"),
+    Path("06_analysis/phase10_statistical_validation_report_20260707.md"),
+    Path("06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/marl_method_comparison.csv"),
+    Path("06_analysis/paper_tables/marl/p10_final_b10_b15_method_comparison_with_v4/manifest.json"),
+    Path("06_analysis/paper_tables/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_core_metrics.csv"),
+    Path("06_analysis/paper_tables/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/seed_tradeoff_method_comparison.csv"),
+    Path("06_analysis/paper_tables/marl/p10_gate_family_v2_v3_v4_tradeoff_comparison/manifest.json"),
+    Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/marl_step_rewards.csv"),
+    Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/marl_episode_metrics.csv"),
+    Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/marl_eval_episode_metrics.csv"),
+    Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/marl_resource_log.csv"),
+    Path("06_analysis/paper_tables/marl/p10_gate_training_3seed_100ep_step_curves/manifest.json"),
+]
+
+
+@dataclass(frozen=True)
+class Artifact:
+    role: str
+    source: str
+    path: Path
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build manuscript artifact hash manifest.")
+    parser.add_argument("--repo-root", type=Path, default=Path("."))
+    parser.add_argument("--csv", type=Path, default=Path("06_analysis/manuscript_artifact_manifest_20260707.csv"))
+    parser.add_argument("--json", type=Path, default=Path("06_analysis/manuscript_artifact_manifest_20260707.json"))
+    return parser.parse_args()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def parse_figures(tex_file: Path) -> list[Artifact]:
+    artifacts: list[Artifact] = []
+    for line_no, line in enumerate(tex_file.read_text(encoding="utf-8").splitlines(), start=1):
+        for match in INCLUDE_RE.finditer(line):
+            raw_path = match.group(1)
+            resolved = (tex_file.parent / raw_path).resolve()
+            artifacts.append(
+                Artifact(
+                    role="manuscript_figure",
+                    source=f"{tex_file.as_posix()}:{line_no}",
+                    path=resolved,
+                )
+            )
+    return artifacts
+
+
+def collect_manifest_references(manifest_path: Path) -> list[Artifact]:
+    """Collect directly referenced source files from selected JSON manifests."""
+    if not manifest_path.exists() or manifest_path.suffix.lower() != ".json":
+        return []
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return []
+
+    candidates: list[tuple[str, str]] = []
+
+    def walk(value, label: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                walk(child, f"{label}.{key}" if label else str(key))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                walk(child, f"{label}[{index}]")
+        elif isinstance(value, str):
+            normalized = value.replace("\\", "/")
+            if normalized.endswith((".csv", ".json", ".md", ".yaml", ".yml")):
+                candidates.append((label, value))
+
+    walk(payload, "")
+    artifacts: list[Artifact] = []
+    for label, raw_path in candidates:
+        candidate = Path(raw_path)
+        if not candidate.is_absolute():
+            candidate = Path(raw_path.replace("\\", "/"))
+        artifacts.append(
+            Artifact(
+                role="manifest_reference",
+                source=f"{manifest_path.as_posix()}:{label}",
+                path=candidate,
+            )
+        )
+    return artifacts
+
+
+def normalize_path(repo_root: Path, path: Path) -> Path:
+    if path.is_absolute():
+        return path.resolve()
+    return (repo_root / path).resolve()
+
+
+def unique_artifacts(artifacts: list[Artifact], repo_root: Path) -> list[Artifact]:
+    seen: set[tuple[str, str]] = set()
+    output: list[Artifact] = []
+    for artifact in artifacts:
+        resolved = normalize_path(repo_root, artifact.path)
+        key = (artifact.role, str(resolved).lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(Artifact(artifact.role, artifact.source, resolved))
+    return output
+
+
+def relative_to_repo(repo_root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(repo_root).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def main() -> None:
+    args = parse_args()
+    repo_root = args.repo_root.resolve()
+    artifacts: list[Artifact] = []
+
+    for tex_file in DEFAULT_TEX_FILES:
+        artifacts.extend(parse_figures(normalize_path(repo_root, tex_file)))
+    for path in DEFAULT_DIRECT_ARTIFACTS:
+        artifacts.append(Artifact("direct_evidence_artifact", "default_main_chain", path))
+
+    for path in DEFAULT_DIRECT_ARTIFACTS:
+        if path.name == "manifest.json":
+            artifacts.extend(collect_manifest_references(normalize_path(repo_root, path)))
+
+    artifacts = unique_artifacts(artifacts, repo_root)
+    rows: list[dict[str, str | int | bool]] = []
+    missing = 0
+    for artifact in sorted(artifacts, key=lambda item: (item.role, str(item.path).lower())):
+        exists = artifact.path.exists()
+        if not exists:
+            missing += 1
+        rows.append(
+            {
+                "role": artifact.role,
+                "source": artifact.source,
+                "path": relative_to_repo(repo_root, artifact.path),
+                "exists": exists,
+                "size_bytes": artifact.path.stat().st_size if exists else "",
+                "sha256": sha256_file(artifact.path) if exists else "",
+            }
+        )
+
+    args.csv.parent.mkdir(parents=True, exist_ok=True)
+    with args.csv.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["role", "source", "path", "exists", "size_bytes", "sha256"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+    payload = {
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "scope": "current manuscript-facing LaTeX figures plus Phase10 main evidence artifacts",
+        "csv": args.csv.as_posix(),
+        "artifact_count": len(rows),
+        "missing_count": missing,
+        "roles": sorted({str(row["role"]) for row in rows}),
+        "artifacts": rows,
+    }
+    args.json.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print(json.dumps({k: payload[k] for k in ("created_at_utc", "artifact_count", "missing_count", "roles")}, indent=2))
+    if missing:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()
