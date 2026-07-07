@@ -1,8 +1,8 @@
 {
-  "created_at_utc": "2026-07-07T11:27:55.381470+00:00",
+  "created_at_utc": "2026-07-07T11:45:32.530038+00:00",
   "scope": "current manuscript-facing LaTeX figures plus Phase10 main evidence artifacts",
   "csv": "06_analysis/manuscript_artifact_manifest_20260707.csv",
-  "artifact_count": 158,
+  "artifact_count": 170,
   "missing_count": 0,
   "roles": [
     "direct_evidence_artifact",
@@ -248,7 +248,7 @@
       "path": "06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json",
       "exists": true,
       "size_bytes": 1250,
-      "sha256": "2ec344886fd4a888796db5178565d7802eadf440b397b466e13859db340a133c"
+      "sha256": "4c8bcc92cd2dc08cbf252524fcf7c97b8e9da3825fddcf0ee83edb1357ebb3cf"
     },
     {
       "role": "direct_evidence_artifact",
@@ -279,24 +279,24 @@
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv",
       "exists": true,
-      "size_bytes": 2133,
-      "sha256": "e01a46ad259cc1d30721dd11b37a5a2d9457b6ebb0f4bf9c98d30dc0ae44a860"
+      "size_bytes": 1528,
+      "sha256": "09610c7190a0c4db8ff7bfedb265a46a557b50333daad96298fe707f3daabce7"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv",
       "exists": true,
-      "size_bytes": 1931,
-      "sha256": "a7971ded097009be7d7a9496df586a45c70357d0083acd044073df352f90ab3e"
+      "size_bytes": 2078,
+      "sha256": "62677b8827fa80ebec2f0bbdfb6eb3849cc030d646a86b63206402376b87e995"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/manifest.json",
       "exists": true,
-      "size_bytes": 3502,
-      "sha256": "eefe97936fb9e860e0c6c7eb2ea9799a0ac27ea54fd9560a0e0d77e845ac989d"
+      "size_bytes": 3796,
+      "sha256": "0f1b2625c19015006b5d27b89b9345c4677e2a7c0fe2b58b2b6ea83f1c3a05c7"
     },
     {
       "role": "direct_evidence_artifact",
@@ -319,8 +319,40 @@
       "source": "default_main_chain",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv",
       "exists": true,
-      "size_bytes": 9698,
-      "sha256": "8043d2dfeabca33c41b560ef0f0fc975f26ab4ac13eb11a142f615f6596bb83b"
+      "size_bytes": 9980,
+      "sha256": "681ef4a0de1211d61b3f661f6e79c0f87b69a5d82a26eeb2ce4dcc88c371562c"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/claim_boundary_checks.csv",
+      "exists": true,
+      "size_bytes": 11284,
+      "sha256": "ea7fbafd0f8ac2d8efebe21c39806d903d19e1464d871dc830f70648d82b8f3b"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/manifest.json",
+      "exists": true,
+      "size_bytes": 1770,
+      "sha256": "82e3a2ef6d63362d900240dbd1ede0f1931537e7183018e2e88b441339032dfb"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/README.md",
+      "exists": true,
+      "size_bytes": 508,
+      "sha256": "8c10c9181317260c72e44b3336f61573648af52ebf13bea3f3d080f684218087"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/risk_phrase_hits.csv",
+      "exists": true,
+      "size_bytes": 34353,
+      "sha256": "577c98c1a3c9727758e152a3b6ab94651005aba127a86bf723b9c1b54d24732f"
     },
     {
       "role": "direct_evidence_artifact",
@@ -367,16 +399,16 @@
       "source": "default_main_chain",
       "path": "06_analysis/research_goal_coverage_audit_20260707.md",
       "exists": true,
-      "size_bytes": 6325,
-      "sha256": "57ddfd4e27f57896eaff0d8892f3e2b55c90644bb5b36c0b26deac2874179231"
+      "size_bytes": 5743,
+      "sha256": "bb04b7196141df56c96d70af23d009aa8699a55d83ea3a56210cd1a7fada28aa"
     },
     {
       "role": "direct_evidence_artifact",
       "source": "default_main_chain",
       "path": "06_analysis/scripts/build_manuscript_artifact_manifest.py",
       "exists": true,
-      "size_bytes": 11938,
-      "sha256": "bd1c81b21cbe4535643c7632386c5ea6d7fbaf45423308a7e157b31f0c2dc65e"
+      "size_bytes": 12432,
+      "sha256": "0144cb492205d0a595e84ff087408f94b4fe80c6edeac8b60746c05afeea23cb"
     },
     {
       "role": "direct_evidence_artifact",
@@ -415,8 +447,24 @@
       "source": "default_main_chain",
       "path": "06_analysis/scripts/build_research_goal_coverage_audit.py",
       "exists": true,
-      "size_bytes": 37152,
-      "sha256": "e08f3f452bf6647db4cbea0c5cd7a8c1c64a8b206a5069e8fa55e00bb26c910c"
+      "size_bytes": 38790,
+      "sha256": "45b2a1eb110e9808b4ede443f747af5f0d669f2e7e67852e454039372ac0f1c7"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/scripts/build_submission_claim_strength_audit.py",
+      "exists": true,
+      "size_bytes": 19441,
+      "sha256": "d50efdbb2230e96761e4b1fa1f653f28b74f8b20d2294b621065b9a62a15330a"
+    },
+    {
+      "role": "direct_evidence_artifact",
+      "source": "default_main_chain",
+      "path": "06_analysis/submission_claim_strength_audit_20260707.md",
+      "exists": true,
+      "size_bytes": 1660,
+      "sha256": "5fa4939d2dd2201cb265fc64480161202dc1e275d1da23b12706875798b1f084"
     },
     {
       "role": "direct_evidence_artifact",
@@ -527,8 +575,8 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[4]",
       "path": "06_analysis/manuscript_artifact_manifest_20260707.json",
       "exists": true,
-      "size_bytes": 60281,
-      "sha256": "e5c9994925e1424f8471137b6170f799e6a40c4ef98dae5b9de4ad1ad74c85bf"
+      "size_bytes": 71517,
+      "sha256": "bcaab2fa54e5b0531929910ab14d449d08d30d1ef57307fd8326f5ebbb8a10d5"
     },
     {
       "role": "manifest_reference",
@@ -676,6 +724,14 @@
     },
     {
       "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[11]",
+      "path": "06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json",
+      "exists": true,
+      "size_bytes": 1250,
+      "sha256": "4c8bcc92cd2dc08cbf252524fcf7c97b8e9da3825fddcf0ee83edb1357ebb3cf"
+    },
+    {
+      "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json:tables[1]",
       "path": "06_analysis/paper_tables/marl/p10_paired_significance_primary/primary_paired_delta_values.csv",
       "exists": true,
@@ -767,16 +823,16 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[2]",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/claim_risk_register.csv",
       "exists": true,
-      "size_bytes": 2133,
-      "sha256": "e01a46ad259cc1d30721dd11b37a5a2d9457b6ebb0f4bf9c98d30dc0ae44a860"
+      "size_bytes": 1528,
+      "sha256": "09610c7190a0c4db8ff7bfedb265a46a557b50333daad96298fe707f3daabce7"
     },
     {
       "role": "manifest_reference",
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[1]",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/evidence_inventory.csv",
       "exists": true,
-      "size_bytes": 1931,
-      "sha256": "a7971ded097009be7d7a9496df586a45c70357d0083acd044073df352f90ab3e"
+      "size_bytes": 2078,
+      "sha256": "62677b8827fa80ebec2f0bbdfb6eb3849cc030d646a86b63206402376b87e995"
     },
     {
       "role": "manifest_reference",
@@ -784,7 +840,7 @@
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/raw_bundle_trace_status.csv",
       "exists": true,
       "size_bytes": 8605,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "sha256": "bbe935920d7136921ba63c9b5374a400d749effcdfe33aeea619b621b9827878"
     },
     {
       "role": "manifest_reference",
@@ -799,8 +855,8 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[0]",
       "path": "06_analysis/paper_tables/research_goal_coverage_audit/requirement_coverage.csv",
       "exists": true,
-      "size_bytes": 9698,
-      "sha256": "8043d2dfeabca33c41b560ef0f0fc975f26ab4ac13eb11a142f615f6596bb83b"
+      "size_bytes": 9980,
+      "sha256": "681ef4a0de1211d61b3f661f6e79c0f87b69a5d82a26eeb2ce4dcc88c371562c"
     },
     {
       "role": "manifest_reference",
@@ -809,6 +865,38 @@
       "exists": true,
       "size_bytes": 123335,
       "sha256": "6f11be678418e517946181d674893cfa081471d10f6d9b8a7d4af1e649ecd7f5"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/submission_claim_strength_audit/manifest.json:output_files[0]",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/claim_boundary_checks.csv",
+      "exists": true,
+      "size_bytes": 11284,
+      "sha256": "ea7fbafd0f8ac2d8efebe21c39806d903d19e1464d871dc830f70648d82b8f3b"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[13]",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/manifest.json",
+      "exists": true,
+      "size_bytes": 1770,
+      "sha256": "82e3a2ef6d63362d900240dbd1ede0f1931537e7183018e2e88b441339032dfb"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/submission_claim_strength_audit/manifest.json:output_files[2]",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/README.md",
+      "exists": true,
+      "size_bytes": 508,
+      "sha256": "8c10c9181317260c72e44b3336f61573648af52ebf13bea3f3d080f684218087"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/submission_claim_strength_audit/manifest.json:output_files[1]",
+      "path": "06_analysis/paper_tables/submission_claim_strength_audit/risk_phrase_hits.csv",
+      "exists": true,
+      "size_bytes": 34353,
+      "sha256": "577c98c1a3c9727758e152a3b6ab94651005aba127a86bf723b9c1b54d24732f"
     },
     {
       "role": "manifest_reference",
@@ -828,7 +916,7 @@
     },
     {
       "role": "manifest_reference",
-      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json:report",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[12]",
       "path": "06_analysis/phase10_paired_significance_report_20260707.md",
       "exists": true,
       "size_bytes": 4911,
@@ -839,8 +927,16 @@
       "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:output_files[5]",
       "path": "06_analysis/research_goal_coverage_audit_20260707.md",
       "exists": true,
-      "size_bytes": 6100,
-      "sha256": "531c0d30191370a20a447c8977056615c36e0b2cc1b1bc904e94b9a3a10011b9"
+      "size_bytes": 5743,
+      "sha256": "bb04b7196141df56c96d70af23d009aa8699a55d83ea3a56210cd1a7fada28aa"
+    },
+    {
+      "role": "manifest_reference",
+      "source": "C:/Users/沈高青/Documents/通感一体化辅助的窄波束邻居发现方法研究/06_analysis/paper_tables/research_goal_coverage_audit/manifest.json:input_files[14]",
+      "path": "06_analysis/submission_claim_strength_audit_20260707.md",
+      "exists": true,
+      "size_bytes": 1660,
+      "sha256": "5fa4939d2dd2201cb265fc64480161202dc1e275d1da23b12706875798b1f084"
     },
     {
       "role": "manifest_reference",

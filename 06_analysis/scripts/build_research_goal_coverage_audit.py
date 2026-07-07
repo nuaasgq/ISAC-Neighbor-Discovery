@@ -34,6 +34,8 @@ LEARNED_ABLATION_MANIFEST = Path("06_analysis/paper_tables/marl/p10_learned_comp
 LEARNED_ABLATION_REPORT = Path("06_analysis/phase10_learned_component_ablation_report_20260707.md")
 PAIRED_SIGNIFICANCE_MANIFEST = Path("06_analysis/paper_tables/marl/p10_paired_significance_primary/manifest.json")
 PAIRED_SIGNIFICANCE_REPORT = Path("06_analysis/phase10_paired_significance_report_20260707.md")
+CLAIM_STRENGTH_MANIFEST = Path("06_analysis/paper_tables/submission_claim_strength_audit/manifest.json")
+CLAIM_STRENGTH_REPORT = Path("06_analysis/submission_claim_strength_audit_20260707.md")
 RANGE_NOTE = Path("06_analysis/range_abstraction_theory_note_20260707.md")
 RANGE_GRID_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rc_rs_grid/aggregate_metrics.csv")
 RANGE_RATIO_CSV = Path("06_analysis/paper_tables/round3_robustness/range_rs_ratio/aggregate_metrics.csv")
@@ -179,6 +181,7 @@ def requirement_rows(
     rerun_validation: dict,
     learned_ablation: dict,
     paired_significance: dict,
+    claim_strength: dict,
 ) -> tuple[list[Requirement], list[Risk], dict[str, object]]:
     final_methods = {row.get("method", "") for row in final_rows}
     final_beams = {as_float(row.get("beamwidth_deg")) for row in final_rows}
@@ -259,6 +262,11 @@ def requirement_rows(
     paired_significance_pass = bool(paired_significance.get("all_confirmatory_tests_pass")) and as_int(
         paired_significance.get("confirmatory_test_count")
     ) >= 16
+    claim_strength_pass = (
+        bool(claim_strength.get("all_required_checks_pass"))
+        and as_int(claim_strength.get("required_check_count")) > 0
+        and as_int(claim_strength.get("review_required_risk_hits"), default=-1) == 0
+    )
 
     range_rows = read_csv(RANGE_GRID_CSV) + read_csv(RANGE_RATIO_CSV)
     range_rc_ratios = {round(as_float(row.get("communication_range_to_diagonal_ratio")), 3) for row in range_rows if row.get("communication_range_to_diagonal_ratio")}
@@ -464,11 +472,11 @@ def requirement_rows(
         "R15",
         "Submission wording boundary",
         "Keep claims aligned with simulator, protocol-level ISAC abstraction, and approximate literature baseline scope.",
-        "CAUTION",
-        "reviewer_audit",
-        f"Existing readiness review records {len(supplement_stability_rows)} supplement/supplement-stress rows and flags SkyOrbs-like/reproduction limits.",
-        [SUBMISSION_REVIEW, FIGURE_AUDIT],
-        "Before submission, run a line-level IEEE style and claim-strength pass.",
+        "PASS" if claim_strength_pass else "CAUTION",
+        "claim_strength_audit" if claim_strength_pass else "reviewer_audit",
+        f"Claim-strength audit passes {as_int(claim_strength.get('passed_required_checks'))}/{as_int(claim_strength.get('required_check_count'))} required boundary checks and reports {as_int(claim_strength.get('review_required_risk_hits'), default=-1)} review-required risk hits; readiness review records {len(supplement_stability_rows)} supplement/supplement-stress rows.",
+        [CLAIM_STRENGTH_REPORT, CLAIM_STRENGTH_MANIFEST, SUBMISSION_REVIEW, FIGURE_AUDIT],
+        "Keep rerunning the claim-strength audit after every manuscript edit; do not remove the SkyOrbs-like, protocol-abstraction, statistics, learned-ablation, and MAC-scope caveats.",
     )
     add(
         "R16",
@@ -513,15 +521,16 @@ def requirement_rows(
             risks.append(Risk("P1", req.requirement, req.evidence_summary, req.status, req.next_action))
         elif req.status == "CAUTION":
             risks.append(Risk("P2", req.requirement, req.evidence_summary, req.status, req.next_action))
-    risks.append(
-        Risk(
-            "P2",
-            "Literature-inspired SkyOrbs-like baseline may be challenged as not a faithful reproduction.",
-            "Final table includes SkyOrbs-like, but project reports already label it as inspired/approximate.",
-            "CAUTION",
-            "Either retain explicit caveat or implement a stricter reproduction before submission.",
+    if not claim_strength_pass:
+        risks.append(
+            Risk(
+                "P2",
+                "Literature-inspired SkyOrbs-like baseline may be challenged as not a faithful reproduction.",
+                "Final table includes SkyOrbs-like, but project reports already label it as inspired/approximate.",
+                "CAUTION",
+                "Either retain explicit caveat or implement a stricter reproduction before submission.",
+            )
         )
-    )
 
     inventory = {
         "final_method_rows": len(final_rows),
@@ -561,6 +570,10 @@ def requirement_rows(
         "independent_rerun_beamwidth_deg": rerun_beam,
         "learned_ablation_labels": sorted(learned_ablation_labels),
         "learned_ablation_required_labels_present": learned_ablation_complete,
+        "claim_strength_required_checks": as_int(claim_strength.get("required_check_count")),
+        "claim_strength_passed_required_checks": as_int(claim_strength.get("passed_required_checks")),
+        "claim_strength_review_required_risk_hits": as_int(claim_strength.get("review_required_risk_hits"), default=-1),
+        "claim_strength_pass": claim_strength_pass,
         "code_evidence_files_present": code_files_present,
         "code_evidence_files_total": len(CODE_EVIDENCE),
     }
@@ -676,6 +689,7 @@ def main() -> None:
     rerun_validation = read_json(RERUN_VALIDATION_MANIFEST)
     learned_ablation = read_json(LEARNED_ABLATION_MANIFEST)
     paired_significance = read_json(PAIRED_SIGNIFICANCE_MANIFEST)
+    claim_strength = read_json(CLAIM_STRENGTH_MANIFEST)
 
     requirements, risks, inventory = requirement_rows(
         final_rows,
@@ -686,6 +700,7 @@ def main() -> None:
         rerun_validation,
         learned_ablation,
         paired_significance,
+        claim_strength,
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -763,6 +778,10 @@ def main() -> None:
             RERUN_VALIDATION_REPORT.as_posix(),
             LEARNED_ABLATION_MANIFEST.as_posix(),
             LEARNED_ABLATION_REPORT.as_posix(),
+            PAIRED_SIGNIFICANCE_MANIFEST.as_posix(),
+            PAIRED_SIGNIFICANCE_REPORT.as_posix(),
+            CLAIM_STRENGTH_MANIFEST.as_posix(),
+            CLAIM_STRENGTH_REPORT.as_posix(),
         ]
         + [path.as_posix() for path in CODE_EVIDENCE],
         "output_files": [path.as_posix() for path in output_files],
