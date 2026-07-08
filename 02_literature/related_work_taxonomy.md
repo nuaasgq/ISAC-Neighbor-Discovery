@@ -27,3 +27,11 @@
 - Critical link discovery
 - Algebraic connectivity
 - Consensus convergence under partial topology
+
+## E. Cross-Layer ISAC-Assisted FANET Neighbor Discovery
+
+- MIMO-OTFS / OFDM sensing abstraction for beam-cell occupancy
+- Sensing-table and neighbor-table exchange
+- Rule-based ISAC-assisted random scanning
+- Cooperative sensing / gossip-style indirect discovery
+- Limits to separate from this project: quasi-static initialization, fixed beamwidth, small-to-medium node counts, delay-only objectives, no MARL, and no topology-quality prioritization
