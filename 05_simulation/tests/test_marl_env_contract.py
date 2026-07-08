@@ -116,6 +116,7 @@ def test_access_gate_action_modulates_effective_role() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg)
     env.reset(seed=17)
+    env._sim.collision_fail_count[0, 1] = 1.0
 
     actions = [
         {"mode": "tx", "beam": 1, "access_gate": "backoff"},

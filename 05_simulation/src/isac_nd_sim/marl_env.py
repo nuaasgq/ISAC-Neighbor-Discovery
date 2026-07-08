@@ -99,7 +99,7 @@ class MarlNeighborDiscoveryEnv:
         parsed_actions = self._normalize_actions(actions)
         for action in parsed_actions:
             self._access_gate_counts[action.access_gate] += 1
-        execution_actions = [self._apply_access_gate(action) for action in parsed_actions]
+        execution_actions = [self._apply_access_gate(node, action) for node, action in enumerate(parsed_actions)]
         true_comm_edges = self._sim.true_edges(self.cfg.communication_range_m)
         for edge in true_comm_edges:
             self._sim.first_true_slot.setdefault(edge, self._slot)
@@ -378,12 +378,25 @@ class MarlNeighborDiscoveryEnv:
             raise ValueError(f"Beam index {parsed_beam} outside [0, {self.n_beams}).")
         return Action(parsed_mode, parsed_beam, parsed_gate)
 
-    def _apply_access_gate(self, action: Action) -> Action:
-        if action.access_gate == ACCESS_BACKOFF and action.mode == MODE_TX:
+    def _apply_access_gate(self, node: int, action: Action) -> Action:
+        if action.access_gate == ACCESS_BACKOFF and action.mode == MODE_TX and self._has_collision_evidence(node, action.beam):
             return Action(MODE_RX, action.beam, action.access_gate)
-        if action.access_gate == ACCESS_AGGRESSIVE and action.mode == MODE_RX:
+        if action.access_gate == ACCESS_AGGRESSIVE and action.mode == MODE_RX and self._has_low_collision_evidence(node, action.beam):
             return Action(MODE_TX, action.beam, action.access_gate)
         return action
+
+    def _has_collision_evidence(self, node: int, beam: int) -> bool:
+        beam_collision = float(self._sim.collision_fail_count[node, beam])
+        beam_fail = float(self._sim.fail_count[node, beam])
+        episode_pressure = self._sim.collision_count / max(1.0, float(self._slot + 1))
+        return bool(beam_collision > 0.0 or (episode_pressure > 0.75 and beam_fail > 0.0))
+
+    def _has_low_collision_evidence(self, node: int, beam: int) -> bool:
+        beam_collision = float(self._sim.collision_fail_count[node, beam])
+        beam_success = float(self._sim.success_count[node, beam])
+        degree = sum(1 for edge in self._sim.discovered_edges if node in edge)
+        needs_degree = degree < int(self.cfg.target_degree)
+        return bool(needs_degree and beam_collision <= beam_success)
 
     def _rewards(
         self,

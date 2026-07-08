@@ -300,6 +300,9 @@ class _ContentionGraphActorCriticModule:
                         nn.SiLU(),
                         nn.Linear(hidden_dim, len(ACCESS_GATE_NAMES)),
                     )
+                    nn.init.zeros_(self.access_gate_action_head[-1].weight)
+                    nn.init.zeros_(self.access_gate_action_head[-1].bias)
+                    self.access_gate_action_head[-1].bias.data[ACCESS_GATE_NAMES.index("normal")] = 0.75
 
             def forward(self, tensors: dict[str, torch.Tensor]):
                 beam_features = tensors["beam_features"]
