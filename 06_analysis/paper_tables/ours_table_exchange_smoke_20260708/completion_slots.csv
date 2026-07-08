@@ -1,0 +1,13 @@
+completed,consumed_slots_censored,episode,method_label,node_count,protocol,rf_chains
+0,200,0,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,3
+0,200,1,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,3
+0,200,2,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,3
+0,200,0,Ours: ISAC rule + table exchange,20,improved_rl_isac_tables,3
+0,200,1,Ours: ISAC rule + table exchange,20,improved_rl_isac_tables,3
+0,200,2,Ours: ISAC rule + table exchange,20,improved_rl_isac_tables,3
+0,200,0,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,3
+0,200,1,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,3
+0,200,2,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,3
+0,200,0,Ours: ISAC rule + table exchange,50,improved_rl_isac_tables,3
+0,200,1,Ours: ISAC rule + table exchange,50,improved_rl_isac_tables,3
+0,200,2,Ours: ISAC rule + table exchange,50,improved_rl_isac_tables,3

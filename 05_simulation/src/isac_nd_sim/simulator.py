@@ -24,6 +24,7 @@ WANG2025_PROTOCOLS = (
 
 ISAC_PROTOCOLS = (
     "improved_rl_isac",
+    "improved_rl_isac_tables",
     "collision_aware_isac",
     "isac_structured_marl",
     "wang2025_isac_no_collab",
@@ -37,6 +38,9 @@ ISAC_PROTOCOLS = (
 
 WANG2025_COMM_TABLE_PROTOCOLS = ("wang2025_comm_tables", "wang2025_isac_tables")
 WANG2025_SENSING_TABLE_PROTOCOLS = ("wang2025_isac_tables",)
+OURS_TABLE_PROTOCOLS = ("improved_rl_isac_tables",)
+COMM_TABLE_PROTOCOLS = WANG2025_COMM_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
+SENSING_TABLE_PROTOCOLS = WANG2025_SENSING_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
 
 DELAYED_CANDIDATE_PROTOCOLS = ("ablation_isac_one_slot_delay",)
 
@@ -1052,12 +1056,12 @@ class NeighborDiscoverySimulator:
                     new_edges.append(edge)
                 self.success_count[tx_node, int(beams[tx_node, rx_node])] += 1.0
                 self.success_count[rx_node, int(beams[rx_node, tx_node])] += 1.0
-                if self.protocol in WANG2025_COMM_TABLE_PROTOCOLS:
+                if self.protocol in COMM_TABLE_PROTOCOLS:
                     self.exchange_neighbor_and_sensing_tables(tx_node, rx_node, slot)
         return new_edges
 
     def exchange_neighbor_and_sensing_tables(self, node_a: int, node_b: int, slot: int) -> None:
-        include_sensing = self.protocol in WANG2025_SENSING_TABLE_PROTOCOLS
+        include_sensing = self.protocol in SENSING_TABLE_PROTOCOLS
         self.merge_peer_tables(dst=node_a, src=node_b, slot=slot, include_sensing=include_sensing)
         self.merge_peer_tables(dst=node_b, src=node_a, slot=slot, include_sensing=include_sensing)
 

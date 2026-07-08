@@ -1,0 +1,23 @@
+{
+  "created_at_utc": "2026-07-08T15:02:44.422126+00:00",
+  "scope": "Wang2025-style MIMO-OTFS ISAC FANET neighbor-discovery extended comparison",
+  "config": "05_simulation/configs/wang2025_reproduction_smoke.yaml",
+  "output": "06_analysis/paper_tables/ours_table_exchange_smoke_20260708",
+  "figures": "06_analysis/paper_figures/ours_table_exchange_smoke_20260708",
+  "episodes_per_case": 3,
+  "slots_per_episode": 200,
+  "node_counts": [
+    20,
+    50
+  ],
+  "rf_chains": [
+    3
+  ],
+  "protocols": [
+    "improved_rl_isac",
+    "improved_rl_isac_tables"
+  ],
+  "episode_rows": 12,
+  "slot_rows": 2400,
+  "paper_boundary": "This campaign uses a PHY-aware abstraction of MIMO-OTFS sensing, not a full waveform receiver."
+}

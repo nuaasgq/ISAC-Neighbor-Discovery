@@ -89,6 +89,7 @@ baselines:
   - "wang2025_comm_tables"
   - "wang2025_isac_tables"
   - "improved_rl_isac"
+  - "improved_rl_isac_tables"
 
 metrics:
   discovery:

@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import numpy as np
+
 from isac_nd_sim.config import load_config
+from isac_nd_sim.mobility import NodeState
 from isac_nd_sim.phy_sensing import detection_probability, radar_snr_db
 from isac_nd_sim.runner import run
+from isac_nd_sim.simulator import NeighborDiscoverySimulator
 
 
 def test_radar_snr_sensing_probability_decreases_with_distance() -> None:
@@ -58,3 +62,35 @@ def test_wang2025_isac_tables_runs_with_phy_sensing_metrics() -> None:
     assert wang["sensing_observations"] > 0
     assert "mean_sensing_snr_db" in wang
     assert 0.0 <= wang["sensing_detection_rate"] <= 1.0
+
+
+def test_ours_table_exchange_boosts_beam_to_peer_known_neighbor() -> None:
+    cfg = load_config("05_simulation/configs/mvp.yaml")
+    cfg = replace(
+        cfg,
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=4,
+        communication_range_m=1000.0,
+        sensing_range_m=1000.0,
+        belief_update_rho=0.6,
+    )
+    simulator = NeighborDiscoverySimulator(cfg, "improved_rl_isac_tables", seed=20260708)
+    simulator.reset()
+    simulator.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([0.0, 100.0, 0.0]), np.zeros(3)),
+    ]
+    simulator._beam_matrix_cache = None
+    simulator._distance_matrix_cache = None
+
+    target_beam = simulator.beam_from_to(0, 2)
+    before = float(simulator.belief[0, target_beam])
+    simulator.discovered_edges.add((1, 2))
+
+    simulator.exchange_neighbor_and_sensing_tables(0, 1, slot=3)
+
+    assert simulator.belief[0, target_beam] > before
+    assert simulator.success_count[0, target_beam] > 0.0
+    assert simulator.last_positive_slot[0, target_beam] == 3

@@ -28,13 +28,15 @@ PROTOCOLS = (
     "wang2025_comm_tables",
     "wang2025_isac_tables",
     "improved_rl_isac",
+    "improved_rl_isac_tables",
 )
 PROTOCOL_LABELS = {
     "uniform_random": "Uniform Random",
     "wang2025_isac_no_collab": "Wang-like ISAC, no table exchange",
     "wang2025_comm_tables": "Wang-like + neighbor table",
     "wang2025_isac_tables": "Wang-like + sensing table",
-    "improved_rl_isac": "Ours: topology-aware ISAC rule",
+    "improved_rl_isac": "Ours: ISAC rule, no table exchange",
+    "improved_rl_isac_tables": "Ours: ISAC rule + table exchange",
 }
 
 
@@ -296,7 +298,7 @@ def write_readme(
         f"- Protocols: {', '.join(protocols)}",
         f"- Episode rows: {episode_rows}",
         f"- Slot rows: {slot_rows}",
-        f"- Figures: `{figures.relative_to(REPO_ROOT).as_posix()}`",
+        f"- Figures: `{figures.resolve().relative_to(REPO_ROOT).as_posix()}`",
         "",
         "Files:",
         "",
@@ -331,6 +333,7 @@ def maybe_write_figures(figures: Path, rows: list[dict[str, Any]]) -> None:
         "wang2025_comm_tables": "#2ca25f",
         "wang2025_isac_tables": "#8856a7",
         "improved_rl_isac": "#d95f02",
+        "improved_rl_isac_tables": "#e7298a",
     }
 
     plot_line_metric(
