@@ -110,7 +110,7 @@ class MarlNeighborDiscoveryEnv:
         self._sim._candidate_pool_cache.clear()
         self._sim.snapshot_pre_sensing_candidates(self._slot)
         self._sim.update_action_counts(parsed_actions, self._slot)
-        self._sim.update_empty_scan_counts(parsed_actions, true_comm_edges)
+        self._sim.update_empty_scan_counts(parsed_actions, true_comm_edges, self._slot)
         self._sim.update_sensing(parsed_actions, self._slot)
         self._sim._candidate_pool_cache.clear()
         new_edges = self._sim.resolve_discoveries(self._slot, parsed_actions, true_comm_edges)

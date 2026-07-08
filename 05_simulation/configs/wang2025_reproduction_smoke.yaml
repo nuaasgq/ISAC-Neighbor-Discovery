@@ -30,6 +30,7 @@ beam:
   azimuth_cells: [15]
   elevation_cells: [7]
   alignment_tolerance_cells: 0
+  rf_chains: [3]
   main_lobe_model: "ideal_cell_coverage"
   sidelobe_model: "none"
 
@@ -84,6 +85,8 @@ energy:
 
 baselines:
   - "uniform_random"
+  - "wang2025_isac_no_collab"
+  - "wang2025_comm_tables"
   - "wang2025_isac_tables"
   - "improved_rl_isac"
 

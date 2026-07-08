@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import erf, isinf, sqrt
 from typing import Iterable
 
 import numpy as np
@@ -15,10 +16,18 @@ MODE_TX = "tx"
 MODE_RX = "rx"
 MODE_IDLE = "idle"
 
+WANG2025_PROTOCOLS = (
+    "wang2025_isac_no_collab",
+    "wang2025_comm_tables",
+    "wang2025_isac_tables",
+)
+
 ISAC_PROTOCOLS = (
     "improved_rl_isac",
     "collision_aware_isac",
     "isac_structured_marl",
+    "wang2025_isac_no_collab",
+    "wang2025_comm_tables",
     "wang2025_isac_tables",
     "ablation_isac_one_slot_delay",
     "ablation_isac_no_candidate_set",
@@ -26,7 +35,8 @@ ISAC_PROTOCOLS = (
     "ablation_isac_no_topology",
 )
 
-TABLE_EXCHANGE_PROTOCOLS = ("wang2025_isac_tables",)
+WANG2025_COMM_TABLE_PROTOCOLS = ("wang2025_comm_tables", "wang2025_isac_tables")
+WANG2025_SENSING_TABLE_PROTOCOLS = ("wang2025_isac_tables",)
 
 DELAYED_CANDIDATE_PROTOCOLS = ("ablation_isac_one_slot_delay",)
 
@@ -136,6 +146,10 @@ class NeighborDiscoverySimulator:
         self.edge_rows: list[dict] = []
         self._candidate_pool_cache: dict[tuple[int, int], np.ndarray] = {}
         self._pre_sensing_candidate_pool: dict[int, np.ndarray] = {}
+        self._sensing_profile_cache: dict[tuple[float, bool], list[list[list[tuple[float, float]]]]] = {}
+        self._beam_match_cache: dict[int, np.ndarray] = {}
+        self._observable_beam_cache: dict[int, tuple[tuple[int, float], ...]] = {}
+        self._angular_match_probability_cache: dict[tuple[int, int], float] = {}
         self._beam_matrix_cache: np.ndarray | None = None
         self._distance_matrix_cache: np.ndarray | None = None
         self._complete_edges_cache: set[tuple[int, int]] | None = None
@@ -174,6 +188,10 @@ class NeighborDiscoverySimulator:
         self.edge_rows = []
         self._candidate_pool_cache.clear()
         self._pre_sensing_candidate_pool.clear()
+        self._sensing_profile_cache.clear()
+        self._beam_match_cache.clear()
+        self._observable_beam_cache.clear()
+        self._angular_match_probability_cache.clear()
         self._beam_matrix_cache = None
         self._distance_matrix_cache = None
         self._complete_edges_cache = None
@@ -183,6 +201,7 @@ class NeighborDiscoverySimulator:
         for slot in range(self.cfg.slots_per_episode):
             self._beam_matrix_cache = None
             self._distance_matrix_cache = None
+            self._sensing_profile_cache.clear()
             true_comm_edges = self.true_edges(self.cfg.communication_range_m)
             for edge in true_comm_edges:
                 self.first_true_slot.setdefault(edge, slot)
@@ -192,7 +211,7 @@ class NeighborDiscoverySimulator:
             actions = self.select_actions(slot, true_comm_edges)
             self.snapshot_pre_sensing_candidates(slot)
             self.update_action_counts(actions, slot)
-            self.update_empty_scan_counts(actions, true_comm_edges)
+            self.update_empty_scan_counts(actions, true_comm_edges, slot)
             self.update_sensing(actions, slot)
             self._candidate_pool_cache.clear()
             new_edges = self.resolve_discoveries(slot, actions, true_comm_edges)
@@ -208,6 +227,7 @@ class NeighborDiscoverySimulator:
             )
             self._beam_matrix_cache = None
             self._distance_matrix_cache = None
+            self._sensing_profile_cache.clear()
         return self.summarize(episode)
 
     def slot_metrics(
@@ -350,7 +370,7 @@ class NeighborDiscoverySimulator:
             return MODE_TX if (slot + 2 * node) % 5 in (0, 1) else MODE_RX
         if self.protocol == "skyorbs_like_skip_scan":
             return MODE_TX if (slot // 2 + node) % 2 == 0 else MODE_RX
-        if self.protocol == "wang2025_isac_tables":
+        if self.protocol in WANG2025_PROTOCOLS:
             p_tx = float(np.clip(self.cfg.p_tx, 0.05, 0.95))
             return MODE_TX if self.rng.random() < p_tx else MODE_RX
         if self.protocol in ("rl_no_isac", "basic_marl_no_isac"):
@@ -438,7 +458,7 @@ class NeighborDiscoverySimulator:
             return int(((slot + 1) * (2 * node + 1) + node) % self.cfg.n_beams)
         if self.protocol == "skyorbs_like_skip_scan":
             return self.skyorbs_like_beam(node, slot)
-        if self.protocol == "wang2025_isac_tables":
+        if self.protocol in WANG2025_PROTOCOLS:
             return self.wang2025_table_beam(node)
         if self.protocol == "oracle" and oracle_occupied:
             return int(self.rng.choice(tuple(oracle_occupied)))
@@ -647,6 +667,33 @@ class NeighborDiscoverySimulator:
         probs = probs / probs.sum()
         return int(self.rng.choice(candidate_indices, p=probs))
 
+    def active_beams_for_action(self, node: int, action: Action, slot: int | None = None) -> np.ndarray:
+        """Beams activated by one node in one slot under a multi-RF abstraction."""
+
+        if action.mode == MODE_IDLE:
+            return np.asarray([], dtype=int)
+        beams: list[int] = [int(action.beam)]
+        rf_chains = max(1, int(self.cfg.rf_chains))
+        if rf_chains <= 1:
+            return np.asarray(beams, dtype=int)
+
+        if self.protocol in ISAC_PROTOCOLS and slot is not None:
+            for candidate in self.isac_candidate_pool(node, slot):
+                candidate = int(candidate)
+                if candidate not in beams:
+                    beams.append(candidate)
+                if len(beams) >= rf_chains:
+                    return np.asarray(beams, dtype=int)
+
+        stride = self.near_coprime_stride(self.cfg.n_beams)
+        k = 1
+        while len(beams) < rf_chains and len(beams) < self.cfg.n_beams:
+            candidate = int((action.beam + k * stride) % self.cfg.n_beams)
+            if candidate not in beams:
+                beams.append(candidate)
+            k += 1
+        return np.asarray(beams, dtype=int)
+
     def update_sensing(self, actions: list[Action], slot: int | None = None) -> None:
         if self.protocol in NO_ISAC_SENSING_PROTOCOLS:
             return
@@ -677,7 +724,7 @@ class NeighborDiscoverySimulator:
             observation = self.belief[node].copy()
             piggyback_isac = self.action_has_piggyback_isac(action)
             if piggyback_isac:
-                sensed_beams = self.sensing_sector(action.beam)
+                sensed_beams = self.sensing_sectors_for_action(node, action, slot)
                 for sensed_beam in sensed_beams:
                     if ideal_sensing:
                         observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
@@ -704,7 +751,7 @@ class NeighborDiscoverySimulator:
                 self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
                 self.age[node, sensed_beams] = 0.0
                 continue
-            sensed_beams = self.sensing_sector(action.beam)
+            sensed_beams = self.sensing_sectors_for_action(node, action, slot)
             for sensed_beam in sensed_beams:
                 if ideal_sensing:
                     observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
@@ -721,9 +768,17 @@ class NeighborDiscoverySimulator:
             self.age[node, sensed_beams] = 0.0
 
     def action_has_piggyback_isac(self, action: Action) -> bool:
-        if self.protocol == "wang2025_isac_tables":
+        if self.protocol in WANG2025_PROTOCOLS:
             return action.mode == MODE_TX
         return self.protocol in ISAC_PROTOCOLS and action.mode in (MODE_TX, MODE_RX)
+
+    def sensing_sectors_for_action(self, node: int, action: Action, slot: int | None) -> np.ndarray:
+        sector_beams: list[int] = []
+        for active_beam in self.active_beams_for_action(node, action, slot):
+            sector_beams.extend(self.sensing_sector(int(active_beam)).astype(int).tolist())
+        if not sector_beams:
+            return np.asarray([], dtype=int)
+        return np.asarray(sorted(set(sector_beams)), dtype=int)
 
     def beam_has_sensing_target(self, node: int, sensed_beam: int, radius: float) -> bool:
         beams = self.beam_matrix()
@@ -736,40 +791,21 @@ class NeighborDiscoverySimulator:
         return False
 
     def sample_sensing_observation(self, node: int, sensed_beam: int, radius: float, *, piggyback: bool) -> float:
-        beams = self.beam_matrix()
-        dist2 = self.distance_matrix()
-        has_target_in_sector = False
+        true_sector_candidates: list[tuple[float, float]] = []
+        profile = self.sensing_profile(radius, piggyback)
+        for true_beam in self.matching_true_beams(int(sensed_beam)):
+            true_sector_candidates.extend(profile[node][int(true_beam)])
+
+        has_target_in_sector = bool(true_sector_candidates)
         detected = False
-        max_pd = 0.0
-        max_snr_db = -300.0
-        for target in range(self.cfg.n_nodes):
-            if target == node or dist2[node, target] > float(radius) ** 2:
-                continue
-            distance = float(np.sqrt(dist2[node, target]))
-            pd = detection_probability(distance, self.cfg, piggyback=piggyback)
-            true_beam = int(beams[node, target])
-            offset_std = self.cfg.angular_cell_offset_std
-            az_shift = int(np.rint(self.rng.normal(0.0, offset_std))) if offset_std > 0 else 0
-            el_shift = int(np.rint(self.rng.normal(0.0, offset_std))) if offset_std > 0 else 0
-            observed_beam = shift_beam(true_beam, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
-            target_matches_selected_sector = beam_matches(
-                sensed_beam,
-                true_beam,
-                self.cfg.azimuth_cells,
-                self.cfg.alignment_tolerance_cells,
-            )
-            has_target_in_sector = has_target_in_sector or target_matches_selected_sector
-            if target_matches_selected_sector:
-                max_pd = max(max_pd, pd)
-                if self.cfg.isac_sensing_model == "radar_snr":
-                    max_snr_db = max(max_snr_db, radar_snr_db(distance, self.cfg, piggyback=piggyback))
-            if self.rng.random() < pd and beam_matches(
-                sensed_beam,
-                observed_beam,
-                self.cfg.azimuth_cells,
-                self.cfg.alignment_tolerance_cells,
-            ):
-                detected = True
+        max_pd = max((pd for pd, _snr_db in true_sector_candidates), default=0.0)
+        max_snr_db = max((snr_db for _pd, snr_db in true_sector_candidates), default=-300.0)
+        for true_beam, angular_match_probability in self.observable_true_beams(int(sensed_beam)):
+            for pd, _snr_db in profile[node][int(true_beam)]:
+                if self.rng.random() < pd * angular_match_probability:
+                    detected = True
+                    break
+            if detected:
                 break
 
         self.sensing_observations += 1
@@ -787,6 +823,110 @@ class NeighborDiscoverySimulator:
             self.sensing_false_alarm_count += 1
             return 1.0
         return 0.0
+
+    def sensing_profile(self, radius: float, piggyback: bool) -> list[list[list[tuple[float, float]]]]:
+        key = (round(float(radius), 6), bool(piggyback))
+        cached = self._sensing_profile_cache.get(key)
+        if cached is not None:
+            return cached
+
+        beams = self.beam_matrix()
+        dist2 = self.distance_matrix()
+        profiles: list[list[list[tuple[float, float]]]] = [
+            [[] for _beam in range(self.cfg.n_beams)] for _node in range(self.cfg.n_nodes)
+        ]
+        radius2 = float(radius) ** 2
+        for node in range(self.cfg.n_nodes):
+            for target in range(self.cfg.n_nodes):
+                if target == node or dist2[node, target] > radius2:
+                    continue
+                distance = float(np.sqrt(dist2[node, target]))
+                pd = detection_probability(distance, self.cfg, piggyback=piggyback)
+                snr_db = (
+                    radar_snr_db(distance, self.cfg, piggyback=piggyback)
+                    if self.cfg.isac_sensing_model == "radar_snr"
+                    else 0.0
+                )
+                profiles[node][int(beams[node, target])].append((pd, snr_db))
+        self._sensing_profile_cache[key] = profiles
+        return profiles
+
+    def matching_true_beams(self, sensed_beam: int) -> np.ndarray:
+        cached = self._beam_match_cache.get(int(sensed_beam))
+        if cached is not None:
+            return cached
+        matches = [
+            beam
+            for beam in range(self.cfg.n_beams)
+            if beam_matches(int(sensed_beam), beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
+        ]
+        arr = np.asarray(matches, dtype=int)
+        self._beam_match_cache[int(sensed_beam)] = arr
+        return arr
+
+    def observable_true_beams(self, sensed_beam: int) -> tuple[tuple[int, float], ...]:
+        cached = self._observable_beam_cache.get(int(sensed_beam))
+        if cached is not None:
+            return cached
+        observable = tuple(
+            (true_beam, probability)
+            for true_beam in range(self.cfg.n_beams)
+            if (probability := self.angular_observation_match_probability(true_beam, int(sensed_beam))) > 1e-6
+        )
+        self._observable_beam_cache[int(sensed_beam)] = observable
+        return observable
+
+    def angular_observation_match_probability(self, true_beam: int, sensed_beam: int) -> float:
+        key = (int(true_beam), int(sensed_beam))
+        cached = self._angular_match_probability_cache.get(key)
+        if cached is not None:
+            return cached
+
+        offset_std = float(self.cfg.angular_cell_offset_std)
+        if offset_std <= 0.0:
+            probability = (
+                1.0
+                if beam_matches(sensed_beam, true_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
+                else 0.0
+            )
+            self._angular_match_probability_cache[key] = probability
+            return probability
+
+        max_shift = int(max(2, np.ceil(4.0 * offset_std + 1.0)))
+        shift_probabilities = [
+            (shift, self.rounded_normal_shift_probability(shift, max_shift, offset_std))
+            for shift in range(-max_shift, max_shift + 1)
+        ]
+        probability = 0.0
+        for az_shift, p_az in shift_probabilities:
+            if p_az <= 0.0:
+                continue
+            for el_shift, p_el in shift_probabilities:
+                if p_el <= 0.0:
+                    continue
+                observed_beam = shift_beam(
+                    true_beam,
+                    self.cfg.azimuth_cells,
+                    self.cfg.elevation_cells,
+                    az_shift,
+                    el_shift,
+                )
+                if beam_matches(sensed_beam, observed_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+                    probability += p_az * p_el
+        self._angular_match_probability_cache[key] = probability
+        return probability
+
+    @staticmethod
+    def rounded_normal_shift_probability(shift: int, max_shift: int, std: float) -> float:
+        lower = -float("inf") if shift == -max_shift else shift - 0.5
+        upper = float("inf") if shift == max_shift else shift + 0.5
+
+        def cdf(x: float) -> float:
+            if isinf(x):
+                return 1.0 if x > 0 else 0.0
+            return 0.5 * (1.0 + erf(x / (std * sqrt(2.0))))
+
+        return max(0.0, cdf(upper) - cdf(lower))
 
     def update_action_counts(self, actions: list[Action], slot: int) -> None:
         for node, action in enumerate(actions):
@@ -819,17 +959,19 @@ class NeighborDiscoverySimulator:
                 beams.append(el * self.cfg.azimuth_cells + az)
         return np.asarray(sorted(set(beams)), dtype=int)
 
-    def update_empty_scan_counts(self, actions: list[Action], true_comm_edges: set[tuple[int, int]]) -> None:
+    def update_empty_scan_counts(self, actions: list[Action], true_comm_edges: set[tuple[int, int]], slot: int) -> None:
         occupied = self.occupied_beams(self.cfg.communication_range_m)
         for node, action in enumerate(actions):
             if action.mode not in (MODE_TX, MODE_RX):
                 continue
-            self.scan_actions += 1
-            if not any(
-                beam_matches(action.beam, beam_idx, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
-                for beam_idx in occupied[node]
-            ):
-                self.empty_scans += 1
+            active_beams = self.active_beams_for_action(node, action, slot)
+            self.scan_actions += len(active_beams)
+            for active_beam in active_beams:
+                if not any(
+                    beam_matches(int(active_beam), beam_idx, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
+                    for beam_idx in occupied[node]
+                ):
+                    self.empty_scans += 1
 
     def beam_has_comm_neighbor(self, node: int, selected_beam: int, true_comm_edges: set[tuple[int, int]]) -> bool:
         for edge in true_comm_edges:
@@ -860,7 +1002,8 @@ class NeighborDiscoverySimulator:
         for node, action in enumerate(actions):
             if not active_mask[node]:
                 continue
-            ready_mask[node, action.beam] = True
+            active_beams = self.active_beams_for_action(node, action, slot)
+            ready_mask[node, active_beams] = True
             if self.protocol in ISAC_PROTOCOLS and self.protocol != "ablation_isac_no_candidate_set":
                 pool = self.handshake_candidate_pool(node, slot)
                 if len(pool) > 0:
@@ -907,17 +1050,18 @@ class NeighborDiscoverySimulator:
                         }
                     )
                     new_edges.append(edge)
-                self.success_count[tx_node, actions[tx_node].beam] += 1.0
-                self.success_count[rx_node, actions[rx_node].beam] += 1.0
-                if self.protocol in TABLE_EXCHANGE_PROTOCOLS:
+                self.success_count[tx_node, int(beams[tx_node, rx_node])] += 1.0
+                self.success_count[rx_node, int(beams[rx_node, tx_node])] += 1.0
+                if self.protocol in WANG2025_COMM_TABLE_PROTOCOLS:
                     self.exchange_neighbor_and_sensing_tables(tx_node, rx_node, slot)
         return new_edges
 
     def exchange_neighbor_and_sensing_tables(self, node_a: int, node_b: int, slot: int) -> None:
-        self.merge_peer_tables(dst=node_a, src=node_b, slot=slot)
-        self.merge_peer_tables(dst=node_b, src=node_a, slot=slot)
+        include_sensing = self.protocol in WANG2025_SENSING_TABLE_PROTOCOLS
+        self.merge_peer_tables(dst=node_a, src=node_b, slot=slot, include_sensing=include_sensing)
+        self.merge_peer_tables(dst=node_b, src=node_a, slot=slot, include_sensing=include_sensing)
 
-    def merge_peer_tables(self, dst: int, src: int, slot: int) -> None:
+    def merge_peer_tables(self, dst: int, src: int, slot: int, *, include_sensing: bool) -> None:
         targets: set[int] = set()
         for edge in self.discovered_edges:
             if src not in edge:
@@ -926,10 +1070,13 @@ class NeighborDiscoverySimulator:
             if other != dst:
                 targets.add(other)
 
-        positive_ttl = max(20, min(200, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
-        recent = (slot - self.last_positive_slot[src]) <= positive_ttl
-        positive_beams = np.flatnonzero((self.belief[src] >= 0.65) & recent)
-        if len(positive_beams) > 0:
+        if include_sensing:
+            positive_ttl = max(20, min(200, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
+            recent = (slot - self.last_positive_slot[src]) <= positive_ttl
+            positive_beams = np.flatnonzero((self.belief[src] >= 0.65) & recent)
+        else:
+            positive_beams = np.asarray([], dtype=int)
+        if include_sensing and len(positive_beams) > 0:
             src_beams = self.beam_matrix()[src]
             dist2 = self.distance_matrix()[src]
             for source_beam in positive_beams[: max(1, 2 * self.cfg.target_degree)]:

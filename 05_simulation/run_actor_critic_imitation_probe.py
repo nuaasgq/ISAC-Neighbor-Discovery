@@ -460,7 +460,7 @@ def finish_expert_step(
 ) -> None:
     expert.snapshot_pre_sensing_candidates(slot)
     expert.update_action_counts(actions, slot)
-    expert.update_empty_scan_counts(actions, true_edges)
+    expert.update_empty_scan_counts(actions, true_edges, slot)
     expert.update_sensing(actions, slot)
     expert._candidate_pool_cache.clear()
     new_edges = expert.resolve_discoveries(slot, actions, true_edges)

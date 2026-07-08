@@ -27,6 +27,7 @@ class SimulationConfig:
     azimuth_cells: int
     elevation_cells: int
     alignment_tolerance_cells: int
+    rf_chains: int
     p_sense: float
     p_tx: float
     p_rx: float
@@ -127,6 +128,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         azimuth_cells=int(first(beam["azimuth_cells"])),
         elevation_cells=int(first(beam["elevation_cells"])),
         alignment_tolerance_cells=int(beam["alignment_tolerance_cells"]),
+        rf_chains=int(first(beam.get("rf_chains", 1))),
         p_sense=float(slot["p_sense"]),
         p_tx=float(slot["p_tx"]),
         p_rx=float(slot["p_rx"]),
