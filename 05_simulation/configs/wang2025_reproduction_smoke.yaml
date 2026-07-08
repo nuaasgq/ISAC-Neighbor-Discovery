@@ -1,0 +1,107 @@
+experiment:
+  name: "wang2025_reproduction_smoke"
+  seed: 20260708
+  episodes: 3
+  slots_per_episode: 200
+  slot_metric_period: 1
+  slot_duration_ms: 5
+
+network:
+  node_count: 20
+  area_shape: "cube"
+  area_size_m: [10000, 10000, 10000]
+  communication_range_m: 18000
+  sensing_range_m: 18000
+  self_localization_available: true
+  self_attitude_available: true
+  localization_error_std_m: 0.0
+  attitude_error_std_deg: 0.0
+  mobility:
+    model: "gauss_markov"
+    speed_min_mps: 5.0
+    speed_max_mps: 20.0
+    mean_speed_mps: 11.0
+    gauss_markov_alpha: 0.85
+    random_walk_step_std_m: 2.0
+    direction_update_period_slots: 25
+
+beam:
+  # About 24 deg azimuth x 25.7 deg elevation, matching the 25 deg beam setting in Wang et al. 2025.
+  azimuth_cells: [15]
+  elevation_cells: [7]
+  alignment_tolerance_cells: 0
+  main_lobe_model: "ideal_cell_coverage"
+  sidelobe_model: "none"
+
+slot:
+  synchronized: true
+  p_sense: 0.0
+  p_tx: 0.5
+  p_rx: 0.5
+  p_idle: 0.0
+
+isac_error:
+  false_alarm_rates: [0.01]
+  miss_detection_rates: [0.05]
+  angular_cell_offsets: [0.25]
+  sensing_periods: [1]
+  belief_update_rho: 0.55
+
+phy_sensing:
+  model: "radar_snr"
+  waveform: "mimo_otfs"
+  carrier_frequency_hz: 30000000000
+  bandwidth_hz: 64000000
+  tx_power_w: 1.0
+  radar_cross_section_m2: 1.0
+  noise_psd_w_per_hz: 2.0e-21
+  # Calibrates array/coherent/OTFS processing gain so the abstract detector can
+  # reproduce a useful FANET sensing operating point without full waveform simulation.
+  processing_gain_db: 95.0
+  piggyback_loss_db: 1.5
+  detection_midpoint_snr_db: -10.0
+  detection_slope_per_db: 0.5
+  min_detection_probability: 0.02
+  max_detection_probability: 0.98
+
+protocol:
+  exploration_floor: 0.08
+  softmax_beta: 3.0
+  target_degree: 6
+  alpha_occupancy: 2.2
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.98
+  piggyback_sensing_period_multiplier: 1.0
+
+energy:
+  tx_power_w: 1.0
+  rx_power_w: 0.6
+  sense_power_w: 1.2
+  idle_power_w: 0.05
+  piggyback_sense_power_w: 0.2
+
+baselines:
+  - "uniform_random"
+  - "wang2025_isac_tables"
+  - "improved_rl_isac"
+
+metrics:
+  discovery:
+    - "finite_time_discovery_rate"
+    - "mean_discovery_delay"
+    - "p95_discovery_delay"
+    - "empty_scan_ratio"
+    - "collision_penalized_discovery_rate"
+  sensing:
+    - "mean_sensing_pd"
+    - "mean_sensing_snr_db"
+    - "sensing_detection_rate"
+    - "sensing_miss_ratio"
+  topology:
+    - "discovered_edges"
+    - "largest_component_size"
+    - "lcc_ratio"
+    - "isolated_node_ratio"
+    - "lambda2"

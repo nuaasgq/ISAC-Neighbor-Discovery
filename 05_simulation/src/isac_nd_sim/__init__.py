@@ -5,6 +5,7 @@ __all__ = [
     "config",
     "marl_env",
     "mobility",
+    "phy_sensing",
     "simulator",
     "sweep",
     "training",

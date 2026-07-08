@@ -8,6 +8,7 @@ import numpy as np
 from .beam import beam_for_target, beam_matches, rotation_body_to_global, shift_beam
 from .config import SimulationConfig
 from .mobility import NodeState, initialize_states, step_states
+from .phy_sensing import detection_probability, radar_snr_db
 
 MODE_SENSE = "sense"
 MODE_TX = "tx"
@@ -18,11 +19,14 @@ ISAC_PROTOCOLS = (
     "improved_rl_isac",
     "collision_aware_isac",
     "isac_structured_marl",
+    "wang2025_isac_tables",
     "ablation_isac_one_slot_delay",
     "ablation_isac_no_candidate_set",
     "ablation_isac_no_beam_lock",
     "ablation_isac_no_topology",
 )
+
+TABLE_EXCHANGE_PROTOCOLS = ("wang2025_isac_tables",)
 
 DELAYED_CANDIDATE_PROTOCOLS = ("ablation_isac_one_slot_delay",)
 
@@ -64,6 +68,13 @@ class EpisodeResult:
     sense_actions: int
     idle_actions: int
     piggyback_sense_actions: int
+    sensing_observations: int
+    sensing_target_observations: int
+    sensing_detection_rate: float
+    sensing_false_alarm_ratio: float
+    sensing_miss_ratio: float
+    mean_sensing_pd: float
+    mean_sensing_snr_db: float
     discovery_per_scan_action: float
     discoveries_per_1000_scan_actions: float
     scan_actions_per_discovery_censored: float
@@ -112,6 +123,14 @@ class NeighborDiscoverySimulator:
         self.sense_actions = 0
         self.idle_actions = 0
         self.piggyback_sense_actions = 0
+        self.sensing_observations = 0
+        self.sensing_target_observations = 0
+        self.sensing_detection_count = 0
+        self.sensing_false_alarm_count = 0
+        self.sensing_miss_count = 0
+        self.sensing_pd_sum = 0.0
+        self.sensing_snr_db_sum = 0.0
+        self.sensing_snr_sample_count = 0
         self.last_sense_slot = np.full(self.cfg.n_nodes, -10**9, dtype=int)
         self.per_slot_rows: list[dict] = []
         self.edge_rows: list[dict] = []
@@ -142,6 +161,14 @@ class NeighborDiscoverySimulator:
         self.sense_actions = 0
         self.idle_actions = 0
         self.piggyback_sense_actions = 0
+        self.sensing_observations = 0
+        self.sensing_target_observations = 0
+        self.sensing_detection_count = 0
+        self.sensing_false_alarm_count = 0
+        self.sensing_miss_count = 0
+        self.sensing_pd_sum = 0.0
+        self.sensing_snr_db_sum = 0.0
+        self.sensing_snr_sample_count = 0
         self.last_sense_slot.fill(-10**9)
         self.per_slot_rows = []
         self.edge_rows = []
@@ -211,6 +238,13 @@ class NeighborDiscoverySimulator:
             "sense_actions": self.sense_actions,
             "idle_actions": self.idle_actions,
             "piggyback_sense_actions": self.piggyback_sense_actions,
+            "sensing_observations": self.sensing_observations,
+            "sensing_target_observations": self.sensing_target_observations,
+            "sensing_detection_rate": self.sensing_detection_count / max(1, self.sensing_target_observations),
+            "sensing_false_alarm_ratio": self.sensing_false_alarm_count / max(1, self.sensing_observations),
+            "sensing_miss_ratio": self.sensing_miss_count / max(1, self.sensing_target_observations),
+            "mean_sensing_pd": self.sensing_pd_sum / max(1, self.sensing_target_observations),
+            "mean_sensing_snr_db": self.sensing_snr_db_sum / max(1, self.sensing_snr_sample_count),
             "largest_component_size": largest,
             "connected_components": len(components),
             "lcc_ratio": largest / max(1, self.cfg.n_nodes),
@@ -316,6 +350,9 @@ class NeighborDiscoverySimulator:
             return MODE_TX if (slot + 2 * node) % 5 in (0, 1) else MODE_RX
         if self.protocol == "skyorbs_like_skip_scan":
             return MODE_TX if (slot // 2 + node) % 2 == 0 else MODE_RX
+        if self.protocol == "wang2025_isac_tables":
+            p_tx = float(np.clip(self.cfg.p_tx, 0.05, 0.95))
+            return MODE_TX if self.rng.random() < p_tx else MODE_RX
         if self.protocol in ("rl_no_isac", "basic_marl_no_isac"):
             return str(self.rng.choice([MODE_TX, MODE_RX, MODE_IDLE], p=[0.45, 0.45, 0.10]))
         if self.protocol in ("improved_rl_no_isac", "structured_marl_no_isac"):
@@ -401,6 +438,8 @@ class NeighborDiscoverySimulator:
             return int(((slot + 1) * (2 * node + 1) + node) % self.cfg.n_beams)
         if self.protocol == "skyorbs_like_skip_scan":
             return self.skyorbs_like_beam(node, slot)
+        if self.protocol == "wang2025_isac_tables":
+            return self.wang2025_table_beam(node)
         if self.protocol == "oracle" and oracle_occupied:
             return int(self.rng.choice(tuple(oracle_occupied)))
         if self.protocol in ISAC_PROTOCOLS and mode == MODE_SENSE:
@@ -452,6 +491,24 @@ class NeighborDiscoverySimulator:
             elevation = self.cfg.elevation_cells - 1 - elevation
         azimuth = (node * dynamic_stride + slot * dynamic_stride) % self.cfg.azimuth_cells
         return int(elevation * self.cfg.azimuth_cells + azimuth)
+
+    def wang2025_table_beam(self, node: int) -> int:
+        """Rule-based ISAC table baseline inspired by Wang et al. 2025.
+
+        The paper randomly scans beams whose sensing-table flag remains active,
+        while prioritizing sectors with potential targets. Here, a beam is active
+        if it has not been repeatedly marked empty or if previous communication
+        or sensing evidence keeps it alive.
+        """
+
+        active_mask = (self.empty_beam_count[node] < 1.0) | (self.success_count[node] > 0.05)
+        active = np.flatnonzero(active_mask)
+        if len(active) == 0:
+            active = np.arange(self.cfg.n_beams, dtype=int)
+        positive = active[(self.belief[node, active] >= 0.55) | (self.success_count[node, active] > 0.05)]
+        if len(positive) > 0 and self.rng.random() >= self.cfg.exploration_floor:
+            return int(self.rng.choice(positive))
+        return int(self.rng.choice(active))
 
     def isac_sensing_beam(self, node: int, slot: int) -> int:
         period = max(1, self.cfg.sensing_period_slots)
@@ -595,10 +652,7 @@ class NeighborDiscoverySimulator:
             return
         eligible_nodes: list[tuple[int, Action]] = []
         for node, action in enumerate(actions):
-            piggyback_isac = self.protocol in ISAC_PROTOCOLS and action.mode in (
-                MODE_TX,
-                MODE_RX,
-            )
+            piggyback_isac = self.action_has_piggyback_isac(action)
             if action.mode != MODE_SENSE and not piggyback_isac:
                 continue
             if slot is not None:
@@ -611,9 +665,9 @@ class NeighborDiscoverySimulator:
         if not eligible_nodes:
             return
         useful_sensing_range = min(self.cfg.sensing_range_m, self.cfg.communication_range_m)
-        true_occupied = self.occupied_beams(useful_sensing_range)
         ideal_sensing = (
-            self.cfg.false_alarm_rate <= 0.0
+            self.cfg.isac_sensing_model == "constant_error"
+            and self.cfg.false_alarm_rate <= 0.0
             and self.cfg.miss_detection_rate <= 0.0
             and self.cfg.angular_cell_offset_std <= 0.0
         )
@@ -621,28 +675,19 @@ class NeighborDiscoverySimulator:
             if slot is not None:
                 self.last_sense_slot[node] = slot
             observation = self.belief[node].copy()
-            piggyback_isac = self.protocol in ISAC_PROTOCOLS and action.mode in (
-                MODE_TX,
-                MODE_RX,
-            )
+            piggyback_isac = self.action_has_piggyback_isac(action)
             if piggyback_isac:
                 sensed_beams = self.sensing_sector(action.beam)
                 for sensed_beam in sensed_beams:
                     if ideal_sensing:
-                        observed_value = 1.0 if int(sensed_beam) in true_occupied[node] else 0.0
+                        observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
                     else:
-                        observed_value = 0.0
-                        for beam_idx in true_occupied[node]:
-                            if self.rng.random() < self.cfg.miss_detection_rate:
-                                continue
-                            az_shift = int(np.rint(self.rng.normal(0.0, self.cfg.angular_cell_offset_std)))
-                            el_shift = int(np.rint(self.rng.normal(0.0, self.cfg.angular_cell_offset_std)))
-                            observed = shift_beam(beam_idx, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
-                            if beam_matches(sensed_beam, observed, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
-                                observed_value = 1.0
-                                break
-                        if self.rng.random() < self.cfg.false_alarm_rate:
-                            observed_value = 1.0
+                        observed_value = self.sample_sensing_observation(
+                            node,
+                            int(sensed_beam),
+                            useful_sensing_range,
+                            piggyback=True,
+                        )
                     observation[sensed_beam] = observed_value
                     if observed_value <= 0.0:
                         self.fail_count[node, sensed_beam] += 0.10
@@ -662,25 +707,86 @@ class NeighborDiscoverySimulator:
             sensed_beams = self.sensing_sector(action.beam)
             for sensed_beam in sensed_beams:
                 if ideal_sensing:
-                    observed_value = 1.0 if int(sensed_beam) in true_occupied[node] else 0.0
+                    observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
                 else:
-                    observed_value = 0.0
-                    for beam_idx in true_occupied[node]:
-                        if self.rng.random() < self.cfg.miss_detection_rate:
-                            continue
-                        offset_std = self.cfg.angular_cell_offset_std
-                        az_shift = int(np.rint(self.rng.normal(0.0, offset_std)))
-                        el_shift = int(np.rint(self.rng.normal(0.0, offset_std)))
-                        observed = shift_beam(beam_idx, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
-                        if beam_matches(sensed_beam, observed, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
-                            observed_value = 1.0
-                            break
-                    if self.rng.random() < self.cfg.false_alarm_rate:
-                        observed_value = 1.0
+                    observed_value = self.sample_sensing_observation(
+                        node,
+                        int(sensed_beam),
+                        useful_sensing_range,
+                        piggyback=False,
+                    )
                 observation[sensed_beam] = observed_value
             rho = self.cfg.belief_update_rho
             self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
             self.age[node, sensed_beams] = 0.0
+
+    def action_has_piggyback_isac(self, action: Action) -> bool:
+        if self.protocol == "wang2025_isac_tables":
+            return action.mode == MODE_TX
+        return self.protocol in ISAC_PROTOCOLS and action.mode in (MODE_TX, MODE_RX)
+
+    def beam_has_sensing_target(self, node: int, sensed_beam: int, radius: float) -> bool:
+        beams = self.beam_matrix()
+        dist2 = self.distance_matrix()
+        for target in range(self.cfg.n_nodes):
+            if target == node or dist2[node, target] > float(radius) ** 2:
+                continue
+            if beam_matches(sensed_beam, int(beams[node, target]), self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
+                return True
+        return False
+
+    def sample_sensing_observation(self, node: int, sensed_beam: int, radius: float, *, piggyback: bool) -> float:
+        beams = self.beam_matrix()
+        dist2 = self.distance_matrix()
+        has_target_in_sector = False
+        detected = False
+        max_pd = 0.0
+        max_snr_db = -300.0
+        for target in range(self.cfg.n_nodes):
+            if target == node or dist2[node, target] > float(radius) ** 2:
+                continue
+            distance = float(np.sqrt(dist2[node, target]))
+            pd = detection_probability(distance, self.cfg, piggyback=piggyback)
+            true_beam = int(beams[node, target])
+            offset_std = self.cfg.angular_cell_offset_std
+            az_shift = int(np.rint(self.rng.normal(0.0, offset_std))) if offset_std > 0 else 0
+            el_shift = int(np.rint(self.rng.normal(0.0, offset_std))) if offset_std > 0 else 0
+            observed_beam = shift_beam(true_beam, self.cfg.azimuth_cells, self.cfg.elevation_cells, az_shift, el_shift)
+            target_matches_selected_sector = beam_matches(
+                sensed_beam,
+                true_beam,
+                self.cfg.azimuth_cells,
+                self.cfg.alignment_tolerance_cells,
+            )
+            has_target_in_sector = has_target_in_sector or target_matches_selected_sector
+            if target_matches_selected_sector:
+                max_pd = max(max_pd, pd)
+                if self.cfg.isac_sensing_model == "radar_snr":
+                    max_snr_db = max(max_snr_db, radar_snr_db(distance, self.cfg, piggyback=piggyback))
+            if self.rng.random() < pd and beam_matches(
+                sensed_beam,
+                observed_beam,
+                self.cfg.azimuth_cells,
+                self.cfg.alignment_tolerance_cells,
+            ):
+                detected = True
+                break
+
+        self.sensing_observations += 1
+        if has_target_in_sector:
+            self.sensing_target_observations += 1
+            self.sensing_pd_sum += max_pd
+            if max_snr_db > -300.0:
+                self.sensing_snr_db_sum += max_snr_db
+                self.sensing_snr_sample_count += 1
+            if detected:
+                self.sensing_detection_count += 1
+                return 1.0
+            self.sensing_miss_count += 1
+        if self.rng.random() < self.cfg.false_alarm_rate:
+            self.sensing_false_alarm_count += 1
+            return 1.0
+        return 0.0
 
     def update_action_counts(self, actions: list[Action], slot: int) -> None:
         for node, action in enumerate(actions):
@@ -693,7 +799,7 @@ class NeighborDiscoverySimulator:
             elif action.mode == MODE_IDLE:
                 self.idle_actions += 1
 
-            if self.protocol not in ISAC_PROTOCOLS or action.mode not in (MODE_TX, MODE_RX):
+            if not self.action_has_piggyback_isac(action):
                 continue
             period = max(1, self.cfg.sensing_period_slots)
             period = max(1, int(round(period * self.cfg.piggyback_sensing_period_multiplier)))
@@ -803,7 +909,49 @@ class NeighborDiscoverySimulator:
                     new_edges.append(edge)
                 self.success_count[tx_node, actions[tx_node].beam] += 1.0
                 self.success_count[rx_node, actions[rx_node].beam] += 1.0
+                if self.protocol in TABLE_EXCHANGE_PROTOCOLS:
+                    self.exchange_neighbor_and_sensing_tables(tx_node, rx_node, slot)
         return new_edges
+
+    def exchange_neighbor_and_sensing_tables(self, node_a: int, node_b: int, slot: int) -> None:
+        self.merge_peer_tables(dst=node_a, src=node_b, slot=slot)
+        self.merge_peer_tables(dst=node_b, src=node_a, slot=slot)
+
+    def merge_peer_tables(self, dst: int, src: int, slot: int) -> None:
+        targets: set[int] = set()
+        for edge in self.discovered_edges:
+            if src not in edge:
+                continue
+            other = edge[1] if edge[0] == src else edge[0]
+            if other != dst:
+                targets.add(other)
+
+        positive_ttl = max(20, min(200, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
+        recent = (slot - self.last_positive_slot[src]) <= positive_ttl
+        positive_beams = np.flatnonzero((self.belief[src] >= 0.65) & recent)
+        if len(positive_beams) > 0:
+            src_beams = self.beam_matrix()[src]
+            dist2 = self.distance_matrix()[src]
+            for source_beam in positive_beams[: max(1, 2 * self.cfg.target_degree)]:
+                matching = np.flatnonzero(src_beams == int(source_beam))
+                for target in matching.astype(int).tolist():
+                    if target != dst and target != src and dist2[target] <= self.cfg.sensing_range_m**2:
+                        targets.add(target)
+
+        for target in targets:
+            if target == dst:
+                continue
+            beam = self.beam_from_to(dst, target)
+            self.boost_shared_beam(dst, beam, slot)
+
+    def boost_shared_beam(self, node: int, beam: int, slot: int) -> None:
+        rho = min(0.85, max(0.0, self.cfg.belief_update_rho))
+        self.belief[node, beam] = max(self.belief[node, beam], (1.0 - rho) * self.belief[node, beam] + rho)
+        self.success_count[node, beam] += 0.15
+        self.fail_count[node, beam] *= 0.75
+        self.empty_beam_count[node, beam] = 0.0
+        self.age[node, beam] = 0.0
+        self.last_positive_slot[node, beam] = slot
 
     def summarize(self, episode: int) -> EpisodeResult:
         delays = []
@@ -827,6 +975,11 @@ class NeighborDiscoverySimulator:
         collision_normalized_efficiency = discovered_count / max(1, discovered_count + self.collision_count)
         collision_penalized_discovery_rate = discovered_count / max(1, len(self.first_true_slot) + self.collision_count)
         energy_j = self.radio_energy_j()
+        sensing_detection_rate = self.sensing_detection_count / max(1, self.sensing_target_observations)
+        sensing_false_alarm_ratio = self.sensing_false_alarm_count / max(1, self.sensing_observations)
+        sensing_miss_ratio = self.sensing_miss_count / max(1, self.sensing_target_observations)
+        mean_sensing_pd = self.sensing_pd_sum / max(1, self.sensing_target_observations)
+        mean_sensing_snr_db = self.sensing_snr_db_sum / max(1, self.sensing_snr_sample_count)
         discoveries_per_joule = discovered_count / max(energy_j, 1e-12)
         energy_per_discovery = energy_j / max(1, discovered_count)
         moved = 0.0
@@ -855,6 +1008,13 @@ class NeighborDiscoverySimulator:
             sense_actions=self.sense_actions,
             idle_actions=self.idle_actions,
             piggyback_sense_actions=self.piggyback_sense_actions,
+            sensing_observations=self.sensing_observations,
+            sensing_target_observations=self.sensing_target_observations,
+            sensing_detection_rate=sensing_detection_rate,
+            sensing_false_alarm_ratio=sensing_false_alarm_ratio,
+            sensing_miss_ratio=sensing_miss_ratio,
+            mean_sensing_pd=mean_sensing_pd,
+            mean_sensing_snr_db=mean_sensing_snr_db,
             discovery_per_scan_action=discovery_per_scan_action,
             discoveries_per_1000_scan_actions=discoveries_per_1000_scan_actions,
             scan_actions_per_discovery_censored=scan_actions_per_discovery,

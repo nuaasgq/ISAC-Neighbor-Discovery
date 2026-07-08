@@ -51,6 +51,19 @@ class SimulationConfig:
     sense_power_w: float = 1.2
     idle_power_w: float = 0.05
     piggyback_sense_power_w: float = 0.2
+    isac_sensing_model: str = "constant_error"
+    isac_waveform: str = "abstract"
+    carrier_frequency_hz: float = 30.0e9
+    bandwidth_hz: float = 64.0e6
+    radar_cross_section_m2: float = 1.0
+    noise_psd_w_per_hz: float = 2.0e-21
+    isac_tx_power_w: float = 1.0
+    isac_processing_gain_db: float = 0.0
+    isac_piggyback_loss_db: float = 0.0
+    detection_midpoint_snr_db: float = -10.0
+    detection_slope_per_db: float = 0.5
+    min_detection_probability: float = 0.02
+    max_detection_probability: float = 0.98
 
     @property
     def n_beams(self) -> int:
@@ -97,6 +110,7 @@ def load_config(path: str | Path) -> SimulationConfig:
     isac_error = raw["isac_error"]
     protocol = raw["protocol"]
     energy = raw.get("energy", {})
+    phy = raw.get("phy_sensing", {})
 
     return SimulationConfig(
         name=str(experiment["name"]),
@@ -139,4 +153,17 @@ def load_config(path: str | Path) -> SimulationConfig:
         sense_power_w=float(energy.get("sense_power_w", 1.2)),
         idle_power_w=float(energy.get("idle_power_w", 0.05)),
         piggyback_sense_power_w=float(energy.get("piggyback_sense_power_w", 0.2)),
+        isac_sensing_model=str(phy.get("model", "constant_error")),
+        isac_waveform=str(phy.get("waveform", "abstract")),
+        carrier_frequency_hz=float(phy.get("carrier_frequency_hz", 30.0e9)),
+        bandwidth_hz=float(phy.get("bandwidth_hz", 64.0e6)),
+        radar_cross_section_m2=float(phy.get("radar_cross_section_m2", 1.0)),
+        noise_psd_w_per_hz=float(phy.get("noise_psd_w_per_hz", 2.0e-21)),
+        isac_tx_power_w=float(phy.get("tx_power_w", energy.get("tx_power_w", 1.0))),
+        isac_processing_gain_db=float(phy.get("processing_gain_db", 0.0)),
+        isac_piggyback_loss_db=float(phy.get("piggyback_loss_db", 0.0)),
+        detection_midpoint_snr_db=float(phy.get("detection_midpoint_snr_db", -10.0)),
+        detection_slope_per_db=float(phy.get("detection_slope_per_db", 0.5)),
+        min_detection_probability=float(phy.get("min_detection_probability", 0.02)),
+        max_detection_probability=float(phy.get("max_detection_probability", 0.98)),
     )
