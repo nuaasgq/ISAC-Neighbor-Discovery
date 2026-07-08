@@ -393,6 +393,7 @@ def evaluate_policy(
                         enforce_resource_limits(snapshot, args)
                 rewards_tensor = torch_module.stack(rewards)
                 summary = env._sim.summarize(episode).as_dict()
+                summary.update(env.access_gate_summary())
                 row = {
                     "phase": phase,
                     "eval_episode": episode,

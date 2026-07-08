@@ -63,6 +63,7 @@ class MarlNeighborDiscoveryEnv:
         self._sim = NeighborDiscoverySimulator(config, protocol=self.protocol, seed=self.seed)
         self._slot = 0
         self._last_actions: list[Action] = [Action(MODE_IDLE, 0) for _ in range(config.n_nodes)]
+        self._access_gate_counts = {name: 0 for name in ACCESS_GATE_NAMES}
 
     @property
     def n_agents(self) -> int:
@@ -83,6 +84,7 @@ class MarlNeighborDiscoveryEnv:
         self._sim.reset()
         self._slot = 0
         self._last_actions = [Action(MODE_IDLE, 0) for _ in range(self.n_agents)]
+        self._access_gate_counts = {name: 0 for name in ACCESS_GATE_NAMES}
         return self._observations(), self._info(new_edges_count=0)
 
     def step(
@@ -95,6 +97,8 @@ class MarlNeighborDiscoveryEnv:
             raise RuntimeError("Episode already truncated. Call reset() before step().")
 
         parsed_actions = self._normalize_actions(actions)
+        for action in parsed_actions:
+            self._access_gate_counts[action.access_gate] += 1
         execution_actions = [self._apply_access_gate(action) for action in parsed_actions]
         true_comm_edges = self._sim.true_edges(self.cfg.communication_range_m)
         for edge in true_comm_edges:
@@ -495,6 +499,7 @@ class MarlNeighborDiscoveryEnv:
             "lambda2": algebraic_connectivity(self.n_agents, self._sim.discovered_edges),
             "mobility_model": str(self.cfg.mobility.get("model", "gauss_markov")),
             "reward_version": self.reward_version,
+            **self.access_gate_summary(),
         }
 
     def _minimal_info(self, new_edges_count: int) -> dict[str, Any]:
@@ -507,12 +512,22 @@ class MarlNeighborDiscoveryEnv:
             "access_gate_names": ACCESS_GATE_NAMES,
             "new_edges_count": int(new_edges_count),
             "reward_version": self.reward_version,
+            **self.access_gate_summary(),
         }
 
     def _info(self, new_edges_count: int) -> dict[str, Any]:
         if self.rich_info:
             return self._safe_info(new_edges_count)
         return self._minimal_info(new_edges_count)
+
+    def access_gate_summary(self) -> dict[str, int | float]:
+        total = max(1, sum(int(value) for value in self._access_gate_counts.values()))
+        out: dict[str, int | float] = {"access_gate_total": int(sum(self._access_gate_counts.values()))}
+        for name in ACCESS_GATE_NAMES:
+            count = int(self._access_gate_counts[name])
+            out[f"access_gate_{name}_count"] = count
+            out[f"access_gate_{name}_ratio"] = count / total
+        return out
 
     def _positions(self) -> np.ndarray:
         return np.asarray([state.position for state in self._sim.states])

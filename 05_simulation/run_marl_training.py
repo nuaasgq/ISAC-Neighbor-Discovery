@@ -394,6 +394,12 @@ def collect_trajectory(
                     "rx_actions": int(info["rx_actions"]),
                     "sense_actions": int(info["sense_actions"]),
                     "idle_actions": int(info["idle_actions"]),
+                    "access_gate_backoff_count": int(info.get("access_gate_backoff_count", 0)),
+                    "access_gate_normal_count": int(info.get("access_gate_normal_count", 0)),
+                    "access_gate_aggressive_count": int(info.get("access_gate_aggressive_count", 0)),
+                    "access_gate_backoff_ratio": float(info.get("access_gate_backoff_ratio", 0.0)),
+                    "access_gate_normal_ratio": float(info.get("access_gate_normal_ratio", 0.0)),
+                    "access_gate_aggressive_ratio": float(info.get("access_gate_aggressive_ratio", 0.0)),
                 }
             )
         if int(args.resource_log_period) > 0 and global_step % int(args.resource_log_period) == 0:
@@ -403,6 +409,7 @@ def collect_trajectory(
             enforce_resource_limits(snapshot, args)
 
     summary = env._sim.summarize(episode).as_dict()
+    summary.update(env.access_gate_summary())
     return {
         "episode": episode,
         "seed": seed,
@@ -676,6 +683,7 @@ def evaluate_policy(
                     rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
                 rewards_tensor = torch_module.stack(rewards)
                 summary = env._sim.summarize(start_episode + offset).as_dict()
+                summary.update(env.access_gate_summary())
                 row = {
                     "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
                     "eval_after_episode": start_episode,
