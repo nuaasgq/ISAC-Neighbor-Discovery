@@ -30,7 +30,7 @@ beam:
   azimuth_cells: [15]
   elevation_cells: [7]
   alignment_tolerance_cells: 0
-  rf_chains: [3]
+  rf_chains: [1]
   main_lobe_model: "ideal_cell_coverage"
   sidelobe_model: "none"
 

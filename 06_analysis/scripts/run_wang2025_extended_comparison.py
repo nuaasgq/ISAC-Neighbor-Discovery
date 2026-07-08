@@ -48,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--episodes", type=int, default=5)
     parser.add_argument("--slots", type=int, default=200)
     parser.add_argument("--node-counts", default="10,20,30,40,50")
-    parser.add_argument("--rf-chains", default="1,3,6")
+    parser.add_argument("--rf-chains", default="1")
     parser.add_argument("--protocols", default=",".join(PROTOCOLS))
     parser.add_argument("--skip-figures", action="store_true")
     return parser.parse_args()
@@ -335,53 +335,57 @@ def maybe_write_figures(figures: Path, rows: list[dict[str, Any]]) -> None:
         "improved_rl_isac": "#d95f02",
         "improved_rl_isac_tables": "#e7298a",
     }
+    available_rf = sorted({int(row["rf_chains"]) for row in rows})
+    available_nodes = sorted({int(row["node_count"]) for row in rows})
+    primary_rf = 1 if 1 in available_rf else available_rf[0]
+    primary_node = 50 if 50 in available_nodes else available_nodes[-1]
 
     plot_line_metric(
         rows,
-        figures / "node_scaling_discovery_rate_rf3.png",
+        figures / f"node_scaling_discovery_rate_rf{primary_rf}.png",
         metric="discovery_rate_mean",
         ylabel="Discovery rate",
-        rf_filter=3,
+        rf_filter=primary_rf,
         colors=colors,
     )
     plot_line_metric(
         rows,
-        figures / "node_scaling_consumed_slots_rf3.png",
+        figures / f"node_scaling_consumed_slots_rf{primary_rf}.png",
         metric="consumed_slots_censored_mean",
         ylabel="Consumed slots (censored)",
-        rf_filter=3,
+        rf_filter=primary_rf,
         colors=colors,
     )
     plot_line_metric(
         rows,
-        figures / "node_scaling_empty_scan_rf3.png",
+        figures / f"node_scaling_empty_scan_rf{primary_rf}.png",
         metric="empty_scan_ratio_mean",
         ylabel="Empty scan ratio",
-        rf_filter=3,
+        rf_filter=primary_rf,
         colors=colors,
     )
     plot_line_metric(
         rows,
-        figures / "node_scaling_lambda2_rf3.png",
+        figures / f"node_scaling_lambda2_rf{primary_rf}.png",
         metric="lambda2_mean",
         ylabel="Algebraic connectivity",
-        rf_filter=3,
+        rf_filter=primary_rf,
         colors=colors,
     )
     plot_rf_metric(
         rows,
-        figures / "rf_sensitivity_discovery_rate_n50.png",
+        figures / f"rf_sensitivity_discovery_rate_n{primary_node}.png",
         metric="discovery_rate_mean",
         ylabel="Discovery rate",
-        node_filter=50,
+        node_filter=primary_node,
         colors=colors,
     )
     plot_rf_metric(
         rows,
-        figures / "rf_sensitivity_consumed_slots_n50.png",
+        figures / f"rf_sensitivity_consumed_slots_n{primary_node}.png",
         metric="consumed_slots_censored_mean",
         ylabel="Consumed slots (censored)",
-        node_filter=50,
+        node_filter=primary_node,
         colors=colors,
     )
 

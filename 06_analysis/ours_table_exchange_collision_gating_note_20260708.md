@@ -34,12 +34,24 @@
 
 因此，多 RF 门控不是物理层波束形成算法，而是数据链路层的资源调度策略。它适合作为我方网络结构创新的一部分：网络可以输出主波束、辅助波束 mask、RF 激活数和 Tx/Rx 角色，由规则层保证协议约束，由学习层适配不同节点规模和波束宽度。
 
+当前研究主线暂不把多 RF 作为核心创新点。后续训练和主要对比固定 `rf_chains=1`，把多 RF 仅作为附录敏感性实验或未来扩展。这能让论文主线聚焦在 ISAC 辅助筛空、表交换、冲突控制和可迁移 MARL 上，避免审稿人把问题理解成多 RF 资源调度论文。
+
+## 冲突控制是否放入动作空间
+
+可以，而且从论文表达上更清楚。固定单 RF 后，动作空间不需要包含 RF 激活数，建议定义为：
+
+`a_i(t) = (m_i(t), b_i(t), g_i(t))`
+
+其中 `m_i(t)` 是角色动作，取 Tx/Rx/idle/sense；`b_i(t)` 是窄波束索引；`g_i(t)` 是接入门控动作，可取 backoff/normal/aggressive。`g_i(t)` 的含义是：当本地碰撞压力高或候选波束过度集中时，智能体可以主动退避、转监听或降低继续争抢该波束的概率。
+
+当前代码中已经有冲突感知状态 `contention_state`、逐波束碰撞统计 `beam_collision`，以及 `gated_contention_shared` 网络中的 access gate。但这个 gate 目前是网络内部对 Tx/Rx/idle logits 的调制，不是单独输出的动作头。因此现阶段可以写成“冲突感知策略网络”；若要在论文中明确主张“冲突控制动作空间”，下一步需要新增独立 `access_gate` action head，并把其 log-prob、entropy 和 PPO 更新纳入训练。
+
 ## 下一步实现建议
 
-`improved_rl_isac_tables` 只是把表交换接入现有规则策略。下一步应实现一个新的 MARL 协议，例如 `marl_isac_table_gated`，把表交换、冲突控制和 RF 门控统一放进可学习策略：
+`improved_rl_isac_tables` 只是把表交换接入现有规则策略。下一步应实现一个新的 MARL 协议，例如 `marl_isac_table_gated`，把表交换和冲突控制统一放进可学习策略，并默认固定单 RF：
 
 - observation：本地 ISAC belief、age、success/fail/collision 统计、邻居表摘要、感知表摘要、节点度数缺口。
-- action：mode、主波束、辅助波束 mask、RF 激活数、表项融合权重或置信门控。
+- action：mode、主波束、access gate、表项融合权重或置信门控。
 - reward：发现新链路奖励、拓扑连通度奖励、空扫惩罚、碰撞惩罚、能耗惩罚、过度集中扫描惩罚。
 
-这样才能从“ISAC 辅助规则协议”升级为“ISAC+表交换+冲突感知+多 RF 门控 MARL 协议”。
+这样才能从“ISAC 辅助规则协议”升级为“ISAC+表交换+冲突感知 MARL 协议”。
