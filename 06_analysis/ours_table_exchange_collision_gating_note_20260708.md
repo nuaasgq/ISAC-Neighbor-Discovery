@@ -38,13 +38,15 @@
 
 ## 冲突控制是否放入动作空间
 
-可以，而且从论文表达上更清楚。固定单 RF 后，动作空间不需要包含 RF 激活数，建议定义为：
+可以，而且从论文表达上更清楚。固定单 RF 后，动作空间不需要包含 RF 激活数，当前实现已支持：
 
 `a_i(t) = (m_i(t), b_i(t), g_i(t))`
 
-其中 `m_i(t)` 是角色动作，取 Tx/Rx/idle/sense；`b_i(t)` 是窄波束索引；`g_i(t)` 是接入门控动作，可取 backoff/normal/aggressive。`g_i(t)` 的含义是：当本地碰撞压力高或候选波束过度集中时，智能体可以主动退避、转监听或降低继续争抢该波束的概率。
+其中 `m_i(t)` 是角色动作，取 Tx/Rx/idle/sense；`b_i(t)` 是窄波束索引；`g_i(t)` 是接入门控动作，可取 backoff/normal/aggressive。`g_i(t)` 的含义是：当本地碰撞压力高或候选波束过度集中时，智能体可以主动退避、转监听或增强接入。
 
-当前代码中已经有冲突感知状态 `contention_state`、逐波束碰撞统计 `beam_collision`，以及 `gated_contention_shared` 网络中的 access gate。但这个 gate 目前是网络内部对 Tx/Rx/idle logits 的调制，不是单独输出的动作头。因此现阶段可以写成“冲突感知策略网络”；若要在论文中明确主张“冲突控制动作空间”，下一步需要新增独立 `access_gate` action head，并把其 log-prob、entropy 和 PPO 更新纳入训练。
+当前执行语义保持克制：`backoff` 将 Tx 转换为同波束 Rx，`normal` 不改变角色，`aggressive` 将 Rx 转换为同波束 Tx。这样 gate 只调节接入竞争，不引入多 RF 或物理层波束形成假设。
+
+代码中已有冲突感知状态 `contention_state`、逐波束碰撞统计 `beam_collision`，并在 `gated_contention_shared` 系列网络中加入了独立 `access_gate` action head。该 head 的 log-prob 和 entropy 已纳入 PPO 更新。因此后续可以写成“冲突控制被显式纳入 MARL 动作空间”，而不是只写“网络内部调制”。
 
 ## 下一步实现建议
 

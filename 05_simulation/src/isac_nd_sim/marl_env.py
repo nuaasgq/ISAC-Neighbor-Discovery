@@ -9,6 +9,9 @@ import numpy as np
 from .config import SimulationConfig
 from .mobility import step_states
 from .simulator import (
+    ACCESS_AGGRESSIVE,
+    ACCESS_BACKOFF,
+    ACCESS_NORMAL,
     Action,
     MODE_IDLE,
     MODE_RX,
@@ -21,6 +24,8 @@ from .simulator import (
 
 MODE_NAMES = (MODE_SENSE, MODE_TX, MODE_RX, MODE_IDLE)
 MODE_TO_INDEX = {name: idx for idx, name in enumerate(MODE_NAMES)}
+ACCESS_GATE_NAMES = (ACCESS_BACKOFF, ACCESS_NORMAL, ACCESS_AGGRESSIVE)
+ACCESS_GATE_TO_INDEX = {name: idx for idx, name in enumerate(ACCESS_GATE_NAMES)}
 
 
 @dataclass(frozen=True)
@@ -90,6 +95,7 @@ class MarlNeighborDiscoveryEnv:
             raise RuntimeError("Episode already truncated. Call reset() before step().")
 
         parsed_actions = self._normalize_actions(actions)
+        execution_actions = [self._apply_access_gate(action) for action in parsed_actions]
         true_comm_edges = self._sim.true_edges(self.cfg.communication_range_m)
         for edge in true_comm_edges:
             self._sim.first_true_slot.setdefault(edge, self._slot)
@@ -98,7 +104,7 @@ class MarlNeighborDiscoveryEnv:
         self._sim.belief *= self.cfg.confidence_decay
 
         empty_by_node = np.zeros(self.n_agents, dtype=bool)
-        for node, action in enumerate(parsed_actions):
+        for node, action in enumerate(execution_actions):
             if action.mode in (MODE_TX, MODE_RX):
                 empty_by_node[node] = not self._sim.beam_has_comm_neighbor(node, action.beam, true_comm_edges)
 
@@ -109,11 +115,11 @@ class MarlNeighborDiscoveryEnv:
 
         self._sim._candidate_pool_cache.clear()
         self._sim.snapshot_pre_sensing_candidates(self._slot)
-        self._sim.update_action_counts(parsed_actions, self._slot)
-        self._sim.update_empty_scan_counts(parsed_actions, true_comm_edges, self._slot)
-        self._sim.update_sensing(parsed_actions, self._slot)
+        self._sim.update_action_counts(execution_actions, self._slot)
+        self._sim.update_empty_scan_counts(execution_actions, true_comm_edges, self._slot)
+        self._sim.update_sensing(execution_actions, self._slot)
         self._sim._candidate_pool_cache.clear()
-        new_edges = self._sim.resolve_discoveries(self._slot, parsed_actions, true_comm_edges)
+        new_edges = self._sim.resolve_discoveries(self._slot, execution_actions, true_comm_edges)
         if self.collect_slot_metrics:
             metric_row = self._sim.slot_metrics(
                 episode=0,
@@ -125,6 +131,7 @@ class MarlNeighborDiscoveryEnv:
 
         rewards = self._rewards(
             parsed_actions,
+            execution_actions,
             new_edges,
             empty_by_node,
             fail_before,
@@ -140,7 +147,7 @@ class MarlNeighborDiscoveryEnv:
             self._slot,
             self._sim.mobility_rng,
         )
-        self._last_actions = parsed_actions
+        self._last_actions = execution_actions
         self._slot += 1
 
         terminated = False
@@ -216,9 +223,17 @@ class MarlNeighborDiscoveryEnv:
             "contention_state": contention_state,
             "rule_mode_logits": self._rule_mode_logits_for(node, topology_deficit, int(np.count_nonzero(candidate["mask"]))),
             "last_mode": mode_one_hot,
+            "last_access_gate": self._last_access_gate_one_hot(last_action),
             "last_beam": np.asarray([last_action.beam / max(1, self.n_beams - 1)], dtype=np.float32),
             "local_summary": local_summary,
         }
+
+    def _last_access_gate_one_hot(self, action: Action) -> np.ndarray:
+        gate = getattr(action, "access_gate", ACCESS_NORMAL)
+        gate = gate if gate in ACCESS_GATE_TO_INDEX else ACCESS_NORMAL
+        one_hot = np.zeros(len(ACCESS_GATE_NAMES), dtype=np.float32)
+        one_hot[ACCESS_GATE_TO_INDEX[gate]] = 1.0
+        return one_hot
 
     def _contention_state_for(
         self,
@@ -338,26 +353,37 @@ class MarlNeighborDiscoveryEnv:
 
     def _parse_action(self, raw: Action | Mapping[str, Any] | Sequence[Any]) -> Action:
         if isinstance(raw, Action):
-            mode, beam = raw.mode, raw.beam
+            mode, beam, access_gate = raw.mode, raw.beam, raw.access_gate
         elif isinstance(raw, Mapping):
             if "mode" not in raw:
                 raise ValueError("Action mapping must contain a 'mode' field.")
             mode = raw["mode"]
             beam = raw.get("beam", 0)
+            access_gate = raw.get("access_gate", raw.get("gate", ACCESS_NORMAL))
         elif isinstance(raw, (tuple, list)) and len(raw) >= 2:
             mode, beam = raw[0], raw[1]
+            access_gate = raw[2] if len(raw) >= 3 else ACCESS_NORMAL
         else:
             raise TypeError("Action must be Action, mapping, or (mode, beam) pair.")
         parsed_mode = _parse_mode(mode)
+        parsed_gate = _parse_access_gate(access_gate)
         parsed_beam = int(beam)
         if parsed_mode == MODE_IDLE:
             parsed_beam = 0
         if not 0 <= parsed_beam < self.n_beams:
             raise ValueError(f"Beam index {parsed_beam} outside [0, {self.n_beams}).")
-        return Action(parsed_mode, parsed_beam)
+        return Action(parsed_mode, parsed_beam, parsed_gate)
+
+    def _apply_access_gate(self, action: Action) -> Action:
+        if action.access_gate == ACCESS_BACKOFF and action.mode == MODE_TX:
+            return Action(MODE_RX, action.beam, action.access_gate)
+        if action.access_gate == ACCESS_AGGRESSIVE and action.mode == MODE_RX:
+            return Action(MODE_TX, action.beam, action.access_gate)
+        return action
 
     def _rewards(
         self,
+        sampled_actions: list[Action],
         actions: list[Action],
         new_edges: list[tuple[int, int]],
         empty_by_node: np.ndarray,
@@ -374,6 +400,8 @@ class MarlNeighborDiscoveryEnv:
                 rewards[node] -= 0.005
             elif empty_by_node[node]:
                 rewards[node] -= 0.02
+            if sampled_actions[node].access_gate == ACCESS_AGGRESSIVE:
+                rewards[node] -= 0.003
 
         fail_delta = self._sim.fail_count.sum(axis=1) - fail_before
         success_delta = self._sim.success_count.sum(axis=1) - success_before
@@ -448,6 +476,7 @@ class MarlNeighborDiscoveryEnv:
             "n_agents": self.n_agents,
             "n_beams": self.n_beams,
             "mode_names": MODE_NAMES,
+            "access_gate_names": ACCESS_GATE_NAMES,
             "new_edges_count": int(new_edges_count),
             "discovered_edges_count": len(self._sim.discovered_edges),
             "scan_actions": self._sim.scan_actions,
@@ -475,6 +504,7 @@ class MarlNeighborDiscoveryEnv:
             "n_agents": self.n_agents,
             "n_beams": self.n_beams,
             "mode_names": MODE_NAMES,
+            "access_gate_names": ACCESS_GATE_NAMES,
             "new_edges_count": int(new_edges_count),
             "reward_version": self.reward_version,
         }
@@ -505,6 +535,20 @@ def _parse_mode(mode: str | int | np.integer) -> str:
     text = aliases.get(text, text)
     if text not in MODE_TO_INDEX:
         raise ValueError(f"Unsupported action mode: {mode}")
+    return text
+
+
+def _parse_access_gate(access_gate: str | int | np.integer) -> str:
+    if isinstance(access_gate, (int, np.integer)):
+        idx = int(access_gate)
+        if not 0 <= idx < len(ACCESS_GATE_NAMES):
+            raise ValueError(f"Access-gate index {idx} outside [0, {len(ACCESS_GATE_NAMES)}).")
+        return ACCESS_GATE_NAMES[idx]
+    text = str(access_gate).lower()
+    aliases = {"b": ACCESS_BACKOFF, "n": ACCESS_NORMAL, "a": ACCESS_AGGRESSIVE}
+    text = aliases.get(text, text)
+    if text not in ACCESS_GATE_TO_INDEX:
+        raise ValueError(f"Unsupported access gate: {access_gate}")
     return text
 
 

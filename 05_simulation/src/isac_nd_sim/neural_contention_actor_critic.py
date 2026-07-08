@@ -5,7 +5,7 @@ from typing import Sequence
 
 import numpy as np
 
-from .marl_env import MODE_NAMES
+from .marl_env import ACCESS_GATE_NAMES, MODE_NAMES
 from .neural_shared_actor_critic import PolicyStep
 from .simulator import Action
 
@@ -57,6 +57,7 @@ class ContentionGraphActorCritic:
         self.rule_residual_scale = float(rule_residual_scale)
         self.use_access_gate = bool(use_access_gate)
         self.access_gate_variant = str(access_gate_variant)
+        self.supports_access_gate_action = bool(use_access_gate)
         self.model = _ContentionGraphActorCriticModule(
             self.n_beams,
             self.hidden_dim,
@@ -77,7 +78,7 @@ class ContentionGraphActorCritic:
         torch = self.torch
         tensors = observation_to_contention_tensors(observation, self.device, torch, self.n_beams)
         tensors = self._prepare_tensors(tensors)
-        mode_logits, beam_logits, value = self.model(tensors)
+        mode_logits, beam_logits, _gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
@@ -89,7 +90,7 @@ class ContentionGraphActorCritic:
         torch = self.torch
         tensors = observations_to_batched_contention_tensors(observations, self.device, torch, self.n_beams)
         tensors = self._prepare_tensors(tensors)
-        mode_logits, beam_logits, value = self.model(tensors)
+        mode_logits, beam_logits, _gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
@@ -100,6 +101,34 @@ class ContentionGraphActorCritic:
                 beam_logits,
             )
         return mode_logits, beam_logits, value
+
+    def action_logits_value(self, observation: dict, hard_mask: bool = False):
+        torch = self.torch
+        tensors = observation_to_contention_tensors(observation, self.device, torch, self.n_beams)
+        tensors = self._prepare_tensors(tensors)
+        mode_logits, beam_logits, gate_logits, value = self.model(tensors)
+        mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
+        if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
+            mask = tensors["candidate_mask"] > 0.5
+            if bool(mask.any().item()):
+                beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
+        return mode_logits, beam_logits, gate_logits, value
+
+    def batched_action_logits_value(self, observations: Sequence[dict], hard_mask: bool = False):
+        torch = self.torch
+        tensors = observations_to_batched_contention_tensors(observations, self.device, torch, self.n_beams)
+        tensors = self._prepare_tensors(tensors)
+        mode_logits, beam_logits, gate_logits, value = self.model(tensors)
+        mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
+        if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
+            mask = tensors["candidate_mask"] > 0.5
+            has_candidate = mask.any(dim=-1, keepdim=True)
+            beam_logits = torch.where(
+                has_candidate,
+                beam_logits.masked_fill(~mask, -1.0e9),
+                beam_logits,
+            )
+        return mode_logits, beam_logits, gate_logits, value
 
     def _prepare_tensors(self, tensors: dict):
         torch = self.torch
@@ -155,15 +184,22 @@ class ContentionGraphActorCritic:
             empty = torch.empty(0, device=self.device)
             return PolicyStep(actions=[], log_probs=empty, values=empty, entropies=empty)
 
-        mode_logits, beam_logits, value = self.batched_logits_value(observations, hard_mask=True)
+        if self.supports_access_gate_action:
+            mode_logits, beam_logits, gate_logits, value = self.batched_action_logits_value(observations, hard_mask=True)
+        else:
+            mode_logits, beam_logits, value = self.batched_logits_value(observations, hard_mask=True)
+            gate_logits = None
         mode_dist = Categorical(logits=mode_logits)
         beam_dist = Categorical(logits=beam_logits)
+        gate_dist = Categorical(logits=gate_logits) if gate_logits is not None else None
         if deterministic:
             mode_idx = torch.argmax(mode_logits, dim=-1)
             sampled_beam_idx = torch.argmax(beam_logits, dim=-1)
+            gate_idx = torch.argmax(gate_logits, dim=-1) if gate_logits is not None else None
         else:
             mode_idx = mode_dist.sample()
             sampled_beam_idx = beam_dist.sample()
+            gate_idx = gate_dist.sample() if gate_dist is not None else None
         idle_idx = MODE_NAMES.index("idle")
         beam_idx = torch.where(
             mode_idx == idle_idx,
@@ -171,20 +207,29 @@ class ContentionGraphActorCritic:
             sampled_beam_idx,
         )
         actions = [
-            Action(MODE_NAMES[int(mode_item.item())], int(beam_item.item()))
-            for mode_item, beam_item in zip(mode_idx, beam_idx, strict=True)
+            Action(
+                MODE_NAMES[int(mode_item.item())],
+                int(beam_item.item()),
+                ACCESS_GATE_NAMES[int(gate_item.item())] if gate_idx is not None else "normal",
+            )
+            for mode_item, beam_item, gate_item in zip(
+                mode_idx,
+                beam_idx,
+                gate_idx if gate_idx is not None else torch.zeros_like(mode_idx),
+                strict=True,
+            )
         ]
         beam_log_prob = torch.where(
             mode_idx == idle_idx,
             torch.zeros_like(value.squeeze(-1)),
             beam_dist.log_prob(sampled_beam_idx),
         )
-        return PolicyStep(
-            actions=actions,
-            log_probs=mode_dist.log_prob(mode_idx) + beam_log_prob,
-            values=value.squeeze(-1),
-            entropies=mode_dist.entropy() + beam_dist.entropy(),
-        )
+        log_probs = mode_dist.log_prob(mode_idx) + beam_log_prob
+        entropies = mode_dist.entropy() + beam_dist.entropy()
+        if gate_dist is not None and gate_idx is not None:
+            log_probs = log_probs + gate_dist.log_prob(gate_idx)
+            entropies = entropies + gate_dist.entropy()
+        return PolicyStep(actions=actions, log_probs=log_probs, values=value.squeeze(-1), entropies=entropies)
 
 
 class _ContentionGraphActorCriticModule:
@@ -249,6 +294,12 @@ class _ContentionGraphActorCriticModule:
                     )
                     nn.init.zeros_(self.access_gate_head[-1].weight)
                     nn.init.zeros_(self.access_gate_head[-1].bias)
+                    self.access_gate_action_head = nn.Sequential(
+                        nn.Linear(2 * hidden_dim, hidden_dim),
+                        nn.LayerNorm(hidden_dim),
+                        nn.SiLU(),
+                        nn.Linear(hidden_dim, len(ACCESS_GATE_NAMES)),
+                    )
 
             def forward(self, tensors: dict[str, torch.Tensor]):
                 beam_features = tensors["beam_features"]
@@ -290,12 +341,16 @@ class _ContentionGraphActorCriticModule:
                 mode_logits = self.mode_head(context) + self.contention_mode_residual(contention)
                 if self.use_access_gate:
                     mode_logits = self.apply_access_gate(mode_logits, context, contention, tensors)
+                    gate_logits = self.access_gate_action_head(torch.cat([context, contention], dim=-1))
+                else:
+                    gate_shape = (*mode_logits.shape[:-1], len(ACCESS_GATE_NAMES))
+                    gate_logits = torch.zeros(gate_shape, dtype=mode_logits.dtype, device=mode_logits.device)
                 gated_query = query * (1.0 + torch.tanh(self.contention_beam_gate(contention)))
                 query_dim = 0 if beam_tokens.dim() == 2 else 1
                 beam_logits = (beam_tokens * gated_query.unsqueeze(query_dim)).sum(dim=-1) / np.sqrt(float(self.hidden_dim))
                 beam_logits = beam_logits + self.beam_bias(beam_tokens).squeeze(-1)
                 value = self.value_head(context)
-                return mode_logits, beam_logits, value
+                return mode_logits, beam_logits, gate_logits, value
 
             def apply_access_gate(
                 self,

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from isac_nd_sim.config import load_config
-from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
+from isac_nd_sim.marl_env import ACCESS_GATE_NAMES, MarlNeighborDiscoveryEnv
 from isac_nd_sim.neural_contention_actor_critic import (
     AdaptiveGatedContentionGraphActorCritic,
     BalancedTopologyGatedContentionGraphActorCritic,
@@ -41,6 +41,7 @@ def test_shared_actor_critic_samples_valid_actions() -> None:
     assert step.values.shape == (cfg.n_nodes,)
     for action in step.actions:
         assert action.mode in env.modes
+        assert action.access_gate == "normal"
         assert 0 <= action.beam < cfg.n_beams
 
 
@@ -161,11 +162,13 @@ def test_gated_contention_graph_actor_critic_samples_valid_actions() -> None:
 
     assert policy.use_access_gate is True
     assert hasattr(policy.model, "access_gate_head")
+    assert hasattr(policy.model, "access_gate_action_head")
     assert len(step.actions) == cfg.n_nodes
     assert step.log_probs.shape == (cfg.n_nodes,)
     assert step.values.shape == (cfg.n_nodes,)
     for observation, action in zip(observations, step.actions, strict=True):
         assert action.mode in env.modes
+        assert action.access_gate in ACCESS_GATE_NAMES
         assert 0 <= action.beam < cfg.n_beams
         if action.mode != "idle":
             assert observation["candidate_mask"][action.beam] > 0.5

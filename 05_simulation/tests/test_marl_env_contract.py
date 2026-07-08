@@ -72,6 +72,7 @@ def test_marl_env_reset_observation_contract_has_no_neighbor_truth() -> None:
     assert first["rule_mode_logits"].shape == (4,)
     assert np.count_nonzero(first["candidate_mask"]) >= 1
     assert first["last_mode"].shape == (4,)
+    assert first["last_access_gate"].shape == (3,)
     assert first["last_beam"].shape == (1,)
     assert first["local_summary"].shape == (4,)
 
@@ -109,6 +110,31 @@ def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     assert "discovery_per_scan_action" in info
     _assert_no_forbidden_keys(info)
     _assert_no_forbidden_keys(next_observations)
+
+
+def test_access_gate_action_modulates_effective_role() -> None:
+    cfg = _small_cfg()
+    env = MarlNeighborDiscoveryEnv(cfg)
+    env.reset(seed=17)
+
+    actions = [
+        {"mode": "tx", "beam": 1, "access_gate": "backoff"},
+        {"mode": "rx", "beam": 1, "access_gate": "aggressive"},
+        {"mode": "tx", "beam": 2, "access_gate": "normal"},
+        {"mode": "rx", "beam": 2},
+        {"mode": "idle", "access_gate": "aggressive"},
+        (2, 3, 0),
+    ]
+    next_observations, _rewards, _terminated, _truncated, info = env.step(actions)
+
+    assert info["tx_actions"] == 2
+    assert info["rx_actions"] == 3
+    assert info["idle_actions"] == 1
+    assert env._last_actions[0].mode == "rx"
+    assert env._last_actions[0].access_gate == "backoff"
+    assert env._last_actions[1].mode == "tx"
+    assert env._last_actions[1].access_gate == "aggressive"
+    assert next_observations[0]["last_access_gate"].tolist() == [1.0, 0.0, 0.0]
 
 
 def test_collision_topology_reward_version_keeps_public_contract_safe() -> None:

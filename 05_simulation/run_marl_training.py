@@ -25,7 +25,7 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     GatedContentionGraphActorCritic,
     TopologyAdaptiveGatedContentionGraphActorCritic,
 )
-from isac_nd_sim.marl_env import MODE_NAMES, MODE_TO_INDEX, MarlNeighborDiscoveryEnv  # noqa: E402
+from isac_nd_sim.marl_env import ACCESS_GATE_TO_INDEX, MODE_NAMES, MODE_TO_INDEX, MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 from isac_nd_sim.simulator import Action  # noqa: E402
@@ -499,7 +499,11 @@ def evaluate_actions(
         step_values = []
         step_entropies = []
         for observation, action in zip(observations, actions, strict=True):
-            mode_logits, beam_logits, value = policy.logits_value(observation, hard_mask=True)
+            if getattr(policy, "supports_access_gate_action", False) and hasattr(policy, "action_logits_value"):
+                mode_logits, beam_logits, gate_logits, value = policy.action_logits_value(observation, hard_mask=True)
+            else:
+                mode_logits, beam_logits, value = policy.logits_value(observation, hard_mask=True)
+                gate_logits = None
             mode_dist = Categorical(logits=mode_logits)
             beam_dist = Categorical(logits=beam_logits)
             mode_idx = MODE_TO_INDEX[action.mode]
@@ -508,9 +512,16 @@ def evaluate_actions(
             if action.mode != "idle":
                 beam_tensor = torch.as_tensor(int(action.beam), dtype=torch.long, device=policy.device)
                 log_prob = log_prob + beam_dist.log_prob(beam_tensor)
+            entropy = mode_dist.entropy() + beam_dist.entropy()
+            if gate_logits is not None:
+                gate_dist = Categorical(logits=gate_logits)
+                gate_idx = ACCESS_GATE_TO_INDEX.get(getattr(action, "access_gate", "normal"), ACCESS_GATE_TO_INDEX["normal"])
+                gate_tensor = torch.as_tensor(gate_idx, dtype=torch.long, device=policy.device)
+                log_prob = log_prob + gate_dist.log_prob(gate_tensor)
+                entropy = entropy + gate_dist.entropy()
             step_log_probs.append(log_prob)
             step_values.append(value.squeeze(-1))
-            step_entropies.append(mode_dist.entropy() + beam_dist.entropy())
+            step_entropies.append(entropy)
         log_prob_rows.append(torch.stack(step_log_probs))
         value_rows.append(torch.stack(step_values))
         entropy_rows.append(torch.stack(step_entropies))

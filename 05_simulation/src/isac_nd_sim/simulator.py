@@ -15,6 +15,9 @@ MODE_SENSE = "sense"
 MODE_TX = "tx"
 MODE_RX = "rx"
 MODE_IDLE = "idle"
+ACCESS_BACKOFF = "backoff"
+ACCESS_NORMAL = "normal"
+ACCESS_AGGRESSIVE = "aggressive"
 
 WANG2025_PROTOCOLS = (
     "wang2025_isac_no_collab",
@@ -56,6 +59,7 @@ NO_ISAC_SENSING_PROTOCOLS = (
 class Action:
     mode: str
     beam: int
+    access_gate: str = ACCESS_NORMAL
 
 
 @dataclass
