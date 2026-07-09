@@ -22,6 +22,8 @@ Two implementation gaps were closed:
   - Training manifests now record `expert_bc_weight`, `expert_protocol`, and `expert_gate_imitation`.
 - `05_simulation/run_protocol_baseline_eval.py`
   - Added display label for `trust_gated_isac_tables`.
+- `05_simulation/run_marl_training_stability_campaign.py`
+  - Added `--expert-bc-weights` and `--expert-protocol` for reproducible Budgeted expert BC sweeps.
 - `pytest.ini`
   - Constrains pytest collection to `05_simulation/tests` and avoids `tmp/pydeps` permission traps.
 
@@ -38,7 +40,7 @@ Full configured test entry:
 
 ```text
 python -m pytest -q
-51 passed
+52 passed
 ```
 
 Smoke experiments:
@@ -60,6 +62,14 @@ This confirmed the Budgeted expert BC path writes manifests and non-normal gate 
 | backoff | 0.1875 |
 | normal | 0.6667 |
 | aggressive | 0.1458 |
+
+Campaign dry-run:
+
+```text
+python 05_simulation/run_marl_training_stability_campaign.py --campaign budgeted_gate_bc_sweep_20260709 --methods balanced_topology_gated_contention_actor --seeds 20260751 --episodes 100 --slots 300 --expert-bc-weights 0.15 0.30 0.50 --expert-protocol budgeted_collision_aware_isac --dry-run --quiet
+```
+
+This generated three planned training runs with the expected Budgeted expert BC weights and command-line arguments.
 
 ## Claim Boundary
 

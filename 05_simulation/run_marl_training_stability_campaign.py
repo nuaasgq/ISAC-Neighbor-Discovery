@@ -120,6 +120,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint-interval", type=int, default=50)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--ppo-epochs", type=int, default=2)
+    parser.add_argument("--expert-bc-weights", type=float, nargs="+", default=[0.0])
+    parser.add_argument("--expert-protocol", default="collision_aware_isac")
     parser.add_argument("--torch-threads", type=int, default=2)
     parser.add_argument("--step-log-period", type=int, default=1)
     parser.add_argument("--resource-log-period", type=int, default=100)
@@ -205,6 +207,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--eval-interval must be positive.")
     if int(args.torch_threads) <= 0:
         raise ValueError("--torch-threads must be positive.")
+    if any(float(weight) < 0.0 for weight in args.expert_bc_weights):
+        raise ValueError("--expert-bc-weights must be nonnegative.")
 
 
 def build_plan(args: argparse.Namespace, train_root: Path, log_root: Path) -> dict[str, Any]:
@@ -212,68 +216,85 @@ def build_plan(args: argparse.Namespace, train_root: Path, log_root: Path) -> di
     for seed in args.seeds:
         for method_name in args.methods:
             method = METHODS[method_name]
-            run_name = f"train_n10_b10_{method.name}_{args.episodes}ep_{args.slots}slot_seed{seed}"
-            output = train_root / run_name
-            command = [
-                sys.executable,
-                str(TRAIN_SCRIPT),
-                "--config",
-                str(args.config),
-                "--output",
-                str(output),
-                "--algorithm",
-                method.algorithm,
-                "--network",
-                method.network,
-                "--reward-version",
-                method.reward_version,
-                "--episodes",
-                str(args.episodes),
-                "--slots",
-                str(args.slots),
-                "--eval-episodes",
-                str(args.eval_episodes),
-                "--eval-interval",
-                str(args.eval_interval),
-                "--eval-both",
-                "--checkpoint-interval",
-                str(args.checkpoint_interval),
-                "--hidden-dim",
-                str(args.hidden_dim),
-                "--ppo-epochs",
-                str(args.ppo_epochs),
-                "--torch-threads",
-                str(args.torch_threads),
-                "--step-log-period",
-                str(args.step_log_period),
-                "--resource-log-period",
-                str(args.resource_log_period),
-                "--max-rss-mb",
-                str(args.max_rss_mb),
-                "--max-system-memory-percent",
-                str(args.max_system_memory_percent),
-                "--seed",
-                str(seed),
-            ]
-            if method.disable_isac_features:
-                command.append("--disable-isac-features")
-            if method.env_protocol:
-                command.extend(["--env-protocol", method.env_protocol])
-            if method.topology_deficit:
-                command.append("--topology-deficit")
-            runs.append(
-                {
-                    "run_name": run_name,
-                    "method": method.name,
-                    "seed": int(seed),
-                    "description": method.description,
-                    "output": str(output),
-                    "stdout": str(log_root / f"{run_name}.out.log"),
-                    "stderr": str(log_root / f"{run_name}.err.log"),
-                    "skip_complete": complete_training_run(output, int(args.episodes), int(args.slots), method, int(seed)),
-                    "command": command,
-                }
-            )
+            for expert_weight in args.expert_bc_weights:
+                expert_weight = float(expert_weight)
+                bc_tag = "" if expert_weight <= 0.0 else f"_bc{weight_tag(expert_weight)}_{args.expert_protocol}"
+                run_name = f"train_n10_b10_{method.name}{bc_tag}_{args.episodes}ep_{args.slots}slot_seed{seed}"
+                output = train_root / run_name
+                command = [
+                    sys.executable,
+                    str(TRAIN_SCRIPT),
+                    "--config",
+                    str(args.config),
+                    "--output",
+                    str(output),
+                    "--algorithm",
+                    method.algorithm,
+                    "--network",
+                    method.network,
+                    "--reward-version",
+                    method.reward_version,
+                    "--episodes",
+                    str(args.episodes),
+                    "--slots",
+                    str(args.slots),
+                    "--eval-episodes",
+                    str(args.eval_episodes),
+                    "--eval-interval",
+                    str(args.eval_interval),
+                    "--eval-both",
+                    "--checkpoint-interval",
+                    str(args.checkpoint_interval),
+                    "--hidden-dim",
+                    str(args.hidden_dim),
+                    "--ppo-epochs",
+                    str(args.ppo_epochs),
+                    "--expert-bc-weight",
+                    str(expert_weight),
+                    "--expert-protocol",
+                    str(args.expert_protocol),
+                    "--torch-threads",
+                    str(args.torch_threads),
+                    "--step-log-period",
+                    str(args.step_log_period),
+                    "--resource-log-period",
+                    str(args.resource_log_period),
+                    "--max-rss-mb",
+                    str(args.max_rss_mb),
+                    "--max-system-memory-percent",
+                    str(args.max_system_memory_percent),
+                    "--seed",
+                    str(seed),
+                ]
+                if method.disable_isac_features:
+                    command.append("--disable-isac-features")
+                if method.env_protocol:
+                    command.extend(["--env-protocol", method.env_protocol])
+                if method.topology_deficit:
+                    command.append("--topology-deficit")
+                runs.append(
+                    {
+                        "run_name": run_name,
+                        "method": method.name,
+                        "seed": int(seed),
+                        "expert_bc_weight": expert_weight,
+                        "expert_protocol": str(args.expert_protocol),
+                        "description": method.description,
+                        "output": str(output),
+                        "stdout": str(log_root / f"{run_name}.out.log"),
+                        "stderr": str(log_root / f"{run_name}.err.log"),
+                        "skip_complete": complete_training_run(
+                            output,
+                            int(args.episodes),
+                            int(args.slots),
+                            method,
+                            int(seed),
+                            expert_weight,
+                            str(args.expert_protocol),
+                        ),
+                        "command": command,
+                    }
+                )
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "campaign": str(args.campaign),
@@ -283,11 +304,21 @@ def build_plan(args: argparse.Namespace, train_root: Path, log_root: Path) -> di
         "eval_interval": int(args.eval_interval),
         "methods": list(args.methods),
         "seeds": [int(seed) for seed in args.seeds],
+        "expert_bc_weights": [float(weight) for weight in args.expert_bc_weights],
+        "expert_protocol": str(args.expert_protocol),
         "runs": runs,
     }
 
 
-def complete_training_run(output: Path, expected_episodes: int, expected_slots: int, method: TrainMethod, seed: int) -> bool:
+def complete_training_run(
+    output: Path,
+    expected_episodes: int,
+    expected_slots: int,
+    method: TrainMethod,
+    seed: int,
+    expert_bc_weight: float = 0.0,
+    expert_protocol: str = "collision_aware_isac",
+) -> bool:
     if not (output / "final_model.pt").exists():
         return False
     manifest_path = output / "manifest.json"
@@ -310,9 +341,18 @@ def complete_training_run(output: Path, expected_episodes: int, expected_slots: 
         return False
     if method.env_protocol and str(manifest.get("env_protocol", "")) != method.env_protocol:
         return False
+    manifest_weight = float(manifest.get("expert_bc_weight", 0.0))
+    if abs(manifest_weight - float(expert_bc_weight)) > 1e-9:
+        return False
+    if float(expert_bc_weight) > 0.0 and str(manifest.get("expert_protocol", "")) != str(expert_protocol):
+        return False
     if bool((manifest.get("args") or {}).get("disable_isac_features", False)) != bool(method.disable_isac_features):
         return False
     return csv_rows(output / "episode_metrics.csv") >= expected_episodes
+
+
+def weight_tag(weight: float) -> str:
+    return f"{float(weight):.3f}".rstrip("0").rstrip(".").replace(".", "p")
 
 
 def csv_rows(path: Path) -> int:
