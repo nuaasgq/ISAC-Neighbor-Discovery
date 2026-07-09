@@ -520,6 +520,79 @@ def test_marl_training_writes_step_episode_eval_and_resource_logs(tmp_path: Path
     assert (ablation_output / "eval_episode_metrics.csv").exists()
 
 
+def test_marl_training_logs_separate_beam_losses(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    module = load_probe_module(MARL_TRAINING_SCRIPT, "run_marl_training_split_loss")
+    output = tmp_path / "marl_split_loss"
+
+    manifest = module.run_training(
+        Namespace(
+            config=str(ROOT / "05_simulation" / "configs" / "mvp.yaml"),
+            output=str(output),
+            algorithm="isac_mappo",
+            network="contention_shared",
+            reward_version="discovery_first",
+            episodes=1,
+            slots=3,
+            eval_episodes=0,
+            eval_interval=1,
+            stochastic_eval=False,
+            eval_both=False,
+            checkpoint_interval=0,
+            node_count=4,
+            azimuth_cells=4,
+            elevation_cells=2,
+            communication_range=900.0,
+            sensing_range=900.0,
+            false_alarm_rate=0.0,
+            miss_detection_rate=0.0,
+            angular_cell_offset_std=0.0,
+            sensing_period_slots=1,
+            mobility_model=None,
+            env_protocol="wang2025_isac_tables",
+            candidate_source="wang_table",
+            hidden_dim=16,
+            learning_rate=1e-3,
+            gamma=0.95,
+            ppo_epochs=1,
+            clip_epsilon=0.2,
+            value_coef=0.5,
+            entropy_coef=0.01,
+            separate_action_loss=True,
+            beam_loss_coef=1.0,
+            gate_loss_coef=0.25,
+            beam_rank_aux_coef=0.05,
+            beam_rank_temperature=4.0,
+            max_grad_norm=1.0,
+            expert_bc_weight=0.0,
+            expert_protocol="collision_aware_isac",
+            candidate_mask=True,
+            candidate_score=True,
+            topology_deficit=True,
+            rule_residual=True,
+            rule_residual_scale=1.0,
+            disable_isac_features=False,
+            forbid_sense=True,
+            seed=181,
+            torch_threads=1,
+            step_log_period=1,
+            resource_log_period=0,
+            max_rss_mb=12000.0,
+            max_system_memory_percent=99.0,
+        )
+    )
+
+    assert manifest["separate_action_loss"] is True
+    assert manifest["beam_rank_aux_coef"] == 0.05
+    episode_header = (output / "episode_metrics.csv").read_text(encoding="utf-8").splitlines()[0]
+    step_header = (output / "step_rewards.csv").read_text(encoding="utf-8").splitlines()[0]
+    assert "mode_policy_loss" in episode_header
+    assert "beam_policy_loss" in episode_header
+    assert "beam_rank_aux_loss" in episode_header
+    assert "beam_top1_rate_active" in step_header
+    assert "beam_candidate_count_mean_active" in step_header
+
+
 def load_probe_module(path: Path, name: str):
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None

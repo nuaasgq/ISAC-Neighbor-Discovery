@@ -243,17 +243,34 @@ class ContentionGraphActorCritic:
                 strict=True,
             )
         ]
-        beam_log_prob = torch.where(
-            mode_idx == idle_idx,
-            torch.zeros_like(value.squeeze(-1)),
-            beam_dist.log_prob(sampled_beam_idx),
-        )
-        log_probs = mode_dist.log_prob(mode_idx) + beam_log_prob
-        entropies = mode_dist.entropy() + beam_dist.entropy()
+        active_beam_mask = mode_idx != idle_idx
+        raw_beam_log_prob = beam_dist.log_prob(sampled_beam_idx)
+        beam_log_prob = torch.where(active_beam_mask, raw_beam_log_prob, torch.zeros_like(value.squeeze(-1)))
+        mode_log_prob = mode_dist.log_prob(mode_idx)
+        mode_entropy = mode_dist.entropy()
+        beam_entropy = beam_dist.entropy()
+        gate_log_prob = torch.zeros_like(mode_log_prob)
+        gate_entropy = torch.zeros_like(mode_entropy)
+        log_probs = mode_log_prob + beam_log_prob
+        entropies = mode_entropy + beam_entropy
         if gate_dist is not None and gate_idx is not None:
-            log_probs = log_probs + gate_dist.log_prob(gate_idx)
-            entropies = entropies + gate_dist.entropy()
-        return PolicyStep(actions=actions, log_probs=log_probs, values=value.squeeze(-1), entropies=entropies)
+            gate_log_prob = gate_dist.log_prob(gate_idx)
+            gate_entropy = gate_dist.entropy()
+            log_probs = log_probs + gate_log_prob
+            entropies = entropies + gate_entropy
+        return PolicyStep(
+            actions=actions,
+            log_probs=log_probs,
+            values=value.squeeze(-1),
+            entropies=entropies,
+            mode_log_probs=mode_log_prob,
+            beam_log_probs=beam_log_prob,
+            gate_log_probs=gate_log_prob,
+            mode_entropies=mode_entropy,
+            beam_entropies=beam_entropy,
+            gate_entropies=gate_entropy,
+            active_beam_mask=active_beam_mask,
+        )
 
 
 def _temperature_scaled_logits(logits, temperature: float):

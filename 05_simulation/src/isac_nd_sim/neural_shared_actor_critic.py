@@ -15,6 +15,13 @@ class PolicyStep:
     log_probs: object
     values: object
     entropies: object
+    mode_log_probs: object | None = None
+    beam_log_probs: object | None = None
+    gate_log_probs: object | None = None
+    mode_entropies: object | None = None
+    beam_entropies: object | None = None
+    gate_entropies: object | None = None
+    active_beam_mask: object | None = None
 
 
 class SharedBeamActorCritic:
@@ -158,19 +165,27 @@ class SharedBeamActorCritic:
             Action(MODE_NAMES[int(mode_item.item())], int(beam_item.item()))
             for mode_item, beam_item in zip(mode_idx, beam_idx, strict=True)
         ]
-        beam_log_prob = torch.where(
-            mode_idx == idle_idx,
-            torch.zeros_like(value.squeeze(-1)),
-            beam_dist.log_prob(sampled_beam_idx),
-        )
-        log_probs = mode_dist.log_prob(mode_idx) + beam_log_prob
+        active_beam_mask = mode_idx != idle_idx
+        raw_beam_log_prob = beam_dist.log_prob(sampled_beam_idx)
+        beam_log_prob = torch.where(active_beam_mask, raw_beam_log_prob, torch.zeros_like(value.squeeze(-1)))
+        mode_log_prob = mode_dist.log_prob(mode_idx)
+        mode_entropy = mode_dist.entropy()
+        beam_entropy = beam_dist.entropy()
+        log_probs = mode_log_prob + beam_log_prob
         values = value.squeeze(-1)
-        entropies = mode_dist.entropy() + beam_dist.entropy()
+        entropies = mode_entropy + beam_entropy
         return PolicyStep(
             actions=actions,
             log_probs=log_probs,
             values=values,
             entropies=entropies,
+            mode_log_probs=mode_log_prob,
+            beam_log_probs=beam_log_prob,
+            gate_log_probs=torch.zeros_like(mode_log_prob),
+            mode_entropies=mode_entropy,
+            beam_entropies=beam_entropy,
+            gate_entropies=torch.zeros_like(mode_entropy),
+            active_beam_mask=active_beam_mask,
         )
 
 

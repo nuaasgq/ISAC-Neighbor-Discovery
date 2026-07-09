@@ -1,0 +1,30 @@
+{
+  "created_at": "2026-07-10T00:19:00",
+  "purpose": "Separated mode/beam PPO and beam-ranking auxiliary probe under Wang sensing-table candidate source.",
+  "train_dirs": {
+    "split_aux_heavy_train": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_split_beam_20260710\\split_aux_train",
+    "split_light_train": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_split_beam_20260710\\split_light_train"
+  },
+  "eval_dirs": {
+    "split_light_ckpt20_full_policy": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_split_beam_20260710\\eval_light_ckpt20_full_policy",
+    "split_light_ckpt20_mode_wang_random_beam": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_split_beam_20260710\\eval_light_ckpt20_mode_wang_random_beam",
+    "split_light_ckpt40_full_policy": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_split_beam_20260710\\eval_light_ckpt40_full_policy",
+    "split_light_ckpt40_mode_wang_random_beam": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_split_beam_20260710\\eval_light_ckpt40_mode_wang_random_beam"
+  },
+  "previous_aggregate_source": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_tables\\wang_candidate_retrain_20260709\\aggregate_metrics.csv",
+  "outputs": [
+    "aggregate_metrics.csv",
+    "paired_beam_head_deltas.csv",
+    "split_aux_heavy_train_episode_metrics.csv",
+    "split_aux_heavy_train_eval_episode_metrics.csv",
+    "split_aux_heavy_train_step_rewards.csv",
+    "split_aux_heavy_training_eval_summary.csv",
+    "split_beam_ablation_metrics.png",
+    "split_beam_training_diagnostics.png",
+    "split_light_eval_per_episode.csv",
+    "split_light_train_episode_metrics.csv",
+    "split_light_train_eval_episode_metrics.csv",
+    "split_light_train_step_rewards.csv",
+    "split_light_training_eval_summary.csv"
+  ]
+}

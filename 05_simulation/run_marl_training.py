@@ -101,6 +101,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--clip-epsilon", type=float, default=0.2)
     parser.add_argument("--value-coef", type=float, default=0.5)
     parser.add_argument("--entropy-coef", type=float, default=0.01)
+    parser.add_argument(
+        "--separate-action-loss",
+        action="store_true",
+        help="Train mode, beam, and gate action factors with separate PPO losses.",
+    )
+    parser.add_argument("--beam-loss-coef", type=float, default=1.0)
+    parser.add_argument("--gate-loss-coef", type=float, default=0.25)
+    parser.add_argument(
+        "--beam-rank-aux-coef",
+        type=float,
+        default=0.0,
+        help="Auxiliary coefficient for fitting beam logits to local candidate-score rankings.",
+    )
+    parser.add_argument("--beam-rank-temperature", type=float, default=4.0)
     parser.add_argument("--max-grad-norm", type=float, default=1.0)
     parser.add_argument(
         "--expert-bc-weight",
@@ -277,6 +291,14 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--max-rss-mb must be positive.")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
+    if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
+        raise ValueError("--beam-loss-coef must be nonnegative.")
+    if float(getattr(args, "gate_loss_coef", 0.25)) < 0.0:
+        raise ValueError("--gate-loss-coef must be nonnegative.")
+    if float(getattr(args, "beam_rank_aux_coef", 0.0)) < 0.0:
+        raise ValueError("--beam-rank-aux-coef must be nonnegative.")
+    if float(getattr(args, "beam_rank_temperature", 4.0)) <= 0.0:
+        raise ValueError("--beam-rank-temperature must be positive.")
 
 
 def disabled_modes_from_args(args: argparse.Namespace) -> tuple[str, ...]:
@@ -390,6 +412,10 @@ def collect_trajectory(
     )
     observations, _ = env.reset(seed=seed)
     old_log_probs = []
+    old_mode_log_probs = []
+    old_beam_log_probs = []
+    old_gate_log_probs = []
+    active_beam_masks = []
     rewards = []
     observations_by_step = []
     actions_by_step = []
@@ -410,6 +436,10 @@ def collect_trajectory(
             step = policy.act(observations, deterministic=False)
         observations, reward, _terminated, truncated, info = env.step(step.actions)
         old_log_probs.append(step.log_probs.detach().cpu())
+        old_mode_log_probs.append(component_or_zeros(step.mode_log_probs, step.log_probs).detach().cpu())
+        old_beam_log_probs.append(component_or_zeros(step.beam_log_probs, step.log_probs).detach().cpu())
+        old_gate_log_probs.append(component_or_zeros(step.gate_log_probs, step.log_probs).detach().cpu())
+        active_beam_masks.append(active_mask_tensor(step, step.actions, torch_module).detach().cpu())
         reward_tensor = torch_module.as_tensor(reward, dtype=torch_module.float32)
         rewards.append(reward_tensor)
         actions_by_step.append(step.actions)
@@ -418,38 +448,38 @@ def collect_trajectory(
 
         if step_log_period > 0 and slot % step_log_period == 0:
             true_edges = max(1, int(state["true_edges"].shape[0]))
-            step_rows.append(
-                {
-                    "episode": episode,
-                    "slot": slot,
-                    "training_step": global_step,
-                    "seed": seed,
-                    "algorithm": str(args.algorithm),
-                    "env_protocol": env_protocol,
-                    "reward_sum": float(reward_tensor.sum().item()),
-                    "reward_mean": float(reward_tensor.mean().item()),
-                    "episode_cumulative_reward": cumulative_reward,
-                    "new_edges_count": int(info["new_edges_count"]),
-                    "discovered_edges": int(info["discovered_edges_count"]),
-                    "true_edges": true_edges,
-                    "discovery_rate": int(info["discovered_edges_count"]) / true_edges,
-                    "empty_scan_ratio": float(info["empty_scan_ratio"]),
-                    "collision_count": int(info["collision_count"]),
-                    "lambda2": float(info["lambda2"]),
-                    "lcc_ratio": float(info["lcc_ratio"]),
-                    "scan_actions": int(info["scan_actions"]),
-                    "tx_actions": int(info["tx_actions"]),
-                    "rx_actions": int(info["rx_actions"]),
-                    "sense_actions": int(info["sense_actions"]),
-                    "idle_actions": int(info["idle_actions"]),
-                    "access_gate_backoff_count": int(info.get("access_gate_backoff_count", 0)),
-                    "access_gate_normal_count": int(info.get("access_gate_normal_count", 0)),
-                    "access_gate_aggressive_count": int(info.get("access_gate_aggressive_count", 0)),
-                    "access_gate_backoff_ratio": float(info.get("access_gate_backoff_ratio", 0.0)),
-                    "access_gate_normal_ratio": float(info.get("access_gate_normal_ratio", 0.0)),
-                    "access_gate_aggressive_ratio": float(info.get("access_gate_aggressive_ratio", 0.0)),
-                }
-            )
+            row = {
+                "episode": episode,
+                "slot": slot,
+                "training_step": global_step,
+                "seed": seed,
+                "algorithm": str(args.algorithm),
+                "env_protocol": env_protocol,
+                "reward_sum": float(reward_tensor.sum().item()),
+                "reward_mean": float(reward_tensor.mean().item()),
+                "episode_cumulative_reward": cumulative_reward,
+                "new_edges_count": int(info["new_edges_count"]),
+                "discovered_edges": int(info["discovered_edges_count"]),
+                "true_edges": true_edges,
+                "discovery_rate": int(info["discovered_edges_count"]) / true_edges,
+                "empty_scan_ratio": float(info["empty_scan_ratio"]),
+                "collision_count": int(info["collision_count"]),
+                "lambda2": float(info["lambda2"]),
+                "lcc_ratio": float(info["lcc_ratio"]),
+                "scan_actions": int(info["scan_actions"]),
+                "tx_actions": int(info["tx_actions"]),
+                "rx_actions": int(info["rx_actions"]),
+                "sense_actions": int(info["sense_actions"]),
+                "idle_actions": int(info["idle_actions"]),
+                "access_gate_backoff_count": int(info.get("access_gate_backoff_count", 0)),
+                "access_gate_normal_count": int(info.get("access_gate_normal_count", 0)),
+                "access_gate_aggressive_count": int(info.get("access_gate_aggressive_count", 0)),
+                "access_gate_backoff_ratio": float(info.get("access_gate_backoff_ratio", 0.0)),
+                "access_gate_normal_ratio": float(info.get("access_gate_normal_ratio", 0.0)),
+                "access_gate_aggressive_ratio": float(info.get("access_gate_aggressive_ratio", 0.0)),
+            }
+            row.update(beam_selection_diagnostics(observations_by_step[-1], step.actions))
+            step_rows.append(row)
         if int(args.resource_log_period) > 0 and global_step % int(args.resource_log_period) == 0:
             snapshot = resource_snapshot()
             snapshot.update({"episode": episode, "slot": slot, "training_step": global_step})
@@ -466,10 +496,62 @@ def collect_trajectory(
         "actions": actions_by_step,
         "expert_actions": expert_actions_by_step,
         "old_log_probs": torch_module.stack([row.to(policy.device) for row in old_log_probs]),
+        "old_mode_log_probs": torch_module.stack([row.to(policy.device) for row in old_mode_log_probs]),
+        "old_beam_log_probs": torch_module.stack([row.to(policy.device) for row in old_beam_log_probs]),
+        "old_gate_log_probs": torch_module.stack([row.to(policy.device) for row in old_gate_log_probs]),
+        "active_beam_mask": torch_module.stack([row.to(policy.device) for row in active_beam_masks]),
         "rewards": torch_module.stack(rewards).to(policy.device),
         "central_features": torch_module.as_tensor(np.stack(central_features), dtype=torch_module.float32, device=policy.device),
         "step_rows": step_rows,
         "summary": summary,
+    }
+
+
+def component_or_zeros(component: Any, fallback: Any) -> Any:
+    if component is None:
+        return fallback * 0.0
+    return component
+
+
+def active_mask_tensor(step: Any, actions: Sequence[Action], torch_module: Any) -> Any:
+    if getattr(step, "active_beam_mask", None) is not None:
+        return step.active_beam_mask.bool()
+    return torch_module.as_tensor([action.mode != "idle" for action in actions], dtype=torch_module.bool)
+
+
+def beam_selection_diagnostics(observations: Sequence[dict[str, Any]], actions: Sequence[Action]) -> dict[str, Any]:
+    candidate_counts: list[float] = []
+    selected_scores: list[float] = []
+    score_gaps: list[float] = []
+    top1_hits = 0
+    top3_hits = 0
+    active = 0
+    for observation, action in zip(observations, actions, strict=True):
+        if action.mode == "idle":
+            continue
+        active += 1
+        score = np.asarray(observation.get("candidate_score", np.zeros(0, dtype=np.float32)), dtype=float)
+        mask = np.asarray(observation.get("candidate_mask", np.ones_like(score)), dtype=float) > 0.5
+        candidates = np.flatnonzero(mask)
+        candidate_counts.append(float(len(candidates)))
+        if score.size == 0 or not 0 <= int(action.beam) < score.size or len(candidates) == 0:
+            continue
+        selected = float(score[int(action.beam)])
+        visible_scores = score[candidates]
+        best = float(np.max(visible_scores))
+        rank = int(1 + np.sum(visible_scores > selected + 1e-12))
+        selected_scores.append(selected)
+        score_gaps.append(best - selected)
+        top1_hits += int(rank == 1)
+        top3_hits += int(rank <= 3)
+    denom = max(1, active)
+    return {
+        "active_actions": int(active),
+        "beam_candidate_count_mean_active": float(np.mean(candidate_counts)) if candidate_counts else 0.0,
+        "beam_selected_score_mean_active": float(np.mean(selected_scores)) if selected_scores else 0.0,
+        "beam_score_gap_mean_active": float(np.mean(score_gaps)) if score_gaps else 0.0,
+        "beam_top1_rate_active": float(top1_hits / denom),
+        "beam_top3_rate_active": float(top3_hits / denom),
     }
 
 
@@ -486,11 +568,18 @@ def update_policy(
     old_log_probs = trajectory["old_log_probs"]
     rewards = trajectory["rewards"]
     policy_losses = []
+    mode_policy_losses = []
+    beam_policy_losses = []
+    gate_policy_losses = []
     value_losses = []
     entropy_values = []
     approx_kls = []
     clip_fracs = []
     bc_losses = []
+    beam_rank_aux_losses = []
+    beam_active_fracs = []
+    separate_action_loss = bool(getattr(args, "separate_action_loss", False))
+    beam_rank_aux_coef = float(getattr(args, "beam_rank_aux_coef", 0.0))
 
     if centralized:
         if critic is None:
@@ -498,20 +587,53 @@ def update_policy(
         global_rewards = rewards.mean(dim=1)
         returns = discounted_returns_1d(global_rewards, float(args.gamma), torch_module)
         for _ in range(int(args.ppo_epochs)):
-            log_probs, _local_values, entropies = evaluate_actions(policy, trajectory["observations"], trajectory["actions"])
+            action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
+            log_probs = action_eval["log_probs"]
+            entropies = action_eval["entropies"]
             values = critic(trajectory["central_features"])
             advantages = normalize_advantages(returns - values.detach())
-            ratio = torch_module.exp(log_probs - old_log_probs)
-            clipped_ratio = torch_module.clamp(ratio, 1.0 - float(args.clip_epsilon), 1.0 + float(args.clip_epsilon))
-            policy_loss = -torch_module.minimum(ratio * advantages[:, None], clipped_ratio * advantages[:, None]).mean()
+            if separate_action_loss:
+                policy_loss, component = separated_action_policy_loss(
+                    action_eval,
+                    trajectory,
+                    advantages,
+                    float(args.clip_epsilon),
+                    torch_module,
+                    args,
+                )
+                mode_policy_losses.append(component["mode_policy_loss"])
+                beam_policy_losses.append(component["beam_policy_loss"])
+                gate_policy_losses.append(component["gate_policy_loss"])
+                clip_fracs.append(component["clip_fraction"])
+            else:
+                policy_loss, clip_fraction = ppo_component_loss(
+                    log_probs,
+                    old_log_probs,
+                    advantages,
+                    float(args.clip_epsilon),
+                    torch_module,
+                )
+                mode_policy_losses.append(0.0)
+                beam_policy_losses.append(0.0)
+                gate_policy_losses.append(0.0)
+                clip_fracs.append(clip_fraction)
             value_loss = functional.mse_loss(values, returns)
             entropy = entropies.mean()
             bc_loss = behavior_cloning_loss(policy, trajectory["observations"], trajectory["expert_actions"], torch_module)
+            beam_rank_aux_loss = optional_beam_ranking_aux_loss(
+                policy,
+                trajectory["observations"],
+                torch_module,
+                log_probs,
+                beam_rank_aux_coef,
+                temperature=float(getattr(args, "beam_rank_temperature", 4.0)),
+            )
             loss = (
                 policy_loss
                 + float(args.value_coef) * value_loss
                 - float(args.entropy_coef) * entropy
                 + float(getattr(args, "expert_bc_weight", 0.0)) * bc_loss
+                + beam_rank_aux_coef * beam_rank_aux_loss
             )
             optimizer.zero_grad()
             loss.backward()
@@ -521,25 +643,72 @@ def update_policy(
             value_losses.append(float(value_loss.item()))
             entropy_values.append(float(entropy.item()))
             bc_losses.append(float(bc_loss.item()))
+            beam_rank_aux_losses.append(float(beam_rank_aux_loss.item()))
+            beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
             approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
-            clip_fracs.append(float((torch_module.abs(ratio - 1.0) > float(args.clip_epsilon)).float().mean().item()))
-        return loss_summary(policy_losses, value_losses, entropy_values, approx_kls, clip_fracs, bc_losses)
+        return loss_summary(
+            policy_losses,
+            value_losses,
+            entropy_values,
+            approx_kls,
+            clip_fracs,
+            bc_losses,
+            mode_policy_losses,
+            beam_policy_losses,
+            gate_policy_losses,
+            beam_rank_aux_losses,
+            beam_active_fracs,
+        )
 
     returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
     for _ in range(int(args.ppo_epochs)):
-        log_probs, local_values, entropies = evaluate_actions(policy, trajectory["observations"], trajectory["actions"])
+        action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
+        log_probs = action_eval["log_probs"]
+        local_values = action_eval["values"]
+        entropies = action_eval["entropies"]
         advantages = normalize_advantages(returns - local_values.detach())
-        ratio = torch_module.exp(log_probs - old_log_probs)
-        clipped_ratio = torch_module.clamp(ratio, 1.0 - float(args.clip_epsilon), 1.0 + float(args.clip_epsilon))
-        policy_loss = -torch_module.minimum(ratio * advantages, clipped_ratio * advantages).mean()
+        if separate_action_loss:
+            policy_loss, component = separated_action_policy_loss(
+                action_eval,
+                trajectory,
+                advantages,
+                float(args.clip_epsilon),
+                torch_module,
+                args,
+            )
+            mode_policy_losses.append(component["mode_policy_loss"])
+            beam_policy_losses.append(component["beam_policy_loss"])
+            gate_policy_losses.append(component["gate_policy_loss"])
+            clip_fracs.append(component["clip_fraction"])
+        else:
+            policy_loss, clip_fraction = ppo_component_loss(
+                log_probs,
+                old_log_probs,
+                advantages,
+                float(args.clip_epsilon),
+                torch_module,
+            )
+            mode_policy_losses.append(0.0)
+            beam_policy_losses.append(0.0)
+            gate_policy_losses.append(0.0)
+            clip_fracs.append(clip_fraction)
         value_loss = functional.mse_loss(local_values, returns)
         entropy = entropies.mean()
         bc_loss = behavior_cloning_loss(policy, trajectory["observations"], trajectory["expert_actions"], torch_module)
+        beam_rank_aux_loss = optional_beam_ranking_aux_loss(
+            policy,
+            trajectory["observations"],
+            torch_module,
+            log_probs,
+            beam_rank_aux_coef,
+            temperature=float(getattr(args, "beam_rank_temperature", 4.0)),
+        )
         loss = (
             policy_loss
             + float(args.value_coef) * value_loss
             - float(args.entropy_coef) * entropy
             + float(getattr(args, "expert_bc_weight", 0.0)) * bc_loss
+            + beam_rank_aux_coef * beam_rank_aux_loss
         )
         optimizer.zero_grad()
         loss.backward()
@@ -549,9 +718,22 @@ def update_policy(
         value_losses.append(float(value_loss.item()))
         entropy_values.append(float(entropy.item()))
         bc_losses.append(float(bc_loss.item()))
+        beam_rank_aux_losses.append(float(beam_rank_aux_loss.item()))
+        beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
         approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
-        clip_fracs.append(float((torch_module.abs(ratio - 1.0) > float(args.clip_epsilon)).float().mean().item()))
-    return loss_summary(policy_losses, value_losses, entropy_values, approx_kls, clip_fracs, bc_losses)
+    return loss_summary(
+        policy_losses,
+        value_losses,
+        entropy_values,
+        approx_kls,
+        clip_fracs,
+        bc_losses,
+        mode_policy_losses,
+        beam_policy_losses,
+        gate_policy_losses,
+        beam_rank_aux_losses,
+        beam_active_fracs,
+    )
 
 
 def expert_actions_for_env(env: MarlNeighborDiscoveryEnv, expert_protocol: str) -> list[Action]:
@@ -621,16 +803,39 @@ def evaluate_actions(
     observations_by_step: Sequence[Sequence[dict[str, Any]]],
     actions_by_step: Sequence[Sequence[Action]],
 ) -> tuple[Any, Any, Any]:
+    action_eval = evaluate_action_components(policy, observations_by_step, actions_by_step)
+    return action_eval["log_probs"], action_eval["values"], action_eval["entropies"]
+
+
+def evaluate_action_components(
+    policy: SharedBeamActorCritic,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    actions_by_step: Sequence[Sequence[Action]],
+) -> dict[str, Any]:
     torch = policy.torch
     from torch.distributions import Categorical
 
     log_prob_rows = []
+    mode_log_prob_rows = []
+    beam_log_prob_rows = []
+    gate_log_prob_rows = []
     value_rows = []
     entropy_rows = []
+    mode_entropy_rows = []
+    beam_entropy_rows = []
+    gate_entropy_rows = []
+    active_mask_rows = []
     for observations, actions in zip(observations_by_step, actions_by_step, strict=True):
         step_log_probs = []
+        step_mode_log_probs = []
+        step_beam_log_probs = []
+        step_gate_log_probs = []
         step_values = []
         step_entropies = []
+        step_mode_entropies = []
+        step_beam_entropies = []
+        step_gate_entropies = []
+        step_active_masks = []
         for observation, action in zip(observations, actions, strict=True):
             if getattr(policy, "supports_access_gate_action", False) and hasattr(policy, "action_logits_value"):
                 mode_logits, beam_logits, gate_logits, value = policy.action_logits_value(observation, hard_mask=True)
@@ -641,24 +846,191 @@ def evaluate_actions(
             beam_dist = Categorical(logits=beam_logits)
             mode_idx = MODE_TO_INDEX[action.mode]
             mode_tensor = torch.as_tensor(mode_idx, dtype=torch.long, device=policy.device)
-            log_prob = mode_dist.log_prob(mode_tensor)
+            mode_log_prob = mode_dist.log_prob(mode_tensor)
+            beam_log_prob = torch.zeros((), dtype=mode_log_prob.dtype, device=policy.device)
+            log_prob = mode_log_prob
+            active_beam = action.mode != "idle"
             if action.mode != "idle":
                 beam_tensor = torch.as_tensor(int(action.beam), dtype=torch.long, device=policy.device)
-                log_prob = log_prob + beam_dist.log_prob(beam_tensor)
-            entropy = mode_dist.entropy() + beam_dist.entropy()
+                beam_log_prob = beam_dist.log_prob(beam_tensor)
+                log_prob = log_prob + beam_log_prob
+            mode_entropy = mode_dist.entropy()
+            beam_entropy = beam_dist.entropy()
+            gate_log_prob = torch.zeros((), dtype=mode_log_prob.dtype, device=policy.device)
+            gate_entropy = torch.zeros((), dtype=mode_entropy.dtype, device=policy.device)
+            entropy = mode_entropy + beam_entropy
             if gate_logits is not None:
                 gate_dist = Categorical(logits=gate_logits)
                 gate_idx = ACCESS_GATE_TO_INDEX.get(getattr(action, "access_gate", "normal"), ACCESS_GATE_TO_INDEX["normal"])
                 gate_tensor = torch.as_tensor(gate_idx, dtype=torch.long, device=policy.device)
-                log_prob = log_prob + gate_dist.log_prob(gate_tensor)
-                entropy = entropy + gate_dist.entropy()
+                gate_log_prob = gate_dist.log_prob(gate_tensor)
+                gate_entropy = gate_dist.entropy()
+                log_prob = log_prob + gate_log_prob
+                entropy = entropy + gate_entropy
             step_log_probs.append(log_prob)
+            step_mode_log_probs.append(mode_log_prob)
+            step_beam_log_probs.append(beam_log_prob)
+            step_gate_log_probs.append(gate_log_prob)
             step_values.append(value.squeeze(-1))
             step_entropies.append(entropy)
+            step_mode_entropies.append(mode_entropy)
+            step_beam_entropies.append(beam_entropy)
+            step_gate_entropies.append(gate_entropy)
+            step_active_masks.append(torch.as_tensor(active_beam, dtype=torch.bool, device=policy.device))
         log_prob_rows.append(torch.stack(step_log_probs))
+        mode_log_prob_rows.append(torch.stack(step_mode_log_probs))
+        beam_log_prob_rows.append(torch.stack(step_beam_log_probs))
+        gate_log_prob_rows.append(torch.stack(step_gate_log_probs))
         value_rows.append(torch.stack(step_values))
         entropy_rows.append(torch.stack(step_entropies))
-    return torch.stack(log_prob_rows), torch.stack(value_rows), torch.stack(entropy_rows)
+        mode_entropy_rows.append(torch.stack(step_mode_entropies))
+        beam_entropy_rows.append(torch.stack(step_beam_entropies))
+        gate_entropy_rows.append(torch.stack(step_gate_entropies))
+        active_mask_rows.append(torch.stack(step_active_masks))
+    return {
+        "log_probs": torch.stack(log_prob_rows),
+        "mode_log_probs": torch.stack(mode_log_prob_rows),
+        "beam_log_probs": torch.stack(beam_log_prob_rows),
+        "gate_log_probs": torch.stack(gate_log_prob_rows),
+        "values": torch.stack(value_rows),
+        "entropies": torch.stack(entropy_rows),
+        "mode_entropies": torch.stack(mode_entropy_rows),
+        "beam_entropies": torch.stack(beam_entropy_rows),
+        "gate_entropies": torch.stack(gate_entropy_rows),
+        "active_beam_mask": torch.stack(active_mask_rows),
+    }
+
+
+def ppo_component_loss(
+    log_probs: Any,
+    old_log_probs: Any,
+    advantages: Any,
+    clip_epsilon: float,
+    torch_module: Any,
+    mask: Any | None = None,
+) -> tuple[Any, float]:
+    ratio = torch_module.exp(log_probs - old_log_probs)
+    component_advantages = advantages
+    while component_advantages.dim() < log_probs.dim():
+        component_advantages = component_advantages.unsqueeze(-1)
+    clipped_ratio = torch_module.clamp(ratio, 1.0 - clip_epsilon, 1.0 + clip_epsilon)
+    loss_values = -torch_module.minimum(
+        ratio * component_advantages,
+        clipped_ratio * component_advantages,
+    )
+    clipped = (torch_module.abs(ratio - 1.0) > clip_epsilon).float()
+    if mask is not None:
+        mask = mask.bool()
+        if not bool(mask.any().item()):
+            return log_probs.sum() * 0.0, 0.0
+        return loss_values[mask].mean(), float(clipped[mask].mean().detach().item())
+    return loss_values.mean(), float(clipped.mean().detach().item())
+
+
+def separated_action_policy_loss(
+    action_eval: dict[str, Any],
+    trajectory: dict[str, Any],
+    advantages: Any,
+    clip_epsilon: float,
+    torch_module: Any,
+    args: argparse.Namespace,
+) -> tuple[Any, dict[str, float]]:
+    mode_loss, mode_clip = ppo_component_loss(
+        action_eval["mode_log_probs"],
+        trajectory["old_mode_log_probs"],
+        advantages,
+        clip_epsilon,
+        torch_module,
+    )
+    active_mask = trajectory["active_beam_mask"].bool()
+    beam_loss, beam_clip = ppo_component_loss(
+        action_eval["beam_log_probs"],
+        trajectory["old_beam_log_probs"],
+        advantages,
+        clip_epsilon,
+        torch_module,
+        mask=active_mask,
+    )
+    gate_loss, gate_clip = ppo_component_loss(
+        action_eval["gate_log_probs"],
+        trajectory["old_gate_log_probs"],
+        advantages,
+        clip_epsilon,
+        torch_module,
+    )
+    total = mode_loss + float(getattr(args, "beam_loss_coef", 1.0)) * beam_loss
+    total = total + float(getattr(args, "gate_loss_coef", 0.25)) * gate_loss
+    return total, {
+        "mode_policy_loss": float(mode_loss.detach().item()),
+        "beam_policy_loss": float(beam_loss.detach().item()),
+        "gate_policy_loss": float(gate_loss.detach().item()),
+        "clip_fraction": float(np.mean([mode_clip, beam_clip, gate_clip])),
+    }
+
+
+def optional_beam_ranking_aux_loss(
+    policy: SharedBeamActorCritic,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    torch_module: Any,
+    zero_like: Any,
+    coefficient: float,
+    temperature: float,
+) -> Any:
+    if float(coefficient) <= 0.0:
+        return zero_like.sum() * 0.0
+    return beam_ranking_aux_loss(policy, observations_by_step, torch_module, temperature)
+
+
+def beam_ranking_aux_loss(
+    policy: SharedBeamActorCritic,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    torch_module: Any,
+    temperature: float,
+) -> Any:
+    losses = []
+    for observations in observations_by_step:
+        if not observations or not all("candidate_score" in observation for observation in observations):
+            continue
+        if getattr(policy, "supports_access_gate_action", False) and hasattr(policy, "batched_action_logits_value"):
+            _mode_logits, beam_logits, _gate_logits, _value = policy.batched_action_logits_value(observations, hard_mask=True)
+        else:
+            _mode_logits, beam_logits, _value = policy.batched_logits_value(observations, hard_mask=True)
+        candidate_score = torch_module.stack(
+            [
+                torch_module.as_tensor(observation["candidate_score"], dtype=torch_module.float32, device=policy.device)
+                for observation in observations
+            ],
+            dim=0,
+        )
+        candidate_mask = torch_module.stack(
+            [
+                torch_module.as_tensor(
+                    observation.get("candidate_mask", np.ones_like(observation["candidate_score"])),
+                    dtype=torch_module.float32,
+                    device=policy.device,
+                )
+                for observation in observations
+            ],
+            dim=0,
+        ) > 0.5
+        valid_count = candidate_mask.sum(dim=-1)
+        masked_scores = candidate_score.masked_fill(~candidate_mask, -1.0e9)
+        score_max = masked_scores.max(dim=-1).values
+        score_min = candidate_score.masked_fill(~candidate_mask, 1.0e9).min(dim=-1).values
+        informative = (valid_count >= 2) & ((score_max - score_min) > 1.0e-6)
+        if not bool(informative.any().item()):
+            continue
+        masked_beam_logits = beam_logits.masked_fill(~candidate_mask, -1.0e9)
+        log_policy = torch_module.nn.functional.log_softmax(masked_beam_logits, dim=-1)
+        target_logits = float(temperature) * (candidate_score - score_max.unsqueeze(-1))
+        target_logits = target_logits.masked_fill(~candidate_mask, -1.0e9)
+        target = torch_module.nn.functional.softmax(target_logits, dim=-1)
+        per_agent = -(target * log_policy).sum(dim=-1)
+        losses.append(per_agent[informative])
+    if not losses:
+        parameter = next(iter(policy.parameters()))
+        return parameter.sum() * 0.0
+    return torch_module.cat(losses).mean()
 
 
 def behavior_cloning_loss(
@@ -873,14 +1245,24 @@ def loss_summary(
     approx_kls: list[float],
     clip_fracs: list[float],
     bc_losses: list[float] | None = None,
+    mode_policy_losses: list[float] | None = None,
+    beam_policy_losses: list[float] | None = None,
+    gate_policy_losses: list[float] | None = None,
+    beam_rank_aux_losses: list[float] | None = None,
+    beam_active_fracs: list[float] | None = None,
 ) -> dict[str, float]:
     return {
         "policy_loss": float(np.mean(policy_losses)),
+        "mode_policy_loss": float(np.mean(mode_policy_losses)) if mode_policy_losses else 0.0,
+        "beam_policy_loss": float(np.mean(beam_policy_losses)) if beam_policy_losses else 0.0,
+        "gate_policy_loss": float(np.mean(gate_policy_losses)) if gate_policy_losses else 0.0,
         "value_loss": float(np.mean(value_losses)),
         "entropy": float(np.mean(entropy_values)),
         "approx_kl": float(np.mean(approx_kls)),
         "clip_fraction": float(np.mean(clip_fracs)),
         "expert_bc_loss": float(np.mean(bc_losses)) if bc_losses else 0.0,
+        "beam_rank_aux_loss": float(np.mean(beam_rank_aux_losses)) if beam_rank_aux_losses else 0.0,
+        "beam_active_fraction": float(np.mean(beam_active_fracs)) if beam_active_fracs else 0.0,
     }
 
 
@@ -1085,6 +1467,11 @@ def build_manifest(
         "expert_bc_weight": float(getattr(args, "expert_bc_weight", 0.0)),
         "expert_protocol": str(getattr(args, "expert_protocol", "collision_aware_isac")),
         "expert_gate_imitation": bool(float(getattr(args, "expert_bc_weight", 0.0)) > 0.0),
+        "separate_action_loss": bool(getattr(args, "separate_action_loss", False)),
+        "beam_loss_coef": float(getattr(args, "beam_loss_coef", 1.0)),
+        "gate_loss_coef": float(getattr(args, "gate_loss_coef", 0.25)),
+        "beam_rank_aux_coef": float(getattr(args, "beam_rank_aux_coef", 0.0)),
+        "beam_rank_temperature": float(getattr(args, "beam_rank_temperature", 4.0)),
         "feature_flags": feature_flags,
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,
