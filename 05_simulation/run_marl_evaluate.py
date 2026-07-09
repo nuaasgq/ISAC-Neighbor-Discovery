@@ -29,7 +29,7 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
-from isac_nd_sim.simulator import Action, MODE_IDLE  # noqa: E402
+from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_SENSE  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -86,6 +86,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--disable-candidate-score", action="store_true", help="Zero ISAC candidate confidence features at evaluation time.")
     parser.add_argument("--disable-topology-deficit", action="store_true", help="Zero topology-deficit features at evaluation time.")
     parser.add_argument("--disable-rule-residual", action="store_true", help="Disable handcrafted rule residual logits at evaluation time.")
+    parser.add_argument(
+        "--forbid-sense",
+        action="store_true",
+        help="Disable standalone SENSE actions during evaluation. Defaults to the checkpoint setting when present.",
+    )
     parser.add_argument("--eval-rule-residual-scale", type=float, default=None, help="Override rule residual scale at evaluation time.")
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default=None)
     parser.add_argument("--seed", type=int, default=30260705)
@@ -122,6 +127,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     feature_flags = apply_eval_feature_overrides(checkpoint_feature_flags, args)
     hidden_dim = int(train_args.get("hidden_dim", 128))
     train_network = str(train_args.get("network", "shared"))
+    forbid_sense = bool(args.forbid_sense or train_args.get("forbid_sense", False))
     reward_version = str(args.reward_version or train_args.get("reward_version", "legacy"))
     ablation_seed = int(args.ablation_seed) if args.ablation_seed is not None else int(args.seed) + 9173
     if str(args.policy_ablation) in {"random_weights", "zero_weights"}:
@@ -142,6 +148,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_topology_deficit=feature_flags["topology_deficit"],
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=rule_residual_scale,
+        disabled_modes=disabled_modes_from_flag(forbid_sense),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
     if checkpoint_loaded:
@@ -187,6 +194,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
+        "forbid_sense": forbid_sense,
+        "disabled_modes": list(disabled_modes_from_flag(forbid_sense)),
         "policy_ablation": str(args.policy_ablation),
         "ablation_label": str(args.ablation_label or args.policy_ablation),
         "ablation_seed": ablation_seed,
@@ -280,6 +289,7 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "eval_rule_residual_scale": None,
         "beam_executor": "policy",
         "mode_executor": "policy",
+        "forbid_sense": False,
     }
     for name, value in defaults.items():
         if not hasattr(args, name):
@@ -347,6 +357,10 @@ def inferred_env_protocol(train_args: dict[str, Any]) -> str:
     if bool(train_args.get("disable_isac_features", False)):
         return "structured_marl_no_isac"
     return "isac_structured_marl"
+
+
+def disabled_modes_from_flag(forbid_sense: bool) -> tuple[str, ...]:
+    return (MODE_SENSE,) if bool(forbid_sense) else ()
 
 
 def evaluate_policy(

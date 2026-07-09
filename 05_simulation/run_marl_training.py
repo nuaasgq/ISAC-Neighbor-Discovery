@@ -33,6 +33,7 @@ from isac_nd_sim.simulator import (  # noqa: E402
     ACCESS_BACKOFF,
     ACCESS_NORMAL,
     MODE_RX,
+    MODE_SENSE,
     MODE_TX,
     Action,
 )
@@ -105,6 +106,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rule-residual", action="store_true", help="Use local rule logits and beam priors as residual policy logits.")
     parser.add_argument("--rule-residual-scale", type=float, default=1.0)
     parser.add_argument("--disable-isac-features", action="store_true", help="Disable all ISAC/structured feature flags.")
+    parser.add_argument(
+        "--forbid-sense",
+        action="store_true",
+        help="Disable standalone SENSE actions; ISAC feedback is obtained only through TX-coupled piggyback sensing.",
+    )
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--torch-threads", type=int, default=2)
     parser.add_argument("--step-log-period", type=int, default=1)
@@ -166,6 +172,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         use_topology_deficit=feature_flags["topology_deficit"],
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=float(args.rule_residual_scale),
+        disabled_modes=disabled_modes_from_args(args),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
@@ -257,6 +264,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--max-rss-mb must be positive.")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
+
+
+def disabled_modes_from_args(args: argparse.Namespace) -> tuple[str, ...]:
+    return (MODE_SENSE,) if bool(getattr(args, "forbid_sense", False)) else ()
 
 
 def override_config(config: SimulationConfig, args: argparse.Namespace) -> SimulationConfig:
@@ -1053,6 +1064,8 @@ def build_manifest(
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
+        "forbid_sense": bool(getattr(args, "forbid_sense", False)),
+        "disabled_modes": list(disabled_modes_from_args(args)),
         "expert_bc_weight": float(getattr(args, "expert_bc_weight", 0.0)),
         "expert_protocol": str(getattr(args, "expert_protocol", "collision_aware_isac")),
         "expert_gate_imitation": bool(float(getattr(args, "expert_bc_weight", 0.0)) > 0.0),

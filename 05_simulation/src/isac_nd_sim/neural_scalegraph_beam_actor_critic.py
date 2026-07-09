@@ -30,6 +30,7 @@ class ScaleGraphBeamActorCritic:
         use_rule_residual: bool = False,
         rule_residual_scale: float = 1.0,
         pool_tokens: int = 4,
+        disabled_modes: Sequence[str] | None = None,
     ):
         try:
             import torch
@@ -47,6 +48,7 @@ class ScaleGraphBeamActorCritic:
         self.use_topology_deficit = bool(use_topology_deficit)
         self.use_rule_residual = bool(use_rule_residual)
         self.rule_residual_scale = float(rule_residual_scale)
+        self.disabled_mode_indices = tuple(MODE_NAMES.index(mode) for mode in (disabled_modes or ()) if mode in MODE_NAMES)
         self.model = _ScaleGraphBeamActorCriticModule(self.n_beams, self.hidden_dim, int(pool_tokens)).to(self.device)
 
     def parameters(self):
@@ -72,7 +74,16 @@ class ScaleGraphBeamActorCritic:
             mask = tensors["candidate_mask"] > 0.5
             if bool(mask.any().item()):
                 beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
+        mode_logits = self._mask_disabled_modes(mode_logits)
         return mode_logits, beam_logits, value
+
+    def _mask_disabled_modes(self, mode_logits):
+        if not self.disabled_mode_indices:
+            return mode_logits
+        masked = mode_logits.clone()
+        for mode_index in self.disabled_mode_indices:
+            masked[..., mode_index] = -1.0e9
+        return masked
 
     def _prepare_tensors(self, tensors: dict):
         torch = self.torch

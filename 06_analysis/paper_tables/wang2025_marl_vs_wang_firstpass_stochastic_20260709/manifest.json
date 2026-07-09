@@ -1,0 +1,46 @@
+{
+  "created_at_utc": "2026-07-09T05:29:24.439973+00:00",
+  "scope": "Real trained MARL versus Wang2025-style baselines under the same single-RF Wang matrix.",
+  "config": "05_simulation/configs/wang2025_reproduction_smoke.yaml",
+  "raw_root": "05_simulation/results_raw/marl_campaign/wang2025_marl_vs_wang_firstpass_20260709",
+  "output": "06_analysis/paper_tables/wang2025_marl_vs_wang_firstpass_stochastic_20260709",
+  "figures": "06_analysis/paper_figures/wang2025_marl_vs_wang_firstpass_stochastic_20260709",
+  "node_counts": [
+    10,
+    20,
+    30,
+    40,
+    50
+  ],
+  "rf_chains": [
+    1
+  ],
+  "train_node_count": 10,
+  "train_episodes": 20,
+  "train_slots": 300,
+  "eval_episodes": 3,
+  "eval_slots": 200,
+  "marl_eval_mode": "stochastic",
+  "forbid_sense": true,
+  "isac_abstraction": "Standalone SENSE is disabled for MARL; directional TX carries piggyback ISAC feedback.",
+  "baseline_protocols": [
+    "uniform_random",
+    "wang2025_isac_no_collab",
+    "wang2025_comm_tables",
+    "wang2025_isac_tables",
+    "budgeted_collision_aware_isac"
+  ],
+  "marl_protocols": [
+    "marl_no_isac_txrxidle",
+    "marl_tx_isac_txrxidle",
+    "marl_tx_isac_gate_bc_txrxidle"
+  ],
+  "train_manifests": [
+    "05_simulation/results_raw/marl_campaign/wang2025_marl_vs_wang_firstpass_20260709/marl_no_isac_txrxidle/train_n10/manifest.json",
+    "05_simulation/results_raw/marl_campaign/wang2025_marl_vs_wang_firstpass_20260709/marl_tx_isac_txrxidle/train_n10/manifest.json",
+    "05_simulation/results_raw/marl_campaign/wang2025_marl_vs_wang_firstpass_20260709/marl_tx_isac_gate_bc_txrxidle/train_n10/manifest.json"
+  ],
+  "baseline_rows": 75,
+  "marl_rows": 45,
+  "aggregate_rows": 40
+}

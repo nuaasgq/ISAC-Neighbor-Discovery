@@ -38,6 +38,7 @@ class ContentionGraphActorCritic:
         rule_residual_scale: float = 1.0,
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
+        disabled_modes: Sequence[str] | None = None,
     ):
         try:
             import torch
@@ -58,6 +59,7 @@ class ContentionGraphActorCritic:
         self.use_access_gate = bool(use_access_gate)
         self.access_gate_variant = str(access_gate_variant)
         self.supports_access_gate_action = bool(use_access_gate)
+        self.disabled_mode_indices = tuple(MODE_NAMES.index(mode) for mode in (disabled_modes or ()) if mode in MODE_NAMES)
         self.model = _ContentionGraphActorCriticModule(
             self.n_beams,
             self.hidden_dim,
@@ -80,6 +82,7 @@ class ContentionGraphActorCritic:
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, _gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
+        mode_logits = self._mask_disabled_modes(mode_logits)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
             if bool(mask.any().item()):
@@ -92,6 +95,7 @@ class ContentionGraphActorCritic:
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, _gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
+        mode_logits = self._mask_disabled_modes(mode_logits)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
             has_candidate = mask.any(dim=-1, keepdim=True)
@@ -108,6 +112,7 @@ class ContentionGraphActorCritic:
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
+        mode_logits = self._mask_disabled_modes(mode_logits)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
             if bool(mask.any().item()):
@@ -120,6 +125,7 @@ class ContentionGraphActorCritic:
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
+        mode_logits = self._mask_disabled_modes(mode_logits)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
             has_candidate = mask.any(dim=-1, keepdim=True)
@@ -141,6 +147,14 @@ class ContentionGraphActorCritic:
             tensors = dict(tensors)
             tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
         return tensors
+
+    def _mask_disabled_modes(self, mode_logits):
+        if not self.disabled_mode_indices:
+            return mode_logits
+        masked = mode_logits.clone()
+        for mode_index in self.disabled_mode_indices:
+            masked[..., mode_index] = -1.0e9
+        return masked
 
     def _apply_residuals(self, tensors: dict, mode_logits, beam_logits):
         mode_logits = mode_logits + self._contention_mode_prior(tensors)
