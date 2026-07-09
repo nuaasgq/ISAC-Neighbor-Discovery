@@ -47,6 +47,7 @@ OURS_TABLE_PROTOCOLS = ("improved_rl_isac_tables", "trust_gated_isac_tables")
 TRUST_GATED_TABLE_PROTOCOLS = ("trust_gated_isac_tables",)
 COMM_TABLE_PROTOCOLS = WANG2025_COMM_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
 SENSING_TABLE_PROTOCOLS = WANG2025_SENSING_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
+NO_DUPLICATE_REPLY_PROTOCOLS = WANG2025_PROTOCOLS
 
 DELAYED_CANDIDATE_PROTOCOLS = ("ablation_isac_one_slot_delay",)
 
@@ -1140,6 +1141,10 @@ class NeighborDiscoverySimulator:
                 tx_node = candidates[0]
                 edge = canonical_edge(tx_node, rx_node)
                 is_new = edge not in self.discovered_edges
+                if not is_new and self.protocol in NO_DUPLICATE_REPLY_PROTOCOLS:
+                    # Wang-style no-reply rule: an already discovered peer does
+                    # not trigger a fresh ACK/table interaction.
+                    continue
                 self.discovered_edges.add(edge)
                 self.discovery_slot.setdefault(edge, slot)
                 if is_new:

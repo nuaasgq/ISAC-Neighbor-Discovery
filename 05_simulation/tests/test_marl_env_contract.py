@@ -234,6 +234,75 @@ def test_tx_coupled_ideal_isac_records_sensing_observations_without_sense_action
     assert info["sensing_target_observations"] >= 0
 
 
+def test_wang_table_env_uses_tx_only_piggyback_and_neighbor_table_exchange() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/wang2025_reproduction_smoke.yaml"),
+        episodes=1,
+        slots_per_episode=1,
+        n_nodes=3,
+        azimuth_cells=6,
+        elevation_cells=3,
+        communication_range_m=20000.0,
+        sensing_range_m=20000.0,
+        false_alarm_rate=0.0,
+        miss_detection_rate=0.0,
+        angular_cell_offset_std=0.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="wang2025_isac_tables", reward_version="discovery_first")
+    env.reset(seed=37)
+
+    env._sim.discovered_edges.add((1, 2))
+    beam_02 = env._sim.beam_from_to(0, 2)
+    env._sim.belief[0, beam_02] = 0.0
+    env._sim.success_count[0, beam_02] = 0.0
+    env._sim.exchange_neighbor_and_sensing_tables(0, 1, slot=0)
+
+    assert env._sim.belief[0, beam_02] > 0.0
+    assert env._sim.success_count[0, beam_02] > 0.0
+
+    beam_01 = env._sim.beam_from_to(0, 1)
+    beam_10 = env._sim.beam_from_to(1, 0)
+    actions = [
+        {"mode": "tx", "beam": beam_01},
+        {"mode": "rx", "beam": beam_10},
+        {"mode": "rx", "beam": env._sim.beam_from_to(2, 0)},
+    ]
+    _, _, _, _, info = env.step(actions)
+
+    assert info["sense_actions"] == 0
+    assert info["piggyback_sense_actions"] == 1
+    assert (0, 1) in env._sim.discovered_edges
+
+
+def test_wang_table_env_does_not_reply_to_already_discovered_edge() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/wang2025_reproduction_smoke.yaml"),
+        episodes=1,
+        slots_per_episode=1,
+        n_nodes=2,
+        azimuth_cells=6,
+        elevation_cells=3,
+        communication_range_m=20000.0,
+        sensing_range_m=20000.0,
+        false_alarm_rate=0.0,
+        miss_detection_rate=0.0,
+        angular_cell_offset_std=0.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="wang2025_isac_tables", reward_version="discovery_first")
+    env.reset(seed=41)
+    env._sim.discovered_edges.add((0, 1))
+    env._sim.discovery_slot[(0, 1)] = 0
+
+    actions = [
+        {"mode": "tx", "beam": env._sim.beam_from_to(0, 1)},
+        {"mode": "rx", "beam": env._sim.beam_from_to(1, 0)},
+    ]
+    _, _, _, _, info = env.step(actions)
+
+    assert info["new_edges_count"] == 0
+    assert env._sim.edge_rows == []
+
+
 def test_training_state_is_explicitly_separate_from_public_info() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg)
