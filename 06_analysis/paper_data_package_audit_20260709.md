@@ -16,7 +16,7 @@ This audit checks whether the current repository contains a paper-usable evidenc
 | MARL without/with ISAC and gate variants | `MARL`, `MARL+gate`, `MARL+tables`, `MARL+tables+gate`, `BC-MARL`, and `BC-MARL+gate` rows in `transfer_summary.csv`. | Covered |
 | Table exchange comparison | `MARL+tables`, `MARL+tables+gate`, `Wang ISAC+tables`, and `wang2025_comm_tables` rows. Current results show table exchange is not yet a robust gain. | Covered, negative result |
 | Trust-gated table exchange | `trust_gated_isac_tables` is implemented and unit-tested. Formal B=10, N=100, 3000-slot, 5-episode results are under `06_analysis/paper_tables/marl/trust_gate_bc_sweep_20260709/`; the result is negative on CPD because collisions remain high. | Covered, negative B=10 result |
-| Budgeted expert gate BC | `run_marl_training.py` now exposes Budgeted expert `access_gate` labels and imitates them in BC loss. The `budgeted_gate_bc_sweep_20260709_v2` 0.15-weight run is still training; transfer results are not yet available. | Implemented, training in progress |
+| Budgeted expert gate BC | `run_marl_training.py` exposes Budgeted expert `access_gate` labels and imitates them in BC loss. The `budgeted_gate_bc_sweep_20260709_v2` 0.15-weight run completed 100 episodes; step-indexed reward, discovery, collision, gate-ratio, and BC-loss curves are under `06_analysis/paper_figures/marl_trust_gate_bc_20260709/`. The broader 0.30/0.50 sweep and 3000-slot transfer were stopped after the user redirected the study to the Chinese-paper-aligned Wang matrix. | Covered as diagnostic gate evidence |
 | N=10 training to N=50/N=100 transfer | `training_summary.csv` and `transfer_summary.csv` under `06_analysis/paper_tables/marl/overnight_20260709_marl_isac_rebuild/`. | Covered |
 | Beamwidth transfer | B=10 and B=15 are covered in the main package; 3/5/30-degree sweeps remain archived boundary evidence rather than current main claims. | Partially covered |
 | 300-slot training and 3000-slot testing | Training rows use 300-slot episodes for formal MARL runs; transfer rows use 3000-slot evaluations. | Covered |
@@ -24,7 +24,7 @@ This audit checks whether the current repository contains a paper-usable evidenc
 | Paper narrative material | `overnight_marl_isac_rebuild_20260709.md` plus the manuscript insert `07_paper/ieee_twc_isac_nd/budgeted_isac_manuscript_insert.tex`. | Covered for current results |
 | Wang-focused manuscript material | `06_analysis/wang2025_focused_single_rf_results_20260709.md`, `06_analysis/wang2025_focused_figure_table_index_20260709.md`, and `07_paper/ieee_twc_isac_nd/wang2025_focused_single_rf_insert.tex`. | Covered |
 | Independent Budgeted ISAC rerun | `06_analysis/paper_tables/marl/budgeted_isac_paired_rerun_b10_n100/` contains an independently seeded B=10, N=100, 3000-slot paired rerun against Wang ISAC, Collision-aware ISAC, and Uniform random. | Covered |
-| Version management | The current evidence package is tracked in Git and should be committed after this audit update. | Covered after next commit |
+| Version management | Evidence package commits have been pushed to GitHub through `4fe4704 Add Wang-focused manuscript package`. | Covered |
 
 ## Main Quantitative Evidence
 
@@ -98,6 +98,7 @@ Supported:
 - A density-adaptive budgeted ISAC access rule improves collision-penalized discovery in the Wang-style single-RF MIMO-OTFS sensing matrix, and also improves CPD in auxiliary large-scale single-hop transfer tests.
 - Naive shared-parameter MARL trained at N=10 does not automatically inherit the rule expert's collision control under N=100 transfer.
 - Expert-guided BC-MARL raises raw discovery but currently needs explicit collision-budget learning.
+- Budgeted expert gate BC is implemented and produces step-indexed training diagnostics, but it is diagnostic support rather than the main performance claim after the Wang-style matrix pivot.
 
 Not yet supported:
 
