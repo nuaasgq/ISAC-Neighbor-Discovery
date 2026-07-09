@@ -1,0 +1,6 @@
+beam_count,eval_episode,node_count,phase,process_cpu_percent,rss_mb,seed,slot,slots_per_episode,system_available_mb,system_memory_percent
+105,0,10,eval_stochastic,0.0,226.9453125,2026084001,200,200,11346.40234375,65.0
+105,1,10,eval_stochastic,0.0,228.01171875,2026084002,200,200,9810.61328125,69.7
+105,2,10,eval_stochastic,0.0,228.0625,2026084003,200,200,8850.12890625,72.7
+105,3,10,eval_stochastic,0.0,228.09765625,2026084004,200,200,8106.671875,75.0
+105,4,10,eval_stochastic,0.0,228.2109375,2026084005,200,200,6425.81640625,80.2
