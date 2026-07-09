@@ -1,0 +1,26 @@
+{
+  "scope": "Retrain MARL with Wang sensing-table candidate source and evaluate whether beam head beats Wang-candidate random beam.",
+  "raw_root": "05_simulation/results_raw/marl_campaign/wang_candidate_retrain_20260709",
+  "train_output": "05_simulation/results_raw/marl_campaign/wang_candidate_retrain_20260709/full_wang_candidate_train",
+  "selected_checkpoint": "checkpoint_ep00040.pt for best paired discovery-rate; checkpoint_ep00080.pt used as later checkpoint check; final_model collapsed due over-idle.",
+  "seeds": [
+    2026084001,
+    2026084002,
+    2026084003,
+    2026084004,
+    2026084005
+  ],
+  "node_count": 10,
+  "slots": 200,
+  "env_protocol": "wang2025_isac_tables",
+  "candidate_source": "wang_table",
+  "files": [
+    "aggregate_metrics.csv",
+    "per_episode_summary.csv",
+    "paired_beam_head_deltas.csv",
+    "training_episode_metrics.csv",
+    "training_eval_metrics.csv",
+    "wang_candidate_retrain_training_curves.png",
+    "wang_candidate_retrain_ablation_metrics.png"
+  ]
+}
