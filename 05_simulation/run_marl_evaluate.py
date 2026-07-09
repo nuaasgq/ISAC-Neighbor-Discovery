@@ -95,6 +95,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--disable-topology-deficit", action="store_true", help="Zero topology-deficit features at evaluation time.")
     parser.add_argument("--disable-rule-residual", action="store_true", help="Disable handcrafted rule residual logits at evaluation time.")
     parser.add_argument(
+        "--disable-contention-mode-prior",
+        action="store_true",
+        help="Disable the hand-coded contention/topology mode-logit prior in contention networks during evaluation.",
+    )
+    parser.add_argument(
         "--forbid-sense",
         action="store_true",
         help="Disable standalone SENSE actions during evaluation. Defaults to the checkpoint setting when present.",
@@ -164,6 +169,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         if args.eval_rule_residual_scale is not None
         else float(train_args.get("rule_residual_scale", 1.0))
     )
+    checkpoint_contention_mode_prior = not bool(train_args.get("disable_contention_mode_prior", False))
+    use_contention_mode_prior = checkpoint_contention_mode_prior and not bool(args.disable_contention_mode_prior)
     policy = build_policy(
         train_network,
         cfg.n_beams,
@@ -174,6 +181,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_topology_deficit=feature_flags["topology_deficit"],
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=rule_residual_scale,
+        use_contention_mode_prior=use_contention_mode_prior,
         disabled_modes=disabled_modes_from_flag(forbid_sense),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
@@ -232,6 +240,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "checkpoint_feature_flags": checkpoint_feature_flags,
         "feature_flags": feature_flags,
         "rule_residual_scale": rule_residual_scale,
+        "checkpoint_contention_mode_prior": checkpoint_contention_mode_prior,
+        "contention_mode_prior": use_contention_mode_prior,
         "deterministic": bool(args.deterministic),
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
@@ -318,6 +328,7 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "disable_candidate_score": False,
         "disable_topology_deficit": False,
         "disable_rule_residual": False,
+        "disable_contention_mode_prior": False,
         "eval_rule_residual_scale": None,
         "beam_executor": "policy",
         "mode_executor": "policy",
@@ -345,10 +356,12 @@ def build_policy(
     | AdaptiveGatedContentionGraphActorCritic
     | TopologyAdaptiveGatedContentionGraphActorCritic
 ):
+    use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
+    kwargs["use_contention_mode_prior"] = use_contention_mode_prior
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":

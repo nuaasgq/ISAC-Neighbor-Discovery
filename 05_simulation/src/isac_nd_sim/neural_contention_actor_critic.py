@@ -36,6 +36,7 @@ class ContentionGraphActorCritic:
         use_topology_deficit: bool = False,
         use_rule_residual: bool = False,
         rule_residual_scale: float = 1.0,
+        use_contention_mode_prior: bool = True,
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
         disabled_modes: Sequence[str] | None = None,
@@ -56,6 +57,7 @@ class ContentionGraphActorCritic:
         self.use_topology_deficit = bool(use_topology_deficit)
         self.use_rule_residual = bool(use_rule_residual)
         self.rule_residual_scale = float(rule_residual_scale)
+        self.use_contention_mode_prior = bool(use_contention_mode_prior)
         self.use_access_gate = bool(use_access_gate)
         self.access_gate_variant = str(access_gate_variant)
         self.supports_access_gate_action = bool(use_access_gate)
@@ -157,7 +159,8 @@ class ContentionGraphActorCritic:
         return masked
 
     def _apply_residuals(self, tensors: dict, mode_logits, beam_logits):
-        mode_logits = mode_logits + self._contention_mode_prior(tensors)
+        if self.use_contention_mode_prior:
+            mode_logits = mode_logits + self._contention_mode_prior(tensors)
         if self.use_rule_residual:
             if "rule_mode_logits" in tensors:
                 mode_logits = mode_logits + self.rule_residual_scale * tensors["rule_mode_logits"]

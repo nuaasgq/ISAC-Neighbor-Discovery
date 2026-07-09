@@ -144,6 +144,41 @@ def test_contention_graph_actor_critic_candidate_mask_samples_valid_actions() ->
             assert observation["candidate_mask"][action.beam] > 0.5
 
 
+def test_contention_mode_prior_can_be_disabled() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=1, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=321)
+    policy_with_prior = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_topology_deficit=True,
+        use_rule_residual=False,
+        use_contention_mode_prior=True,
+    )
+    policy_without_prior = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_topology_deficit=True,
+        use_rule_residual=False,
+        use_contention_mode_prior=False,
+    )
+    with torch.no_grad():
+        for policy in (policy_with_prior, policy_without_prior):
+            for parameter in policy.model.parameters():
+                parameter.zero_()
+
+        mode_with_prior, _beam_with_prior, _value_with_prior = policy_with_prior.batched_logits_value(
+            observations, hard_mask=False
+        )
+        mode_without_prior, _beam_without_prior, _value_without_prior = policy_without_prior.batched_logits_value(
+            observations, hard_mask=False
+        )
+
+    assert torch.allclose(mode_without_prior, torch.zeros_like(mode_without_prior), atol=1e-6)
+    assert not torch.allclose(mode_with_prior, mode_without_prior)
+
+
 def test_gated_contention_graph_actor_critic_samples_valid_actions() -> None:
     pytest.importorskip("torch")
     cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)

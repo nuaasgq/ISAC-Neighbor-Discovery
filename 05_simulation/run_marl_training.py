@@ -132,6 +132,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--topology-deficit", action="store_true", help="Use local discovered-degree deficit token.")
     parser.add_argument("--rule-residual", action="store_true", help="Use local rule logits and beam priors as residual policy logits.")
     parser.add_argument("--rule-residual-scale", type=float, default=1.0)
+    parser.add_argument(
+        "--disable-contention-mode-prior",
+        action="store_true",
+        help="Disable the hand-coded contention/topology mode-logit prior in contention networks.",
+    )
     parser.add_argument("--disable-isac-features", action="store_true", help="Disable all ISAC/structured feature flags.")
     parser.add_argument(
         "--forbid-sense",
@@ -199,6 +204,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         use_topology_deficit=feature_flags["topology_deficit"],
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=float(args.rule_residual_scale),
+        use_contention_mode_prior=not bool(getattr(args, "disable_contention_mode_prior", False)),
         disabled_modes=disabled_modes_from_args(args),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
@@ -366,10 +372,12 @@ def build_policy(
     | AdaptiveGatedContentionGraphActorCritic
     | TopologyAdaptiveGatedContentionGraphActorCritic
 ):
+    use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
+    kwargs["use_contention_mode_prior"] = use_contention_mode_prior
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
@@ -1473,6 +1481,7 @@ def build_manifest(
         "beam_rank_aux_coef": float(getattr(args, "beam_rank_aux_coef", 0.0)),
         "beam_rank_temperature": float(getattr(args, "beam_rank_temperature", 4.0)),
         "feature_flags": feature_flags,
+        "contention_mode_prior": not bool(getattr(args, "disable_contention_mode_prior", False)),
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,
         "centralized_critic_uses_training_state_only": bool(centralized),
