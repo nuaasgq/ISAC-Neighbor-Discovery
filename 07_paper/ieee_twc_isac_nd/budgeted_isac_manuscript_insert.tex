@@ -1,0 +1,81 @@
+% Budgeted ISAC manuscript insert generated from the 2026-07-09 evidence package.
+% This file is intended as a controlled insert for main.tex after the paper
+% narrative is updated from the earlier Phase10 MARL evidence line.
+
+\subsection{Density-Adaptive Budgeted ISAC Access}
+\label{subsec:budgeted_isac}
+
+The preceding ISAC candidate mechanism substantially reduces empty-beam probing, but it can also concentrate many UAVs on a small set of high-confidence beam cells.
+In dense single-hop swarms this creates a second bottleneck: after empty beams are suppressed, simultaneous transmissions toward popular candidate sectors generate receiver-side collisions.
+We therefore introduce a density-adaptive budgeted ISAC access rule that keeps the ISAC candidate executor but constrains the transmit probability using only local memory and configuration parameters.
+The rule is not an oracle; it uses no undiscovered-neighbor position, identity, or global topology.
+It is also useful as a rule expert for the later learned access gate.
+
+Let $\mathcal{C}_i^t$ be the ISAC candidate set of UAV $i$ in slot $t$, $d_i^t$ its discovered degree, and $d_{\rm tar}$ the target local degree.
+Define the normalized degree deficit
+\begin{equation}
+  \Delta_i^t = \frac{\max\{0,d_{\rm tar}-d_i^t\}}{\max\{1,d_{\rm tar}\}}.
+\end{equation}
+The local candidate pressure is
+\begin{equation}
+  \rho_{i,{\rm cand}}^t =
+  \min\left\{1,\frac{|\mathcal{C}_i^t|}{\max\{1,d_{\rm tar}\}}\right\}.
+\end{equation}
+For candidate beams $b\in\mathcal{C}_i^t$, node $i$ maintains belief $q_i^t(b)$, success count $s_i^t(b)$, failure count $f_i^t(b)$, and collision-failure count $c_i^t(b)$.
+The candidate evidence, failure pressure, and collision pressure are
+\begin{align}
+  e_i^t &=
+  \frac{1}{|\mathcal{C}_i^t|}
+  \sum_{b\in\mathcal{C}_i^t}
+  \left[q_i^t(b)+0.15\log(1+s_i^t(b))\right]_{0}^{1},\\
+  \rho_{i,{\rm fail}}^t &=
+  \frac{1}{|\mathcal{C}_i^t|}
+  \sum_{b\in\mathcal{C}_i^t}
+  \frac{f_i^t(b)}{\max\{1,s_i^t(b)+f_i^t(b)\}},\\
+  \rho_{i,{\rm col}}^t &=
+  \frac{1}{|\mathcal{C}_i^t|}
+  \sum_{b\in\mathcal{C}_i^t}
+  \frac{c_i^t(b)}{\max\{1,s_i^t(b)+c_i^t(b)\}},
+\end{align}
+where $[\cdot]_0^1$ denotes clipping to $[0,1]$.
+If the candidate set is empty, these pressures are set to zero.
+Let the codebook density factor be
+\begin{equation}
+  \chi = \sqrt{1 + 4 \frac{N}{|\mathcal{B}|} d_{\rm tar}},
+\end{equation}
+where $N$ is the swarm size and $|\mathcal{B}|$ is the number of three-dimensional beam cells.
+The budgeted transmit probability is
+\begin{equation}
+\begin{split}
+  p_{i,{\rm tx}}^t =
+  \Big[
+  \frac{0.48}{\chi}
+  +0.08\Delta_i^t
+  +0.05 e_i^t
+  -0.08\rho_{i,{\rm cand}}^t
+  -0.18\rho_{i,{\rm col}}^t
+  -0.08\rho_{i,{\rm fail}}^t
+  -0.08\mathbb{1}\{\Delta_i^t=0\}
+  \Big]_{0.16}^{0.45}.
+\end{split}
+\label{eq:budgeted_tx_probability}
+\end{equation}
+The idle and receive probabilities are
+\begin{align}
+  p_{i,{\rm idle}}^t &=
+  [0.01+0.02(1-\Delta_i^t)+0.04\rho_{i,{\rm col}}^t]_{0.01}^{0.09},\\
+  p_{i,{\rm rx}}^t &= 1-p_{i,{\rm tx}}^t-p_{i,{\rm idle}}^t .
+\end{align}
+This rule lowers transmit probability when the swarm is dense relative to the beam codebook, when local candidates are crowded, or when recent candidate beams have accumulated collision evidence.
+It raises activity only when the node has a local degree deficit and credible candidate evidence.
+
+\paragraph*{Result summary}
+In the N=100, B=10 long-horizon transfer setting, the budgeted rule achieves discovery rate 0.712, collision count 1347.0, and collision-penalized discovery 0.560.
+The corresponding Wang-style ISAC baseline achieves 0.681, 1343.3, and 0.536, while the non-budgeted collision-aware ISAC rule achieves 0.767, 4676.7, and 0.395.
+Thus the budgeted rule preserves most of the raw-discovery gain of aggressive ISAC access while recovering the collision efficiency of conservative Wang-style access.
+At N=100, B=15, it achieves collision-penalized discovery 0.245 versus 0.227 for Wang-style ISAC and 0.116 for non-budgeted collision-aware ISAC.
+
+\paragraph*{Implication for MARL}
+The current learned BC-MARL policy improves raw discovery relative to earlier MARL runs but produces excessive collisions under N=100 transfer.
+The budgeted ISAC rule should therefore be treated as the access-control expert to distill into a learned decentralized gate, preferably with a collision-budget or Lagrangian penalty.
+The learning target is not to rediscover beam candidates from scratch, but to learn when to throttle or activate narrow-beam access after ISAC has removed most empty sectors.
