@@ -208,6 +208,21 @@ def test_discovery_first_reward_version_keeps_public_contract_safe() -> None:
     _assert_no_forbidden_keys(next_observations)
 
 
+def test_discovery_access_stable_reward_penalizes_all_idle_more_than_discovery_first() -> None:
+    cfg = _small_cfg()
+    first_env = MarlNeighborDiscoveryEnv(cfg, reward_version="discovery_first")
+    stable_env = MarlNeighborDiscoveryEnv(cfg, reward_version="discovery_access_stable")
+    first_env.reset(seed=18)
+    stable_env.reset(seed=18)
+
+    actions = [{"mode": "idle"} for _ in range(cfg.n_nodes)]
+    _first_obs, first_rewards, _terminated, _truncated, _first_info = first_env.step(actions)
+    _stable_obs, stable_rewards, _terminated, _truncated, stable_info = stable_env.step(actions)
+
+    assert stable_info["reward_version"] == "discovery_access_stable"
+    assert np.all(stable_rewards < first_rewards)
+
+
 def test_no_isac_marl_protocol_does_not_update_belief_from_sense_action() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg, protocol="structured_marl_no_isac")

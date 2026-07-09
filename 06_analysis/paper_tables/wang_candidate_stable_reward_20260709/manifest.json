@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-07-09T23:07:20",
+  "purpose": "Stable reward MARL retraining and beam-head ablation under Wang sensing-table candidate source.",
+  "train_dir": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_stable_reward_20260709\\stable_train",
+  "eval_dirs": {
+    "stable_reward_ckpt60_full_policy": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_stable_reward_20260709\\eval_ckpt60_full_policy",
+    "stable_reward_ckpt60_mode_wang_random_beam": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_stable_reward_20260709\\eval_ckpt60_mode_wang_random_beam",
+    "stable_reward_ckpt100_full_policy": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_stable_reward_20260709\\eval_ckpt100_full_policy",
+    "stable_reward_ckpt100_mode_wang_random_beam": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\wang_candidate_stable_reward_20260709\\eval_ckpt100_mode_wang_random_beam"
+  },
+  "previous_aggregate_source": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_tables\\wang_candidate_retrain_20260709\\aggregate_metrics.csv",
+  "outputs": [
+    "aggregate_metrics.csv",
+    "paired_beam_head_deltas.csv",
+    "stable_reward_ablation_metrics.png",
+    "stable_reward_eval_per_episode.csv",
+    "stable_reward_training_curves.png",
+    "training_episode_metrics.csv",
+    "training_eval_metrics.csv",
+    "training_eval_summary.csv"
+  ]
+}

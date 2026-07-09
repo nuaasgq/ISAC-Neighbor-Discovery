@@ -26,7 +26,7 @@ MODE_NAMES = (MODE_SENSE, MODE_TX, MODE_RX, MODE_IDLE)
 MODE_TO_INDEX = {name: idx for idx, name in enumerate(MODE_NAMES)}
 ACCESS_GATE_NAMES = (ACCESS_BACKOFF, ACCESS_NORMAL, ACCESS_AGGRESSIVE)
 ACCESS_GATE_TO_INDEX = {name: idx for idx, name in enumerate(ACCESS_GATE_NAMES)}
-REWARD_VERSIONS = ("legacy", "collision_topology", "discovery_first")
+REWARD_VERSIONS = ("legacy", "collision_topology", "discovery_first", "discovery_access_stable")
 CANDIDATE_SOURCES = ("default", "wang_table")
 
 
@@ -121,7 +121,7 @@ class MarlNeighborDiscoveryEnv:
         collision_fail_before = self._sim.collision_fail_count.sum(axis=1).copy()
         topology_before = (
             self._topology_reward_snapshot()
-            if self.reward_version in {"collision_topology", "discovery_first"}
+            if self.reward_version in {"collision_topology", "discovery_first", "discovery_access_stable"}
             else None
         )
 
@@ -459,8 +459,8 @@ class MarlNeighborDiscoveryEnv:
         collision_fail_before: np.ndarray,
         topology_before: dict[str, Any] | None,
     ) -> np.ndarray:
-        if self.reward_version == "discovery_first":
-            return self._discovery_first_rewards(
+        if self.reward_version in {"discovery_first", "discovery_access_stable"}:
+            rewards = self._discovery_first_rewards(
                 sampled_actions,
                 actions,
                 new_edges,
@@ -470,6 +470,9 @@ class MarlNeighborDiscoveryEnv:
                 collision_fail_before,
                 topology_before,
             )
+            if self.reward_version == "discovery_access_stable":
+                rewards = self._access_stability_reward_shaping(rewards, actions, empty_by_node, topology_before)
+            return rewards
 
         rewards = np.zeros(self.n_agents, dtype=np.float32)
         for node, action in enumerate(actions):
@@ -611,6 +614,66 @@ class MarlNeighborDiscoveryEnv:
             if degree_before[j] <= 0.0:
                 rewards[j] += 0.12
         return rewards.astype(np.float32, copy=False)
+
+    def _access_stability_reward_shaping(
+        self,
+        rewards: np.ndarray,
+        actions: list[Action],
+        empty_by_node: np.ndarray,
+        topology_before: dict[str, Any] | None,
+    ) -> np.ndarray:
+        """Keep the learned access controller active without hiding the main objective.
+
+        This shaping is deliberately smaller than discovery rewards. It prevents
+        late-stage over-idle collapse and gives the beam head local credit when a
+        TX/RX beam points at a viable neighbor direction before a full handshake
+        happens.
+        """
+
+        shaped = rewards.astype(np.float32, copy=True)
+        degree_before = (
+            np.asarray(topology_before.get("degree", np.zeros(self.n_agents)), dtype=np.float32)
+            if topology_before is not None
+            else np.zeros(self.n_agents, dtype=np.float32)
+        )
+        tx_count = sum(1 for action in actions if action.mode == MODE_TX)
+        idle_count = sum(1 for action in actions if action.mode == MODE_IDLE)
+        tx_fraction = tx_count / max(1.0, float(self.n_agents))
+        idle_fraction = idle_count / max(1.0, float(self.n_agents))
+        low_tx_pressure = max(0.0, 0.35 - tx_fraction)
+        high_tx_pressure = max(0.0, tx_fraction - 0.70)
+
+        for node, action in enumerate(actions):
+            deficit = max(0.0, float(self.cfg.target_degree) - float(degree_before[node]))
+            deficit_ratio = min(1.0, deficit / max(1.0, float(self.cfg.target_degree)))
+            if action.mode == MODE_IDLE:
+                shaped[node] -= 0.018 + 0.018 * deficit_ratio
+                shaped[node] -= 0.020 * idle_fraction
+                shaped[node] -= 0.030 * low_tx_pressure
+                continue
+
+            if action.mode == MODE_TX:
+                shaped[node] += 0.004 + 0.008 * low_tx_pressure
+                shaped[node] -= 0.010 * high_tx_pressure
+            elif action.mode == MODE_RX:
+                shaped[node] -= 0.004 * low_tx_pressure
+
+            if action.mode in (MODE_TX, MODE_RX) and not bool(empty_by_node[node]):
+                beam_bonus = 0.018 if action.mode == MODE_TX else 0.010
+                shaped[node] += beam_bonus + 0.010 * deficit_ratio
+
+            if (
+                self.candidate_source == "wang_table"
+                and action.mode in (MODE_TX, MODE_RX)
+                and 0 <= int(action.beam) < self.n_beams
+            ):
+                beam = int(action.beam)
+                if self._sim.wang_sensing_flag[node, beam] > 0.5:
+                    shaped[node] += 0.002
+                if self._sim.wang_node_num[node, beam] > self._sim.wang_dis_num[node, beam]:
+                    shaped[node] += 0.006
+
+        return shaped.astype(np.float32, copy=False)
 
     def _safe_info(self, new_edges_count: int) -> dict[str, Any]:
         components = connected_components(self.n_agents, self._sim.discovered_edges)
