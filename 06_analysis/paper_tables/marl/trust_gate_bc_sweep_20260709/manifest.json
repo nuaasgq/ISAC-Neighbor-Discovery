@@ -1,0 +1,39 @@
+{
+  "created_at": "2026-07-09T11:20:39",
+  "protocol_root": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\round_trust_gated_tables_eval\\B10_N100_3000slot_5ep_seed2026071091",
+  "train_root": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\budgeted_gate_bc_sweep_20260709_v2\\train",
+  "transfer_root": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\marl_campaign\\budgeted_gate_bc_sweep_20260709_v2_transfer",
+  "output": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_tables\\marl\\trust_gate_bc_sweep_20260709",
+  "figures": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709",
+  "protocol_rows": 25,
+  "protocol_summary_rows": 5,
+  "bc_training_runs": 2,
+  "bc_training_curve_rows": 111,
+  "bc_eval_rows": 72,
+  "bc_eval_summary_rows": 22,
+  "bc_transfer_rows": 0,
+  "bc_transfer_summary_rows": 0,
+  "figures_written": [
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\protocol_cpd_b10_n100.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_final_training_tradeoff.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_training_reward_by_step.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_training_discovery_by_step.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_training_collision_by_step.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_training_bc_loss_by_step.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_training_gate_ratios_by_step.png",
+    "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\marl_trust_gate_bc_20260709\\bc_eval_cpd_by_checkpoint.png"
+  ],
+  "status": "partial",
+  "files": [
+    "protocol_eval_rows.csv",
+    "protocol_eval_summary.csv",
+    "bc_training_runs.csv",
+    "bc_training_curves.csv",
+    "bc_eval_rows.csv",
+    "bc_eval_summary.csv",
+    "bc_transfer_rows.csv",
+    "bc_transfer_summary.csv",
+    "manifest.json",
+    "README.md"
+  ]
+}

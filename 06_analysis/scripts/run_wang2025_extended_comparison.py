@@ -28,6 +28,7 @@ PROTOCOLS = (
     "wang2025_comm_tables",
     "wang2025_isac_tables",
     "improved_rl_isac",
+    "budgeted_collision_aware_isac",
     "improved_rl_isac_tables",
 )
 PROTOCOL_LABELS = {
@@ -36,6 +37,7 @@ PROTOCOL_LABELS = {
     "wang2025_comm_tables": "Wang-like + neighbor table",
     "wang2025_isac_tables": "Wang-like + sensing table",
     "improved_rl_isac": "Ours: ISAC rule, no table exchange",
+    "budgeted_collision_aware_isac": "Ours: budgeted ISAC access",
     "improved_rl_isac_tables": "Ours: ISAC rule + table exchange",
 }
 
@@ -333,6 +335,7 @@ def maybe_write_figures(figures: Path, rows: list[dict[str, Any]]) -> None:
         "wang2025_comm_tables": "#2ca25f",
         "wang2025_isac_tables": "#8856a7",
         "improved_rl_isac": "#d95f02",
+        "budgeted_collision_aware_isac": "#e15759",
         "improved_rl_isac_tables": "#e7298a",
     }
     available_rf = sorted({int(row["rf_chains"]) for row in rows})
@@ -361,6 +364,22 @@ def maybe_write_figures(figures: Path, rows: list[dict[str, Any]]) -> None:
         figures / f"node_scaling_empty_scan_rf{primary_rf}.png",
         metric="empty_scan_ratio_mean",
         ylabel="Empty scan ratio",
+        rf_filter=primary_rf,
+        colors=colors,
+    )
+    plot_line_metric(
+        rows,
+        figures / f"node_scaling_cpd_rf{primary_rf}.png",
+        metric="collision_penalized_discovery_rate_mean",
+        ylabel="Collision-penalized discovery",
+        rf_filter=primary_rf,
+        colors=colors,
+    )
+    plot_line_metric(
+        rows,
+        figures / f"node_scaling_collision_rf{primary_rf}.png",
+        metric="collision_count_mean",
+        ylabel="Collision count",
         rf_filter=primary_rf,
         colors=colors,
     )
@@ -402,7 +421,7 @@ def plot_line_metric(
     import matplotlib.pyplot as plt
 
     subset = [row for row in rows if int(row["rf_chains"]) == rf_filter]
-    protocols = list(PROTOCOLS)
+    protocols = ordered_protocols(rows)
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
     for protocol in protocols:
         points = sorted((row for row in subset if row["protocol"] == protocol), key=lambda item: int(item["node_count"]))
@@ -439,7 +458,7 @@ def plot_rf_metric(
     import matplotlib.pyplot as plt
 
     subset = [row for row in rows if int(row["node_count"]) == node_filter]
-    protocols = list(PROTOCOLS)
+    protocols = ordered_protocols(rows)
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
     for protocol in protocols:
         points = sorted((row for row in subset if row["protocol"] == protocol), key=lambda item: int(item["rf_chains"]))
@@ -462,6 +481,13 @@ def plot_rf_metric(
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
+
+
+def ordered_protocols(rows: list[dict[str, Any]]) -> list[str]:
+    available = {str(row["protocol"]) for row in rows}
+    ordered = [protocol for protocol in PROTOCOLS if protocol in available]
+    ordered.extend(sorted(available.difference(ordered)))
+    return ordered
 
 
 if __name__ == "__main__":

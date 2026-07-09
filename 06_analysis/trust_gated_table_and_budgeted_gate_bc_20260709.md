@@ -78,11 +78,23 @@ Supported now:
 - The simulator has a concrete trust-gated table-exchange mechanism.
 - The MARL training path can imitate a Budgeted ISAC expert's access gate.
 - Unit/smoke tests cover both mechanisms.
+- A formal B=10, N=100, 3000-slot, 5-episode protocol evaluation has now
+  closed the first table-exchange question. In this setting, table exchange
+  improves raw discovery but creates too many collisions to improve CPD:
+  `improved_rl_isac_tables` reaches discovery 0.7438 with 9247.0 collisions
+  and CPD 0.2608; `trust_gated_isac_tables` reaches discovery 0.7446 with
+  9516.4 collisions and CPD 0.2569; `budgeted_collision_aware_isac` remains
+  stronger on CPD at 0.5563 with 1300.8 collisions.
 
 Not yet supported:
 
-- Trust-gated table exchange improves final discovery or CPD. It still needs multi-episode B=10/B=15 evaluation.
-- Budgeted expert gate BC improves N=10 to N=100 transfer. It still needs long training and transfer evaluation.
+- Trust-gated table exchange improves CPD. Current B=10 evidence is negative,
+  so any paper claim should say that neighbor-table sharing needs access
+  budgeting and collision control rather than being a standalone gain.
+- B=15 trust-gated table behavior is not yet measured in this sweep.
+- Budgeted expert gate BC improves N=10 to N=100 transfer. The 0.15-weight
+  run is still in progress at the time of this update and has not yet produced
+  a final model for transfer evaluation.
 
 ## Next Experiment Block
 
@@ -92,3 +104,10 @@ Recommended next long run:
 2. Evaluate checkpoints at N=100, B=10 and B=15, 3000 slots, 5-10 episodes.
 3. Add protocol baselines: `trust_gated_isac_tables`, `improved_rl_isac_tables`, `wang2025_isac_tables`, `budgeted_collision_aware_isac`, `uniform_random`.
 4. Promote the result only if the learned gate improves CPD or collision count without collapsing raw discovery.
+
+Current generated artifacts:
+
+- `06_analysis/paper_tables/marl/trust_gate_bc_sweep_20260709/protocol_eval_summary.csv`
+- `06_analysis/paper_tables/marl/trust_gate_bc_sweep_20260709/bc_training_runs.csv`
+- `06_analysis/paper_figures/marl_trust_gate_bc_20260709/protocol_cpd_b10_n100.png`
+- `06_analysis/paper_figures/marl_trust_gate_bc_20260709/bc_eval_cpd_by_checkpoint.png`

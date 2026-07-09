@@ -1,0 +1,151 @@
+completed,consumed_slots_censored,episode,method_label,node_count,protocol,rf_chains
+0,200,0,Uniform Random,10,uniform_random,1
+0,200,1,Uniform Random,10,uniform_random,1
+0,200,2,Uniform Random,10,uniform_random,1
+0,200,3,Uniform Random,10,uniform_random,1
+0,200,4,Uniform Random,10,uniform_random,1
+0,200,0,"Wang-like ISAC, no table exchange",10,wang2025_isac_no_collab,1
+0,200,1,"Wang-like ISAC, no table exchange",10,wang2025_isac_no_collab,1
+0,200,2,"Wang-like ISAC, no table exchange",10,wang2025_isac_no_collab,1
+0,200,3,"Wang-like ISAC, no table exchange",10,wang2025_isac_no_collab,1
+0,200,4,"Wang-like ISAC, no table exchange",10,wang2025_isac_no_collab,1
+0,200,0,Wang-like + neighbor table,10,wang2025_comm_tables,1
+0,200,1,Wang-like + neighbor table,10,wang2025_comm_tables,1
+0,200,2,Wang-like + neighbor table,10,wang2025_comm_tables,1
+0,200,3,Wang-like + neighbor table,10,wang2025_comm_tables,1
+1,160,4,Wang-like + neighbor table,10,wang2025_comm_tables,1
+0,200,0,Wang-like + sensing table,10,wang2025_isac_tables,1
+1,186,1,Wang-like + sensing table,10,wang2025_isac_tables,1
+0,200,2,Wang-like + sensing table,10,wang2025_isac_tables,1
+0,200,3,Wang-like + sensing table,10,wang2025_isac_tables,1
+0,200,4,Wang-like + sensing table,10,wang2025_isac_tables,1
+0,200,0,"Ours: ISAC rule, no table exchange",10,improved_rl_isac,1
+0,200,1,"Ours: ISAC rule, no table exchange",10,improved_rl_isac,1
+0,200,2,"Ours: ISAC rule, no table exchange",10,improved_rl_isac,1
+0,200,3,"Ours: ISAC rule, no table exchange",10,improved_rl_isac,1
+0,200,4,"Ours: ISAC rule, no table exchange",10,improved_rl_isac,1
+0,200,0,Ours: budgeted ISAC access,10,budgeted_collision_aware_isac,1
+0,200,1,Ours: budgeted ISAC access,10,budgeted_collision_aware_isac,1
+0,200,2,Ours: budgeted ISAC access,10,budgeted_collision_aware_isac,1
+0,200,3,Ours: budgeted ISAC access,10,budgeted_collision_aware_isac,1
+0,200,4,Ours: budgeted ISAC access,10,budgeted_collision_aware_isac,1
+0,200,0,Uniform Random,20,uniform_random,1
+0,200,1,Uniform Random,20,uniform_random,1
+0,200,2,Uniform Random,20,uniform_random,1
+0,200,3,Uniform Random,20,uniform_random,1
+0,200,4,Uniform Random,20,uniform_random,1
+0,200,0,"Wang-like ISAC, no table exchange",20,wang2025_isac_no_collab,1
+0,200,1,"Wang-like ISAC, no table exchange",20,wang2025_isac_no_collab,1
+0,200,2,"Wang-like ISAC, no table exchange",20,wang2025_isac_no_collab,1
+0,200,3,"Wang-like ISAC, no table exchange",20,wang2025_isac_no_collab,1
+0,200,4,"Wang-like ISAC, no table exchange",20,wang2025_isac_no_collab,1
+0,200,0,Wang-like + neighbor table,20,wang2025_comm_tables,1
+0,200,1,Wang-like + neighbor table,20,wang2025_comm_tables,1
+0,200,2,Wang-like + neighbor table,20,wang2025_comm_tables,1
+0,200,3,Wang-like + neighbor table,20,wang2025_comm_tables,1
+0,200,4,Wang-like + neighbor table,20,wang2025_comm_tables,1
+0,200,0,Wang-like + sensing table,20,wang2025_isac_tables,1
+0,200,1,Wang-like + sensing table,20,wang2025_isac_tables,1
+0,200,2,Wang-like + sensing table,20,wang2025_isac_tables,1
+0,200,3,Wang-like + sensing table,20,wang2025_isac_tables,1
+0,200,4,Wang-like + sensing table,20,wang2025_isac_tables,1
+0,200,0,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,1
+0,200,1,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,1
+0,200,2,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,1
+0,200,3,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,1
+0,200,4,"Ours: ISAC rule, no table exchange",20,improved_rl_isac,1
+0,200,0,Ours: budgeted ISAC access,20,budgeted_collision_aware_isac,1
+0,200,1,Ours: budgeted ISAC access,20,budgeted_collision_aware_isac,1
+0,200,2,Ours: budgeted ISAC access,20,budgeted_collision_aware_isac,1
+0,200,3,Ours: budgeted ISAC access,20,budgeted_collision_aware_isac,1
+0,200,4,Ours: budgeted ISAC access,20,budgeted_collision_aware_isac,1
+0,200,0,Uniform Random,30,uniform_random,1
+0,200,1,Uniform Random,30,uniform_random,1
+0,200,2,Uniform Random,30,uniform_random,1
+0,200,3,Uniform Random,30,uniform_random,1
+0,200,4,Uniform Random,30,uniform_random,1
+0,200,0,"Wang-like ISAC, no table exchange",30,wang2025_isac_no_collab,1
+0,200,1,"Wang-like ISAC, no table exchange",30,wang2025_isac_no_collab,1
+0,200,2,"Wang-like ISAC, no table exchange",30,wang2025_isac_no_collab,1
+0,200,3,"Wang-like ISAC, no table exchange",30,wang2025_isac_no_collab,1
+0,200,4,"Wang-like ISAC, no table exchange",30,wang2025_isac_no_collab,1
+0,200,0,Wang-like + neighbor table,30,wang2025_comm_tables,1
+0,200,1,Wang-like + neighbor table,30,wang2025_comm_tables,1
+0,200,2,Wang-like + neighbor table,30,wang2025_comm_tables,1
+0,200,3,Wang-like + neighbor table,30,wang2025_comm_tables,1
+0,200,4,Wang-like + neighbor table,30,wang2025_comm_tables,1
+0,200,0,Wang-like + sensing table,30,wang2025_isac_tables,1
+0,200,1,Wang-like + sensing table,30,wang2025_isac_tables,1
+0,200,2,Wang-like + sensing table,30,wang2025_isac_tables,1
+0,200,3,Wang-like + sensing table,30,wang2025_isac_tables,1
+0,200,4,Wang-like + sensing table,30,wang2025_isac_tables,1
+0,200,0,"Ours: ISAC rule, no table exchange",30,improved_rl_isac,1
+0,200,1,"Ours: ISAC rule, no table exchange",30,improved_rl_isac,1
+0,200,2,"Ours: ISAC rule, no table exchange",30,improved_rl_isac,1
+0,200,3,"Ours: ISAC rule, no table exchange",30,improved_rl_isac,1
+0,200,4,"Ours: ISAC rule, no table exchange",30,improved_rl_isac,1
+0,200,0,Ours: budgeted ISAC access,30,budgeted_collision_aware_isac,1
+0,200,1,Ours: budgeted ISAC access,30,budgeted_collision_aware_isac,1
+0,200,2,Ours: budgeted ISAC access,30,budgeted_collision_aware_isac,1
+0,200,3,Ours: budgeted ISAC access,30,budgeted_collision_aware_isac,1
+0,200,4,Ours: budgeted ISAC access,30,budgeted_collision_aware_isac,1
+0,200,0,Uniform Random,40,uniform_random,1
+0,200,1,Uniform Random,40,uniform_random,1
+0,200,2,Uniform Random,40,uniform_random,1
+0,200,3,Uniform Random,40,uniform_random,1
+0,200,4,Uniform Random,40,uniform_random,1
+0,200,0,"Wang-like ISAC, no table exchange",40,wang2025_isac_no_collab,1
+0,200,1,"Wang-like ISAC, no table exchange",40,wang2025_isac_no_collab,1
+0,200,2,"Wang-like ISAC, no table exchange",40,wang2025_isac_no_collab,1
+0,200,3,"Wang-like ISAC, no table exchange",40,wang2025_isac_no_collab,1
+0,200,4,"Wang-like ISAC, no table exchange",40,wang2025_isac_no_collab,1
+0,200,0,Wang-like + neighbor table,40,wang2025_comm_tables,1
+0,200,1,Wang-like + neighbor table,40,wang2025_comm_tables,1
+0,200,2,Wang-like + neighbor table,40,wang2025_comm_tables,1
+0,200,3,Wang-like + neighbor table,40,wang2025_comm_tables,1
+0,200,4,Wang-like + neighbor table,40,wang2025_comm_tables,1
+0,200,0,Wang-like + sensing table,40,wang2025_isac_tables,1
+0,200,1,Wang-like + sensing table,40,wang2025_isac_tables,1
+0,200,2,Wang-like + sensing table,40,wang2025_isac_tables,1
+0,200,3,Wang-like + sensing table,40,wang2025_isac_tables,1
+0,200,4,Wang-like + sensing table,40,wang2025_isac_tables,1
+0,200,0,"Ours: ISAC rule, no table exchange",40,improved_rl_isac,1
+0,200,1,"Ours: ISAC rule, no table exchange",40,improved_rl_isac,1
+0,200,2,"Ours: ISAC rule, no table exchange",40,improved_rl_isac,1
+0,200,3,"Ours: ISAC rule, no table exchange",40,improved_rl_isac,1
+0,200,4,"Ours: ISAC rule, no table exchange",40,improved_rl_isac,1
+0,200,0,Ours: budgeted ISAC access,40,budgeted_collision_aware_isac,1
+0,200,1,Ours: budgeted ISAC access,40,budgeted_collision_aware_isac,1
+0,200,2,Ours: budgeted ISAC access,40,budgeted_collision_aware_isac,1
+0,200,3,Ours: budgeted ISAC access,40,budgeted_collision_aware_isac,1
+0,200,4,Ours: budgeted ISAC access,40,budgeted_collision_aware_isac,1
+0,200,0,Uniform Random,50,uniform_random,1
+0,200,1,Uniform Random,50,uniform_random,1
+0,200,2,Uniform Random,50,uniform_random,1
+0,200,3,Uniform Random,50,uniform_random,1
+0,200,4,Uniform Random,50,uniform_random,1
+0,200,0,"Wang-like ISAC, no table exchange",50,wang2025_isac_no_collab,1
+0,200,1,"Wang-like ISAC, no table exchange",50,wang2025_isac_no_collab,1
+0,200,2,"Wang-like ISAC, no table exchange",50,wang2025_isac_no_collab,1
+0,200,3,"Wang-like ISAC, no table exchange",50,wang2025_isac_no_collab,1
+0,200,4,"Wang-like ISAC, no table exchange",50,wang2025_isac_no_collab,1
+0,200,0,Wang-like + neighbor table,50,wang2025_comm_tables,1
+0,200,1,Wang-like + neighbor table,50,wang2025_comm_tables,1
+0,200,2,Wang-like + neighbor table,50,wang2025_comm_tables,1
+0,200,3,Wang-like + neighbor table,50,wang2025_comm_tables,1
+0,200,4,Wang-like + neighbor table,50,wang2025_comm_tables,1
+0,200,0,Wang-like + sensing table,50,wang2025_isac_tables,1
+0,200,1,Wang-like + sensing table,50,wang2025_isac_tables,1
+0,200,2,Wang-like + sensing table,50,wang2025_isac_tables,1
+0,200,3,Wang-like + sensing table,50,wang2025_isac_tables,1
+0,200,4,Wang-like + sensing table,50,wang2025_isac_tables,1
+0,200,0,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,1
+0,200,1,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,1
+0,200,2,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,1
+0,200,3,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,1
+0,200,4,"Ours: ISAC rule, no table exchange",50,improved_rl_isac,1
+0,200,0,Ours: budgeted ISAC access,50,budgeted_collision_aware_isac,1
+0,200,1,Ours: budgeted ISAC access,50,budgeted_collision_aware_isac,1
+0,200,2,Ours: budgeted ISAC access,50,budgeted_collision_aware_isac,1
+0,200,3,Ours: budgeted ISAC access,50,budgeted_collision_aware_isac,1
+0,200,4,Ours: budgeted ISAC access,50,budgeted_collision_aware_isac,1
