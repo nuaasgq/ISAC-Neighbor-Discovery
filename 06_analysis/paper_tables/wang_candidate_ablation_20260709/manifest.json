@@ -1,0 +1,21 @@
+{
+  "scope": "Wang candidate-pool ablation: distinguish sensing-table candidate pool from MARL action control.",
+  "baseline_source": "06_analysis/paper_tables/wang2025_strict_table_n10_20260709/paired_baseline_per_episode.csv",
+  "marl_raw_root": "05_simulation/results_raw/marl_campaign/wang_candidate_ablation_20260709",
+  "seeds": [
+    2026084001,
+    2026084002,
+    2026084003,
+    2026084004,
+    2026084005
+  ],
+  "node_count": 10,
+  "slots": 200,
+  "env_protocol": "wang2025_isac_tables",
+  "candidate_source": "wang_table for two ablations; default for rerun control",
+  "files": [
+    "aggregate_metrics.csv",
+    "per_episode_summary.csv",
+    "wang_candidate_ablation_metrics.png"
+  ]
+}

@@ -27,6 +27,7 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
 )
 from isac_nd_sim.marl_env import (  # noqa: E402
     ACCESS_GATE_TO_INDEX,
+    CANDIDATE_SOURCES,
     MODE_NAMES,
     MODE_TO_INDEX,
     REWARD_VERSIONS,
@@ -87,6 +88,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sensing-period-slots", type=int, default=None)
     parser.add_argument("--mobility-model", default=None)
     parser.add_argument("--env-protocol", default=None)
+    parser.add_argument(
+        "--candidate-source",
+        choices=CANDIDATE_SOURCES,
+        default="default",
+        help="Source used to build MARL candidate_mask/candidate_score observations.",
+    )
     parser.add_argument("--hidden-dim", type=int, default=128)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--gamma", type=float, default=0.985)
@@ -379,6 +386,7 @@ def collect_trajectory(
         seed=seed,
         protocol=env_protocol,
         reward_version=str(getattr(args, "reward_version", "legacy")),
+        candidate_source=str(getattr(args, "candidate_source", "default")),
     )
     observations, _ = env.reset(seed=seed)
     old_log_probs = []
@@ -828,6 +836,7 @@ def evaluate_policy(
                     seed=seed,
                     protocol=env_protocol,
                     reward_version=str(getattr(args, "reward_version", "legacy")),
+                    candidate_source=str(getattr(args, "candidate_source", "default")),
                 )
                 observations, _ = env.reset(seed=seed)
                 rewards = []
@@ -1070,6 +1079,7 @@ def build_manifest(
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
+        "candidate_source": str(getattr(args, "candidate_source", "default")),
         "forbid_sense": bool(getattr(args, "forbid_sense", False)),
         "disabled_modes": list(disabled_modes_from_args(args)),
         "expert_bc_weight": float(getattr(args, "expert_bc_weight", 0.0)),

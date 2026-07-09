@@ -79,6 +79,23 @@ def test_marl_env_reset_observation_contract_has_no_neighbor_truth() -> None:
     assert first["local_summary"].shape == (4,)
 
 
+def test_wang_table_candidate_source_exposes_sensing_flags() -> None:
+    cfg = _small_cfg()
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="wang2025_isac_tables", candidate_source="wang_table")
+    observations, _ = env.reset(seed=124)
+
+    first = observations[0]
+    assert np.count_nonzero(first["candidate_mask"]) == cfg.n_beams
+    assert np.all(first["candidate_score"] >= 0.0)
+    assert np.all(first["candidate_score"] <= 1.0)
+
+    env._sim.wang_sensing_flag[0, :] = 0.0
+    env._sim.wang_sensing_flag[0, [2, 5]] = 1.0
+    updated = env._observation_for(0)
+
+    assert set(np.flatnonzero(updated["candidate_mask"] > 0.5).tolist()) == {2, 5}
+
+
 def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg)

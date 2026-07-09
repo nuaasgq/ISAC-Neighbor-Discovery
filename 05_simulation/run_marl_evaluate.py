@@ -19,7 +19,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
-from isac_nd_sim.marl_env import REWARD_VERSIONS, MarlNeighborDiscoveryEnv  # noqa: E402
+from isac_nd_sim.marl_env import CANDIDATE_SOURCES, REWARD_VERSIONS, MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     AdaptiveGatedContentionGraphActorCritic,
     BalancedTopologyGatedContentionGraphActorCritic,
@@ -51,17 +51,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sensing-period-slots", type=int, default=None)
     parser.add_argument("--mobility-model", default=None)
     parser.add_argument("--env-protocol", default=None)
+    parser.add_argument(
+        "--candidate-source",
+        choices=CANDIDATE_SOURCES,
+        default=None,
+        help="Source used to build MARL candidate_mask/candidate_score observations. Defaults to checkpoint value.",
+    )
     parser.add_argument("--deterministic", action="store_true", help="Use argmax actions.")
     parser.add_argument("--stochastic", action="store_true", help="Sample actions.")
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
     parser.add_argument(
         "--beam-executor",
-        choices=["policy", "rule_candidate"],
+        choices=["policy", "rule_candidate", "wang_candidate_random"],
         default="policy",
         help=(
             "Beam execution rule. 'policy' uses neural beam actions; "
             "'rule_candidate' keeps neural mode/gate actions but executes the "
-            "beam through the local ISAC candidate/memory rule."
+            "beam through the local ISAC candidate/memory rule; "
+            "'wang_candidate_random' keeps neural mode/gate actions but samples "
+            "beams uniformly from the Wang sensing-table Flag=1 set."
         ),
     )
     parser.add_argument(
@@ -178,6 +186,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     env_protocol = str(args.env_protocol or train_args.get("env_protocol") or inferred_env_protocol(train_args))
+    candidate_source = str(args.candidate_source or train_args.get("candidate_source", "default"))
     resource_rows: list[dict[str, Any]] = []
     eval_rows = evaluate_policy(
         cfg,
@@ -185,6 +194,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         torch,
         args,
         env_protocol,
+        candidate_source,
         reward_version,
         progress_dir=output,
         resource_rows=resource_rows,
@@ -212,6 +222,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
+        "candidate_source": candidate_source,
         "forbid_sense": forbid_sense,
         "disabled_modes": list(disabled_modes_from_flag(forbid_sense)),
         "policy_ablation": str(args.policy_ablation),
@@ -310,6 +321,7 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "eval_rule_residual_scale": None,
         "beam_executor": "policy",
         "mode_executor": "policy",
+        "candidate_source": None,
         "forbid_sense": False,
         "mode_temperature": 1.0,
         "beam_temperature": 1.0,
@@ -396,6 +408,7 @@ def evaluate_policy(
     torch_module: Any,
     args: argparse.Namespace,
     env_protocol: str,
+    candidate_source: str,
     reward_version: str,
     progress_dir: Path | None = None,
     resource_rows: list[dict[str, Any]] | None = None,
@@ -427,6 +440,7 @@ def evaluate_policy(
                     seed=seed,
                     protocol=env_protocol,
                     reward_version=reward_version,
+                    candidate_source=candidate_source,
                     collect_slot_metrics=bool(getattr(args, "full_step_info", False)),
                     rich_info=bool(getattr(args, "full_step_info", False)),
                 )
@@ -472,6 +486,7 @@ def evaluate_policy(
                     "eval_episode": episode,
                     "seed": seed,
                     "env_protocol": env_protocol,
+                    "candidate_source": candidate_source,
                     "episode_return_sum": float(rewards_tensor.sum().item()),
                     "episode_return_mean_per_agent": float(rewards_tensor.sum(dim=0).mean().item()),
                     "step_reward_mean": float(rewards_tensor.mean().item()),
@@ -537,6 +552,8 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
             beam = 0
         elif beam_executor == "rule_candidate":
             beam = rule_candidate_beam(env, node, env._slot, mode)
+        elif beam_executor == "wang_candidate_random":
+            beam = wang_candidate_random_beam(env, node, mode)
         rewritten.append(Action(mode, int(beam), action.access_gate))
     return rewritten
 
@@ -550,6 +567,12 @@ def rule_candidate_beam(env: MarlNeighborDiscoveryEnv, node: int, slot: int, mod
             return int(candidate)
         return int(env._sim.memory_guided_beam(node, use_isac=True, topology=True))
     return int(env._sim.memory_guided_beam(node, use_isac=False, topology=True))
+
+
+def wang_candidate_random_beam(env: MarlNeighborDiscoveryEnv, node: int, mode: str) -> int:
+    if mode == MODE_IDLE:
+        return 0
+    return int(env._sim.wang2025_table_beam(node))
 
 
 def resource_snapshot() -> dict[str, Any]:

@@ -27,6 +27,7 @@ MODE_TO_INDEX = {name: idx for idx, name in enumerate(MODE_NAMES)}
 ACCESS_GATE_NAMES = (ACCESS_BACKOFF, ACCESS_NORMAL, ACCESS_AGGRESSIVE)
 ACCESS_GATE_TO_INDEX = {name: idx for idx, name in enumerate(ACCESS_GATE_NAMES)}
 REWARD_VERSIONS = ("legacy", "collision_topology", "discovery_first")
+CANDIDATE_SOURCES = ("default", "wang_table")
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,7 @@ class MarlNeighborDiscoveryEnv:
         seed: int | None = None,
         protocol: str = "isac_structured_marl",
         reward_version: str = "legacy",
+        candidate_source: str = "default",
         collect_slot_metrics: bool = True,
         rich_info: bool = True,
     ):
@@ -59,6 +61,7 @@ class MarlNeighborDiscoveryEnv:
         self.seed = int(config.seed if seed is None else seed)
         self.protocol = str(protocol)
         self.reward_version = _parse_reward_version(reward_version)
+        self.candidate_source = _parse_candidate_source(candidate_source)
         self.collect_slot_metrics = bool(collect_slot_metrics)
         self.rich_info = bool(rich_info)
         self._sim = NeighborDiscoverySimulator(config, protocol=self.protocol, seed=self.seed)
@@ -297,6 +300,9 @@ class MarlNeighborDiscoveryEnv:
         undiscovered topology. Existing policies may ignore these optional keys.
         """
 
+        if self.candidate_source == "wang_table":
+            return self._wang_table_candidate_features_for(node)
+
         belief = self._sim.belief[node]
         success = np.log1p(self._sim.success_count[node])
         fail = np.log1p(self._sim.fail_count[node])
@@ -319,6 +325,45 @@ class MarlNeighborDiscoveryEnv:
         last_beam = int(self._last_actions[node].beam)
         if 0 <= last_beam < self.n_beams:
             mask[last_beam] = 1.0
+        return {
+            "mask": mask.astype(np.float32, copy=False),
+            "score": score.astype(np.float32, copy=False),
+        }
+
+    def _wang_table_candidate_features_for(self, node: int) -> dict[str, np.ndarray]:
+        """Expose Wang sensing-table candidates to the MARL actor.
+
+        The hard mask is the Wang baseline's executable set, i.e., beams whose
+        sensing-table Flag is 1. If all flags are closed, it falls back to all
+        beams, matching ``wang2025_table_beam``.
+        """
+
+        node = int(node)
+        active = (self._sim.wang_sensing_flag[node] > 0.5).astype(np.float32)
+        mask = active.copy()
+        if not np.any(mask > 0.5):
+            mask = np.ones(self.n_beams, dtype=np.float32)
+
+        node_num = self._sim.wang_node_num[node]
+        dis_num = self._sim.wang_dis_num[node]
+        open_gap = np.maximum(0.0, node_num - dis_num)
+        open_norm = np.clip(open_gap / max(1.0, float(self.cfg.target_degree)), 0.0, 1.0)
+        known_target = (node_num > 0.0).astype(np.float32)
+        positive_ttl = max(50, min(300, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
+        recency_slots = np.maximum(0.0, self._slot - self._sim.last_positive_slot[node])
+        recent = 1.0 - np.minimum(recency_slots, float(positive_ttl)) / max(1.0, float(positive_ttl))
+        snr_norm = np.clip((self._sim.wang_snr_db[node] + 20.0) / 50.0, 0.0, 1.0)
+        raw_score = active * (0.35 + 0.30 * known_target + 0.20 * open_norm + 0.10 * recent + 0.05 * snr_norm)
+
+        score = np.zeros(self.n_beams, dtype=np.float32)
+        visible = raw_score[mask > 0.5]
+        if visible.size:
+            score_min = float(visible.min())
+            score_span = float(visible.max() - score_min)
+            if score_span > 1e-9:
+                score[mask > 0.5] = ((visible - score_min) / score_span).astype(np.float32)
+            else:
+                score[mask > 0.5] = 0.5
         return {
             "mask": mask.astype(np.float32, copy=False),
             "score": score.astype(np.float32, copy=False),
@@ -675,6 +720,13 @@ def _parse_reward_version(reward_version: str) -> str:
     text = str(reward_version).lower()
     if text not in REWARD_VERSIONS:
         raise ValueError(f"reward_version must be one of {REWARD_VERSIONS}.")
+    return text
+
+
+def _parse_candidate_source(candidate_source: str) -> str:
+    text = str(candidate_source).lower()
+    if text not in CANDIDATE_SOURCES:
+        raise ValueError(f"candidate_source must be one of {CANDIDATE_SOURCES}.")
     return text
 
 
