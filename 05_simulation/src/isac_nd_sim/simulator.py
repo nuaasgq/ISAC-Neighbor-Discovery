@@ -29,6 +29,7 @@ ISAC_PROTOCOLS = (
     "improved_rl_isac",
     "improved_rl_isac_tables",
     "collision_aware_isac",
+    "budgeted_collision_aware_isac",
     "isac_structured_marl",
     "wang2025_isac_no_collab",
     "wang2025_comm_tables",
@@ -397,6 +398,8 @@ class NeighborDiscoverySimulator:
             degree_need = max(0.0, self.cfg.target_degree - degree) / max(1, self.cfg.target_degree)
             if self.protocol == "collision_aware_isac":
                 probs = self.collision_aware_role_probabilities(node, slot, degree_need)
+            elif self.protocol == "budgeted_collision_aware_isac":
+                probs = self.budgeted_collision_aware_role_probabilities(node, slot, degree_need)
             else:
                 idle_prob = 0.01 + 0.03 * (1.0 - degree_need)
                 tx_prob = 0.50 + 0.05 * degree_need
@@ -445,6 +448,50 @@ class NeighborDiscoverySimulator:
         tx_prob = 0.50 + 0.05 * degree_need
         tx_prob -= 0.12 * candidate_pressure + 0.12 * collision_pressure + 0.04 * failure_pressure
         tx_prob = float(np.clip(tx_prob, 0.28, 0.55))
+        rx_prob = max(0.05, 1.0 - idle_prob - tx_prob)
+        return np.asarray([tx_prob, rx_prob, idle_prob], dtype=float)
+
+    def budgeted_collision_aware_role_probabilities(self, node: int, slot: int, degree_need: float) -> np.ndarray:
+        """Density-adaptive ISAC access budget for collision-constrained discovery.
+
+        The rule is intentionally local at execution time: it uses configured
+        beam-codebook size, local discovered degree, and this node's public
+        success/failure/collision memory. It is a rule expert for the later MARL
+        access controller, not an oracle over true neighbors.
+        """
+
+        candidate_pool = self.isac_candidate_pool(node, slot)
+        candidate_pressure = min(1.0, len(candidate_pool) / max(1.0, float(self.cfg.target_degree)))
+        candidate_evidence = 0.0
+        failure_pressure = 0.0
+        collision_pressure = 0.0
+        if len(candidate_pool) > 0:
+            belief = self.belief[node, candidate_pool]
+            success = self.success_count[node, candidate_pool]
+            fail = self.fail_count[node, candidate_pool]
+            collision_fail = self.collision_fail_count[node, candidate_pool]
+            candidate_evidence = float(np.clip(np.mean(belief + 0.15 * np.log1p(success)), 0.0, 1.0))
+            failure_pressure = float(np.mean(fail / np.maximum(1.0, success + fail)))
+            failure_pressure = float(np.clip(failure_pressure, 0.0, 1.0))
+            collision_pressure = float(np.mean(collision_fail / np.maximum(1.0, success + collision_fail)))
+            collision_pressure = float(np.clip(collision_pressure, 0.0, 1.0))
+
+        density = self.cfg.n_nodes / max(1.0, float(self.cfg.n_beams))
+        contention_scale = np.sqrt(1.0 + 4.0 * density * max(1.0, float(self.cfg.target_degree)))
+        base_tx = 0.48 / contention_scale
+        tx_prob = (
+            base_tx
+            + 0.08 * float(degree_need)
+            + 0.05 * candidate_evidence
+            - 0.08 * candidate_pressure
+            - 0.18 * collision_pressure
+            - 0.08 * failure_pressure
+        )
+        if degree_need <= 0.0:
+            tx_prob -= 0.08
+        tx_prob = float(np.clip(tx_prob, 0.16, 0.45))
+        idle_prob = 0.01 + 0.02 * (1.0 - float(degree_need)) + 0.04 * collision_pressure
+        idle_prob = float(np.clip(idle_prob, 0.01, 0.09))
         rx_prob = max(0.05, 1.0 - idle_prob - tx_prob)
         return np.asarray([tx_prob, rx_prob, idle_prob], dtype=float)
 

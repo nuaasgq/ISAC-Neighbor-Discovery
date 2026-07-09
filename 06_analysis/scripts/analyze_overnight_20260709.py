@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "05_simulation" / "results_raw" / "overnight_20260709"
+BUDGETED_RAW = ROOT / "05_simulation" / "results_raw" / "round_budgeted_isac_eval"
 TABLE_DIR = ROOT / "06_analysis" / "paper_tables" / "marl" / "overnight_20260709_marl_isac_rebuild"
 FIG_DIR = ROOT / "06_analysis" / "paper_figures" / "marl_overnight_20260709"
 REPORT = ROOT / "06_analysis" / "overnight_marl_isac_rebuild_20260709.md"
@@ -22,6 +23,7 @@ PALETTE = {
     "Wang ISAC+tables": "#72B7B2",
     "Rule ISAC": "#F58518",
     "Collision-aware ISAC": "#54A24B",
+    "Budgeted ISAC": "#2F7F4F",
     "MARL": "#B279A2",
     "MARL+gate": "#9D755D",
     "BC-MARL": "#E45756",
@@ -36,6 +38,7 @@ METHOD_LABELS = {
     "baseline_wang2025_isac_tables": "Wang ISAC+tables",
     "baseline_improved_rl_isac": "Rule ISAC",
     "baseline_collision_aware_isac": "Collision-aware ISAC",
+    "baseline_budgeted_collision_aware_isac": "Budgeted ISAC",
     "notable_nogate": "MARL",
     "notable_gate": "MARL+gate",
     "bc_notable_nogate": "BC-MARL",
@@ -166,6 +169,32 @@ def collect_transfer_rows() -> list[dict[str, str]]:
                     row = dict(row)
                     row["run"] = f"{root.name}/{node_dir.name}/{method_dir.name}"
                     row["method"] = METHOD_LABELS.get(method_key, method_key)
+                    row["method_key"] = method_key
+                    row["node_count"] = node_count
+                    row["beamwidth_deg"] = beamwidth
+                    row["source_type"] = "baseline"
+                    rows.append(row)
+    if BUDGETED_RAW.exists():
+        for root in [
+            BUDGETED_RAW / "B10_3000slot_3ep",
+            BUDGETED_RAW / "B15_3000slot_2ep",
+        ]:
+            if not root.exists():
+                continue
+            match_b = re.search(r"B(\d+)", root.name)
+            if not match_b:
+                continue
+            beamwidth = match_b.group(1)
+            for node_dir in sorted(p for p in root.iterdir() if p.is_dir() and p.name.startswith("N")):
+                metric_file = node_dir / "eval_episode_metrics.csv"
+                if not metric_file.exists():
+                    continue
+                node_count = node_dir.name[1:]
+                method_key = "baseline_budgeted_collision_aware_isac"
+                for row in read_csv(metric_file):
+                    row = dict(row)
+                    row["run"] = f"{root.name}/{node_dir.name}/budgeted_collision_aware_isac"
+                    row["method"] = METHOD_LABELS[method_key]
                     row["method_key"] = method_key
                     row["node_count"] = node_count
                     row["beamwidth_deg"] = beamwidth
@@ -320,7 +349,7 @@ def plot_bar(
 
 
 def plot_beamwidth_transfer(summary: list[dict[str, str | float | int]]) -> None:
-    methods = ["BC-MARL", "Wang ISAC", "Collision-aware ISAC", "Uniform random"]
+    methods = ["Budgeted ISAC", "BC-MARL", "Wang ISAC", "Collision-aware ISAC", "Uniform random"]
     for node_count in ("50", "100"):
         fig, ax = plt.subplots(figsize=(8, 6))
         for method in methods:
@@ -357,8 +386,10 @@ def write_report(training_summary: list[dict[str, str | float | int]], transfer_
         row("10", "100", "MARL"),
         row("10", "100", "Wang ISAC"),
         row("10", "100", "Collision-aware ISAC"),
+        row("10", "100", "Budgeted ISAC"),
         row("15", "100", "BC-MARL"),
         row("15", "100", "Wang ISAC"),
+        row("15", "100", "Budgeted ISAC"),
     ]
     lines = [
         "# Overnight MARL-ISAC Rebuild Report (2026-07-09)",
@@ -371,6 +402,7 @@ def write_report(training_summary: list[dict[str, str | float | int]], transfer_
         "",
         "- ISAC sensing/candidate information is decisive: non-ISAC random and no-ISAC proxy protocols remain near zero discovery in the narrow-beam 3D setting.",
         "- Wang-style ISAC and collision-aware rule ISAC are currently stronger than trained MARL on the primary target discovery-rate metric.",
+        "- Budgeted collision-aware ISAC gives a stronger constrained-access expert: it trades a small raw-discovery loss against large collision reductions and better collision-penalized discovery.",
         "- Expert-assisted BC-MARL improves large-scale transfer discovery over the earlier trained MARL, but it creates excessive collisions and therefore poor collision-penalized discovery.",
         "- Table exchange is not yet a reliable win in the current implementation; it needs trust-gated fusion instead of unconditional boosting.",
         "",
@@ -390,17 +422,18 @@ def write_report(training_summary: list[dict[str, str | float | int]], transfer_
             "",
             "## Paper-Readiness Judgment",
             "",
-            "The current data are useful for a diagnostic paper section and for motivating the final method, but they are not yet sufficient to claim a high-level TWC/TCOM MARL method that beats Wang-style ISAC baselines. The strongest defensible claim is: ISAC-assisted empty-beam exclusion makes the problem tractable; naive MARL does not inherit that benefit under N=10 to N=100 transfer; rule-guided expert pretraining improves raw discovery but must be paired with stronger collision-constrained MARL.",
+            "The current data now support a stronger protocol-side contribution: density-adaptive, budgeted ISAC access can outperform Wang-style ISAC on collision-penalized discovery in the tested single-hop settings. They are still not sufficient to claim a high-level TWC/TCOM MARL method that beats the best rule experts. The defensible MARL claim is narrower: naive MARL does not inherit ISAC benefits under N=10 to N=100 transfer, while rule-guided expert pretraining improves raw discovery but must be paired with stronger collision-constrained access learning.",
             "",
             "## Next Technical Move",
             "",
-            "The next method should factor actions into two timescales: a rule/ISAC candidate beam executor and a learned constrained access controller trained with collision budget or Lagrangian penalty. The gate should learn when to throttle Tx, not overwrite candidate beams. Table exchange should be trust-gated by recency, collision evidence, and peer-table consistency.",
+            "The next method should distill `budgeted_collision_aware_isac` into a learned constrained access controller trained with a collision budget or Lagrangian penalty. The gate should learn when to throttle Tx, not overwrite candidate beams. Table exchange should be trust-gated by recency, collision evidence, and peer-table consistency.",
             "",
             "## Artifact Locations",
             "",
             f"- Tables: `{TABLE_DIR.relative_to(ROOT)}`",
             f"- Figures: `{FIG_DIR.relative_to(ROOT)}`",
             f"- Raw results: `{RAW.relative_to(ROOT)}`",
+            f"- Budgeted raw results: `{BUDGETED_RAW.relative_to(ROOT)}`",
         ]
     )
     REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -410,6 +443,7 @@ def write_manifest(training_rows: list[dict[str, str]], transfer_rows: list[dict
     manifest = {
         "created_at": "2026-07-09",
         "raw_root": str(RAW.relative_to(ROOT)),
+        "budgeted_raw_root": str(BUDGETED_RAW.relative_to(ROOT)),
         "table_dir": str(TABLE_DIR.relative_to(ROOT)),
         "figure_dir": str(FIG_DIR.relative_to(ROOT)),
         "training_rows": len(training_rows),

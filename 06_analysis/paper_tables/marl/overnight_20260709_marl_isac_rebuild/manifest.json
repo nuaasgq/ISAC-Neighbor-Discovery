@@ -1,10 +1,11 @@
 {
   "created_at": "2026-07-09",
   "raw_root": "05_simulation\\results_raw\\overnight_20260709",
+  "budgeted_raw_root": "05_simulation\\results_raw\\round_budgeted_isac_eval",
   "table_dir": "06_analysis\\paper_tables\\marl\\overnight_20260709_marl_isac_rebuild",
   "figure_dir": "06_analysis\\paper_figures\\marl_overnight_20260709",
   "training_rows": 500,
-  "transfer_rows": 120,
+  "transfer_rows": 130,
   "figures": [
     "beamwidth_transfer_n100.png",
     "beamwidth_transfer_n50.png",

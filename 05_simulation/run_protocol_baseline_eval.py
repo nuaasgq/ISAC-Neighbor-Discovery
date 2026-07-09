@@ -219,6 +219,7 @@ def method_label(protocol: str) -> str:
         "rl_no_isac": "Proxy RL no-ISAC",
         "improved_rl_no_isac": "Proxy improved no-ISAC",
         "improved_rl_isac": "Proxy improved ISAC",
+        "budgeted_collision_aware_isac": "Budgeted collision-aware ISAC",
     }
     return labels.get(protocol, protocol.replace("_", " "))
 

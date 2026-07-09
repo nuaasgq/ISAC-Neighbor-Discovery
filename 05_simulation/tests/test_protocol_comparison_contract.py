@@ -27,6 +27,7 @@ NO_ISAC_PROTOCOLS = [
 ISAC_PROTOCOLS = [
     "improved_rl_isac",
     "collision_aware_isac",
+    "budgeted_collision_aware_isac",
     "ablation_isac_one_slot_delay",
     "isac_only",
     "itap_nd",
@@ -167,6 +168,23 @@ def test_collision_aware_isac_reduces_tx_probability_under_candidate_pressure() 
     assert collision_aware[0] < baseline_tx_probability
     assert collision_aware[1] > 1.0 - 0.01 - baseline_tx_probability
     np.testing.assert_allclose(collision_aware.sum(), 1.0)
+
+
+def test_budgeted_collision_aware_isac_uses_lower_tx_budget_than_collision_aware() -> None:
+    cfg = replace(compact_config(), target_degree=4, n_nodes=40, azimuth_cells=12, elevation_cells=4)
+    collision_aware = initialized_simulator(cfg, "collision_aware_isac")
+    budgeted = initialized_simulator(cfg, "budgeted_collision_aware_isac")
+    for simulator in (collision_aware, budgeted):
+        simulator.belief.fill(0.0)
+        simulator.belief[0, [2, 5, 7, 11]] = 1.0
+        simulator.collision_fail_count[0, [2, 5, 7, 11]] = 2.0
+
+    collision_probs = collision_aware.collision_aware_role_probabilities(0, slot=12, degree_need=1.0)
+    budgeted_probs = budgeted.budgeted_collision_aware_role_probabilities(0, slot=12, degree_need=1.0)
+
+    assert budgeted_probs[0] < collision_probs[0]
+    assert budgeted_probs[1] > collision_probs[1]
+    np.testing.assert_allclose(budgeted_probs.sum(), 1.0)
 
 
 def test_radio_energy_uses_configured_state_powers() -> None:
