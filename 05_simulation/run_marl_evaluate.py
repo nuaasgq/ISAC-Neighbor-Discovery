@@ -93,6 +93,24 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--eval-rule-residual-scale", type=float, default=None, help="Override rule residual scale at evaluation time.")
     parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default=None)
+    parser.add_argument(
+        "--mode-temperature",
+        type=float,
+        default=1.0,
+        help="Temperature for stochastic mode sampling. Values >1 increase randomized role selection.",
+    )
+    parser.add_argument(
+        "--beam-temperature",
+        type=float,
+        default=1.0,
+        help="Temperature for stochastic beam sampling.",
+    )
+    parser.add_argument(
+        "--gate-temperature",
+        type=float,
+        default=1.0,
+        help="Temperature for stochastic access-gate sampling when the checkpoint has a gate head.",
+    )
     parser.add_argument("--seed", type=int, default=30260705)
     parser.add_argument("--torch-threads", type=int, default=2)
     parser.add_argument("--resource-log-period", type=int, default=500)
@@ -206,6 +224,9 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "deterministic": bool(args.deterministic),
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
+        "mode_temperature": float(args.mode_temperature),
+        "beam_temperature": float(args.beam_temperature),
+        "gate_temperature": float(args.gate_temperature),
         "policy_rng_seed_policy": "torch_and_numpy_episode_seed",
         "beam_executor": str(args.beam_executor),
         "mode_executor": str(args.mode_executor),
@@ -290,10 +311,16 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "beam_executor": "policy",
         "mode_executor": "policy",
         "forbid_sense": False,
+        "mode_temperature": 1.0,
+        "beam_temperature": 1.0,
+        "gate_temperature": 1.0,
     }
     for name, value in defaults.items():
         if not hasattr(args, name):
             setattr(args, name, value)
+    for name in ("mode_temperature", "beam_temperature", "gate_temperature"):
+        if float(getattr(args, name)) <= 0.0:
+            raise ValueError(f"--{name.replace('_', '-')} must be positive.")
 
 
 def build_policy(
@@ -408,7 +435,13 @@ def evaluate_policy(
                 truncated = False
                 slot = 0
                 while not truncated:
-                    step = policy.act(observations, deterministic=not use_stochastic)
+                    step = policy.act(
+                        observations,
+                        deterministic=not use_stochastic,
+                        mode_temperature=float(args.mode_temperature),
+                        beam_temperature=float(args.beam_temperature),
+                        gate_temperature=float(args.gate_temperature),
+                    )
                     executed_actions = apply_action_executor(step.actions, env, args)
                     observations, reward, _terminated, truncated, _info = env.step(executed_actions)
                     rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))

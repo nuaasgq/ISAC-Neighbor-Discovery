@@ -190,7 +190,14 @@ class ContentionGraphActorCritic:
         prior[..., MODE_NAMES.index("idle")] = 0.60 * contention - 0.35 * topology_need
         return prior
 
-    def act(self, observations: Sequence[dict], deterministic: bool = False) -> PolicyStep:
+    def act(
+        self,
+        observations: Sequence[dict],
+        deterministic: bool = False,
+        mode_temperature: float = 1.0,
+        beam_temperature: float = 1.0,
+        gate_temperature: float = 1.0,
+    ) -> PolicyStep:
         torch = self.torch
         from torch.distributions import Categorical
 
@@ -203,9 +210,12 @@ class ContentionGraphActorCritic:
         else:
             mode_logits, beam_logits, value = self.batched_logits_value(observations, hard_mask=True)
             gate_logits = None
-        mode_dist = Categorical(logits=mode_logits)
-        beam_dist = Categorical(logits=beam_logits)
-        gate_dist = Categorical(logits=gate_logits) if gate_logits is not None else None
+        sample_mode_logits = _temperature_scaled_logits(mode_logits, mode_temperature)
+        sample_beam_logits = _temperature_scaled_logits(beam_logits, beam_temperature)
+        sample_gate_logits = _temperature_scaled_logits(gate_logits, gate_temperature) if gate_logits is not None else None
+        mode_dist = Categorical(logits=sample_mode_logits)
+        beam_dist = Categorical(logits=sample_beam_logits)
+        gate_dist = Categorical(logits=sample_gate_logits) if sample_gate_logits is not None else None
         if deterministic:
             mode_idx = torch.argmax(mode_logits, dim=-1)
             sampled_beam_idx = torch.argmax(beam_logits, dim=-1)
@@ -244,6 +254,13 @@ class ContentionGraphActorCritic:
             log_probs = log_probs + gate_dist.log_prob(gate_idx)
             entropies = entropies + gate_dist.entropy()
         return PolicyStep(actions=actions, log_probs=log_probs, values=value.squeeze(-1), entropies=entropies)
+
+
+def _temperature_scaled_logits(logits, temperature: float):
+    value = max(float(temperature), 1.0e-6)
+    if abs(value - 1.0) <= 1.0e-9:
+        return logits
+    return logits / value
 
 
 class _ContentionGraphActorCriticModule:

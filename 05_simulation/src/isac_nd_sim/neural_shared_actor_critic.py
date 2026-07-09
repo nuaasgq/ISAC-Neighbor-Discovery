@@ -122,7 +122,14 @@ class SharedBeamActorCritic:
             tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
         return tensors
 
-    def act(self, observations: Sequence[dict], deterministic: bool = False) -> PolicyStep:
+    def act(
+        self,
+        observations: Sequence[dict],
+        deterministic: bool = False,
+        mode_temperature: float = 1.0,
+        beam_temperature: float = 1.0,
+        gate_temperature: float = 1.0,
+    ) -> PolicyStep:
         torch = self.torch
         from torch.distributions import Categorical
 
@@ -131,8 +138,10 @@ class SharedBeamActorCritic:
             return PolicyStep(actions=[], log_probs=empty, values=empty, entropies=empty)
 
         mode_logits, beam_logits, value = self.batched_logits_value(observations, hard_mask=True)
-        mode_dist = Categorical(logits=mode_logits)
-        beam_dist = Categorical(logits=beam_logits)
+        sample_mode_logits = _temperature_scaled_logits(mode_logits, mode_temperature)
+        sample_beam_logits = _temperature_scaled_logits(beam_logits, beam_temperature)
+        mode_dist = Categorical(logits=sample_mode_logits)
+        beam_dist = Categorical(logits=sample_beam_logits)
         if deterministic:
             mode_idx = torch.argmax(mode_logits, dim=-1)
             sampled_beam_idx = torch.argmax(beam_logits, dim=-1)
@@ -163,6 +172,13 @@ class SharedBeamActorCritic:
             values=values,
             entropies=entropies,
         )
+
+
+def _temperature_scaled_logits(logits, temperature: float):
+    value = max(float(temperature), 1.0e-6)
+    if abs(value - 1.0) <= 1.0e-9:
+        return logits
+    return logits / value
 
 
 class _SharedBeamActorCriticModule:
