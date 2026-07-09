@@ -18,10 +18,33 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 - Main comparisons: uniform random, SkyOrbs-like directional baseline, communication-only MARL without ISAC, ISAC MARL variants, and decentralized gate-family ablations.
 - Current mechanism extensions: `trust_gated_isac_tables` for guarded neighbor/sensing-table fusion, and Budgeted ISAC expert gate behavior cloning for MARL access-control learning.
 
+## Discovery-First Metric Reset
+
+- The primary objective is neighbor discovery performance, not collision
+  suppression.
+- Main evidence must prioritize discovery rate, discovery delay, cumulative
+  discovered links, topology quality, and small-to-large transfer.
+- Collision count, CPD, and collision-penalized discovery are diagnostic
+  metrics only. They may support an overhead discussion when discovery and
+  topology performance are comparable, but they cannot be used as the main
+  proof that a method is better.
+- Wang2025 uses a conflict mechanism, but its main evaluation is based on
+  sensing accuracy/success and neighbor-discovery consumed slots. Follow that
+  comparison logic for the next experiment round.
+- Detailed replanning document:
+  `00_workflow/discovery_first_replan_20260709.md`.
+
 ## Current Closeout Tasks
 
-1. Run the Budgeted expert gate BC sweep at N=10, B=10, 300-slot training episodes.
-2. Transfer-evaluate the resulting checkpoints at N=100, B=10/B=15, 3000 slots.
-3. Add protocol baselines for `trust_gated_isac_tables`, `improved_rl_isac_tables`, `wang2025_isac_tables`, `budgeted_collision_aware_isac`, and `uniform_random`.
-4. Promote learned-gate claims only if CPD or collision count improves without collapsing raw discovery.
-5. Keep every phase-level artifact committed and pushed; if push fails, keep the local commit before moving to the next major phase.
+1. Audit existing reports and figures, and demote CPD/collision plots to
+   diagnostic-only status.
+2. Recompute the Wang-style single-RF comparison using discovery-first metrics:
+   discovery rate, consumed slots, cumulative discoveries, delay, discovered
+   edges, and topology quality.
+3. Redesign MARL reward/evaluation around new discoveries, early discoveries,
+   topology improvement, empty-scan reduction, and moderate access cost.
+4. Keep standalone SENSE disabled; ISAC remains TX-coupled piggyback sensing.
+5. Train small-scale MARL at N=10 and test transfer to larger N and different
+   beam widths only after the Wang-style 200-slot evidence is corrected.
+6. Keep every phase-level artifact committed and pushed; if push fails, keep
+   the local commit before moving to the next major phase.
