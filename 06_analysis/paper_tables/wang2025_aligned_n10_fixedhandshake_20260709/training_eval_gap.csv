@@ -1,0 +1,5 @@
+best_baseline_discovery_rate_mean,best_baseline_label,best_baseline_protocol,discovery_rate_gap_vs_best_baseline,eval_after_episode,eval_discovery_rate_mean,eval_episodes,eval_return_mean_per_agent,protocol
+0.09777777777777777,Wang sensing-table action policy,wang2025_isac_tables,0.3244444444444444,25,0.4222222222222222,2,5.9812726974487305,marl_wang_isac_tables_discovery_first
+0.09777777777777777,Wang sensing-table action policy,wang2025_isac_tables,0.3022222222222223,50,0.4,2,4.947226285934448,marl_wang_isac_tables_discovery_first
+0.09777777777777777,Wang sensing-table action policy,wang2025_isac_tables,0.26888888888888896,75,0.3666666666666667,2,4.6590416431427,marl_wang_isac_tables_discovery_first
+0.09777777777777777,Wang sensing-table action policy,wang2025_isac_tables,0.3244444444444444,100,0.4222222222222222,4,5.317523956298828,marl_wang_isac_tables_discovery_first

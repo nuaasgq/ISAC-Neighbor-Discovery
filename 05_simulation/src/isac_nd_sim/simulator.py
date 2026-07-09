@@ -654,16 +654,7 @@ class NeighborDiscoverySimulator:
         return selected
 
     def handshake_beam_ready(self, node: int, selected_beam: int, expected_beam: int, slot: int) -> bool:
-        if beam_matches(selected_beam, expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
-            return True
-        if self.protocol not in ISAC_PROTOCOLS:
-            return False
-        if self.protocol == "ablation_isac_no_candidate_set":
-            return False
-        for candidate in self.handshake_candidate_pool(node, slot):
-            if beam_matches(int(candidate), expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells):
-                return True
-        return False
+        return beam_matches(selected_beam, expected_beam, self.cfg.azimuth_cells, self.cfg.alignment_tolerance_cells)
 
     def near_coprime_stride(self, modulus: int) -> int:
         stride = max(1, int(round(np.sqrt(modulus))))
@@ -1110,10 +1101,6 @@ class NeighborDiscoverySimulator:
                 continue
             active_beams = self.active_beams_for_action(node, action, slot)
             ready_mask[node, active_beams] = True
-            if self.protocol in ISAC_PROTOCOLS and self.protocol != "ablation_isac_no_candidate_set":
-                pool = self.handshake_candidate_pool(node, slot)
-                if len(pool) > 0:
-                    ready_mask[node, pool] = True
 
         node_idx = np.arange(n_nodes)[:, None]
         ready_forward = ready_mask[node_idx, beams]

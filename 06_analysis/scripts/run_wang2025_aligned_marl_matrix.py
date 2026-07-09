@@ -77,6 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-slots", type=int, default=200)
     parser.add_argument("--train-node-count", type=int, default=10)
     parser.add_argument("--marl-eval-mode", choices=["deterministic", "stochastic", "both"], default="stochastic")
+    parser.add_argument("--action-policies", default=",".join(ACTION_POLICY_PROTOCOLS))
     parser.add_argument("--torch-threads", type=int, default=2)
     parser.add_argument("--skip-training", action="store_true")
     parser.add_argument("--skip-baselines", action="store_true")
@@ -87,6 +88,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     node_counts = parse_int_list(args.node_counts)
+    action_policies = parse_policy_list(args.action_policies)
     commands = planned_training_commands(args) + planned_eval_commands(args, node_counts)
     if args.dry_run:
         print(
@@ -95,7 +97,7 @@ def main() -> None:
                     "commands": commands,
                     "node_counts": node_counts,
                     "common_env_protocol": COMMON_ENV_PROTOCOL,
-                    "action_policy_protocols": ACTION_POLICY_PROTOCOLS,
+                    "action_policy_protocols": action_policies,
                     "methods": METHOD_SPECS,
                 },
                 ensure_ascii=False,
@@ -107,15 +109,19 @@ def main() -> None:
     args.raw_root.mkdir(parents=True, exist_ok=True)
     args.output.mkdir(parents=True, exist_ok=True)
 
+    baseline_rows = [] if args.skip_baselines else run_baselines(args, node_counts, action_policies)
+    baseline_aggregate = aggregate_rows(baseline_rows)
+    write_csv(args.output / "baseline_target_metrics.csv", baseline_aggregate)
+
     train_manifests = train_methods(args)
-    baseline_rows = [] if args.skip_baselines else run_baselines(args, node_counts)
+    write_training_eval_gap(args, baseline_aggregate)
     marl_rows = evaluate_methods(args, node_counts)
     rows = baseline_rows + marl_rows
     aggregate = aggregate_rows(rows)
 
     write_csv(args.output / "per_episode_summary.csv", rows)
     write_csv(args.output / "aggregate_metrics.csv", aggregate)
-    write_manifest(args, node_counts, train_manifests, baseline_rows, marl_rows, aggregate)
+    write_manifest(args, node_counts, action_policies, train_manifests, baseline_rows, marl_rows, aggregate)
     write_readme(args, node_counts, aggregate)
     print(
         json.dumps(
@@ -210,7 +216,7 @@ def training_command(args: argparse.Namespace, spec: dict[str, Any], idx: int) -
     return cmd
 
 
-def run_baselines(args: argparse.Namespace, node_counts: list[int]) -> list[dict[str, Any]]:
+def run_baselines(args: argparse.Namespace, node_counts: list[int], action_policies: list[str]) -> list[dict[str, Any]]:
     cfg0 = load_config(args.config)
     rows: list[dict[str, Any]] = []
     for case_id, node_count in enumerate(node_counts):
@@ -222,7 +228,7 @@ def run_baselines(args: argparse.Namespace, node_counts: list[int]) -> list[dict
             episodes=int(args.eval_episodes),
             slots_per_episode=int(args.eval_slots),
         )
-        for policy_protocol in ACTION_POLICY_PROTOCOLS:
+        for policy_protocol in action_policies:
             episode_rows = run_action_policy_in_common_env(cfg, policy_protocol, COMMON_ENV_PROTOCOL)
             for row in episode_rows:
                 row.update(common_row_fields(case_id, node_count, policy_protocol, "common_env_action_policy", 0))
@@ -424,9 +430,50 @@ def aggregate_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out_rows
 
 
+def write_training_eval_gap(args: argparse.Namespace, baseline_aggregate: list[dict[str, Any]]) -> None:
+    if args.skip_training:
+        return
+    target = best_baseline_target(baseline_aggregate)
+    rows: list[dict[str, Any]] = []
+    for spec in METHOD_SPECS:
+        eval_path = args.raw_root / str(spec["protocol"]) / "train" / "eval_episode_metrics.csv"
+        if not eval_path.exists():
+            continue
+        groups: dict[str, list[dict[str, str]]] = {}
+        for row in read_csv(eval_path):
+            groups.setdefault(str(row.get("eval_after_episode", "")), []).append(row)
+        for eval_after_episode, group in sorted(groups.items(), key=lambda item: int(float(item[0] or 0))):
+            discovery_values = [float(row.get("discovery_rate", 0.0) or 0.0) for row in group]
+            return_values = [float(row.get("episode_return_mean_per_agent", 0.0) or 0.0) for row in group]
+            discovery_mean = mean(discovery_values) if discovery_values else 0.0
+            return_mean = mean(return_values) if return_values else 0.0
+            target_discovery = float(target.get("discovery_rate_mean", 0.0) or 0.0) if target else 0.0
+            rows.append(
+                {
+                    "protocol": str(spec["protocol"]),
+                    "eval_after_episode": eval_after_episode,
+                    "eval_episodes": len(group),
+                    "eval_discovery_rate_mean": discovery_mean,
+                    "eval_return_mean_per_agent": return_mean,
+                    "best_baseline_protocol": target.get("protocol", "") if target else "",
+                    "best_baseline_label": target.get("method_label", "") if target else "",
+                    "best_baseline_discovery_rate_mean": target_discovery,
+                    "discovery_rate_gap_vs_best_baseline": discovery_mean - target_discovery,
+                }
+            )
+    write_csv(args.output / "training_eval_gap.csv", rows)
+
+
+def best_baseline_target(baseline_aggregate: list[dict[str, Any]]) -> dict[str, Any]:
+    if not baseline_aggregate:
+        return {}
+    return max(baseline_aggregate, key=lambda row: float(row.get("discovery_rate_mean", 0.0) or 0.0))
+
+
 def write_manifest(
     args: argparse.Namespace,
     node_counts: list[int],
+    action_policies: list[str],
     train_manifests: list[Path],
     baseline_rows: list[dict[str, Any]],
     marl_rows: list[dict[str, Any]],
@@ -450,7 +497,9 @@ def write_manifest(
         "rf_chains": 1,
         "standalone_sense": "disabled for all main fair-comparison rows",
         "common_env_protocol": COMMON_ENV_PROTOCOL,
-        "action_policy_protocols": list(ACTION_POLICY_PROTOCOLS),
+        "action_policy_protocols": list(action_policies),
+        "baseline_first_workflow": "enabled; baseline_target_metrics.csv is written before MARL training.",
+        "periodic_gap_analysis": "training_eval_gap.csv compares each MARL eval interval against the best baseline discovery rate.",
         "fairness_rule": "Main rows share the same environment dynamics; methods differ only in executed TX/RX/IDLE-and-beam action decisions.",
         "main_action_space": "TX/RX/IDLE plus one selected communication beam; no standalone SENSE in the main fair-comparison rows.",
         "marl_access_gate": "disabled in the main Wang-aligned MARL specification by using the non-gated contention_shared network.",
@@ -501,6 +550,16 @@ def write_readme(args: argparse.Namespace, node_counts: list[int], aggregate: li
 
 def parse_int_list(text: str) -> list[int]:
     return [int(part.strip()) for part in str(text).split(",") if part.strip()]
+
+
+def parse_policy_list(text: str) -> list[str]:
+    policies = [part.strip() for part in str(text).split(",") if part.strip()]
+    unsupported = [policy for policy in policies if policy not in ACTION_POLICY_PROTOCOLS]
+    if unsupported:
+        raise ValueError(f"Unsupported action policies: {unsupported}. Supported: {list(ACTION_POLICY_PROTOCOLS)}")
+    if not policies:
+        raise ValueError("At least one action policy is required unless --skip-baselines is used.")
+    return policies
 
 
 def run_command(cmd: list[str]) -> None:

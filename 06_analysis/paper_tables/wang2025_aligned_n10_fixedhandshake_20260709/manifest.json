@@ -1,0 +1,56 @@
+{
+  "created_at_utc": "2026-07-09T09:50:27.409884+00:00",
+  "scope": "Wang-aligned MARL training/evaluation with Wang neighbor/sensing-table interaction.",
+  "config": "05_simulation/configs/wang2025_reproduction_smoke.yaml",
+  "raw_root": "05_simulation/results_raw/marl_campaign/wang2025_aligned_n10_fixedhandshake_20260709",
+  "output": "06_analysis/paper_tables/wang2025_aligned_n10_fixedhandshake_20260709",
+  "train_node_count": 10,
+  "node_counts": [
+    10
+  ],
+  "train_slots": 200,
+  "eval_slots": 200,
+  "train_episodes": 100,
+  "eval_episodes": 5,
+  "beam_cells": [
+    15,
+    7
+  ],
+  "approx_beam_width_deg": [
+    24.0,
+    25.714285714285715
+  ],
+  "rf_chains": 1,
+  "standalone_sense": "disabled for all main fair-comparison rows",
+  "common_env_protocol": "wang2025_isac_tables",
+  "action_policy_protocols": [
+    "uniform_trx_idle_random",
+    "wang2025_isac_tables",
+    "budgeted_collision_aware_isac"
+  ],
+  "fairness_rule": "Main rows share the same environment dynamics; methods differ only in executed TX/RX/IDLE-and-beam action decisions.",
+  "main_action_space": "TX/RX/IDLE plus one selected communication beam; no standalone SENSE in the main fair-comparison rows.",
+  "marl_access_gate": "disabled in the main Wang-aligned MARL specification by using the non-gated contention_shared network.",
+  "marl_table_exchange": "enabled through the common Wang neighbor and sensing table environment after successful first interaction",
+  "marl_piggyback_isac": "TX-only under the common Wang protocol",
+  "methods": [
+    {
+      "protocol": "marl_wang_isac_tables_discovery_first",
+      "label": "MARL + Wang ISAC tables, discovery-first",
+      "algorithm": "isac_mappo",
+      "network": "contention_shared",
+      "reward_version": "discovery_first",
+      "env_protocol": "wang2025_isac_tables",
+      "disable_isac_features": false,
+      "expert_bc_weight": 0.0,
+      "expert_protocol": "budgeted_collision_aware_isac"
+    }
+  ],
+  "train_manifests": [
+    "05_simulation/results_raw/marl_campaign/wang2025_aligned_n10_fixedhandshake_20260709/marl_wang_isac_tables_discovery_first/train/manifest.json"
+  ],
+  "baseline_rows": 15,
+  "marl_rows": 5,
+  "aggregate_rows": 4,
+  "added_rule_comparison": "budgeted_collision_aware_isac was added after fixed-handshake N=10 MARL evaluation for comparison with the earlier rule-based method."
+}

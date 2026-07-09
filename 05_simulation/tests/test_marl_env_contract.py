@@ -5,8 +5,10 @@ from typing import Any
 
 import numpy as np
 
+from isac_nd_sim.beam import beam_matches
 from isac_nd_sim.config import load_config
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
+from isac_nd_sim.simulator import Action, MODE_RX, MODE_TX, NeighborDiscoverySimulator
 
 
 FORBIDDEN_KEYS = {
@@ -301,6 +303,50 @@ def test_wang_table_env_does_not_reply_to_already_discovered_edge() -> None:
 
     assert info["new_edges_count"] == 0
     assert env._sim.edge_rows == []
+
+
+def test_isac_candidate_pool_does_not_create_extra_handshake_beam() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/wang2025_reproduction_smoke.yaml"),
+        episodes=1,
+        slots_per_episode=1,
+        n_nodes=2,
+        azimuth_cells=6,
+        elevation_cells=3,
+        communication_range_m=20000.0,
+        sensing_range_m=20000.0,
+        alignment_tolerance_cells=0,
+    )
+    sim = NeighborDiscoverySimulator(cfg, protocol="wang2025_isac_tables", seed=53, scenario_seed=53)
+    sim.reset()
+    true_edges = {(0, 1)}
+    beam_01 = sim.beam_from_to(0, 1)
+    beam_10 = sim.beam_from_to(1, 0)
+    sim.belief.fill(0.0)
+    sim.belief[0, beam_01] = 1.0
+    sim.belief[1, beam_10] = 1.0
+
+    assert beam_01 in set(sim.handshake_candidate_pool(0, slot=0).tolist())
+    assert beam_10 in set(sim.handshake_candidate_pool(1, slot=0).tolist())
+
+    wrong_01 = next(
+        beam
+        for beam in range(cfg.n_beams)
+        if not beam_matches(beam, beam_01, cfg.azimuth_cells, cfg.alignment_tolerance_cells)
+    )
+    wrong_10 = next(
+        beam
+        for beam in range(cfg.n_beams)
+        if not beam_matches(beam, beam_10, cfg.azimuth_cells, cfg.alignment_tolerance_cells)
+    )
+    wrong_actions = [Action(MODE_TX, wrong_01), Action(MODE_RX, wrong_10)]
+
+    assert sim.resolve_discoveries(0, wrong_actions, true_edges) == []
+    assert sim.discovered_edges == set()
+
+    correct_actions = [Action(MODE_TX, beam_01), Action(MODE_RX, beam_10)]
+    assert sim.resolve_discoveries(0, correct_actions, true_edges) == [(0, 1)]
+    assert sim.discovered_edges == {(0, 1)}
 
 
 def test_training_state_is_explicitly_separate_from_public_info() -> None:
