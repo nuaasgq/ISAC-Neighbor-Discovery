@@ -74,6 +74,8 @@ In the N=100, B=10 long-horizon transfer setting, the budgeted rule achieves dis
 The corresponding Wang-style ISAC baseline achieves 0.681, 1343.3, and 0.536, while the non-budgeted collision-aware ISAC rule achieves 0.767, 4676.7, and 0.395.
 Thus the budgeted rule preserves most of the raw-discovery gain of aggressive ISAC access while recovering the collision efficiency of conservative Wang-style access.
 At N=100, B=15, it achieves collision-penalized discovery 0.245 versus 0.227 for Wang-style ISAC and 0.116 for non-budgeted collision-aware ISAC.
+A separately seeded paired rerun at the primary N=100, B=10 point gives the same conclusion: Budgeted ISAC achieves discovery rate 0.724 and collision-penalized discovery 0.554, compared with 0.695 and 0.530 for Wang-style ISAC.
+Against non-budgeted collision-aware ISAC in the same rerun, Budgeted ISAC reduces the mean collision count from 5300.7 to 1529.0 while increasing collision-penalized discovery from 0.384 to 0.554.
 
 \paragraph*{Implication for MARL}
 The current learned BC-MARL policy improves raw discovery relative to earlier MARL runs but produces excessive collisions under N=100 transfer.

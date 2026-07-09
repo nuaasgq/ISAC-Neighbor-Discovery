@@ -8,6 +8,8 @@
 | `06_analysis/paper_tables/marl/overnight_20260709_marl_isac_rebuild/transfer_episode_rows.csv` | Per-episode evidence and rerun audit source | Main averages are computed from raw episode rows, not hand-entered values. |
 | `06_analysis/paper_tables/marl/overnight_20260709_marl_isac_rebuild/training_summary.csv` | MARL diagnostic table | BC-MARL improves raw transfer discovery but does not solve collision control. |
 | `06_analysis/paper_tables/marl/overnight_20260709_marl_isac_rebuild/manifest.json` | Artifact provenance | Links raw roots, figure directory, and generated row counts. |
+| `06_analysis/paper_tables/marl/budgeted_isac_paired_rerun_b10_n100/paired_rerun_summary.csv` | Independent primary-point rerun table | Confirms the B=10, N=100 Budgeted ISAC CPD gain over Wang ISAC under a separate seed. |
+| `06_analysis/paper_tables/marl/budgeted_isac_paired_rerun_b10_n100/paired_rerun_deltas.csv` | Paired delta audit | Shows episode-paired deltas: Budgeted ISAC improves CPD over Wang ISAC and sharply reduces collisions versus non-budgeted Collision-aware ISAC. |
 
 ## Recommended Main Figures
 
@@ -35,6 +37,10 @@ Use:
 
 > In the tested single-hop large-swarm transfer setting, density-adaptive budgeted ISAC access improves collision-penalized discovery relative to Wang-style ISAC while retaining high raw discovery.
 
+Use when citing the independent rerun:
+
+> A separately seeded paired rerun at B=10, N=100 reproduces the same access-budget tradeoff: Budgeted ISAC improves CPD over Wang-style ISAC and avoids the collision explosion of aggressive non-budgeted ISAC.
+
 Avoid:
 
 > The current MARL method outperforms all rule baselines.
@@ -49,3 +55,4 @@ Avoid:
 2. Keep MARL as a diagnostic and forward-looking constrained-access-learning component unless a later learned gate exceeds Budgeted ISAC.
 3. Move table-exchange claims to a limitations/ablation paragraph: table exchange without trust gating can amplify stale or congested candidate beams.
 4. Use `budgeted_isac_manuscript_insert.tex` as the method subsection source.
+5. If space permits, cite `paired_rerun_summary.csv` as a reproducibility check rather than a separate main experiment.

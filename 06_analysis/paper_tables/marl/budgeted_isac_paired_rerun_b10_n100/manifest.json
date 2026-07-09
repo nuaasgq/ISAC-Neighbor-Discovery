@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-07-09",
+  "raw_root": "05_simulation\\results_raw\\round_budgeted_isac_paired_rerun\\B10_N100_3000slot_3ep_seed2026071061",
+  "output": "06_analysis\\paper_tables\\marl\\budgeted_isac_paired_rerun_b10_n100",
+  "scenario": "B=10, N=100, 3000 slots, 3 paired episodes, single RF",
+  "seed": 2026071061,
+  "protocols": [
+    "budgeted_collision_aware_isac",
+    "collision_aware_isac",
+    "uniform_random",
+    "wang2025_isac_no_collab"
+  ],
+  "episode_rows": 12,
+  "summary_rows": 4,
+  "delta_rows": 72,
+  "files": [
+    "paired_rerun_episode_rows.csv",
+    "paired_rerun_summary.csv",
+    "paired_rerun_deltas.csv",
+    "manifest.json"
+  ]
+}

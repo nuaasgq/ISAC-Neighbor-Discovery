@@ -19,7 +19,8 @@ This audit checks whether the current repository contains a paper-usable evidenc
 | 300-slot training and 3000-slot testing | Training rows use 300-slot episodes for formal MARL runs; transfer rows use 3000-slot evaluations. | Covered |
 | 4:3 Times New Roman figures | 26 PNGs under `06_analysis/paper_figures/marl_overnight_20260709/`, checked at 1760x1320. | Covered |
 | Paper narrative material | `overnight_marl_isac_rebuild_20260709.md` plus the manuscript insert `07_paper/ieee_twc_isac_nd/budgeted_isac_manuscript_insert.tex`. | Covered for current results |
-| Version management | Latest GitHub push contains commit `44c8d2b`; this audit should be committed in the next version. | Covered after next commit |
+| Independent Budgeted ISAC rerun | `06_analysis/paper_tables/marl/budgeted_isac_paired_rerun_b10_n100/` contains an independently seeded B=10, N=100, 3000-slot paired rerun against Wang ISAC, Collision-aware ISAC, and Uniform random. | Covered |
+| Version management | The current evidence package is tracked in Git and should be committed after this audit update. | Covered after next commit |
 
 ## Main Quantitative Evidence
 
@@ -41,6 +42,17 @@ Interpretation:
 - Budgeted ISAC is not uniformly best on raw discovery; it is an access-budget tradeoff, not a pure discovery maximizer.
 - Current trained MARL variants are not yet paper-strong against rule experts. BC-MARL improves transfer discovery but causes excessive collisions, so it should be framed as diagnostic evidence and a motivation for distilling Budgeted ISAC into a constrained learned gate.
 
+An independent paired rerun was then executed at the primary B=10, N=100 point using seed `2026071061`, 3000 testing slots, and 3 paired episodes. Its committed tables are under `06_analysis/paper_tables/marl/budgeted_isac_paired_rerun_b10_n100/`.
+
+| Method | Discovery | Collisions | CPD | Lambda2 |
+|---|---:|---:|---:|---:|
+| Wang ISAC | 0.695 | 1574.3 | 0.530 | 42.031 |
+| Collision-aware ISAC | 0.785 | 5300.7 | 0.384 | 46.437 |
+| Budgeted ISAC | 0.724 | 1529.0 | 0.554 | 36.524 |
+| Uniform random | 0.002 | 0.0 | 0.002 | -0.000 |
+
+The rerun confirms the main tradeoff: Budgeted ISAC improves discovery by +0.0288 and CPD by +0.0244 over Wang ISAC on paired episodes, while reducing collisions by 3771.7 relative to non-budgeted Collision-aware ISAC and improving CPD by +0.1698. Its raw discovery remains below aggressive Collision-aware ISAC, which is why the defensible contribution is collision-budgeted ISAC-assisted neighbor discovery rather than unconstrained discovery maximization.
+
 ## Claim Boundary
 
 Supported:
@@ -61,4 +73,4 @@ Not yet supported:
 1. Distill `budgeted_collision_aware_isac` into a learned access-gate policy with a collision budget or Lagrangian penalty.
 2. Add trust-gated table exchange instead of unconditional table boosting.
 3. Update `main.tex` only after deciding whether the paper's primary method is Budgeted ISAC alone, Budgeted ISAC plus learned gate, or a two-stage rule-to-MARL method.
-4. Run at least one independent rerun for Budgeted ISAC on the primary B=10, N=100 point if it becomes the main claim.
+4. Add a second independent rerun only if the paper makes statistical significance claims rather than descriptive paired-comparison claims.
