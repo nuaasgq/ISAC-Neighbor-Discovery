@@ -218,8 +218,13 @@ def build_plan(args: argparse.Namespace, train_root: Path, log_root: Path) -> di
             method = METHODS[method_name]
             for expert_weight in args.expert_bc_weights:
                 expert_weight = float(expert_weight)
-                bc_tag = "" if expert_weight <= 0.0 else f"_bc{weight_tag(expert_weight)}_{args.expert_protocol}"
-                run_name = f"train_n10_b10_{method.name}{bc_tag}_{args.episodes}ep_{args.slots}slot_seed{seed}"
+                if expert_weight <= 0.0:
+                    run_name = f"train_n10_b10_{method.name}_{args.episodes}ep_{args.slots}slot_seed{seed}"
+                else:
+                    run_name = (
+                        f"train_n10_b10_{method_short_name(method.name)}_bc{weight_tag(expert_weight)}_"
+                        f"{expert_short_name(str(args.expert_protocol))}_{args.episodes}ep_{args.slots}slot_seed{seed}"
+                    )
                 output = train_root / run_name
                 command = [
                     sys.executable,
@@ -353,6 +358,27 @@ def complete_training_run(
 
 def weight_tag(weight: float) -> str:
     return f"{float(weight):.3f}".rstrip("0").rstrip(".").replace(".", "p")
+
+
+def method_short_name(method_name: str) -> str:
+    return {
+        "balanced_topology_gated_contention_actor": "balgate",
+        "topology_adaptive_gated_contention_actor": "topogate",
+        "adaptive_gated_contention_actor": "adapgate",
+        "gated_contention_actor": "gate",
+        "contention_actor": "cont",
+        "contention_no_isac": "cont_noisac",
+        "mappo_no_isac": "mappo_noisac",
+        "collision_reward": "colrew",
+        "legacy_shared": "legacy",
+    }.get(method_name, method_name[:24])
+
+
+def expert_short_name(expert_protocol: str) -> str:
+    return {
+        "budgeted_collision_aware_isac": "budgeted",
+        "collision_aware_isac": "collaware",
+    }.get(expert_protocol, expert_protocol[:24])
 
 
 def csv_rows(path: Path) -> int:

@@ -103,6 +103,6 @@ def test_build_plan_includes_budgeted_expert_bc_sweep(tmp_path: Path) -> None:
     assert len(plan["runs"]) == 2
     assert plan["expert_bc_weights"] == [0.15, 0.30]
     assert plan["expert_protocol"] == "budgeted_collision_aware_isac"
-    assert "bc0p15_budgeted_collision_aware_isac" in plan["runs"][0]["run_name"]
+    assert "balgate_bc0p15_budgeted" in plan["runs"][0]["run_name"]
     assert "--expert-bc-weight" in plan["runs"][0]["command"]
     assert "budgeted_collision_aware_isac" in plan["runs"][0]["command"]
