@@ -29,6 +29,7 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
+from isac_nd_sim.simulator import Action, MODE_IDLE  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,6 +54,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--deterministic", action="store_true", help="Use argmax actions.")
     parser.add_argument("--stochastic", action="store_true", help="Sample actions.")
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
+    parser.add_argument(
+        "--beam-executor",
+        choices=["policy", "rule_candidate"],
+        default="policy",
+        help=(
+            "Beam execution rule. 'policy' uses neural beam actions; "
+            "'rule_candidate' keeps neural mode/gate actions but executes the "
+            "beam through the local ISAC candidate/memory rule."
+        ),
+    )
+    parser.add_argument(
+        "--mode-executor",
+        choices=["policy", "rule_protocol"],
+        default="policy",
+        help=(
+            "Mode execution rule. 'policy' uses neural mode actions; "
+            "'rule_protocol' uses the simulator's local protocol role rule while "
+            "preserving the neural access-gate action."
+        ),
+    )
     parser.add_argument(
         "--policy-ablation",
         choices=["trained", "random_weights", "zero_weights"],
@@ -177,6 +198,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
         "policy_rng_seed_policy": "torch_and_numpy_episode_seed",
+        "beam_executor": str(args.beam_executor),
+        "mode_executor": str(args.mode_executor),
         "resource_limits": {
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
@@ -255,6 +278,8 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "disable_topology_deficit": False,
         "disable_rule_residual": False,
         "eval_rule_residual_scale": None,
+        "beam_executor": "policy",
+        "mode_executor": "policy",
     }
     for name, value in defaults.items():
         if not hasattr(args, name):
@@ -370,7 +395,8 @@ def evaluate_policy(
                 slot = 0
                 while not truncated:
                     step = policy.act(observations, deterministic=not use_stochastic)
-                    observations, reward, _terminated, truncated, _info = env.step(step.actions)
+                    executed_actions = apply_action_executor(step.actions, env, args)
+                    observations, reward, _terminated, truncated, _info = env.step(executed_actions)
                     rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
                     slot += 1
                     if int(args.resource_log_period) > 0 and slot % int(args.resource_log_period) == 0:
@@ -439,6 +465,44 @@ def evaluate_policy(
                     flush=True,
                 )
     return rows
+
+
+def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, args: argparse.Namespace) -> list[Action]:
+    """Apply optional rule-based execution constraints to neural MARL actions.
+
+    The helper uses only simulator-local public memory: belief, success/failure
+    counters, discovered degree, and protocol RNG. It does not inspect hidden
+    neighbor positions or true adjacency.
+    """
+
+    beam_executor = str(getattr(args, "beam_executor", "policy"))
+    mode_executor = str(getattr(args, "mode_executor", "policy"))
+    if beam_executor == "policy" and mode_executor == "policy":
+        return actions
+
+    rewritten: list[Action] = []
+    for node, action in enumerate(actions):
+        mode = action.mode
+        beam = action.beam
+        if mode_executor == "rule_protocol":
+            mode = env._sim.select_mode(node, env._slot)
+        if mode == MODE_IDLE:
+            beam = 0
+        elif beam_executor == "rule_candidate":
+            beam = rule_candidate_beam(env, node, env._slot, mode)
+        rewritten.append(Action(mode, int(beam), action.access_gate))
+    return rewritten
+
+
+def rule_candidate_beam(env: MarlNeighborDiscoveryEnv, node: int, slot: int, mode: str) -> int:
+    if mode == MODE_IDLE:
+        return 0
+    if "isac" in env.protocol:
+        candidate = env._sim.isac_candidate_cycle_beam(node, slot)
+        if candidate is not None:
+            return int(candidate)
+        return int(env._sim.memory_guided_beam(node, use_isac=True, topology=True))
+    return int(env._sim.memory_guided_beam(node, use_isac=False, topology=True))
 
 
 def resource_snapshot() -> dict[str, Any]:

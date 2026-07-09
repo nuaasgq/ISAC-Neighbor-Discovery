@@ -81,6 +81,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--value-coef", type=float, default=0.5)
     parser.add_argument("--entropy-coef", type=float, default=0.01)
     parser.add_argument("--max-grad-norm", type=float, default=1.0)
+    parser.add_argument(
+        "--expert-bc-weight",
+        type=float,
+        default=0.0,
+        help="Auxiliary behavior-cloning weight from a local rule expert. Zero disables expert guidance.",
+    )
+    parser.add_argument(
+        "--expert-protocol",
+        default="collision_aware_isac",
+        help="Local simulator protocol used as the behavior-cloning expert when --expert-bc-weight > 0.",
+    )
     parser.add_argument("--candidate-mask", action="store_true", help="Use local ISAC candidate masks in beam sampling.")
     parser.add_argument("--candidate-score", action="store_true", help="Use local candidate scores in beam-token features.")
     parser.add_argument("--topology-deficit", action="store_true", help="Use local discovered-degree deficit token.")
@@ -149,6 +160,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=float(args.rule_residual_scale),
     )
+    setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
     critic = None
     params = list(policy.parameters())
@@ -236,6 +248,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--ppo-epochs must be positive.")
     if float(args.max_rss_mb) <= 0.0:
         raise ValueError("--max-rss-mb must be positive.")
+    if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
+        raise ValueError("--expert-bc-weight must be nonnegative.")
 
 
 def override_config(config: SimulationConfig, args: argparse.Namespace) -> SimulationConfig:
@@ -347,6 +361,7 @@ def collect_trajectory(
     rewards = []
     observations_by_step = []
     actions_by_step = []
+    expert_actions_by_step = []
     central_features = []
     step_rows = []
     cumulative_reward = 0.0
@@ -358,6 +373,7 @@ def collect_trajectory(
         state = env.training_state()
         observations_by_step.append(copy_observations(observations))
         central_features.append(central_state_features(state, cfg))
+        expert_actions_by_step.append(expert_actions_for_env(env, str(getattr(args, "expert_protocol", "collision_aware_isac"))))
         with torch_module.no_grad():
             step = policy.act(observations, deterministic=False)
         observations, reward, _terminated, truncated, info = env.step(step.actions)
@@ -416,6 +432,7 @@ def collect_trajectory(
         "slots": len(rewards),
         "observations": observations_by_step,
         "actions": actions_by_step,
+        "expert_actions": expert_actions_by_step,
         "old_log_probs": torch_module.stack([row.to(policy.device) for row in old_log_probs]),
         "rewards": torch_module.stack(rewards).to(policy.device),
         "central_features": torch_module.as_tensor(np.stack(central_features), dtype=torch_module.float32, device=policy.device),
@@ -441,6 +458,7 @@ def update_policy(
     entropy_values = []
     approx_kls = []
     clip_fracs = []
+    bc_losses = []
 
     if centralized:
         if critic is None:
@@ -456,7 +474,13 @@ def update_policy(
             policy_loss = -torch_module.minimum(ratio * advantages[:, None], clipped_ratio * advantages[:, None]).mean()
             value_loss = functional.mse_loss(values, returns)
             entropy = entropies.mean()
-            loss = policy_loss + float(args.value_coef) * value_loss - float(args.entropy_coef) * entropy
+            bc_loss = behavior_cloning_loss(policy, trajectory["observations"], trajectory["expert_actions"], torch_module)
+            loss = (
+                policy_loss
+                + float(args.value_coef) * value_loss
+                - float(args.entropy_coef) * entropy
+                + float(getattr(args, "expert_bc_weight", 0.0)) * bc_loss
+            )
             optimizer.zero_grad()
             loss.backward()
             torch_module.nn.utils.clip_grad_norm_(optimizer.param_groups[0]["params"], float(args.max_grad_norm))
@@ -464,9 +488,10 @@ def update_policy(
             policy_losses.append(float(policy_loss.item()))
             value_losses.append(float(value_loss.item()))
             entropy_values.append(float(entropy.item()))
+            bc_losses.append(float(bc_loss.item()))
             approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
             clip_fracs.append(float((torch_module.abs(ratio - 1.0) > float(args.clip_epsilon)).float().mean().item()))
-        return loss_summary(policy_losses, value_losses, entropy_values, approx_kls, clip_fracs)
+        return loss_summary(policy_losses, value_losses, entropy_values, approx_kls, clip_fracs, bc_losses)
 
     returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
     for _ in range(int(args.ppo_epochs)):
@@ -477,7 +502,13 @@ def update_policy(
         policy_loss = -torch_module.minimum(ratio * advantages, clipped_ratio * advantages).mean()
         value_loss = functional.mse_loss(local_values, returns)
         entropy = entropies.mean()
-        loss = policy_loss + float(args.value_coef) * value_loss - float(args.entropy_coef) * entropy
+        bc_loss = behavior_cloning_loss(policy, trajectory["observations"], trajectory["expert_actions"], torch_module)
+        loss = (
+            policy_loss
+            + float(args.value_coef) * value_loss
+            - float(args.entropy_coef) * entropy
+            + float(getattr(args, "expert_bc_weight", 0.0)) * bc_loss
+        )
         optimizer.zero_grad()
         loss.backward()
         torch_module.nn.utils.clip_grad_norm_(policy.parameters(), float(args.max_grad_norm))
@@ -485,9 +516,26 @@ def update_policy(
         policy_losses.append(float(policy_loss.item()))
         value_losses.append(float(value_loss.item()))
         entropy_values.append(float(entropy.item()))
+        bc_losses.append(float(bc_loss.item()))
         approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
         clip_fracs.append(float((torch_module.abs(ratio - 1.0) > float(args.clip_epsilon)).float().mean().item()))
-    return loss_summary(policy_losses, value_losses, entropy_values, approx_kls, clip_fracs)
+    return loss_summary(policy_losses, value_losses, entropy_values, approx_kls, clip_fracs, bc_losses)
+
+
+def expert_actions_for_env(env: MarlNeighborDiscoveryEnv, expert_protocol: str) -> list[Action]:
+    """Return decentralized rule-expert actions from local simulator memory only."""
+
+    old_protocol = env._sim.protocol
+    env._sim.protocol = str(expert_protocol)
+    try:
+        actions: list[Action] = []
+        for node in range(env.n_agents):
+            mode = env._sim.select_mode(node, env._slot)
+            beam = env._sim.select_beam(node, env._slot, mode, set(), set())
+            actions.append(Action(mode, int(beam)))
+        return actions
+    finally:
+        env._sim.protocol = old_protocol
 
 
 def evaluate_actions(
@@ -533,6 +581,43 @@ def evaluate_actions(
         value_rows.append(torch.stack(step_values))
         entropy_rows.append(torch.stack(step_entropies))
     return torch.stack(log_prob_rows), torch.stack(value_rows), torch.stack(entropy_rows)
+
+
+def behavior_cloning_loss(
+    policy: SharedBeamActorCritic,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    expert_actions_by_step: Sequence[Sequence[Action]],
+    torch_module: Any,
+) -> Any:
+    weight = float(getattr(policy, "_expert_bc_weight_cache", 1.0))
+    if weight <= 0.0:
+        return torch_module.zeros((), dtype=torch_module.float32, device=policy.device)
+    losses = []
+    from torch.distributions import Categorical
+
+    for observations, actions in zip(observations_by_step, expert_actions_by_step, strict=True):
+        for observation, action in zip(observations, actions, strict=True):
+            if getattr(policy, "supports_access_gate_action", False) and hasattr(policy, "action_logits_value"):
+                mode_logits, beam_logits, gate_logits, _value = policy.action_logits_value(observation, hard_mask=False)
+            else:
+                mode_logits, beam_logits, _value = policy.logits_value(observation, hard_mask=False)
+                gate_logits = None
+            mode_dist = Categorical(logits=mode_logits)
+            mode_tensor = torch_module.as_tensor(MODE_TO_INDEX[action.mode], dtype=torch_module.long, device=policy.device)
+            loss = -mode_dist.log_prob(mode_tensor)
+            if action.mode != "idle":
+                beam_dist = Categorical(logits=beam_logits)
+                beam_tensor = torch_module.as_tensor(int(action.beam), dtype=torch_module.long, device=policy.device)
+                loss = loss - beam_dist.log_prob(beam_tensor)
+            if gate_logits is not None:
+                gate_dist = Categorical(logits=gate_logits)
+                normal_gate = ACCESS_GATE_TO_INDEX["normal"]
+                gate_tensor = torch_module.as_tensor(normal_gate, dtype=torch_module.long, device=policy.device)
+                loss = loss - 0.10 * gate_dist.log_prob(gate_tensor)
+            losses.append(loss)
+    if not losses:
+        return torch_module.zeros((), dtype=torch_module.float32, device=policy.device)
+    return torch_module.stack(losses).mean()
 
 
 def discounted_returns_2d(rewards: Any, gamma: float, torch_module: Any) -> Any:
@@ -708,6 +793,7 @@ def loss_summary(
     entropy_values: list[float],
     approx_kls: list[float],
     clip_fracs: list[float],
+    bc_losses: list[float] | None = None,
 ) -> dict[str, float]:
     return {
         "policy_loss": float(np.mean(policy_losses)),
@@ -715,6 +801,7 @@ def loss_summary(
         "entropy": float(np.mean(entropy_values)),
         "approx_kl": float(np.mean(approx_kls)),
         "clip_fraction": float(np.mean(clip_fracs)),
+        "expert_bc_loss": float(np.mean(bc_losses)) if bc_losses else 0.0,
     }
 
 
