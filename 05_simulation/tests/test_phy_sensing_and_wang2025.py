@@ -64,6 +64,36 @@ def test_wang2025_isac_tables_runs_with_phy_sensing_metrics() -> None:
     assert 0.0 <= wang["sensing_detection_rate"] <= 1.0
 
 
+def test_wang2025_beam_selection_uses_sensing_table_flag() -> None:
+    cfg = load_config("05_simulation/configs/mvp.yaml")
+    cfg = replace(cfg, n_nodes=4, azimuth_cells=8, elevation_cells=3)
+    simulator = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=11)
+    simulator.reset()
+    simulator.wang_sensing_flag[0, :] = 0.0
+    simulator.wang_sensing_flag[0, [3, 7]] = 1.0
+
+    selected = {simulator.wang2025_table_beam(0) for _ in range(100)}
+
+    assert selected <= {3, 7}
+    assert selected == {3, 7}
+
+
+def test_wang2025_sensing_table_closes_beam_after_discovered_target_count() -> None:
+    cfg = load_config("05_simulation/configs/mvp.yaml")
+    cfg = replace(cfg, n_nodes=2, azimuth_cells=8, elevation_cells=3, communication_range_m=1000.0)
+    simulator = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=12)
+    simulator.reset()
+    beam = 5
+    simulator.wang_node_num[0, beam] = 1.0
+    simulator.wang_dis_num[0, beam] = 0.0
+    simulator.wang_sensing_flag[0, beam] = 1.0
+
+    simulator.mark_wang2025_interaction(0, beam, slot=4)
+
+    assert simulator.wang_dis_num[0, beam] == 1.0
+    assert simulator.wang_sensing_flag[0, beam] == 0.0
+
+
 def test_ours_table_exchange_boosts_beam_to_peer_known_neighbor() -> None:
     cfg = load_config("05_simulation/configs/mvp.yaml")
     cfg = replace(

@@ -1,0 +1,14 @@
+{
+  "scope": "Strict Wang sensing-table baseline after implementing Flag/Node_num/Dis_num table semantics.",
+  "seeds": [
+    2026084001,
+    2026084002,
+    2026084003,
+    2026084004,
+    2026084005
+  ],
+  "output": "06_analysis/paper_tables/wang2025_strict_table_n10_20260709",
+  "raw": "05_simulation/results_raw/marl_campaign/wang2025_strict_table_n10_20260709",
+  "marl_checkpoint": "05_simulation/results_raw/marl_campaign/wang2025_aligned_n10_fixedhandshake_20260709/marl_wang_isac_tables_discovery_first/train/final_model.pt",
+  "note": "MARL row uses existing checkpoint trained before strict Wang table change; retraining is still needed for final fairness."
+}

@@ -229,8 +229,9 @@ def record_ours_pre_action(trace: dict[str, Any], slot: int, env: MarlNeighborDi
 def record_wang_pre_action(trace: dict[str, Any], slot: int, sim: NeighborDiscoverySimulator) -> None:
     for node in range(sim.cfg.n_nodes):
         belief = sim.belief[node].astype(np.float32, copy=False)
-        active = ((sim.empty_beam_count[node] < 1.0) | (sim.success_count[node] > 0.05)).astype(np.float32)
-        positive = (active > 0.5) & ((sim.belief[node] >= 0.55) | (sim.success_count[node] > 0.05))
+        active = (sim.wang_sensing_flag[node] > 0.5).astype(np.float32)
+        positive = np.zeros_like(active, dtype=bool)
+        positive[sim.wang2025_positive_beams(node)] = True
         trace["belief"][slot, node] = belief
         trace["wang_active"][slot, node] = active
         trace["wang_positive"][slot, node] = positive.astype(np.float32)

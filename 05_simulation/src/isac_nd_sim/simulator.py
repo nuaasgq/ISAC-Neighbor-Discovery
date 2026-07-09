@@ -134,6 +134,10 @@ class NeighborDiscoverySimulator:
         self.collision_fail_count = np.zeros_like(self.belief)
         self.empty_beam_count = np.zeros_like(self.belief)
         self.last_positive_slot = np.full_like(self.belief, -10**9)
+        self.wang_sensing_flag = np.zeros_like(self.belief)
+        self.wang_node_num = np.full_like(self.belief, -1.0)
+        self.wang_dis_num = np.zeros_like(self.belief)
+        self.wang_snr_db = np.full_like(self.belief, -300.0)
         self.discovered_edges: set[tuple[int, int]] = set()
         self.first_true_slot: dict[tuple[int, int], int] = {}
         self.discovery_slot: dict[tuple[int, int], int] = {}
@@ -176,6 +180,10 @@ class NeighborDiscoverySimulator:
         self.collision_fail_count.fill(0.0)
         self.empty_beam_count.fill(0.0)
         self.last_positive_slot.fill(-10**9)
+        self.wang_sensing_flag.fill(1.0)
+        self.wang_node_num.fill(-1.0)
+        self.wang_dis_num.fill(0.0)
+        self.wang_snr_db.fill(-300.0)
         self.discovered_edges.clear()
         self.first_true_slot.clear()
         self.discovery_slot.clear()
@@ -573,20 +581,28 @@ class NeighborDiscoverySimulator:
     def wang2025_table_beam(self, node: int) -> int:
         """Rule-based ISAC table baseline inspired by Wang et al. 2025.
 
-        The paper randomly scans beams whose sensing-table flag remains active,
-        while prioritizing sectors with potential targets. Here, a beam is active
-        if it has not been repeatedly marked empty or if previous communication
-        or sensing evidence keeps it alive.
+        Wang's neighbor-discovery process selects directions randomly from the
+        sensing-table beam list whose Flag is 1. The table keeps Node_num
+        (potential targets) and Dis_num (already interacted targets); a beam is
+        closed when sensing finds no target or when Dis_num reaches Node_num.
         """
 
-        active_mask = (self.empty_beam_count[node] < 1.0) | (self.success_count[node] > 0.05)
-        active = np.flatnonzero(active_mask)
+        active = self.wang2025_flagged_beams(node)
         if len(active) == 0:
             active = np.arange(self.cfg.n_beams, dtype=int)
-        positive = active[(self.belief[node, active] >= 0.55) | (self.success_count[node, active] > 0.05)]
-        if len(positive) > 0 and self.rng.random() >= self.cfg.exploration_floor:
-            return int(self.rng.choice(positive))
         return int(self.rng.choice(active))
+
+    def wang2025_flagged_beams(self, node: int) -> np.ndarray:
+        return np.flatnonzero(self.wang_sensing_flag[int(node)] > 0.5).astype(int)
+
+    def wang2025_positive_beams(self, node: int) -> np.ndarray:
+        node = int(node)
+        positive = (
+            (self.wang_sensing_flag[node] > 0.5)
+            & (self.wang_node_num[node] > 0.0)
+            & (self.wang_dis_num[node] < self.wang_node_num[node])
+        )
+        return np.flatnonzero(positive).astype(int)
 
     def isac_sensing_beam(self, node: int, slot: int) -> int:
         period = max(1, self.cfg.sensing_period_slots)
@@ -803,6 +819,14 @@ class NeighborDiscoverySimulator:
                         self.empty_beam_count[node, sensed_beam] = 0.0
                         if slot is not None:
                             self.last_positive_slot[node, sensed_beam] = slot
+                    self.update_wang2025_sensing_table_from_observation(
+                        node,
+                        int(sensed_beam),
+                        observed_value,
+                        slot,
+                        useful_sensing_range,
+                        piggyback=True,
+                    )
                 rho = self.cfg.belief_update_rho
                 self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
                 self.age[node, sensed_beams] = 0.0
@@ -826,9 +850,97 @@ class NeighborDiscoverySimulator:
                         piggyback=False,
                     )
                 observation[sensed_beam] = observed_value
+                self.update_wang2025_sensing_table_from_observation(
+                    node,
+                    int(sensed_beam),
+                    observed_value,
+                    slot,
+                    useful_sensing_range,
+                    piggyback=False,
+                )
             rho = self.cfg.belief_update_rho
             self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
             self.age[node, sensed_beams] = 0.0
+
+    def update_wang2025_sensing_table_from_observation(
+        self,
+        node: int,
+        beam: int,
+        observed_value: float,
+        slot: int | None,
+        radius: float,
+        *,
+        piggyback: bool,
+    ) -> None:
+        if self.protocol not in WANG2025_PROTOCOLS:
+            return
+        node = int(node)
+        beam = int(beam)
+        if observed_value <= 0.0:
+            self.wang_node_num[node, beam] = 0.0
+            self.wang_dis_num[node, beam] = 0.0
+            self.wang_sensing_flag[node, beam] = 0.0
+            return
+
+        sensed_targets = self.wang2025_sensing_target_count(node, beam, radius)
+        estimated_targets = max(1, int(sensed_targets))
+        self.wang_node_num[node, beam] = max(float(estimated_targets), self.wang_node_num[node, beam])
+        self.wang_snr_db[node, beam] = max(
+            self.wang_snr_db[node, beam],
+            self.max_sensing_snr_db(node, beam, radius, piggyback),
+        )
+        if slot is not None:
+            self.last_positive_slot[node, beam] = slot
+        self.update_wang2025_flag_after_counts(node, beam)
+
+    def wang2025_sensing_target_count(self, node: int, sensed_beam: int, radius: float) -> int:
+        beams = self.beam_matrix()
+        dist2 = self.distance_matrix()
+        count = 0
+        for target in range(self.cfg.n_nodes):
+            if target == node or dist2[node, target] > float(radius) ** 2:
+                continue
+            if beam_matches(
+                int(sensed_beam),
+                int(beams[node, target]),
+                self.cfg.azimuth_cells,
+                self.cfg.alignment_tolerance_cells,
+            ):
+                count += 1
+        return count
+
+    def update_wang2025_flag_after_counts(self, node: int, beam: int) -> None:
+        node_num = float(self.wang_node_num[node, beam])
+        if node_num <= 0.0:
+            self.wang_sensing_flag[node, beam] = 0.0
+            return
+        self.wang_sensing_flag[node, beam] = 1.0 if self.wang_dis_num[node, beam] < node_num else 0.0
+
+    def mark_wang2025_interaction(self, node: int, beam: int, slot: int) -> None:
+        if self.protocol not in WANG2025_PROTOCOLS:
+            return
+        node = int(node)
+        beam = int(beam)
+        self.wang_dis_num[node, beam] += 1.0
+        if self.wang_node_num[node, beam] < 0.0:
+            self.wang_node_num[node, beam] = self.wang_dis_num[node, beam]
+        else:
+            self.wang_node_num[node, beam] = max(self.wang_node_num[node, beam], self.wang_dis_num[node, beam])
+        self.wang_snr_db[node, beam] = max(self.wang_snr_db[node, beam], -300.0)
+        self.success_count[node, beam] += 0.25
+        self.empty_beam_count[node, beam] = 0.0
+        self.last_positive_slot[node, beam] = slot
+        self.update_wang2025_flag_after_counts(node, beam)
+
+    def boost_wang2025_candidate(self, node: int, beam: int, slot: int, *, target_count: int = 1) -> None:
+        if self.protocol not in WANG2025_PROTOCOLS:
+            return
+        node = int(node)
+        beam = int(beam)
+        self.wang_node_num[node, beam] = max(self.wang_node_num[node, beam], float(max(1, int(target_count))))
+        self.wang_sensing_flag[node, beam] = 1.0
+        self.empty_beam_count[node, beam] = 0.0
+        self.last_positive_slot[node, beam] = slot
 
     def action_has_piggyback_isac(self, action: Action) -> bool:
         if self.protocol in WANG2025_PROTOCOLS:
@@ -1149,6 +1261,8 @@ class NeighborDiscoverySimulator:
                     new_edges.append(edge)
                 self.success_count[tx_node, int(beams[tx_node, rx_node])] += 1.0
                 self.success_count[rx_node, int(beams[rx_node, tx_node])] += 1.0
+                self.mark_wang2025_interaction(tx_node, int(beams[tx_node, rx_node]), slot)
+                self.mark_wang2025_interaction(rx_node, int(beams[rx_node, tx_node]), slot)
                 if self.protocol in COMM_TABLE_PROTOCOLS:
                     self.exchange_neighbor_and_sensing_tables(tx_node, rx_node, slot)
         return new_edges
@@ -1169,8 +1283,11 @@ class NeighborDiscoverySimulator:
 
         if include_sensing:
             positive_ttl = max(20, min(200, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
-            recent = (slot - self.last_positive_slot[src]) <= positive_ttl
-            positive_beams = np.flatnonzero((self.belief[src] >= 0.65) & recent)
+            if self.protocol in WANG2025_PROTOCOLS:
+                positive_beams = self.wang2025_positive_beams(src)
+            else:
+                recent = (slot - self.last_positive_slot[src]) <= positive_ttl
+                positive_beams = np.flatnonzero((self.belief[src] >= 0.65) & recent)
         else:
             positive_beams = np.asarray([], dtype=int)
         if include_sensing and len(positive_beams) > 0:
@@ -1226,6 +1343,7 @@ class NeighborDiscoverySimulator:
         self.empty_beam_count[node, beam] = 0.0
         self.age[node, beam] = 0.0
         self.last_positive_slot[node, beam] = slot
+        self.boost_wang2025_candidate(node, beam, slot)
 
     def summarize(self, episode: int) -> EpisodeResult:
         delays = []

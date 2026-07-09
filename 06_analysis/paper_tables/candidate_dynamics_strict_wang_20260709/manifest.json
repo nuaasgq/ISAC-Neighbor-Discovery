@@ -1,0 +1,25 @@
+{
+  "config": "05_simulation/configs/wang2025_reproduction_smoke.yaml",
+  "checkpoint": "05_simulation/results_raw/marl_campaign/wang2025_aligned_n10_fixedhandshake_20260709/marl_wang_isac_tables_discovery_first/train/final_model.pt",
+  "output": "06_analysis/paper_tables/candidate_dynamics_strict_wang_20260709",
+  "seed": 2026084001,
+  "node_count": 10,
+  "slots": 200,
+  "node_id": 0,
+  "beam_count": 105,
+  "env_protocol": "wang2025_isac_tables",
+  "wang_policy": "wang2025_isac_tables",
+  "figures": [
+    "node0_candidate_count.png",
+    "network_mean_candidate_count.png",
+    "node0_candidate_heatmaps.png",
+    "node0_belief_heatmaps.png",
+    "node0_selected_beams.png"
+  ],
+  "csv_files": [
+    "candidate_counts.csv",
+    "node0_candidate_masks.csv",
+    "node0_beliefs.csv",
+    "actions_and_discoveries.csv"
+  ]
+}
