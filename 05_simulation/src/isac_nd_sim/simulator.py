@@ -28,6 +28,7 @@ WANG2025_PROTOCOLS = (
 ISAC_PROTOCOLS = (
     "improved_rl_isac",
     "improved_rl_isac_tables",
+    "trust_gated_isac_tables",
     "collision_aware_isac",
     "budgeted_collision_aware_isac",
     "isac_structured_marl",
@@ -42,7 +43,8 @@ ISAC_PROTOCOLS = (
 
 WANG2025_COMM_TABLE_PROTOCOLS = ("wang2025_comm_tables", "wang2025_isac_tables")
 WANG2025_SENSING_TABLE_PROTOCOLS = ("wang2025_isac_tables",)
-OURS_TABLE_PROTOCOLS = ("improved_rl_isac_tables",)
+OURS_TABLE_PROTOCOLS = ("improved_rl_isac_tables", "trust_gated_isac_tables")
+TRUST_GATED_TABLE_PROTOCOLS = ("trust_gated_isac_tables",)
 COMM_TABLE_PROTOCOLS = WANG2025_COMM_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
 SENSING_TABLE_PROTOCOLS = WANG2025_SENSING_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
 
@@ -1117,13 +1119,13 @@ class NeighborDiscoverySimulator:
         self.merge_peer_tables(dst=node_b, src=node_a, slot=slot, include_sensing=include_sensing)
 
     def merge_peer_tables(self, dst: int, src: int, slot: int, *, include_sensing: bool) -> None:
-        targets: set[int] = set()
+        target_support: dict[int, str] = {}
         for edge in self.discovered_edges:
             if src not in edge:
                 continue
             other = edge[1] if edge[0] == src else edge[0]
             if other != dst:
-                targets.add(other)
+                target_support[int(other)] = "comm"
 
         if include_sensing:
             positive_ttl = max(20, min(200, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
@@ -1138,19 +1140,49 @@ class NeighborDiscoverySimulator:
                 matching = np.flatnonzero(src_beams == int(source_beam))
                 for target in matching.astype(int).tolist():
                     if target != dst and target != src and dist2[target] <= self.cfg.sensing_range_m**2:
-                        targets.add(target)
+                        if target_support.get(int(target)) != "comm":
+                            target_support[int(target)] = "sense"
 
-        for target in targets:
+        for target, support in target_support.items():
             if target == dst:
                 continue
             beam = self.beam_from_to(dst, target)
-            self.boost_shared_beam(dst, beam, slot)
+            trust_weight = 1.0
+            if self.protocol in TRUST_GATED_TABLE_PROTOCOLS:
+                trust_weight = self.shared_table_trust_weight(dst, target, beam, support, slot)
+                if trust_weight <= 0.0:
+                    continue
+            self.boost_shared_beam(dst, beam, slot, strength=trust_weight)
 
-    def boost_shared_beam(self, node: int, beam: int, slot: int) -> None:
-        rho = min(0.85, max(0.0, self.cfg.belief_update_rho))
+    def shared_table_trust_weight(self, dst: int, target: int, beam: int, support: str, slot: int) -> float:
+        """Local confidence gate for peer-provided neighbor/sensing table hints."""
+
+        success = float(self.success_count[dst, beam])
+        fail = float(self.fail_count[dst, beam])
+        collision = float(self.collision_fail_count[dst, beam])
+        local_support = float(np.clip(self.belief[dst, beam] + 0.10 * np.log1p(success), 0.0, 1.0))
+        failure_pressure = fail / max(1.0, success + fail)
+        collision_pressure = collision / max(1.0, success + collision)
+        positive_ttl = max(20, min(200, int(round(0.50 / max(self.cfg.slot_duration_s, 1e-6)))))
+        age = slot - int(self.last_positive_slot[dst, beam])
+        recency = 0.0 if age > positive_ttl else 1.0 - max(0.0, float(age)) / max(1.0, float(positive_ttl))
+
+        base = 0.65 if support == "comm" else 0.35
+        trust = base + 0.25 * local_support + 0.15 * recency - 0.45 * collision_pressure - 0.25 * failure_pressure
+        if support == "comm" and trust >= 0.35:
+            return float(np.clip(trust, 0.25, 0.90))
+        if support == "sense" and trust >= 0.45:
+            return float(np.clip(trust, 0.20, 0.75))
+        return 0.0
+
+    def boost_shared_beam(self, node: int, beam: int, slot: int, *, strength: float = 1.0) -> None:
+        strength = float(np.clip(strength, 0.0, 1.0))
+        if strength <= 0.0:
+            return
+        rho = min(0.85, max(0.0, self.cfg.belief_update_rho)) * strength
         self.belief[node, beam] = max(self.belief[node, beam], (1.0 - rho) * self.belief[node, beam] + rho)
-        self.success_count[node, beam] += 0.15
-        self.fail_count[node, beam] *= 0.75
+        self.success_count[node, beam] += 0.15 * strength
+        self.fail_count[node, beam] *= max(0.0, 1.0 - 0.25 * strength)
         self.empty_beam_count[node, beam] = 0.0
         self.age[node, beam] = 0.0
         self.last_positive_slot[node, beam] = slot

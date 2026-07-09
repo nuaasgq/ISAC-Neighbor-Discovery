@@ -26,6 +26,7 @@ NO_ISAC_PROTOCOLS = [
 
 ISAC_PROTOCOLS = [
     "improved_rl_isac",
+    "trust_gated_isac_tables",
     "collision_aware_isac",
     "budgeted_collision_aware_isac",
     "ablation_isac_one_slot_delay",

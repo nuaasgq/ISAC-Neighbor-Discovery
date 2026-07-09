@@ -28,7 +28,14 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
 from isac_nd_sim.marl_env import ACCESS_GATE_TO_INDEX, MODE_NAMES, MODE_TO_INDEX, MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
-from isac_nd_sim.simulator import Action  # noqa: E402
+from isac_nd_sim.simulator import (  # noqa: E402
+    ACCESS_AGGRESSIVE,
+    ACCESS_BACKOFF,
+    ACCESS_NORMAL,
+    MODE_RX,
+    MODE_TX,
+    Action,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -532,10 +539,56 @@ def expert_actions_for_env(env: MarlNeighborDiscoveryEnv, expert_protocol: str) 
         for node in range(env.n_agents):
             mode = env._sim.select_mode(node, env._slot)
             beam = env._sim.select_beam(node, env._slot, mode, set(), set())
-            actions.append(Action(mode, int(beam)))
+            gate = expert_access_gate_for_env(env, node, mode, int(beam), str(expert_protocol))
+            actions.append(Action(mode, int(beam), gate))
         return actions
     finally:
         env._sim.protocol = old_protocol
+
+
+def expert_access_gate_for_env(
+    env: MarlNeighborDiscoveryEnv,
+    node: int,
+    mode: str,
+    beam: int,
+    expert_protocol: str,
+) -> str:
+    """Expose the rule expert's local collision-access decision as a gate label."""
+
+    if expert_protocol not in {"collision_aware_isac", "budgeted_collision_aware_isac"}:
+        return ACCESS_NORMAL
+    sim = env._sim
+    beam_collision = float(sim.collision_fail_count[node, beam])
+    beam_success = float(sim.success_count[node, beam])
+    beam_fail = float(sim.fail_count[node, beam])
+    candidate_pool = sim.isac_candidate_pool(node, env._slot)
+    degree = sum(1 for edge in sim.discovered_edges if node in edge)
+    degree_need = max(0.0, float(sim.cfg.target_degree - degree)) / max(1.0, float(sim.cfg.target_degree))
+
+    collision_pressure = 0.0
+    failure_pressure = 0.0
+    candidate_evidence = 0.0
+    if len(candidate_pool) > 0:
+        success = sim.success_count[node, candidate_pool]
+        fail = sim.fail_count[node, candidate_pool]
+        collision = sim.collision_fail_count[node, candidate_pool]
+        belief = sim.belief[node, candidate_pool]
+        collision_pressure = float(np.mean(collision / np.maximum(1.0, success + collision)))
+        failure_pressure = float(np.mean(fail / np.maximum(1.0, success + fail)))
+        candidate_evidence = float(np.clip(np.mean(belief + 0.15 * np.log1p(success)), 0.0, 1.0))
+
+    if mode == MODE_TX and (beam_collision > 0.0 or collision_pressure >= 0.28 or beam_fail > beam_success + 1.0):
+        return ACCESS_BACKOFF
+    if (
+        mode == MODE_RX
+        and degree_need >= 0.35
+        and candidate_evidence >= 0.20
+        and beam_collision <= beam_success
+        and collision_pressure <= 0.25
+        and failure_pressure <= 0.65
+    ):
+        return ACCESS_AGGRESSIVE
+    return ACCESS_NORMAL
 
 
 def evaluate_actions(
@@ -611,8 +664,8 @@ def behavior_cloning_loss(
                 loss = loss - beam_dist.log_prob(beam_tensor)
             if gate_logits is not None:
                 gate_dist = Categorical(logits=gate_logits)
-                normal_gate = ACCESS_GATE_TO_INDEX["normal"]
-                gate_tensor = torch_module.as_tensor(normal_gate, dtype=torch_module.long, device=policy.device)
+                gate_idx = ACCESS_GATE_TO_INDEX.get(getattr(action, "access_gate", ACCESS_NORMAL), ACCESS_GATE_TO_INDEX[ACCESS_NORMAL])
+                gate_tensor = torch_module.as_tensor(gate_idx, dtype=torch_module.long, device=policy.device)
                 loss = loss - 0.10 * gate_dist.log_prob(gate_tensor)
             losses.append(loss)
     if not losses:
@@ -1000,6 +1053,9 @@ def build_manifest(
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
+        "expert_bc_weight": float(getattr(args, "expert_bc_weight", 0.0)),
+        "expert_protocol": str(getattr(args, "expert_protocol", "collision_aware_isac")),
+        "expert_gate_imitation": bool(float(getattr(args, "expert_bc_weight", 0.0)) > 0.0),
         "feature_flags": feature_flags,
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,

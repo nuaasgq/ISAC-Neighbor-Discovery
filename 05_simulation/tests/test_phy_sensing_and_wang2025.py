@@ -94,3 +94,36 @@ def test_ours_table_exchange_boosts_beam_to_peer_known_neighbor() -> None:
     assert simulator.belief[0, target_beam] > before
     assert simulator.success_count[0, target_beam] > 0.0
     assert simulator.last_positive_slot[0, target_beam] == 3
+
+
+def test_trust_gated_table_exchange_rejects_high_collision_hint() -> None:
+    cfg = load_config("05_simulation/configs/mvp.yaml")
+    cfg = replace(
+        cfg,
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=4,
+        communication_range_m=1000.0,
+        sensing_range_m=1000.0,
+        belief_update_rho=0.6,
+    )
+    simulator = NeighborDiscoverySimulator(cfg, "trust_gated_isac_tables", seed=20260709)
+    simulator.reset()
+    simulator.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([0.0, 100.0, 0.0]), np.zeros(3)),
+    ]
+    simulator._beam_matrix_cache = None
+    simulator._distance_matrix_cache = None
+
+    target_beam = simulator.beam_from_to(0, 2)
+    simulator.collision_fail_count[0, target_beam] = 5.0
+    simulator.discovered_edges.add((1, 2))
+    belief_before = float(simulator.belief[0, target_beam])
+    success_before = float(simulator.success_count[0, target_beam])
+
+    simulator.exchange_neighbor_and_sensing_tables(0, 1, slot=3)
+
+    assert simulator.belief[0, target_beam] == belief_before
+    assert simulator.success_count[0, target_beam] == success_before

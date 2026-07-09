@@ -261,6 +261,43 @@ def test_balanced_topology_gated_contention_graph_actor_critic_samples_valid_act
             assert observation["candidate_mask"][action.beam] > 0.5
 
 
+def test_budgeted_expert_gate_is_used_by_behavior_cloning_loss() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_probe_module(MARL_TRAINING_SCRIPT, "run_marl_training_gate_test")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=4, elevation_cells=2)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=128)
+    env._sim.belief[0, [1, 2]] = 1.0
+    env._sim.collision_fail_count[0, 1] = 3.0
+
+    gate = module.expert_access_gate_for_env(env, 0, "tx", 1, "budgeted_collision_aware_isac")
+
+    assert gate == "backoff"
+
+    policy = GatedContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_topology_deficit=True,
+        use_rule_residual=True,
+    )
+    normal_loss = module.behavior_cloning_loss(
+        policy,
+        [[observations[0]]],
+        [[module.Action("tx", 1, "normal")]],
+        torch,
+    )
+    backoff_loss = module.behavior_cloning_loss(
+        policy,
+        [[observations[0]]],
+        [[module.Action("tx", 1, "backoff")]],
+        torch,
+    )
+
+    assert float(backoff_loss.item()) > float(normal_loss.item())
+
+
 def test_actor_critic_probe_writes_history(tmp_path: Path) -> None:
     pytest.importorskip("torch")
     module = load_probe_module(SCRIPT, "run_actor_critic_probe")

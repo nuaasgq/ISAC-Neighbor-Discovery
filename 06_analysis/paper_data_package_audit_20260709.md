@@ -14,6 +14,8 @@ This audit checks whether the current repository contains a paper-usable evidenc
 | Completely random baseline | `Uniform random` rows in `transfer_summary.csv`; discovery stays near zero under narrow beams. | Covered |
 | MARL without/with ISAC and gate variants | `MARL`, `MARL+gate`, `MARL+tables`, `MARL+tables+gate`, `BC-MARL`, and `BC-MARL+gate` rows in `transfer_summary.csv`. | Covered |
 | Table exchange comparison | `MARL+tables`, `MARL+tables+gate`, `Wang ISAC+tables`, and `wang2025_comm_tables` rows. Current results show table exchange is not yet a robust gain. | Covered, negative result |
+| Trust-gated table exchange | `trust_gated_isac_tables` is implemented and unit-tested; formal B=10/B=15 multi-episode results are still pending. | Implemented, pending evidence |
+| Budgeted expert gate BC | `run_marl_training.py` now exposes Budgeted expert `access_gate` labels and imitates them in BC loss; long transfer results are still pending. | Implemented, pending evidence |
 | N=10 training to N=50/N=100 transfer | `training_summary.csv` and `transfer_summary.csv` under `06_analysis/paper_tables/marl/overnight_20260709_marl_isac_rebuild/`. | Covered |
 | Beamwidth transfer | B=10 and B=15 are covered in the main package; 3/5/30-degree sweeps remain archived boundary evidence rather than current main claims. | Partially covered |
 | 300-slot training and 3000-slot testing | Training rows use 300-slot episodes for formal MARL runs; transfer rows use 3000-slot evaluations. | Covered |
@@ -70,7 +72,7 @@ Not yet supported:
 
 ## Remaining Work Before Full Paper Lock
 
-1. Distill `budgeted_collision_aware_isac` into a learned access-gate policy with a collision budget or Lagrangian penalty.
-2. Add trust-gated table exchange instead of unconditional table boosting.
+1. Train and transfer-evaluate the Budgeted expert gate BC policy with a collision budget or Lagrangian penalty.
+2. Run formal multi-episode evaluations for `trust_gated_isac_tables`.
 3. Update `main.tex` only after deciding whether the paper's primary method is Budgeted ISAC alone, Budgeted ISAC plus learned gate, or a two-stage rule-to-MARL method.
 4. Add a second independent rerun only if the paper makes statistical significance claims rather than descriptive paired-comparison claims.
