@@ -25,7 +25,13 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     GatedContentionGraphActorCritic,
     TopologyAdaptiveGatedContentionGraphActorCritic,
 )
-from isac_nd_sim.marl_env import ACCESS_GATE_TO_INDEX, MODE_NAMES, MODE_TO_INDEX, MarlNeighborDiscoveryEnv  # noqa: E402
+from isac_nd_sim.marl_env import (  # noqa: E402
+    ACCESS_GATE_TO_INDEX,
+    MODE_NAMES,
+    MODE_TO_INDEX,
+    REWARD_VERSIONS,
+    MarlNeighborDiscoveryEnv,
+)
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 from isac_nd_sim.simulator import (  # noqa: E402
@@ -62,7 +68,7 @@ def parse_args() -> argparse.Namespace:
         ],
         default="shared",
     )
-    parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
+    parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default="legacy")
     parser.add_argument("--episodes", type=int, default=200)
     parser.add_argument("--slots", type=int, default=300)
     parser.add_argument("--eval-episodes", type=int, default=5)

@@ -19,7 +19,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
-from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
+from isac_nd_sim.marl_env import REWARD_VERSIONS, MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     AdaptiveGatedContentionGraphActorCritic,
     BalancedTopologyGatedContentionGraphActorCritic,
@@ -92,7 +92,7 @@ def parse_args() -> argparse.Namespace:
         help="Disable standalone SENSE actions during evaluation. Defaults to the checkpoint setting when present.",
     )
     parser.add_argument("--eval-rule-residual-scale", type=float, default=None, help="Override rule residual scale at evaluation time.")
-    parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default=None)
+    parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default=None)
     parser.add_argument(
         "--mode-temperature",
         type=float,

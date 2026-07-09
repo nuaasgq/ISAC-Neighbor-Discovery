@@ -26,6 +26,7 @@ MODE_NAMES = (MODE_SENSE, MODE_TX, MODE_RX, MODE_IDLE)
 MODE_TO_INDEX = {name: idx for idx, name in enumerate(MODE_NAMES)}
 ACCESS_GATE_NAMES = (ACCESS_BACKOFF, ACCESS_NORMAL, ACCESS_AGGRESSIVE)
 ACCESS_GATE_TO_INDEX = {name: idx for idx, name in enumerate(ACCESS_GATE_NAMES)}
+REWARD_VERSIONS = ("legacy", "collision_topology", "discovery_first")
 
 
 @dataclass(frozen=True)
@@ -115,7 +116,11 @@ class MarlNeighborDiscoveryEnv:
         fail_before = self._sim.fail_count.sum(axis=1).copy()
         success_before = self._sim.success_count.sum(axis=1).copy()
         collision_fail_before = self._sim.collision_fail_count.sum(axis=1).copy()
-        topology_before = self._topology_reward_snapshot() if self.reward_version == "collision_topology" else None
+        topology_before = (
+            self._topology_reward_snapshot()
+            if self.reward_version in {"collision_topology", "discovery_first"}
+            else None
+        )
 
         self._sim._candidate_pool_cache.clear()
         self._sim.snapshot_pre_sensing_candidates(self._slot)
@@ -409,6 +414,18 @@ class MarlNeighborDiscoveryEnv:
         collision_fail_before: np.ndarray,
         topology_before: dict[str, Any] | None,
     ) -> np.ndarray:
+        if self.reward_version == "discovery_first":
+            return self._discovery_first_rewards(
+                sampled_actions,
+                actions,
+                new_edges,
+                empty_by_node,
+                fail_before,
+                success_before,
+                collision_fail_before,
+                topology_before,
+            )
+
         rewards = np.zeros(self.n_agents, dtype=np.float32)
         for node, action in enumerate(actions):
             if action.mode == MODE_SENSE:
@@ -483,6 +500,73 @@ class MarlNeighborDiscoveryEnv:
                 shaped[j] += 0.10
         return shaped
 
+    def _discovery_first_rewards(
+        self,
+        sampled_actions: list[Action],
+        actions: list[Action],
+        new_edges: list[tuple[int, int]],
+        empty_by_node: np.ndarray,
+        fail_before: np.ndarray,
+        success_before: np.ndarray,
+        collision_fail_before: np.ndarray,
+        topology_before: dict[str, Any] | None,
+    ) -> np.ndarray:
+        """Reward early useful discoveries without making collision the target.
+
+        Collision is represented as a light failed-access cost. The dominant
+        signal is direct discovery, with extra credit for early discoveries and
+        topology-improving links.
+        """
+
+        rewards = np.zeros(self.n_agents, dtype=np.float32)
+        horizon = max(1.0, float(self.cfg.slots_per_episode - 1))
+        progress = min(1.0, float(self._slot) / horizon)
+        early_bonus = 1.0 - progress
+        degree_before = (
+            np.asarray(topology_before.get("degree", np.zeros(self.n_agents)), dtype=np.float32)
+            if topology_before is not None
+            else np.zeros(self.n_agents, dtype=np.float32)
+        )
+        component_id = topology_before.get("component_id", {}) if topology_before is not None else {}
+
+        for node, action in enumerate(actions):
+            if action.mode == MODE_SENSE:
+                rewards[node] -= 0.03
+            elif action.mode == MODE_IDLE:
+                deficit = max(0.0, float(self.cfg.target_degree) - float(degree_before[node]))
+                rewards[node] -= 0.006 + 0.004 * min(1.0, deficit / max(1.0, float(self.cfg.target_degree)))
+            elif action.mode in (MODE_TX, MODE_RX):
+                rewards[node] -= 0.002
+                if empty_by_node[node]:
+                    rewards[node] -= 0.015
+
+            if sampled_actions[node].access_gate == ACCESS_AGGRESSIVE:
+                rewards[node] -= 0.001
+
+        fail_delta = np.maximum(0.0, self._sim.fail_count.sum(axis=1) - fail_before)
+        success_delta = np.maximum(0.0, self._sim.success_count.sum(axis=1) - success_before)
+        collision_delta = np.maximum(0.0, self._sim.collision_fail_count.sum(axis=1) - collision_fail_before)
+        rewards -= np.minimum(fail_delta, 2.0).astype(np.float32) * 0.010
+        rewards -= np.minimum(collision_delta, 2.0).astype(np.float32) * 0.015
+        rewards += np.minimum(success_delta, 2.0).astype(np.float32) * 0.050
+
+        edge_reward = 1.15 + 0.75 * early_bonus
+        for i, j in new_edges:
+            rewards[i] += edge_reward
+            rewards[j] += edge_reward
+            if component_id.get(i, i) != component_id.get(j, j):
+                rewards[i] += 0.35
+                rewards[j] += 0.35
+            if degree_before[i] < float(self.cfg.target_degree):
+                rewards[i] += 0.18
+            if degree_before[j] < float(self.cfg.target_degree):
+                rewards[j] += 0.18
+            if degree_before[i] <= 0.0:
+                rewards[i] += 0.12
+            if degree_before[j] <= 0.0:
+                rewards[j] += 0.12
+        return rewards.astype(np.float32, copy=False)
+
     def _safe_info(self, new_edges_count: int) -> dict[str, Any]:
         components = connected_components(self.n_agents, self._sim.discovered_edges)
         largest = max((len(component) for component in components), default=0)
@@ -502,6 +586,13 @@ class MarlNeighborDiscoveryEnv:
             "sense_actions": self._sim.sense_actions,
             "idle_actions": self._sim.idle_actions,
             "piggyback_sense_actions": self._sim.piggyback_sense_actions,
+            "sensing_observations": self._sim.sensing_observations,
+            "sensing_target_observations": self._sim.sensing_target_observations,
+            "sensing_detection_rate": self._sim.sensing_detection_count / max(1, self._sim.sensing_target_observations),
+            "sensing_false_alarm_ratio": self._sim.sensing_false_alarm_count / max(1, self._sim.sensing_observations),
+            "sensing_miss_ratio": self._sim.sensing_miss_count / max(1, self._sim.sensing_target_observations),
+            "mean_sensing_pd": self._sim.sensing_pd_sum / max(1, self._sim.sensing_target_observations),
+            "mean_sensing_snr_db": self._sim.sensing_snr_db_sum / max(1, self._sim.sensing_snr_sample_count),
             "discovery_per_scan_action": len(self._sim.discovered_edges) / max(1, self._sim.scan_actions),
             "empty_scan_ratio": self._sim.empty_scans / max(1, self._sim.scan_actions),
             "collision_count": self._sim.collision_count,
@@ -582,8 +673,8 @@ def _parse_access_gate(access_gate: str | int | np.integer) -> str:
 
 def _parse_reward_version(reward_version: str) -> str:
     text = str(reward_version).lower()
-    if text not in {"legacy", "collision_topology"}:
-        raise ValueError("reward_version must be 'legacy' or 'collision_topology'.")
+    if text not in REWARD_VERSIONS:
+        raise ValueError(f"reward_version must be one of {REWARD_VERSIONS}.")
     return text
 
 

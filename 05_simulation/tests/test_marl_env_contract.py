@@ -163,6 +163,32 @@ def test_collision_topology_reward_version_keeps_public_contract_safe() -> None:
     _assert_no_forbidden_keys(next_observations)
 
 
+def test_discovery_first_reward_version_keeps_public_contract_safe() -> None:
+    cfg = _small_cfg()
+    env = MarlNeighborDiscoveryEnv(cfg, reward_version="discovery_first")
+    observations, _ = env.reset(seed=8)
+    assert len(observations) == cfg.n_nodes
+
+    actions = [
+        {"mode": "tx", "beam": 1},
+        {"mode": "rx", "beam": 1},
+        {"mode": "tx", "beam": 2},
+        {"mode": "rx", "beam": 2},
+        {"mode": "idle"},
+        {"mode": "idle"},
+    ]
+    next_observations, rewards, terminated, truncated, info = env.step(actions)
+
+    assert rewards.shape == (cfg.n_nodes,)
+    assert rewards.dtype == np.float32
+    assert np.isfinite(rewards).all()
+    assert terminated is False
+    assert truncated is False
+    assert info["reward_version"] == "discovery_first"
+    _assert_no_forbidden_keys(info)
+    _assert_no_forbidden_keys(next_observations)
+
+
 def test_no_isac_marl_protocol_does_not_update_belief_from_sense_action() -> None:
     cfg = _small_cfg()
     env = MarlNeighborDiscoveryEnv(cfg, protocol="structured_marl_no_isac")
@@ -178,6 +204,34 @@ def test_no_isac_marl_protocol_does_not_update_belief_from_sense_action() -> Non
     assert env._sim.belief[0, 0] == np.float64(cfg.confidence_decay)
     assert np.count_nonzero(env._sim.belief[0]) == 1
     assert next_observations[0]["beam_belief"][0] == np.float32(cfg.confidence_decay)
+
+
+def test_tx_coupled_ideal_isac_records_sensing_observations_without_sense_action() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/paper_transfer_train_n10_b10_singlehop.yaml"),
+        episodes=1,
+        slots_per_episode=1,
+        n_nodes=4,
+        azimuth_cells=6,
+        elevation_cells=3,
+        communication_range_m=1000.0,
+        sensing_range_m=1000.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, reward_version="discovery_first")
+    env.reset(seed=23)
+
+    actions = [
+        {"mode": "tx", "beam": 0},
+        {"mode": "rx", "beam": 1},
+        {"mode": "tx", "beam": 2},
+        {"mode": "rx", "beam": 3},
+    ]
+    _, _, _, _, info = env.step(actions)
+
+    assert info["sense_actions"] == 0
+    assert info["piggyback_sense_actions"] == cfg.n_nodes
+    assert info["sensing_observations"] > 0
+    assert info["sensing_target_observations"] >= 0
 
 
 def test_training_state_is_explicitly_separate_from_public_info() -> None:

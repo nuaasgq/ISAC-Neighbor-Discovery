@@ -785,6 +785,13 @@ class NeighborDiscoverySimulator:
                 for sensed_beam in sensed_beams:
                     if ideal_sensing:
                         observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
+                        self.record_ideal_sensing_observation(
+                            node,
+                            int(sensed_beam),
+                            useful_sensing_range,
+                            piggyback=True,
+                            observed_value=observed_value,
+                        )
                     else:
                         observed_value = self.sample_sensing_observation(
                             node,
@@ -812,6 +819,13 @@ class NeighborDiscoverySimulator:
             for sensed_beam in sensed_beams:
                 if ideal_sensing:
                     observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
+                    self.record_ideal_sensing_observation(
+                        node,
+                        int(sensed_beam),
+                        useful_sensing_range,
+                        piggyback=False,
+                        observed_value=observed_value,
+                    )
                 else:
                     observed_value = self.sample_sensing_observation(
                         node,
@@ -880,6 +894,40 @@ class NeighborDiscoverySimulator:
             self.sensing_false_alarm_count += 1
             return 1.0
         return 0.0
+
+    def record_ideal_sensing_observation(
+        self,
+        node: int,
+        sensed_beam: int,
+        radius: float,
+        *,
+        piggyback: bool,
+        observed_value: float,
+    ) -> None:
+        """Record sensing statistics for deterministic/ideal observations."""
+
+        self.sensing_observations += 1
+        has_target = self.beam_has_sensing_target(node, sensed_beam, radius)
+        if has_target:
+            self.sensing_target_observations += 1
+            self.sensing_pd_sum += 1.0
+            max_snr_db = self.max_sensing_snr_db(node, sensed_beam, radius, piggyback)
+            if max_snr_db > -300.0:
+                self.sensing_snr_db_sum += max_snr_db
+                self.sensing_snr_sample_count += 1
+            if observed_value > 0.0:
+                self.sensing_detection_count += 1
+            else:
+                self.sensing_miss_count += 1
+        elif observed_value > 0.0:
+            self.sensing_false_alarm_count += 1
+
+    def max_sensing_snr_db(self, node: int, sensed_beam: int, radius: float, piggyback: bool) -> float:
+        profile = self.sensing_profile(radius, piggyback)
+        values: list[float] = []
+        for true_beam in self.matching_true_beams(int(sensed_beam)):
+            values.extend(snr_db for _pd, snr_db in profile[node][int(true_beam)])
+        return max(values, default=-300.0)
 
     def sensing_profile(self, radius: float, piggyback: bool) -> list[list[list[tuple[float, float]]]]:
         key = (round(float(radius), 6), bool(piggyback))

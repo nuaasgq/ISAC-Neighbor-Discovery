@@ -9,6 +9,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "05_simulation" / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from isac_nd_sim.marl_env import REWARD_VERSIONS  # noqa: E402
+
 TRAIN_SCRIPT = ROOT / "05_simulation" / "run_marl_training.py"
 EVAL_SCRIPT = ROOT / "05_simulation" / "run_marl_evaluate.py"
 DEFAULT_CONFIG = ROOT / "05_simulation" / "configs" / "paper_transfer_train_n10_b10_singlehop.yaml"
@@ -48,7 +54,7 @@ def parse_args() -> argparse.Namespace:
         ],
         default="shared",
     )
-    parser.add_argument("--reward-version", choices=["legacy", "collision_topology"], default="legacy")
+    parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default="legacy")
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--ppo-epochs", type=int, default=2)
@@ -57,6 +63,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resource-log-period", type=int, default=100)
     parser.add_argument("--max-rss-mb", type=float, default=10000.0)
     parser.add_argument("--max-system-memory-percent", type=float, default=90.0)
+    parser.add_argument(
+        "--allow-standalone-sense",
+        action="store_true",
+        help="Allow standalone SENSE actions. By default campaigns use TX-coupled piggyback sensing only.",
+    )
     parser.add_argument("--eval-stochastic-only", action="store_true")
     parser.add_argument("--command-timeout-seconds", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
@@ -131,7 +142,6 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
             str(args.eval_episodes),
             "--eval-interval",
             str(max(1, args.train_episodes // 4)),
-            "--eval-both",
             "--checkpoint-interval",
             str(max(1, args.train_episodes // 2)),
             "--hidden-dim",
@@ -149,8 +159,14 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
             "--max-system-memory-percent",
             str(args.max_system_memory_percent),
         ]
+        if bool(args.eval_stochastic_only):
+            command.append("--stochastic-eval")
+        else:
+            command.append("--eval-both")
         if algorithm == "mappo":
             command.extend(["--disable-isac-features", "--env-protocol", "structured_marl_no_isac"])
+        if not bool(args.allow_standalone_sense):
+            command.append("--forbid-sense")
         commands.append(command)
         train_runs[algorithm] = output
 
@@ -206,6 +222,8 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
                         command.append("--eval-both")
                     if algorithm == "mappo":
                         command.extend(["--env-protocol", "structured_marl_no_isac"])
+                    if not bool(args.allow_standalone_sense):
+                        command.append("--forbid-sense")
                     commands.append(command)
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -222,6 +240,7 @@ def build_plan(args: argparse.Namespace, output_root: Path, node_counts: list[in
         "step_log_period": int(args.step_log_period),
         "resource_log_period": int(args.resource_log_period),
         "eval_stochastic_only": bool(args.eval_stochastic_only),
+        "standalone_sense_allowed": bool(args.allow_standalone_sense),
         "command_timeout_seconds": int(args.command_timeout_seconds),
         "resource_limits": {
             "max_rss_mb": float(args.max_rss_mb),
