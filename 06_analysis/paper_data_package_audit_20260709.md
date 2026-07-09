@@ -11,6 +11,7 @@ This audit checks whether the current repository contains a paper-usable evidenc
 | Single-RF setting | `paper_transfer_train_n10_b10_singlehop.yaml`; all overnight and budgeted protocol evaluations use one RF chain unless otherwise specified by the base config. | Covered |
 | ISAC-assisted empty-beam/candidate mechanism | `improved_rl_isac`, `collision_aware_isac`, and `budgeted_collision_aware_isac` in `05_simulation/src/isac_nd_sim/simulator.py`; ISAC belief/candidate update metrics in evaluation CSVs. | Covered |
 | Wang-style baseline | `wang2025_isac_no_collab`, `wang2025_comm_tables`, `wang2025_isac_tables` in the B=10/B=15 summaries. | Covered |
+| Chinese-paper-aligned Wang matrix | `06_analysis/paper_tables/wang2025_focused_single_rf_20260709/` covers single RF, about 25-degree beams, `N=10/20/30/40/50`, 200 slots, and five paired episodes under the MIMO-OTFS sensing abstraction. | Covered, recommended main comparison |
 | Completely random baseline | `Uniform random` rows in `transfer_summary.csv`; discovery stays near zero under narrow beams. | Covered |
 | MARL without/with ISAC and gate variants | `MARL`, `MARL+gate`, `MARL+tables`, `MARL+tables+gate`, `BC-MARL`, and `BC-MARL+gate` rows in `transfer_summary.csv`. | Covered |
 | Table exchange comparison | `MARL+tables`, `MARL+tables+gate`, `Wang ISAC+tables`, and `wang2025_comm_tables` rows. Current results show table exchange is not yet a robust gain. | Covered, negative result |
@@ -21,12 +22,38 @@ This audit checks whether the current repository contains a paper-usable evidenc
 | 300-slot training and 3000-slot testing | Training rows use 300-slot episodes for formal MARL runs; transfer rows use 3000-slot evaluations. | Covered |
 | 4:3 Times New Roman figures | 26 PNGs under `06_analysis/paper_figures/marl_overnight_20260709/`, checked at 1760x1320. | Covered |
 | Paper narrative material | `overnight_marl_isac_rebuild_20260709.md` plus the manuscript insert `07_paper/ieee_twc_isac_nd/budgeted_isac_manuscript_insert.tex`. | Covered for current results |
+| Wang-focused manuscript material | `06_analysis/wang2025_focused_single_rf_results_20260709.md`, `06_analysis/wang2025_focused_figure_table_index_20260709.md`, and `07_paper/ieee_twc_isac_nd/wang2025_focused_single_rf_insert.tex`. | Covered |
 | Independent Budgeted ISAC rerun | `06_analysis/paper_tables/marl/budgeted_isac_paired_rerun_b10_n100/` contains an independently seeded B=10, N=100, 3000-slot paired rerun against Wang ISAC, Collision-aware ISAC, and Uniform random. | Covered |
 | Version management | The current evidence package is tracked in Git and should be committed after this audit update. | Covered after next commit |
 
 ## Main Quantitative Evidence
 
-The strongest currently defensible protocol-side result is the density-adaptive budgeted ISAC access rule. On the primary N=100 transfer points:
+The cleanest current main-paper comparison is the Wang-style single-RF matrix,
+because it directly follows the Chinese MIMO-OTFS ISAC FANET experiment shape:
+about 25-degree beams, `N=10--50`, 200 slots, single RF, and Wang-style
+no-table / communication-table / sensing-table baselines. Its tables are under
+`06_analysis/paper_tables/wang2025_focused_single_rf_20260709/`.
+
+At the densest focused point, `N=50`, Budgeted ISAC is strongest on discovery,
+CPD, collisions, and discovered-graph connectivity:
+
+| Method | Discovery | Collisions | CPD | Lambda2 |
+|---|---:|---:|---:|---:|
+| Wang ISAC, no table | 0.5211 | 4522.4 | 0.1115 | 16.0628 |
+| Wang communication table | 0.5391 | 6999.4 | 0.0807 | 17.6903 |
+| Wang sensing table | 0.5148 | 7474.0 | 0.0729 | 14.7000 |
+| Ours, non-budgeted ISAC | 0.4477 | 8147.2 | 0.0587 | 12.7513 |
+| Ours, Budgeted ISAC | 0.6091 | 2582.2 | 0.1961 | 20.3632 |
+
+Paired deltas at `N=50` improve discovery, CPD, and collision count against all
+three Wang-style baselines in all five paired episodes. Against the strongest
+Wang CPD baseline, Budgeted ISAC improves CPD by +0.0846 and discovery by
++0.0880 while reducing collisions by 1940.2.
+
+The longer N=100, 3000-slot results remain useful as auxiliary evidence for the
+density-adaptive budgeted access rule, but they should not be the first result
+shown if the paper is being aligned with the Chinese reference matrix. On the
+primary N=100 transfer points:
 
 | Beamwidth | Method | Discovery | Collisions | CPD | Lambda2 |
 |---:|---|---:|---:|---:|---:|
@@ -68,7 +95,7 @@ candidate information that still requires learned or rule-based access budgeting
 Supported:
 
 - ISAC occupancy/candidate feedback is necessary for tractable narrow-beam discovery in the tested 3D setting.
-- A density-adaptive budgeted ISAC access rule can improve collision-penalized discovery in large-scale single-hop transfer tests.
+- A density-adaptive budgeted ISAC access rule improves collision-penalized discovery in the Wang-style single-RF MIMO-OTFS sensing matrix, and also improves CPD in auxiliary large-scale single-hop transfer tests.
 - Naive shared-parameter MARL trained at N=10 does not automatically inherit the rule expert's collision control under N=100 transfer.
 - Expert-guided BC-MARL raises raw discovery but currently needs explicit collision-budget learning.
 
@@ -82,7 +109,7 @@ Not yet supported:
 
 ## Remaining Work Before Full Paper Lock
 
-1. Finish and transfer-evaluate the Budgeted expert gate BC policy with a collision budget or Lagrangian penalty.
-2. Run B=15 multi-episode evaluations for `trust_gated_isac_tables` only if the manuscript keeps table exchange as a main ablation; otherwise keep the B=10 result as a negative mechanism boundary.
-3. Update `main.tex` only after deciding whether the paper's primary method is Budgeted ISAC alone, Budgeted ISAC plus learned gate, or a two-stage rule-to-MARL method.
-4. Add a second independent rerun only if the paper makes statistical significance claims rather than descriptive paired-comparison claims.
+1. Decide whether `main.tex` should pivot from the older Phase10 MARL/N=100 storyline to the Wang-style single-RF matrix as the primary result.
+2. If this pivot is accepted, integrate `wang2025_focused_single_rf_insert.tex` and move MARL to a bounded diagnostic/extension section.
+3. Run only one optional extension before paper lock: `rf_chains=3,6` under the same Wang-style matrix, and only if multi-RF comparison is needed for reviewer alignment.
+4. Keep B=10 trust-gated table exchange as a negative mechanism boundary unless table exchange becomes a main contribution.

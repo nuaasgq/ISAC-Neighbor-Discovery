@@ -15,6 +15,7 @@ Current status:
 - The current draft compiles to a 9-page PDF with `pdflatex`; the final checked log has no undefined references/citations and no overfull warnings.
 - The supplement compiles to a 13-page PDF with `pdflatex`; the final checked log has no undefined references and no overfull warnings.
 - The final main MARL evidence trains at `N=10`, 10-degree beams, and 300 slots per episode, then evaluates zero-shot transfer at `N=100`, 3000 slots, and 10-/15-degree beams.
+- A newer Wang-style focused insert is available in `wang2025_focused_single_rf_insert.tex`. It aligns the paper with the Chinese MIMO-OTFS ISAC FANET matrix: about 25-degree beams, single RF, `N=10--50`, 200 slots, and Wang no-table / communication-table / sensing-table baselines. This is currently the cleaner main-result candidate if the manuscript pivots away from the older MARL/N=100 storyline.
 - The 3- and 5-degree results are treated as extremely narrow stress-boundary regimes; the archived 30-degree sweep is retained only as historical boundary evidence outside the final main comparison.
 - Main figures are selected in `../../06_analysis/manuscript_figure_selection.md`; current figure/table provenance is audited in `../../06_analysis/figure_table_provenance_audit_20260707.md`.
 - The current closeout workflow and repository synchronization rule are recorded in `../../00_workflow/current_execution_workflow.md`.
