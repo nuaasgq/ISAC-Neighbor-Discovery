@@ -30,12 +30,17 @@ The Wang candidate pool alone does not explain the MARL gain. Under the same Wan
 
 The most plausible explanation is that the current MARL checkpoint learns a better access rhythm: it uses fewer TX actions than Wang, introduces about `269` idle actions per episode, and still discovers more links with lower empty-scan ratio. In this N=10 setting, the learned TX/RX/IDLE controller appears more important than learned beam ranking inside the Wang candidate pool.
 
+An additional matched-marginal random-mode probe was run with Wang random beams and the same average mode probabilities as `marl_mode_policy_beam_wang_random` (`p_tx = 0.4712`, `p_rx = 0.3941`, `p_idle = 0.1347`). Its discovery rate is only `0.1689`. Therefore the MARL gain is not explained by a fixed lower-TX / nonzero-idle ratio alone; the learned mode controller is using state-dependent timing. However, this still does not prove learned beam control.
+
 The beam-policy result is also informative: `marl_mode_policy_beam_wang_random` is slightly higher than `marl_mode_policy_beam_policy_wang_candidate`. This suggests the existing checkpoint was not trained specifically for Wang's broad candidate-mask distribution, so its beam head is not yet optimized for that candidate source. A final fair claim should retrain MARL with `candidate_source=wang_table`.
+
+The default candidate source is also not supported as a stronger candidate design by this diagnostic. Under the existing checkpoint, replacing the default candidate source with Wang's table candidate source improves performance from `0.4444` to `0.5733` / `0.6133`. The current evidence favors using Wang's sensing-table candidate rule as the shared ISAC abstraction, then claiming MARL mainly for adaptive access/control unless a retrained beam head can beat Wang-candidate random beam selection.
 
 ## Artifacts
 
 - `06_analysis/paper_tables/wang_candidate_ablation_20260709/aggregate_metrics.csv`
 - `06_analysis/paper_tables/wang_candidate_ablation_20260709/per_episode_summary.csv`
+- `06_analysis/paper_tables/wang_candidate_ablation_20260709/matched_marginal_random_mode_probe.csv`
+- `06_analysis/paper_tables/wang_candidate_ablation_20260709/matched_marginal_random_mode_aggregate.json`
 - `06_analysis/paper_tables/wang_candidate_ablation_20260709/wang_candidate_ablation_metrics.png`
 - `05_simulation/results_raw/marl_campaign/wang_candidate_ablation_20260709/`
-

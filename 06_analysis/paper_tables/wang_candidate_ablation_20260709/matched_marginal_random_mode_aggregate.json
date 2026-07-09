@@ -1,0 +1,23 @@
+{
+  "method": "matched_marginal_random_mode_wang_candidate",
+  "n_episodes": 5,
+  "p_tx": 0.4712,
+  "p_rx": 0.39409999999999995,
+  "p_idle": 0.1347,
+  "discovery_rate_mean": 0.1688888888888889,
+  "discovery_rate_std": 0.04121608220220313,
+  "mean_delay_censored_mean": 186.38666666666668,
+  "mean_delay_censored_std": 4.115963502699652,
+  "lambda2_mean": -8.348922102245988e-17,
+  "lambda2_std": 1.320840897315365e-16,
+  "lcc_ratio_mean": 0.72,
+  "lcc_ratio_std": 0.16,
+  "empty_scan_ratio_mean": 0.656757933299877,
+  "empty_scan_ratio_std": 0.017534671209482208,
+  "tx_actions_mean": 942.2,
+  "tx_actions_std": 11.855800268223145,
+  "rx_actions_mean": 803.8,
+  "rx_actions_std": 15.223665787188052,
+  "idle_actions_mean": 254.0,
+  "idle_actions_std": 10.039920318408907
+}

@@ -16,6 +16,8 @@
   "files": [
     "aggregate_metrics.csv",
     "per_episode_summary.csv",
+    "matched_marginal_random_mode_probe.csv",
+    "matched_marginal_random_mode_aggregate.json",
     "wang_candidate_ablation_metrics.png"
   ]
 }
