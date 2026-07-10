@@ -12,14 +12,24 @@ from isac_nd_sim.config import load_config, with_communication_tx_power
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
 from isac_nd_sim.mobility import NodeState
 from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic
+from isac_nd_sim.simulator import Action
 
 
 ROOT = Path(__file__).resolve().parents[2]
 TRAINING_SCRIPT = ROOT / "05_simulation" / "run_marl_training.py"
+EVALUATION_SCRIPT = ROOT / "05_simulation" / "run_marl_evaluate.py"
 
 
 def load_training_module():
     spec = importlib.util.spec_from_file_location("twc_training_contract", TRAINING_SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_evaluation_module():
+    spec = importlib.util.spec_from_file_location("twc_evaluation_contract", EVALUATION_SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -61,6 +71,180 @@ def test_canonical_config_uses_b10_shared_power_and_sinr_phy() -> None:
 
     low_power = with_communication_tx_power(cfg, 0.25)
     assert low_power.tx_power_w == low_power.isac_tx_power_w == low_power.communication_tx_power_w == 0.25
+
+
+def test_rendezvous_observation_can_be_ablated_without_changing_yaml() -> None:
+    cfg = load_config("05_simulation/configs/twc_canonical_n10_b10.yaml")
+    common_args = {
+        "slots": 300,
+        "seed": 20260705,
+        "node_count": None,
+        "azimuth_cells": None,
+        "elevation_cells": None,
+        "communication_range": None,
+        "sensing_range": None,
+        "false_alarm_rate": None,
+        "miss_detection_rate": None,
+        "angular_cell_offset_std": None,
+        "sensing_period_slots": None,
+        "mobility_model": None,
+        "rendezvous_observation": False,
+    }
+
+    training_cfg = load_training_module().override_config(cfg, Namespace(episodes=1, **common_args))
+    evaluation_cfg = load_evaluation_module().override_config(
+        cfg,
+        Namespace(eval_episodes=1, area_size_m=None, **common_args),
+    )
+
+    assert not training_cfg.rendezvous_observation_enabled
+    assert not evaluation_cfg.rendezvous_observation_enabled
+
+
+def test_rendezvous_action_diagnostics_separate_beam_and_mode_learning() -> None:
+    module = load_training_module()
+    observation = {
+        "candidate_score": np.asarray([0.1, 1.0, 0.2], dtype=np.float32),
+        "candidate_mask": np.ones(3, dtype=np.float32),
+        "rendezvous_beam_score": np.asarray([0.0, 0.8, 0.0], dtype=np.float32),
+        "rendezvous_role_hint": np.asarray([1.0], dtype=np.float32),
+    }
+
+    beam_only = module.beam_selection_diagnostics([observation], [Action("rx", 1)])
+    mode_only = module.beam_selection_diagnostics([observation], [Action("tx", 2)])
+    joint = module.beam_selection_diagnostics([observation], [Action("tx", 1)])
+
+    assert beam_only["rendezvous_beam_hit_count"] == 1
+    assert beam_only["rendezvous_mode_match_count"] == 0
+    assert mode_only["rendezvous_beam_hit_count"] == 0
+    assert mode_only["rendezvous_mode_match_count"] == 1
+    assert joint["rendezvous_joint_action_rate"] == 1.0
+
+
+def test_rendezvous_auxiliary_losses_use_only_exposed_local_targets() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    cfg = replace(
+        load_config("05_simulation/configs/twc_canonical_n10_b10.yaml"),
+        n_nodes=2,
+        azimuth_cells=4,
+        elevation_cells=2,
+        sensing_position_error_std_m=0.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    env.reset(seed=903)
+    env._sim.states = [
+        NodeState(np.asarray([100.0, 200.0, 300.0]), np.zeros(3)),
+        NodeState(np.asarray([900.0, 800.0, 700.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    estimate = env._sim.states[1].position.copy()
+    env._sim.sensing_report_position[0, 0] = estimate
+    env._sim.sensing_report_confidence[0, 0] = 1.0
+    env._sim.sensing_report_slot[0, 0] = 200
+    env._slot = env._sim.position_pair_rendezvous_phase(env._sim.states[0].position, estimate, 16) + 208
+    observation = env._observation_for(0)
+    policy = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_score=True,
+        disabled_modes=("sense", "idle"),
+    )
+
+    beam_loss, role_loss = module.rendezvous_auxiliary_losses(policy, [[observation]], torch)
+
+    assert torch.isfinite(beam_loss) and float(beam_loss.item()) > 0.0
+    assert torch.isfinite(role_loss) and float(role_loss.item()) > 0.0
+
+
+def test_zero_initialized_rendezvous_adapter_is_an_exact_behavioral_ablation() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(
+        load_config("05_simulation/configs/twc_canonical_n10_b10.yaml"),
+        n_nodes=2,
+        azimuth_cells=4,
+        elevation_cells=2,
+        sensing_position_error_std_m=0.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    env.reset(seed=904)
+    env._sim.states = [
+        NodeState(np.asarray([100.0, 200.0, 300.0]), np.zeros(3)),
+        NodeState(np.asarray([900.0, 800.0, 700.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    estimate = env._sim.states[1].position.copy()
+    env._sim.sensing_report_position[0, 0] = estimate
+    env._sim.sensing_report_confidence[0, 0] = 1.0
+    env._sim.sensing_report_slot[0, 0] = 200
+    env._slot = env._sim.position_pair_rendezvous_phase(env._sim.states[0].position, estimate, 16) + 208
+    observation = env._observation_for(0)
+
+    torch.manual_seed(905)
+    base = ContentionGraphActorCritic(cfg.n_beams, hidden_dim=16, use_candidate_score=True)
+    torch.manual_seed(905)
+    adapted = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_score=True,
+        use_rendezvous_adapter=True,
+    )
+    with torch.no_grad():
+        base_mode, base_beam, _ = base.logits_value(observation)
+        initial_mode, initial_beam, _ = adapted.logits_value(observation)
+        adapted.model.rendezvous_beam_adapter.weight[0, 0] = 1.0
+        learned_mode, learned_beam, _ = adapted.logits_value(observation)
+
+    target_beam = int(np.argmax(observation["rendezvous_beam_score"]))
+    expected_delta = np.log(cfg.n_beams) * float(observation["rendezvous_beam_score"][target_beam])
+    assert torch.allclose(base_mode, initial_mode)
+    assert torch.allclose(base_beam, initial_beam)
+    assert float((learned_beam[target_beam] - initial_beam[target_beam]).item()) == pytest.approx(expected_delta)
+    assert torch.allclose(learned_mode, initial_mode)
+
+
+def test_reciprocal_rendezvous_diagnostics_are_offline_only() -> None:
+    module = load_training_module()
+    cfg = replace(
+        load_config("05_simulation/configs/twc_canonical_n10_b10.yaml"),
+        n_nodes=2,
+        azimuth_cells=4,
+        elevation_cells=2,
+        sensing_position_error_std_m=0.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    env.reset(seed=906)
+    env._sim.states = [
+        NodeState(np.asarray([100.0, 200.0, 300.0]), np.zeros(3)),
+        NodeState(np.asarray([900.0, 800.0, 700.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    beam_01 = env._sim.beam_from_to(0, 1)
+    beam_10 = env._sim.beam_from_to(1, 0)
+    env._sim.sensing_report_position[0, beam_01] = env._sim.states[1].position
+    env._sim.sensing_report_position[1, beam_10] = env._sim.states[0].position
+    env._sim.sensing_report_confidence[0, beam_01] = 1.0
+    env._sim.sensing_report_confidence[1, beam_10] = 1.0
+    env._sim.sensing_report_slot[0, beam_01] = 200
+    env._sim.sensing_report_slot[1, beam_10] = 200
+    env._slot = env._sim.position_pair_rendezvous_phase(
+        env._sim.states[0].position,
+        env._sim.states[1].position,
+        16,
+    ) + 208
+    observations = env._observations()
+
+    diagnostics = module.rendezvous_pair_diagnostics(
+        env,
+        observations,
+        [Action("tx", beam_01), Action("rx", beam_10)],
+    )
+
+    assert diagnostics == {
+        "reciprocal_report_pair_count": 1,
+        "reciprocal_scheduled_pair_count": 1,
+        "reciprocal_actor_pair_count": 1,
+    }
 
 
 def test_marl_observation_reprojects_local_rendezvous_report() -> None:

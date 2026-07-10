@@ -40,3 +40,9 @@ The final actor must still output only `TX/RX/beam`. Its local observation shoul
 - signed local role hint (`TX`, `RX`, or unavailable).
 
 The 200-slot deterministic bootstrap remains a diagnostic expert only. It must be removed or ablated in the learned policy. The next training probe should first establish nonzero rewards with these observations and a measurement-derived auxiliary beam objective, then compare against a zero-rendezvous-feature ablation.
+
+## MARL Handoff Result
+
+The handoff gate subsequently passed without the deterministic bootstrap. A zero-initialized learned ISAC evidence adapter and measurement-derived beam/role losses produced eight discoveries across six held-out N=10/B=10/300-slot episodes (mean discovery rate 2.96%, 5/6 nonzero). Uniform random, Wang-table, and adapter-zero controls remained at zero on the same scenarios.
+
+The remaining bottleneck is reciprocal opportunity formation rather than single-agent beam learning: held-out target-beam hit rate reached 86.77% and joint beam-role rate reached 72.28%, while only 65 common-phase pair-slots emerged from 1069 reciprocal-report pair-slots. See `06_analysis/rendezvous_learnability_gate_20260710.md`.

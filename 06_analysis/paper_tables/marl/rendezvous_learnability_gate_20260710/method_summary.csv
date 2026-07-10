@@ -1,0 +1,5 @@
+method,episodes,nonzero_episodes,mean_discovered_edges,std_discovered_edges,mean_edges_ci95_low,mean_edges_ci95_high,mean_discovery_rate,mean_alignments,mean_handshake_successes,mean_empty_scan_ratio
+Uniform random,6,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.9868333333333332
+Wang ISAC tables,6,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.986111111111111
+Adapter zero,6,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.9863888888888889
+MARL + ISAC adapter,6,5,1.3333333333333333,1.0327955589886446,0.24947320623615488,2.4171934604305116,0.02962962962962963,1.3333333333333333,1.3333333333333333,0.9581111111111111

@@ -45,6 +45,7 @@ from isac_nd_sim.simulator import (  # noqa: E402
     MODE_SENSE,
     MODE_TX,
     Action,
+    beam_matches,
 )
 
 
@@ -117,6 +118,25 @@ def parse_args() -> argparse.Namespace:
         help="Auxiliary coefficient for fitting beam logits to local candidate-score rankings.",
     )
     parser.add_argument("--beam-rank-temperature", type=float, default=4.0)
+    parser.add_argument(
+        "--rendezvous-beam-aux-coef",
+        type=float,
+        default=0.0,
+        help="Training-only auxiliary coefficient for predicting the locally reprojected ISAC rendezvous beam.",
+    )
+    parser.add_argument(
+        "--rendezvous-role-aux-coef",
+        type=float,
+        default=0.0,
+        help="Training-only auxiliary coefficient for predicting the complementary TX/RX rendezvous role.",
+    )
+    parser.add_argument(
+        "--rendezvous-adapter",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable the zero-initialized learned ISAC evidence adapter in contention networks.",
+    )
+    parser.add_argument("--rendezvous-adapter-learning-rate", type=float, default=0.03)
     parser.add_argument("--max-grad-norm", type=float, default=1.0)
     parser.add_argument(
         "--expert-bc-weight",
@@ -135,6 +155,15 @@ def parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=None,
         help="Use local ISAC candidate scores in beam-token features (enabled by default for ISAC-MAPPO).",
+    )
+    parser.add_argument(
+        "--rendezvous-observation",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Expose local sensing-derived rendezvous beam/role observations. "
+            "Defaults to the selected YAML configuration."
+        ),
     )
     parser.add_argument("--topology-deficit", action="store_true", help="Use local discovered-degree deficit token.")
     parser.add_argument("--rule-residual", action="store_true", help="Use local rule logits and beam priors as residual policy logits.")
@@ -208,6 +237,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
     np.random.seed(int(args.seed))
 
     cfg = override_config(load_config(args.config), args)
+    args.rendezvous_observation = bool(cfg.rendezvous_observation_enabled)
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
 
@@ -224,16 +254,31 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=float(args.rule_residual_scale),
         use_contention_mode_prior=contention_mode_prior_enabled(args),
+        use_rendezvous_adapter=bool(getattr(args, "rendezvous_adapter", False)),
         disabled_modes=disabled_modes_from_args(args),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
     critic = None
-    params = list(policy.parameters())
+    adapter_params = [
+        parameter
+        for name, parameter in policy.model.named_parameters()
+        if name.startswith("rendezvous_") and "adapter" in name
+    ]
+    adapter_param_ids = {id(parameter) for parameter in adapter_params}
+    params = [parameter for parameter in policy.parameters() if id(parameter) not in adapter_param_ids]
     if centralized:
         critic = CentralizedPooledCritic(central_feature_dim(), int(args.hidden_dim), torch)
         params += list(critic.parameters())
-    optimizer = torch.optim.Adam(params, lr=float(args.learning_rate))
+    optimizer_groups: list[dict[str, Any]] = [{"params": params, "lr": float(args.learning_rate)}]
+    if adapter_params:
+        optimizer_groups.append(
+            {
+                "params": adapter_params,
+                "lr": float(getattr(args, "rendezvous_adapter_learning_rate", 0.03)),
+            }
+        )
+    optimizer = torch.optim.Adam(optimizer_groups)
 
     step_rows: list[dict[str, Any]] = []
     episode_rows: list[dict[str, Any]] = []
@@ -266,6 +311,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             centralized=centralized,
         )
         row = build_episode_row(trajectory, losses, episode, global_step, args, cfg)
+        row.update(rendezvous_adapter_diagnostics(policy))
         episode_rows.append(row)
         step_rows.extend(trajectory["step_rows"])
         if should_checkpoint(episode + 1, int(args.checkpoint_interval)):
@@ -324,6 +370,17 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--beam-rank-aux-coef must be nonnegative.")
     if float(getattr(args, "beam_rank_temperature", 4.0)) <= 0.0:
         raise ValueError("--beam-rank-temperature must be positive.")
+    if float(getattr(args, "rendezvous_beam_aux_coef", 0.0)) < 0.0:
+        raise ValueError("--rendezvous-beam-aux-coef must be nonnegative.")
+    if float(getattr(args, "rendezvous_role_aux_coef", 0.0)) < 0.0:
+        raise ValueError("--rendezvous-role-aux-coef must be nonnegative.")
+    if float(getattr(args, "rendezvous_adapter_learning_rate", 0.03)) <= 0.0:
+        raise ValueError("--rendezvous-adapter-learning-rate must be positive.")
+    if bool(getattr(args, "rendezvous_adapter", False)) and str(getattr(args, "network", "")) in {
+        "shared",
+        "scalegraph_beam",
+    }:
+        raise ValueError("--rendezvous-adapter requires a contention network.")
     if bool(getattr(args, "separate_action_loss", False)) and str(getattr(args, "network", "")) == "scalegraph_beam":
         raise ValueError("--separate-action-loss is not implemented for scalegraph_beam.")
 
@@ -368,6 +425,9 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
         value = getattr(args, arg_name)
         if value is not None:
             replacements[field_name] = value
+    rendezvous_observation = getattr(args, "rendezvous_observation", None)
+    if rendezvous_observation is not None:
+        replacements["rendezvous_observation_enabled"] = bool(rendezvous_observation)
     mobility = dict(config.mobility)
     if args.mobility_model is not None:
         mobility["model"] = str(args.mobility_model)
@@ -409,11 +469,13 @@ def build_policy(
     | TopologyAdaptiveGatedContentionGraphActorCritic
 ):
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", False))
+    use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     kwargs["use_contention_mode_prior"] = use_contention_mode_prior
+    kwargs["use_rendezvous_adapter"] = use_rendezvous_adapter
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
@@ -466,6 +528,7 @@ def collect_trajectory(
     expert_actions_by_step = []
     central_features = []
     step_rows = []
+    rendezvous_totals = empty_rendezvous_action_diagnostics()
     cumulative_reward = 0.0
     truncated = False
     policy.train()
@@ -483,6 +546,9 @@ def collect_trajectory(
             expert_actions_by_step.append([])
         with torch_module.no_grad():
             step = policy.act(observations, deterministic=False)
+        action_diagnostics = beam_selection_diagnostics(observations_by_step[-1], step.actions)
+        action_diagnostics.update(rendezvous_pair_diagnostics(env, observations_by_step[-1], step.actions))
+        accumulate_rendezvous_action_diagnostics(rendezvous_totals, action_diagnostics)
         observations, reward, _terminated, truncated, info = env.step(step.actions)
         old_log_probs.append(step.log_probs.detach().cpu())
         old_mode_log_probs.append(component_or_zeros(step.mode_log_probs, step.log_probs).detach().cpu())
@@ -540,7 +606,7 @@ def collect_trajectory(
                 "access_gate_normal_ratio": float(info.get("access_gate_normal_ratio", 0.0)),
                 "access_gate_aggressive_ratio": float(info.get("access_gate_aggressive_ratio", 0.0)),
             }
-            row.update(beam_selection_diagnostics(observations_by_step[-1], step.actions))
+            row.update(action_diagnostics)
             step_rows.append(row)
         if int(args.resource_log_period) > 0 and global_step % int(args.resource_log_period) == 0:
             snapshot = resource_snapshot()
@@ -550,6 +616,7 @@ def collect_trajectory(
 
     summary = env._sim.summarize(episode).as_dict()
     summary.update(env.access_gate_summary())
+    summary.update(summarize_rendezvous_action_diagnostics(rendezvous_totals))
     return {
         "episode": episode,
         "seed": seed,
@@ -588,7 +655,25 @@ def beam_selection_diagnostics(observations: Sequence[dict[str, Any]], actions: 
     top1_hits = 0
     top3_hits = 0
     active = 0
+    rendezvous_available = 0
+    rendezvous_beam_hits = 0
+    rendezvous_mode_matches = 0
+    rendezvous_joint_matches = 0
     for observation, action in zip(observations, actions, strict=True):
+        rendezvous_score = np.asarray(
+            observation.get("rendezvous_beam_score", np.zeros(0, dtype=np.float32)),
+            dtype=float,
+        )
+        role_hint = float(np.asarray(observation.get("rendezvous_role_hint", [0.0]), dtype=float).reshape(-1)[0])
+        has_rendezvous = bool(rendezvous_score.size and np.any(rendezvous_score > 0.0) and role_hint != 0.0)
+        if has_rendezvous:
+            rendezvous_available += 1
+            expected_mode = "tx" if role_hint > 0.0 else "rx"
+            mode_match = action.mode == expected_mode
+            beam_hit = 0 <= int(action.beam) < rendezvous_score.size and rendezvous_score[int(action.beam)] > 0.0
+            rendezvous_mode_matches += int(mode_match)
+            rendezvous_beam_hits += int(beam_hit)
+            rendezvous_joint_matches += int(mode_match and beam_hit)
         if action.mode == "idle":
             continue
         active += 1
@@ -607,6 +692,7 @@ def beam_selection_diagnostics(observations: Sequence[dict[str, Any]], actions: 
         top1_hits += int(rank == 1)
         top3_hits += int(rank <= 3)
     denom = max(1, active)
+    rendezvous_denom = max(1, rendezvous_available)
     return {
         "active_actions": int(active),
         "beam_candidate_count_mean_active": float(np.mean(candidate_counts)) if candidate_counts else 0.0,
@@ -614,7 +700,145 @@ def beam_selection_diagnostics(observations: Sequence[dict[str, Any]], actions: 
         "beam_score_gap_mean_active": float(np.mean(score_gaps)) if score_gaps else 0.0,
         "beam_top1_rate_active": float(top1_hits / denom),
         "beam_top3_rate_active": float(top3_hits / denom),
+        "rendezvous_observation_agent_count": int(rendezvous_available),
+        "rendezvous_beam_hit_count": int(rendezvous_beam_hits),
+        "rendezvous_mode_match_count": int(rendezvous_mode_matches),
+        "rendezvous_joint_action_count": int(rendezvous_joint_matches),
+        "rendezvous_beam_hit_rate": float(rendezvous_beam_hits / rendezvous_denom),
+        "rendezvous_mode_match_rate": float(rendezvous_mode_matches / rendezvous_denom),
+        "rendezvous_joint_action_rate": float(rendezvous_joint_matches / rendezvous_denom),
     }
+
+
+def empty_rendezvous_action_diagnostics() -> dict[str, int]:
+    return {
+        "rendezvous_observation_agent_count": 0,
+        "rendezvous_beam_hit_count": 0,
+        "rendezvous_mode_match_count": 0,
+        "rendezvous_joint_action_count": 0,
+        "reciprocal_report_pair_count": 0,
+        "reciprocal_scheduled_pair_count": 0,
+        "reciprocal_actor_pair_count": 0,
+    }
+
+
+def accumulate_rendezvous_action_diagnostics(total: dict[str, int], row: dict[str, Any]) -> None:
+    for key in total:
+        total[key] += int(row.get(key, 0))
+
+
+def summarize_rendezvous_action_diagnostics(total: dict[str, int]) -> dict[str, Any]:
+    available = int(total["rendezvous_observation_agent_count"])
+    denom = max(1, available)
+    return {
+        **total,
+        "rendezvous_beam_hit_rate": float(total["rendezvous_beam_hit_count"] / denom),
+        "rendezvous_mode_match_rate": float(total["rendezvous_mode_match_count"] / denom),
+        "rendezvous_joint_action_rate": float(total["rendezvous_joint_action_count"] / denom),
+        "reciprocal_schedule_rate": float(
+            total["reciprocal_scheduled_pair_count"] / max(1, total["reciprocal_report_pair_count"])
+        ),
+        "reciprocal_actor_conversion_rate": float(
+            total["reciprocal_actor_pair_count"] / max(1, total["reciprocal_scheduled_pair_count"])
+        ),
+    }
+
+
+def rendezvous_pair_diagnostics(
+    env: MarlNeighborDiscoveryEnv,
+    observations: Sequence[dict[str, Any]],
+    actions: Sequence[Action],
+) -> dict[str, int]:
+    """Truth-assisted offline audit; outputs never enter actor observations or rewards."""
+
+    simulator = env._sim
+    reciprocal_reports = 0
+    reciprocal_scheduled = 0
+    reciprocal_actor = 0
+    for first in range(env.n_agents):
+        for second in range(first + 1, env.n_agents):
+            if not _has_anonymous_report_for(simulator, first, second, env._slot):
+                continue
+            if not _has_anonymous_report_for(simulator, second, first, env._slot):
+                continue
+            reciprocal_reports += 1
+            first_beam = simulator.beam_from_to(first, second)
+            second_beam = simulator.beam_from_to(second, first)
+            first_active = _rendezvous_score_matches(observations[first], first_beam, env.cfg)
+            second_active = _rendezvous_score_matches(observations[second], second_beam, env.cfg)
+            if not (first_active and second_active):
+                continue
+            reciprocal_scheduled += 1
+            first_action = actions[first]
+            second_action = actions[second]
+            aligned = beam_matches(
+                int(first_action.beam),
+                first_beam,
+                env.cfg.azimuth_cells,
+                env.cfg.alignment_tolerance_cells,
+            ) and beam_matches(
+                int(second_action.beam),
+                second_beam,
+                env.cfg.azimuth_cells,
+                env.cfg.alignment_tolerance_cells,
+            )
+            complementary = {first_action.mode, second_action.mode} == {MODE_TX, MODE_RX}
+            reciprocal_actor += int(aligned and complementary)
+    return {
+        "reciprocal_report_pair_count": int(reciprocal_reports),
+        "reciprocal_scheduled_pair_count": int(reciprocal_scheduled),
+        "reciprocal_actor_pair_count": int(reciprocal_actor),
+    }
+
+
+def _has_anonymous_report_for(simulator: Any, source: int, target: int, slot: int) -> bool:
+    age = int(slot) - simulator.sensing_report_slot[source]
+    valid = (
+        (age >= 0)
+        & (age <= max(1, int(simulator.cfg.sensing_report_ttl_slots)))
+        & (simulator.sensing_report_confidence[source] > 0.0)
+        & np.all(np.isfinite(simulator.sensing_report_position[source]), axis=1)
+    )
+    if not np.any(valid):
+        return False
+    tolerance_m = max(100.0, 4.0 * float(simulator.cfg.sensing_position_error_std_m))
+    errors = np.linalg.norm(
+        simulator.sensing_report_position[source, valid] - simulator.states[target].position,
+        axis=1,
+    )
+    return bool(np.any(errors <= tolerance_m))
+
+
+def _rendezvous_score_matches(observation: dict[str, Any], target_beam: int, cfg: SimulationConfig) -> bool:
+    score = np.asarray(observation.get("rendezvous_beam_score", np.zeros(0)), dtype=float)
+    return any(
+        score[int(beam)] > 0.0
+        and beam_matches(int(beam), int(target_beam), cfg.azimuth_cells, cfg.alignment_tolerance_cells)
+        for beam in np.flatnonzero(score > 0.0)
+    )
+
+
+def rendezvous_adapter_diagnostics(policy: Any) -> dict[str, float]:
+    model = policy.model
+    if not hasattr(model, "rendezvous_beam_adapter") or not hasattr(model, "rendezvous_mode_adapter"):
+        return {
+            "rendezvous_adapter_beam_score_weight": 0.0,
+            "rendezvous_adapter_beam_presence_weight": 0.0,
+            "rendezvous_adapter_tx_role_weight": 0.0,
+            "rendezvous_adapter_rx_role_weight": 0.0,
+        }
+    beam_weight = model.rendezvous_beam_adapter.weight.detach().cpu().reshape(-1)
+    mode_weight = model.rendezvous_mode_adapter.weight.detach().cpu()
+    return {
+        "rendezvous_adapter_beam_score_weight": float(beam_weight[0].item()),
+        "rendezvous_adapter_beam_presence_weight": float(beam_weight[1].item()),
+        "rendezvous_adapter_tx_role_weight": float(mode_weight[MODE_TO_INDEX[MODE_TX], 0].item()),
+        "rendezvous_adapter_rx_role_weight": float(mode_weight[MODE_TO_INDEX[MODE_RX], 0].item()),
+    }
+
+
+def optimizer_parameters(optimizer: Any) -> list[Any]:
+    return [parameter for group in optimizer.param_groups for parameter in group["params"]]
 
 
 def update_policy(
@@ -639,9 +863,13 @@ def update_policy(
     clip_fracs = []
     bc_losses = []
     beam_rank_aux_losses = []
+    rendezvous_beam_aux_losses = []
+    rendezvous_role_aux_losses = []
     beam_active_fracs = []
     separate_action_loss = bool(getattr(args, "separate_action_loss", False))
     beam_rank_aux_coef = float(getattr(args, "beam_rank_aux_coef", 0.0))
+    rendezvous_beam_aux_coef = float(getattr(args, "rendezvous_beam_aux_coef", 0.0))
+    rendezvous_role_aux_coef = float(getattr(args, "rendezvous_role_aux_coef", 0.0))
 
     if centralized:
         if critic is None:
@@ -690,22 +918,34 @@ def update_policy(
                 beam_rank_aux_coef,
                 temperature=float(getattr(args, "beam_rank_temperature", 4.0)),
             )
+            rendezvous_beam_aux_loss, rendezvous_role_aux_loss = optional_rendezvous_auxiliary_losses(
+                policy,
+                trajectory["observations"],
+                torch_module,
+                log_probs,
+                rendezvous_beam_aux_coef,
+                rendezvous_role_aux_coef,
+            )
             loss = (
                 policy_loss
                 + float(args.value_coef) * value_loss
                 - float(args.entropy_coef) * entropy
                 + float(getattr(args, "expert_bc_weight", 0.0)) * bc_loss
                 + beam_rank_aux_coef * beam_rank_aux_loss
+                + rendezvous_beam_aux_coef * rendezvous_beam_aux_loss
+                + rendezvous_role_aux_coef * rendezvous_role_aux_loss
             )
             optimizer.zero_grad()
             loss.backward()
-            torch_module.nn.utils.clip_grad_norm_(optimizer.param_groups[0]["params"], float(args.max_grad_norm))
+            torch_module.nn.utils.clip_grad_norm_(optimizer_parameters(optimizer), float(args.max_grad_norm))
             optimizer.step()
             policy_losses.append(float(policy_loss.item()))
             value_losses.append(float(value_loss.item()))
             entropy_values.append(float(entropy.item()))
             bc_losses.append(float(bc_loss.item()))
             beam_rank_aux_losses.append(float(beam_rank_aux_loss.item()))
+            rendezvous_beam_aux_losses.append(float(rendezvous_beam_aux_loss.item()))
+            rendezvous_role_aux_losses.append(float(rendezvous_role_aux_loss.item()))
             beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
             approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
         return loss_summary(
@@ -719,6 +959,8 @@ def update_policy(
             beam_policy_losses,
             gate_policy_losses,
             beam_rank_aux_losses,
+            rendezvous_beam_aux_losses,
+            rendezvous_role_aux_losses,
             beam_active_fracs,
         )
 
@@ -765,12 +1007,22 @@ def update_policy(
             beam_rank_aux_coef,
             temperature=float(getattr(args, "beam_rank_temperature", 4.0)),
         )
+        rendezvous_beam_aux_loss, rendezvous_role_aux_loss = optional_rendezvous_auxiliary_losses(
+            policy,
+            trajectory["observations"],
+            torch_module,
+            log_probs,
+            rendezvous_beam_aux_coef,
+            rendezvous_role_aux_coef,
+        )
         loss = (
             policy_loss
             + float(args.value_coef) * value_loss
             - float(args.entropy_coef) * entropy
             + float(getattr(args, "expert_bc_weight", 0.0)) * bc_loss
             + beam_rank_aux_coef * beam_rank_aux_loss
+            + rendezvous_beam_aux_coef * rendezvous_beam_aux_loss
+            + rendezvous_role_aux_coef * rendezvous_role_aux_loss
         )
         optimizer.zero_grad()
         loss.backward()
@@ -781,6 +1033,8 @@ def update_policy(
         entropy_values.append(float(entropy.item()))
         bc_losses.append(float(bc_loss.item()))
         beam_rank_aux_losses.append(float(beam_rank_aux_loss.item()))
+        rendezvous_beam_aux_losses.append(float(rendezvous_beam_aux_loss.item()))
+        rendezvous_role_aux_losses.append(float(rendezvous_role_aux_loss.item()))
         beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
         approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
     return loss_summary(
@@ -794,6 +1048,8 @@ def update_policy(
         beam_policy_losses,
         gate_policy_losses,
         beam_rank_aux_losses,
+        rendezvous_beam_aux_losses,
+        rendezvous_role_aux_losses,
         beam_active_fracs,
     )
 
@@ -1095,6 +1351,92 @@ def beam_ranking_aux_loss(
     return torch_module.cat(losses).mean()
 
 
+def optional_rendezvous_auxiliary_losses(
+    policy: SharedBeamActorCritic,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    torch_module: Any,
+    zero_like: Any,
+    beam_coefficient: float,
+    role_coefficient: float,
+) -> tuple[Any, Any]:
+    zero = zero_like.sum() * 0.0
+    if float(beam_coefficient) <= 0.0 and float(role_coefficient) <= 0.0:
+        return zero, zero
+    return rendezvous_auxiliary_losses(policy, observations_by_step, torch_module)
+
+
+def rendezvous_auxiliary_losses(
+    policy: SharedBeamActorCritic,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    torch_module: Any,
+) -> tuple[Any, Any]:
+    """Fit action heads to local sensing geometry without overriding actions."""
+
+    informative_observations = []
+    for observations in observations_by_step:
+        for observation in observations:
+            rendezvous_score = np.asarray(
+                observation.get("rendezvous_beam_score", np.zeros(0, dtype=np.float32)),
+                dtype=np.float32,
+            )
+            role_hint = float(np.asarray(observation.get("rendezvous_role_hint", [0.0])).reshape(-1)[0])
+            if rendezvous_score.size and np.any(rendezvous_score > 0.0) and role_hint != 0.0:
+                informative_observations.append(observation)
+
+    beam_losses = []
+    role_losses = []
+    chunk_size = 64
+    for start in range(0, len(informative_observations), chunk_size):
+        observations = informative_observations[start : start + chunk_size]
+        if getattr(policy, "supports_access_gate_action", False) and hasattr(policy, "batched_action_logits_value"):
+            mode_logits, beam_logits, _gate_logits, _value = policy.batched_action_logits_value(
+                observations,
+                hard_mask=True,
+            )
+        else:
+            mode_logits, beam_logits, _value = policy.batched_logits_value(observations, hard_mask=True)
+        rendezvous_score = torch_module.stack(
+            [
+                torch_module.as_tensor(
+                    observation.get("rendezvous_beam_score", np.zeros(policy.n_beams, dtype=np.float32)),
+                    dtype=torch_module.float32,
+                    device=policy.device,
+                )
+                for observation in observations
+            ],
+            dim=0,
+        )
+        role_hint = torch_module.as_tensor(
+            [float(np.asarray(observation.get("rendezvous_role_hint", [0.0])).reshape(-1)[0]) for observation in observations],
+            dtype=torch_module.float32,
+            device=policy.device,
+        )
+        beam_targets = rendezvous_score.argmax(dim=-1)
+        beam_losses.append(
+            torch_module.nn.functional.cross_entropy(
+                beam_logits,
+                beam_targets,
+                reduction="none",
+            )
+        )
+        role_targets = torch_module.where(
+            role_hint > 0.0,
+            torch_module.full_like(role_hint, MODE_TO_INDEX[MODE_TX], dtype=torch_module.long),
+            torch_module.full_like(role_hint, MODE_TO_INDEX[MODE_RX], dtype=torch_module.long),
+        )
+        role_losses.append(
+            torch_module.nn.functional.cross_entropy(
+                mode_logits,
+                role_targets,
+                reduction="none",
+            )
+        )
+    parameter_zero = next(iter(policy.parameters())).sum() * 0.0
+    beam_loss = torch_module.cat(beam_losses).mean() if beam_losses else parameter_zero
+    role_loss = torch_module.cat(role_losses).mean() if role_losses else parameter_zero
+    return beam_loss, role_loss
+
+
 def behavior_cloning_loss(
     policy: SharedBeamActorCritic,
     observations_by_step: Sequence[Sequence[dict[str, Any]]],
@@ -1280,14 +1622,19 @@ def evaluate_policy(
                     )
                     observations, _ = env.reset(seed=seed)
                     rewards = []
+                    rendezvous_totals = empty_rendezvous_action_diagnostics()
                     truncated = False
                     while not truncated:
                         step = policy.act(observations, deterministic=not use_stochastic)
+                        action_diagnostics = beam_selection_diagnostics(observations, step.actions)
+                        action_diagnostics.update(rendezvous_pair_diagnostics(env, observations, step.actions))
+                        accumulate_rendezvous_action_diagnostics(rendezvous_totals, action_diagnostics)
                         observations, reward, _terminated, truncated, _info = env.step(step.actions)
                         rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
                     rewards_tensor = torch_module.stack(rewards)
                     summary = env._sim.summarize(start_episode + offset).as_dict()
                     summary.update(env.access_gate_summary())
+                    summary.update(summarize_rendezvous_action_diagnostics(rendezvous_totals))
                     row = {
                         "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
                         "eval_after_episode": start_episode,
@@ -1323,6 +1670,8 @@ def loss_summary(
     beam_policy_losses: list[float] | None = None,
     gate_policy_losses: list[float] | None = None,
     beam_rank_aux_losses: list[float] | None = None,
+    rendezvous_beam_aux_losses: list[float] | None = None,
+    rendezvous_role_aux_losses: list[float] | None = None,
     beam_active_fracs: list[float] | None = None,
 ) -> dict[str, float]:
     return {
@@ -1336,6 +1685,12 @@ def loss_summary(
         "clip_fraction": float(np.mean(clip_fracs)),
         "expert_bc_loss": float(np.mean(bc_losses)) if bc_losses else 0.0,
         "beam_rank_aux_loss": float(np.mean(beam_rank_aux_losses)) if beam_rank_aux_losses else 0.0,
+        "rendezvous_beam_aux_loss": float(np.mean(rendezvous_beam_aux_losses))
+        if rendezvous_beam_aux_losses
+        else 0.0,
+        "rendezvous_role_aux_loss": float(np.mean(rendezvous_role_aux_losses))
+        if rendezvous_role_aux_losses
+        else 0.0,
         "beam_active_fraction": float(np.mean(beam_active_fracs)) if beam_active_fracs else 0.0,
     }
 
@@ -1556,6 +1911,10 @@ def build_manifest(
         "gate_loss_coef": float(getattr(args, "gate_loss_coef", 0.25)),
         "beam_rank_aux_coef": float(getattr(args, "beam_rank_aux_coef", 0.0)),
         "beam_rank_temperature": float(getattr(args, "beam_rank_temperature", 4.0)),
+        "rendezvous_beam_aux_coef": float(getattr(args, "rendezvous_beam_aux_coef", 0.0)),
+        "rendezvous_role_aux_coef": float(getattr(args, "rendezvous_role_aux_coef", 0.0)),
+        "rendezvous_adapter": bool(getattr(args, "rendezvous_adapter", False)),
+        "rendezvous_adapter_learning_rate": float(getattr(args, "rendezvous_adapter_learning_rate", 0.03)),
         "feature_flags": feature_flags,
         "rendezvous_observation_enabled": bool(cfg.rendezvous_observation_enabled),
         "contention_mode_prior": contention_mode_prior_enabled(args),

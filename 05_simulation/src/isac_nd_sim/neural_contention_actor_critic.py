@@ -37,6 +37,7 @@ class ContentionGraphActorCritic:
         use_rule_residual: bool = False,
         rule_residual_scale: float = 1.0,
         use_contention_mode_prior: bool = False,
+        use_rendezvous_adapter: bool = False,
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
         disabled_modes: Sequence[str] | None = None,
@@ -58,6 +59,7 @@ class ContentionGraphActorCritic:
         self.use_rule_residual = bool(use_rule_residual)
         self.rule_residual_scale = float(rule_residual_scale)
         self.use_contention_mode_prior = bool(use_contention_mode_prior)
+        self.use_rendezvous_adapter = bool(use_rendezvous_adapter)
         self.use_access_gate = bool(use_access_gate)
         self.access_gate_variant = str(access_gate_variant)
         self.supports_access_gate_action = bool(use_access_gate)
@@ -67,6 +69,7 @@ class ContentionGraphActorCritic:
             self.hidden_dim,
             self.use_access_gate,
             self.access_gate_variant,
+            self.use_rendezvous_adapter,
         ).to(self.device)
 
     def parameters(self):
@@ -162,6 +165,8 @@ class ContentionGraphActorCritic:
                 tensors["beam_features"][..., 5] = tensors["beam_collision_norm"]
                 tensors["local_summary"] = tensors["local_summary"].clone()
                 tensors["local_summary"][..., 3] = 0.0
+                tensors["rendezvous_beam_score"] = torch.zeros_like(tensors["rendezvous_beam_score"])
+                tensors["rendezvous_role_hint"] = torch.zeros_like(tensors["rendezvous_role_hint"])
         if not self.use_topology_deficit and "topology_deficit" in tensors:
             tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
             tensors["contention_state"] = tensors["contention_state"].clone()
@@ -308,6 +313,7 @@ class _ContentionGraphActorCriticModule:
         hidden_dim: int,
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
+        use_rendezvous_adapter: bool = False,
     ):
         import torch
         import torch.nn as nn
@@ -325,6 +331,7 @@ class _ContentionGraphActorCriticModule:
                 self.n_beams = int(n_beams)
                 self.hidden_dim = int(hidden_dim)
                 self.use_access_gate = bool(use_access_gate)
+                self.use_rendezvous_adapter = bool(use_rendezvous_adapter)
                 self.access_gate_variant = gate_variant
                 self.beam_encoder = nn.Sequential(
                     nn.Linear(dims.beam_dim, hidden_dim),
@@ -354,6 +361,11 @@ class _ContentionGraphActorCriticModule:
                 self.contention_beam_gate = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
                 self.value_head = nn.Linear(hidden_dim, 1)
+                if self.use_rendezvous_adapter:
+                    self.rendezvous_beam_adapter = nn.Linear(2, 1, bias=False)
+                    self.rendezvous_mode_adapter = nn.Linear(1, len(MODE_NAMES), bias=False)
+                    nn.init.zeros_(self.rendezvous_beam_adapter.weight)
+                    nn.init.zeros_(self.rendezvous_mode_adapter.weight)
                 if self.use_access_gate:
                     self.access_gate_head = nn.Sequential(
                         nn.Linear(2 * hidden_dim, hidden_dim),
@@ -411,6 +423,10 @@ class _ContentionGraphActorCriticModule:
                     query = self.beam_query(self.context_encoder(context_input))
                 context = self.context_encoder(context_input)
                 mode_logits = self.mode_head(context) + self.contention_mode_residual(contention)
+                if self.use_rendezvous_adapter:
+                    mode_logits = mode_logits + np.log(2.0) * self.rendezvous_mode_adapter(
+                        tensors["rendezvous_role_hint"]
+                    )
                 if self.use_access_gate:
                     mode_logits = self.apply_access_gate(mode_logits, context, contention, tensors)
                     gate_logits = self.access_gate_action_head(torch.cat([context, contention], dim=-1))
@@ -421,6 +437,17 @@ class _ContentionGraphActorCriticModule:
                 query_dim = 0 if beam_tokens.dim() == 2 else 1
                 beam_logits = (beam_tokens * gated_query.unsqueeze(query_dim)).sum(dim=-1) / np.sqrt(float(self.hidden_dim))
                 beam_logits = beam_logits + self.beam_bias(beam_tokens).squeeze(-1)
+                if self.use_rendezvous_adapter:
+                    rendezvous_evidence = torch.stack(
+                        [
+                            tensors["rendezvous_beam_score"],
+                            torch.abs(tensors["rendezvous_beam_role"]),
+                        ],
+                        dim=-1,
+                    )
+                    beam_logits = beam_logits + np.log(float(max(2, self.n_beams))) * self.rendezvous_beam_adapter(
+                        rendezvous_evidence
+                    ).squeeze(-1)
                 value = self.value_head(context)
                 return mode_logits, beam_logits, gate_logits, value
 
@@ -626,6 +653,16 @@ def observation_to_contention_tensors(observation: dict, device, torch_module, n
         "beam_collision_norm": torch_module.as_tensor(collision_norm, dtype=torch_module.float32, device=device),
         "rendezvous_beam_role": torch_module.as_tensor(
             rendezvous_role,
+            dtype=torch_module.float32,
+            device=device,
+        ),
+        "rendezvous_beam_score": torch_module.as_tensor(
+            observation.get("rendezvous_beam_score", np.zeros(observed_beams, dtype=np.float32)),
+            dtype=torch_module.float32,
+            device=device,
+        ),
+        "rendezvous_role_hint": torch_module.as_tensor(
+            observation.get("rendezvous_role_hint", np.zeros(1, dtype=np.float32)),
             dtype=torch_module.float32,
             device=device,
         ),

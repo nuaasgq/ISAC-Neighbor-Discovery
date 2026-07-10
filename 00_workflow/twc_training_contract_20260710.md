@@ -27,7 +27,7 @@ This contract defines the first scientifically auditable MARL environment after 
 - Evaluation saves/restores training RNG state and uses a checkpoint/config fingerprint for resume safety.
 - Checkpoints store the resolved environment protocol, feature flags, and contract version.
 
-The optional beam-ranking loss is measurement-driven: its target is the local candidate score created from the node's own ISAC/protocol memory. It does not use true neighbor beams. Any paper result using it must report its coefficient and include a zero-coefficient ablation.
+The optional beam-ranking loss is measurement-driven: its target is the local candidate score created from the node's own ISAC/protocol memory. The rendezvous beam/role losses use only reprojected anonymous sensing reports and local role hints. The optional ISAC evidence adapter is zero-initialized and produces no behavioral change before training; its beam residual is normalized by `log(M)` for codebook size `M`. These components do not use true neighbor beams or identities. Any paper result using them must report all coefficients, adapter learning rate, and adapter-zero/observation-zero ablations.
 
 ## Reference Configuration
 
@@ -41,27 +41,29 @@ The optional beam-ranking loss is measurement-driven: its target is the local ca
 - one shared waveform TX power for communication, sensing, and radio-energy accounting;
 - Gauss-Markov UAV mobility.
 
-Recommended first convergence run:
+Validated learnability-screen command:
 
 ```powershell
 python 05_simulation/run_marl_training.py `
-  --episodes 2000 --slots 300 `
+  --episodes 5 --slots 300 --eval-interval 0 `
+  --eval-episodes 2 --stochastic-eval --checkpoint-interval 1 `
   --separate-action-loss --beam-rank-aux-coef 0.05 `
-  --eval-interval 50 --eval-episodes 10 --stochastic-eval `
-  --checkpoint-interval 50 `
-  --output 05_simulation/results_raw/twc_n10_b10_seed20260705
+  --rendezvous-beam-aux-coef 0.2 --rendezvous-role-aux-coef 0.1 `
+  --rendezvous-adapter --rendezvous-adapter-learning-rate 0.1 `
+  --seed 20260705 --rendezvous-observation `
+  --output 05_simulation/results_raw/twc_rendezvous_screen_seed20260705
 ```
 
-This is a campaign command, not a claim that 2000 episodes is optimal. Convergence, multiple seeds, and held-out comparison must determine the final budget.
+This is a short learnability screen, not a convergence or final-paper command. A longer budget must be selected only after the reciprocal-report/phase mechanism is improved.
 
 ## Verification Completed
 
-- Full test suite: 96 tests passed after the PHY/MAC and rendezvous-observation updates.
+- Full test suite: 101 tests passed after the PHY/MAC, rendezvous-observation, auxiliary-loss, and evidence-adapter updates.
 - Three-episode/20-slot smoke: checkpoints, losses, per-step logs, held-out evaluation, runtime metadata, and resource logs were generated.
 - Policy update check: 28 of 30 policy tensors changed between episode 1 and the final checkpoint; parameter delta L2 was approximately 0.0302.
 - One-episode/300-slot TX/RX smoke: 3000 active actions, zero standalone sensing actions, zero idle actions, finite PPO/value/beam-ranking losses, and peak memory below configured limits.
 
-The 2026-07-10 baseline gate found zero reciprocal beam-alignment opportunities for random, Wang-table, and rule-ISAC methods in the same first three B=10/300-slot seeds. This is a failed learnability gate, not evidence of method performance. MARL training remains blocked until the sensing-to-rendezvous mechanism yields nonzero opportunities without simulator-truth leakage.
+The updated 2026-07-10 gate passed after adding local rendezvous observations, measurement-derived auxiliary objectives, and the zero-initialized learned evidence adapter. Across three training seeds and six held-out episodes, the complete method discovered eight edges (mean discovery rate 2.96%, 5/6 nonzero), while random, Wang-table, and adapter-zero controls remained at zero on the same scenarios. This is exploratory learnability evidence only; scale transfer remains blocked.
 
 ## Invalidated Evidence
 
@@ -79,7 +81,7 @@ Results generated before this contract must not be combined with post-refactor r
 
 1. Calibrate the implemented close-in/Rician/SINR communication PHY against cited UAV/mmWave operating points, then add blockage, Doppler/temporal correlation, and BLER sensitivity where justified.
 2. Calibrate the sensing detector and communication PHY against cited MIMO-OTFS/mmWave parameters; do not treat waveform metadata as waveform simulation.
-3. Establish learnability with multi-seed convergence runs before any scale-transfer campaign.
+3. Improve reciprocal-report formation and noisy phase consistency, then confirm learnability on untouched seeds before any scale-transfer campaign.
 4. Run common-environment comparisons against random, Wang-aligned, MARL without ISAC, base MARL with ISAC, and the proposed network/learning enhancements.
 5. Report confidence intervals, paired-seed effect sizes, failure cases, ablations, and compute/resource budgets.
 

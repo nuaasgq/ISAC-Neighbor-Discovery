@@ -1,0 +1,92 @@
+{
+  "scope": "n10_b10_300slot_rendezvous_learnability_gate",
+  "training_seeds": [
+    20260705,
+    20260715,
+    20260725
+  ],
+  "evaluation_episodes_per_training_seed": 2,
+  "method_order": [
+    "Uniform random",
+    "Wang ISAC tables",
+    "Adapter zero",
+    "MARL + ISAC adapter"
+  ],
+  "headline": {
+    "mean_discovered_edges": 1.3333333333333333,
+    "mean_discovery_rate": 0.02962962962962963,
+    "nonzero_episodes": 5,
+    "total_episodes": 6,
+    "one_sided_exact_sign_p_excluding_ties": 0.03125,
+    "interpretation": "learnability gate only; not a paper-level final performance claim"
+  },
+  "inputs": [
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_explore_screen5_seed20260705\\eval_episode_metrics.csv",
+      "sha256": "465e53ab8c2dc568a11797b9504cabc4dc6fa1a978f3433490caa1c780cccb50"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_zero_eval_seed20260705\\eval_episode_metrics.csv",
+      "sha256": "0981361855a33ddf99fdf952fef6ad014bd737fd42c4c30941fffd173feb1af4"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\protocol_controls_seed20260705\\uniform_random\\eval_episode_metrics.csv",
+      "sha256": "26e67100f75e260f3f96170eb33481a3760a545eb664de5242846b3c6027547a"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\protocol_controls_seed20260705\\wang2025_isac_tables\\eval_episode_metrics.csv",
+      "sha256": "f661737410d3183026f5bf7fbcdf11aed56d8c30259f8751bfd6f82fc9879f57"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_explore_screen5_seed20260715\\eval_episode_metrics.csv",
+      "sha256": "3334fc984a81199db8bd6f213facdbc259c97745c5cef19ff9b96c6710f9ca14"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_zero_eval_seed20260715\\eval_episode_metrics.csv",
+      "sha256": "0c0841d8cd08500eef8beb2ea8629d32a6ec12ab3ad196199142db10348b718d"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\protocol_controls_seed20260715\\uniform_random\\eval_episode_metrics.csv",
+      "sha256": "bacd756c8a39a442ab4e61322e5cb2c473f69a10c0769e3f91249526c75f6f16"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\protocol_controls_seed20260715\\wang2025_isac_tables\\eval_episode_metrics.csv",
+      "sha256": "9996a891fec586e690ef06111f0f7ac073201e01d18c4a96449c8431607d9746"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_explore_screen5_seed20260725\\eval_episode_metrics.csv",
+      "sha256": "2aab6900945c13d5688cd282f1d14af67b23ed060ca9b6076ea3a25493244723"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_zero_eval_seed20260725\\eval_episode_metrics.csv",
+      "sha256": "c09db7ced6fd1e437682ee2171ced864468696f78b5017afc4e8c0bd53f9715b"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\protocol_controls_seed20260725\\uniform_random\\eval_episode_metrics.csv",
+      "sha256": "5dcb52ce1f1c0f710f7e450c9f660989e07b3c64a63adc1c5cc66c162f721190"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\protocol_controls_seed20260725\\wang2025_isac_tables\\eval_episode_metrics.csv",
+      "sha256": "f7ddaef80aee9c059905a2d37926c3aee41dd8ce8db3a8289e47124be537f658"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_explore_screen5_seed20260705\\episode_metrics.csv",
+      "sha256": "0728299fbfd17420cb450220f48d984867903ac843216288a853efa79893c68b"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_explore_screen5_seed20260715\\episode_metrics.csv",
+      "sha256": "f2f28c1a44b706da4566c8d8efac15574ee9e348845dbd697690fbbe4b757247"
+    },
+    {
+      "path": "05_simulation\\results_raw\\marl_rendezvous_learnability_gate_20260710\\adapter_explore_screen5_seed20260725\\episode_metrics.csv",
+      "sha256": "00befe17f33fe6ff61864651e63b8a470514f58cc19c3917e70774199e31c01a"
+    }
+  ],
+  "outputs": [
+    "06_analysis\\paper_tables\\marl\\rendezvous_learnability_gate_20260710\\paired_evaluation_rows.csv",
+    "06_analysis\\paper_tables\\marl\\rendezvous_learnability_gate_20260710\\method_summary.csv",
+    "06_analysis\\paper_tables\\marl\\rendezvous_learnability_gate_20260710\\training_diagnostics.csv",
+    "06_analysis\\paper_figures\\marl\\rendezvous_learnability_gate_20260710\\rendezvous_gate_method_comparison.png",
+    "06_analysis\\paper_figures\\marl\\rendezvous_learnability_gate_20260710\\rendezvous_adapter_training_diagnostics.png"
+  ]
+}

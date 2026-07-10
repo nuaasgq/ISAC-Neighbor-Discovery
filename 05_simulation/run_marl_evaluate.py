@@ -96,9 +96,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--disable-topology-deficit", action="store_true", help="Zero topology-deficit features at evaluation time.")
     parser.add_argument("--disable-rule-residual", action="store_true", help="Disable handcrafted rule residual logits at evaluation time.")
     parser.add_argument(
+        "--rendezvous-observation",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Override local sensing-derived rendezvous observations. "
+            "Defaults to the resolved training checkpoint setting."
+        ),
+    )
+    parser.add_argument(
         "--disable-contention-mode-prior",
         action="store_true",
         help="Disable the hand-coded contention/topology mode-logit prior in contention networks during evaluation.",
+    )
+    parser.add_argument(
+        "--disable-rendezvous-adapter",
+        action="store_true",
+        help="Zero the trained ISAC evidence adapter while retaining the checkpoint's base network.",
     )
     parser.add_argument(
         "--forbid-sense",
@@ -157,9 +171,11 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     if int(args.torch_threads) > 0:
         torch.set_num_threads(int(args.torch_threads))
     ensure_resource_args(args)
-    cfg = override_config(load_config(args.config), args)
     checkpoint = load_checkpoint(args.checkpoint, torch)
     train_args = checkpoint.get("args", {})
+    if args.rendezvous_observation is None and train_args.get("rendezvous_observation") is not None:
+        args.rendezvous_observation = bool(train_args["rendezvous_observation"])
+    cfg = override_config(load_config(args.config), args)
     checkpoint_feature_flags = checkpoint_feature_flags_from_args(train_args, checkpoint.get("feature_flags"))
     feature_flags = apply_eval_feature_overrides(checkpoint_feature_flags, args)
     hidden_dim = int(train_args.get("hidden_dim", 128))
@@ -188,6 +204,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     else:
         checkpoint_contention_mode_prior = not bool(train_args.get("disable_contention_mode_prior", False))
     use_contention_mode_prior = checkpoint_contention_mode_prior and not bool(args.disable_contention_mode_prior)
+    checkpoint_rendezvous_adapter = bool(train_args.get("rendezvous_adapter", False))
     policy = build_policy(
         train_network,
         cfg.n_beams,
@@ -199,6 +216,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=rule_residual_scale,
         use_contention_mode_prior=use_contention_mode_prior,
+        use_rendezvous_adapter=checkpoint_rendezvous_adapter,
         disabled_modes=disabled_modes_from_flags(forbid_sense, forbid_idle),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
@@ -206,6 +224,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         policy.model.load_state_dict(checkpoint["policy_state_dict"])
     elif str(args.policy_ablation) == "zero_weights":
         zero_policy_weights(policy, torch)
+    if bool(args.disable_rendezvous_adapter):
+        zero_rendezvous_adapter(policy, torch)
     policy.eval()
 
     output = Path(args.output)
@@ -286,6 +306,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "rule_residual_scale": rule_residual_scale,
         "checkpoint_contention_mode_prior": checkpoint_contention_mode_prior,
         "contention_mode_prior": use_contention_mode_prior,
+        "checkpoint_rendezvous_adapter": checkpoint_rendezvous_adapter,
+        "rendezvous_adapter_disabled": bool(args.disable_rendezvous_adapter),
         "training_contract_version": str(checkpoint.get("training_contract_version", "legacy")),
         "evaluation_fingerprint": str(args._evaluation_fingerprint),
         "deterministic": bool(args.deterministic),
@@ -359,6 +381,13 @@ def zero_policy_weights(policy: Any, torch_module: Any) -> None:
             parameter.zero_()
 
 
+def zero_rendezvous_adapter(policy: Any, torch_module: Any) -> None:
+    with torch_module.no_grad():
+        for name, parameter in policy.model.named_parameters():
+            if name.startswith("rendezvous_") and "adapter" in name:
+                parameter.zero_()
+
+
 def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
     try:
         return torch_module.load(path, map_location="cpu", weights_only=False)
@@ -382,6 +411,8 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "disable_topology_deficit": False,
         "disable_rule_residual": False,
         "disable_contention_mode_prior": False,
+        "disable_rendezvous_adapter": False,
+        "rendezvous_observation": None,
         "eval_rule_residual_scale": None,
         "beam_executor": "policy",
         "mode_executor": "policy",
@@ -411,11 +442,13 @@ def build_policy(
     | TopologyAdaptiveGatedContentionGraphActorCritic
 ):
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
+    use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     kwargs["use_contention_mode_prior"] = use_contention_mode_prior
+    kwargs["use_rendezvous_adapter"] = use_rendezvous_adapter
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
@@ -450,6 +483,9 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
         value = getattr(args, arg_name)
         if value is not None:
             replacements[field_name] = value
+    rendezvous_observation = getattr(args, "rendezvous_observation", None)
+    if rendezvous_observation is not None:
+        replacements["rendezvous_observation_enabled"] = bool(rendezvous_observation)
     mobility = dict(config.mobility)
     if args.mobility_model is not None:
         mobility["model"] = str(args.mobility_model)
@@ -509,6 +545,7 @@ def evaluation_fingerprint(
         "gate_temperature": float(args.gate_temperature),
         "beam_executor": str(args.beam_executor),
         "mode_executor": str(args.mode_executor),
+        "disable_rendezvous_adapter": bool(args.disable_rendezvous_adapter),
         "allow_idle": bool(args.allow_idle),
         "seed": int(args.seed),
     }
