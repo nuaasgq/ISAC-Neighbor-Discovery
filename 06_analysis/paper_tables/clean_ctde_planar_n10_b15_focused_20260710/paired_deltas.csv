@@ -1,0 +1,4 @@
+reference,comparison,comparison_label,paired_delta_mean,paired_delta_std,paired_delta_ci95_low,paired_delta_ci95_high,exact_sign_flip_p_two_sided,wins,ties,losses
+clean_discovery,clean_stable,Clean CTDE + stable reward,0.02222222222222221,0.06625386599999379,-0.025169645601302863,0.06961409004574728,0.4296875,4,2,4
+clean_discovery,wang2025,Wang2025,-0.24888888888888888,0.1499153853709454,-0.3561244444444444,-0.14165333333333335,0.001953125,0,0,10
+clean_discovery,uniform_random,Uniform random,0.11333333333333333,0.10446808243149473,0.03860656109681232,0.18806010556985434,0.013671875,9,0,1

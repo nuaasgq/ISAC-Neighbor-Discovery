@@ -1,0 +1,27 @@
+{
+  "created_at": "2026-07-10T21:54:31",
+  "scope": "clean_ctde_planar_n10_b15_learnability_screen",
+  "raw_root": "05_simulation\\results_raw",
+  "training_episodes": 30,
+  "slots_per_episode": 300,
+  "heldout_episodes": 10,
+  "actor_contract": "clean_local_ctde_v1",
+  "figure_size_inches": [
+    6.4,
+    4.8
+  ],
+  "font_family": "Times New Roman with serif fallback",
+  "figures": [
+    "06_analysis\\paper_figures\\clean_ctde_planar_n10_b15_focused_20260710\\training_discovery_rate.png",
+    "06_analysis\\paper_figures\\clean_ctde_planar_n10_b15_focused_20260710\\training_tx_fraction.png",
+    "06_analysis\\paper_figures\\clean_ctde_planar_n10_b15_focused_20260710\\training_step_reward.png",
+    "06_analysis\\paper_figures\\clean_ctde_planar_n10_b15_focused_20260710\\evaluation_discovery_rate.png",
+    "06_analysis\\paper_figures\\clean_ctde_planar_n10_b15_focused_20260710\\paired_episode_discovery.png"
+  ],
+  "files": [
+    "method_summary.csv",
+    "paired_deltas.csv",
+    "training_episode_summary.csv",
+    "training_step_reward_decimated.csv"
+  ]
+}

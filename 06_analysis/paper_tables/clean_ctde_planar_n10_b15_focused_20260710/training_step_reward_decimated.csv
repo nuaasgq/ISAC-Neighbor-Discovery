@@ -1,0 +1,721 @@
+method,method_label,training_step,reward_200step_mean
+clean_discovery,Clean CTDE,1,-0.0027000003028661
+clean_discovery,Clean CTDE,26,-0.0010346155403777068
+clean_discovery,Clean CTDE,51,0.00897326248537583
+clean_discovery,Clean CTDE,76,0.012154815576401546
+clean_discovery,Clean CTDE,101,0.023265886299501163
+clean_discovery,Clean CTDE,126,0.025955899417356952
+clean_discovery,Clean CTDE,151,0.021587704125545483
+clean_discovery,Clean CTDE,176,0.02048117853042146
+clean_discovery,Clean CTDE,201,0.018011937088187564
+clean_discovery,Clean CTDE,226,0.01809093708491856
+clean_discovery,Clean CTDE,251,0.01556800511289476
+clean_discovery,Clean CTDE,276,0.015037458167877056
+clean_discovery,Clean CTDE,301,0.009288315590820285
+clean_discovery,Clean CTDE,326,0.004534871517549628
+clean_discovery,Clean CTDE,351,0.004456871513735689
+clean_discovery,Clean CTDE,376,0.0075246063453378274
+clean_discovery,Clean CTDE,401,0.014531657394363733
+clean_discovery,Clean CTDE,426,0.0208783146951828
+clean_discovery,Clean CTDE,451,0.02091356469329186
+clean_discovery,Clean CTDE,476,0.02080460057135498
+clean_discovery,Clean CTDE,501,0.023581256796715036
+clean_discovery,Clean CTDE,526,0.025181142172870766
+clean_discovery,Clean CTDE,551,0.025269892174248534
+clean_discovery,Clean CTDE,576,0.020390436830231937
+clean_discovery,Clean CTDE,601,0.013323385783987776
+clean_discovery,Clean CTDE,626,0.006868228486091555
+clean_discovery,Clean CTDE,651,0.009323127782663521
+clean_discovery,Clean CTDE,676,0.009952414240724482
+clean_discovery,Clean CTDE,701,0.005654457912642118
+clean_discovery,Clean CTDE,726,0.006366420112062785
+clean_discovery,Clean CTDE,751,0.00625967011274044
+clean_discovery,Clean CTDE,776,0.008411056986624334
+clean_discovery,Clean CTDE,801,0.010495543662327711
+clean_discovery,Clean CTDE,826,0.010486293659210808
+clean_discovery,Clean CTDE,851,0.011471714838204227
+clean_discovery,Clean CTDE,876,0.010987042252796548
+clean_discovery,Clean CTDE,901,0.011060292246613262
+clean_discovery,Clean CTDE,926,0.008722694670934306
+clean_discovery,Clean CTDE,951,0.008682944670646994
+clean_discovery,Clean CTDE,976,0.011309020836772123
+clean_discovery,Clean CTDE,1001,0.011506590407145285
+clean_discovery,Clean CTDE,1026,0.011491902909743675
+clean_discovery,Clean CTDE,1051,0.007954082434931495
+clean_discovery,Clean CTDE,1076,0.005949331621683101
+clean_discovery,Clean CTDE,1101,0.00586008162477812
+clean_discovery,Clean CTDE,1126,0.0058590816280048065
+clean_discovery,Clean CTDE,1151,0.011424369686719747
+clean_discovery,Clean CTDE,1176,0.008538249507037124
+clean_discovery,Clean CTDE,1201,0.007599018317778262
+clean_discovery,Clean CTDE,1226,0.0076132058165967655
+clean_discovery,Clean CTDE,1251,0.010149980100613923
+clean_discovery,Clean CTDE,1276,0.01509592621536287
+clean_discovery,Clean CTDE,1301,0.015028676213623858
+clean_discovery,Clean CTDE,1326,0.014982676209692744
+clean_discovery,Clean CTDE,1351,0.011603900883565093
+clean_discovery,Clean CTDE,1376,0.009657058021912255
+clean_discovery,Clean CTDE,1401,0.009918385893033718
+clean_discovery,Clean CTDE,1426,0.009916385892574923
+clean_discovery,Clean CTDE,1451,0.007389111605007215
+clean_discovery,Clean CTDE,1476,0.004338641135400407
+clean_discovery,Clean CTDE,1501,0.004400141135556637
+clean_discovery,Clean CTDE,1526,0.004419891137804385
+clean_discovery,Clean CTDE,1551,0.002210378402087385
+clean_discovery,Clean CTDE,1576,0.007042524490461815
+clean_discovery,Clean CTDE,1601,0.005324871560951592
+clean_discovery,Clean CTDE,1626,0.005295371560569052
+clean_discovery,Clean CTDE,1651,0.007567267863996691
+clean_discovery,Clean CTDE,1676,0.009911724180783508
+clean_discovery,Clean CTDE,1701,0.009892974181784678
+clean_discovery,Clean CTDE,1726,0.00988997418095097
+clean_discovery,Clean CTDE,1751,0.009928224185096054
+clean_discovery,Clean CTDE,1776,0.005067328099139572
+clean_discovery,Clean CTDE,1801,0.006902369949712024
+clean_discovery,Clean CTDE,1826,0.006890619950900159
+clean_discovery,Clean CTDE,1851,0.004564723647672525
+clean_discovery,Clean CTDE,1876,0.00029404168908515204
+clean_discovery,Clean CTDE,1901,0.00029779168526149105
+clean_discovery,Clean CTDE,1926,0.000299291684132204
+clean_discovery,Clean CTDE,1951,0.002544562577168127
+clean_discovery,Clean CTDE,1976,0.0025023125779262234
+clean_discovery,Clean CTDE,2001,0.0006627707242296488
+clean_discovery,Clean CTDE,2026,0.0027518149976822497
+clean_discovery,Clean CTDE,2051,0.0027400649994524596
+clean_discovery,Clean CTDE,2076,0.002722814997905532
+clean_discovery,Clean CTDE,2101,0.002721565001847938
+clean_discovery,Clean CTDE,2126,0.0027478150055321917
+clean_discovery,Clean CTDE,2151,0.0005040441103847277
+clean_discovery,Clean CTDE,2176,0.0030515841630040235
+clean_discovery,Clean CTDE,2201,0.0030698341667812377
+clean_discovery,Clean CTDE,2226,0.0057175588370228245
+clean_discovery,Clean CTDE,2251,0.010190438687095613
+clean_discovery,Clean CTDE,2276,0.010246688686856962
+clean_discovery,Clean CTDE,2301,0.012367766639908972
+clean_discovery,Clean CTDE,2326,0.01445283610461049
+clean_discovery,Clean CTDE,2351,0.014493336104642388
+clean_discovery,Clean CTDE,2376,0.01196229604785915
+clean_discovery,Clean CTDE,2401,0.011955546046228867
+clean_discovery,Clean CTDE,2426,0.009879092944174793
+clean_discovery,Clean CTDE,2451,0.007966979049269888
+clean_discovery,Clean CTDE,2476,0.010512993969932742
+clean_discovery,Clean CTDE,2501,0.010729270889314664
+clean_discovery,Clean CTDE,2526,0.010974832366227942
+clean_discovery,Clean CTDE,2551,0.017173471677706418
+clean_discovery,Clean CTDE,2576,0.017195221680776755
+clean_discovery,Clean CTDE,2601,0.02100375242869633
+clean_discovery,Clean CTDE,2626,0.018415436587856687
+clean_discovery,Clean CTDE,2651,0.015886170633457382
+clean_discovery,Clean CTDE,2676,0.013351405711146087
+clean_discovery,Clean CTDE,2701,0.013620050410681888
+clean_discovery,Clean CTDE,2726,0.013821093959995796
+clean_discovery,Clean CTDE,2751,0.007554704653302924
+clean_discovery,Clean CTDE,2776,0.012374559556046749
+clean_discovery,Clean CTDE,2801,0.010960734528052869
+clean_discovery,Clean CTDE,2826,0.019285255426511886
+clean_discovery,Clean CTDE,2851,0.019288505426338833
+clean_discovery,Clean CTDE,2876,0.02319702149176011
+clean_discovery,Clean CTDE,2901,0.024010436676289847
+clean_discovery,Clean CTDE,2926,0.021491762182959083
+clean_discovery,Clean CTDE,2951,0.02308524720046991
+clean_discovery,Clean CTDE,2976,0.018249642299597347
+clean_discovery,Clean CTDE,3001,0.015894686580322764
+clean_discovery,Clean CTDE,3026,0.007528915682050886
+clean_discovery,Clean CTDE,3051,0.0075479156808069305
+clean_discovery,Clean CTDE,3076,0.003653399616341652
+clean_discovery,Clean CTDE,3101,0.002702024217178427
+clean_discovery,Clean CTDE,3126,0.002687524217872144
+clean_discovery,Clean CTDE,3151,0.003403452611491976
+clean_discovery,Clean CTDE,3176,0.0034934526098004594
+clean_discovery,Clean CTDE,3201,0.005598363848439492
+clean_discovery,Clean CTDE,3226,0.005630863843398416
+clean_discovery,Clean CTDE,3251,0.007728882687006274
+clean_discovery,Clean CTDE,3276,0.009631708808010458
+clean_discovery,Clean CTDE,3301,0.00714466945137248
+clean_discovery,Clean CTDE,3326,0.007260919449690859
+clean_discovery,Clean CTDE,3351,0.004993256036810651
+clean_discovery,Clean CTDE,3376,0.004976006034245091
+clean_discovery,Clean CTDE,3401,0.007732848428109734
+clean_discovery,Clean CTDE,3426,0.007783598431313311
+clean_discovery,Clean CTDE,3451,0.010278288754896512
+clean_discovery,Clean CTDE,3476,0.01267177921120312
+clean_discovery,Clean CTDE,3501,0.012755529209687684
+clean_discovery,Clean CTDE,3526,0.012702029211221108
+clean_discovery,Clean CTDE,3551,0.016230374756662076
+clean_discovery,Clean CTDE,3576,0.016202374759624966
+clean_discovery,Clean CTDE,3601,0.014662013155204497
+clean_discovery,Clean CTDE,3626,0.01979538706319001
+clean_discovery,Clean CTDE,3651,0.015295177897336561
+clean_discovery,Clean CTDE,3676,0.013537918236201239
+clean_discovery,Clean CTDE,3701,0.0159280906768836
+clean_discovery,Clean CTDE,3726,0.015943840680723968
+clean_discovery,Clean CTDE,3751,0.01691439597654973
+clean_discovery,Clean CTDE,3776,0.021206853252828308
+clean_discovery,Clean CTDE,3801,0.017913961220969225
+clean_discovery,Clean CTDE,3826,0.014372956122751938
+clean_discovery,Clean CTDE,3851,0.015947524744071427
+clean_discovery,Clean CTDE,3876,0.016854086490013298
+clean_discovery,Clean CTDE,3901,0.015930339357648347
+clean_discovery,Clean CTDE,3926,0.018450263482154707
+clean_discovery,Clean CTDE,3951,0.019075918376875067
+clean_discovery,Clean CTDE,3976,0.019790616012433034
+clean_discovery,Clean CTDE,4001,0.022161680414683374
+clean_discovery,Clean CTDE,4026,0.031206671567852035
+clean_discovery,Clean CTDE,4051,0.03143794090412849
+clean_discovery,Clean CTDE,4076,0.028082572239603917
+clean_discovery,Clean CTDE,4101,0.02661489693597833
+clean_discovery,Clean CTDE,4126,0.024132222807347725
+clean_discovery,Clean CTDE,4151,0.02068544365411072
+clean_discovery,Clean CTDE,4176,0.01577778874376237
+clean_discovery,Clean CTDE,4201,0.013452474346013345
+clean_discovery,Clean CTDE,4226,0.002833614386137938
+clean_discovery,Clean CTDE,4251,0.0010962764264404671
+clean_discovery,Clean CTDE,4276,0.003534707678030839
+clean_discovery,Clean CTDE,4301,0.0035994576732264368
+clean_discovery,Clean CTDE,4326,0.005948304579986154
+clean_discovery,Clean CTDE,4351,0.008890529148200597
+clean_discovery,Clean CTDE,4376,0.013155995290195288
+clean_discovery,Clean CTDE,4401,0.015207690227151042
+clean_discovery,Clean CTDE,4426,0.016814617249678133
+clean_discovery,Clean CTDE,4451,0.01875152668503871
+clean_discovery,Clean CTDE,4476,0.016307595438040168
+clean_discovery,Clean CTDE,4501,0.016292095442651786
+clean_discovery,Clean CTDE,4526,0.016484681498885056
+clean_discovery,Clean CTDE,4551,0.014511454474755756
+clean_discovery,Clean CTDE,4576,0.012627161450422156
+clean_discovery,Clean CTDE,4601,0.013050306157601901
+clean_discovery,Clean CTDE,4626,0.01830929498692423
+clean_discovery,Clean CTDE,4651,0.022692590850558206
+clean_discovery,Clean CTDE,4676,0.024468753130284328
+clean_discovery,Clean CTDE,4701,0.03129074042469439
+clean_discovery,Clean CTDE,4726,0.02870855746153394
+clean_discovery,Clean CTDE,4751,0.027743601860696812
+clean_discovery,Clean CTDE,4776,0.02535242874616962
+clean_discovery,Clean CTDE,4801,0.025497588901242138
+clean_discovery,Clean CTDE,4826,0.018650423047678496
+clean_discovery,Clean CTDE,4851,0.014826716572722956
+clean_discovery,Clean CTDE,4876,0.01565049432015804
+clean_discovery,Clean CTDE,4901,0.013582585550720989
+clean_discovery,Clean CTDE,4926,0.016024966126395163
+clean_discovery,Clean CTDE,4951,0.016784193659026645
+clean_discovery,Clean CTDE,4976,0.01902408933502011
+clean_discovery,Clean CTDE,5001,0.016463589534541825
+clean_discovery,Clean CTDE,5026,0.02013845280672831
+clean_discovery,Clean CTDE,5051,0.017619203987051153
+clean_discovery,Clean CTDE,5076,0.01656601479819074
+clean_discovery,Clean CTDE,5101,0.011867186271003449
+clean_discovery,Clean CTDE,5126,0.009479805695424153
+clean_discovery,Clean CTDE,5151,0.00965515048067028
+clean_discovery,Clean CTDE,5176,0.012432201643896412
+clean_discovery,Clean CTDE,5201,0.014891140538500628
+clean_discovery,Clean CTDE,5226,0.01578565952708596
+clean_discovery,Clean CTDE,5251,0.020214680714001593
+clean_discovery,Clean CTDE,5276,0.018732679870045104
+clean_discovery,Clean CTDE,5301,0.020458149914513345
+clean_discovery,Clean CTDE,5326,0.023845762806929995
+clean_discovery,Clean CTDE,5351,0.02293393215147807
+clean_discovery,Clean CTDE,5376,0.019445969266002065
+clean_discovery,Clean CTDE,5401,0.018786380879100766
+clean_discovery,Clean CTDE,5426,0.014215998620275068
+clean_discovery,Clean CTDE,5451,0.014932008448347921
+clean_discovery,Clean CTDE,5476,0.019920180150067614
+clean_discovery,Clean CTDE,5501,0.020532116449772736
+clean_discovery,Clean CTDE,5526,0.019535367509481157
+clean_discovery,Clean CTDE,5551,0.017971307316613103
+clean_discovery,Clean CTDE,5576,0.0226611931130392
+clean_discovery,Clean CTDE,5601,0.02094884260431718
+clean_discovery,Clean CTDE,5626,0.021051342602309883
+clean_discovery,Clean CTDE,5651,0.017545846673594497
+clean_discovery,Clean CTDE,5676,0.012574924974993337
+clean_discovery,Clean CTDE,5701,0.014300402831264363
+clean_discovery,Clean CTDE,5726,0.011962538879619386
+clean_discovery,Clean CTDE,5751,0.011917538884328678
+clean_discovery,Clean CTDE,5776,0.010709069771117357
+clean_discovery,Clean CTDE,5801,0.01303765093056427
+clean_discovery,Clean CTDE,5826,0.015403281668848651
+clean_discovery,Clean CTDE,5851,0.01611413463905774
+clean_discovery,Clean CTDE,5876,0.022274562548118416
+clean_discovery,Clean CTDE,5901,0.021646818008543053
+clean_discovery,Clean CTDE,5926,0.021597380510436782
+clean_discovery,Clean CTDE,5951,0.023593323502216667
+clean_discovery,Clean CTDE,5976,0.020269074014191577
+clean_discovery,Clean CTDE,6001,0.017941742856826752
+clean_discovery,Clean CTDE,6026,0.015555612117226707
+clean_discovery,Clean CTDE,6051,0.01826571362301184
+clean_discovery,Clean CTDE,6076,0.017090182048174037
+clean_discovery,Clean CTDE,6101,0.016048481715683013
+clean_discovery,Clean CTDE,6126,0.018513807853159963
+clean_discovery,Clean CTDE,6151,0.018891985958784063
+clean_discovery,Clean CTDE,6176,0.021644817438551397
+clean_discovery,Clean CTDE,6201,0.025034698419862247
+clean_discovery,Clean CTDE,6226,0.025069948424279568
+clean_discovery,Clean CTDE,6251,0.020094958859510362
+clean_discovery,Clean CTDE,6276,0.015160812531619732
+clean_discovery,Clean CTDE,6301,0.017063348885028966
+clean_discovery,Clean CTDE,6326,0.017299376287948684
+clean_discovery,Clean CTDE,6351,0.01497125519458495
+clean_discovery,Clean CTDE,6376,0.010697335060547623
+clean_discovery,Clean CTDE,6401,0.01680782057068427
+clean_discovery,Clean CTDE,6426,0.01680982056986977
+clean_discovery,Clean CTDE,6451,0.016878570568886055
+clean_discovery,Clean CTDE,6476,0.01902470781801821
+clean_discovery,Clean CTDE,6501,0.016923068458112533
+clean_discovery,Clean CTDE,6526,0.016433463822540934
+clean_discovery,Clean CTDE,6551,0.018071257102368683
+clean_discovery,Clean CTDE,6576,0.019492762340014447
+clean_discovery,Clean CTDE,6601,0.009970145839783066
+clean_discovery,Clean CTDE,6626,0.009941145838711233
+clean_discovery,Clean CTDE,6651,0.009829145848969347
+clean_discovery,Clean CTDE,6676,0.012645412719401066
+clean_discovery,Clean CTDE,6701,0.01300114091546129
+clean_discovery,Clean CTDE,6726,0.013275826469071033
+clean_discovery,Clean CTDE,6751,0.01587725879549543
+clean_discovery,Clean CTDE,6776,0.020807086470776986
+clean_discovery,Clean CTDE,6801,0.026228520622295033
+clean_discovery,Clean CTDE,6826,0.02778978148655732
+clean_discovery,Clean CTDE,6851,0.029268224546365663
+clean_discovery,Clean CTDE,6876,0.024285070415739022
+clean_discovery,Clean CTDE,6901,0.024670389599967164
+clean_discovery,Clean CTDE,6926,0.022278142645176552
+clean_discovery,Clean CTDE,6951,0.018113917037684585
+clean_discovery,Clean CTDE,6976,0.014286311484604084
+clean_discovery,Clean CTDE,7001,0.01837697757597925
+clean_discovery,Clean CTDE,7026,0.019202105122916684
+clean_discovery,Clean CTDE,7051,0.01961619966051511
+clean_discovery,Clean CTDE,7076,0.024033290588500667
+clean_discovery,Clean CTDE,7101,0.02126765688826707
+clean_discovery,Clean CTDE,7126,0.021325406892181476
+clean_discovery,Clean CTDE,7151,0.02293859153245283
+clean_discovery,Clean CTDE,7176,0.02534502993929344
+clean_discovery,Clean CTDE,7201,0.017256971295304527
+clean_discovery,Clean CTDE,7226,0.02245179129146708
+clean_discovery,Clean CTDE,7251,0.0206130036824179
+clean_discovery,Clean CTDE,7276,0.0187063110672243
+clean_discovery,Clean CTDE,7301,0.021085741418486573
+clean_discovery,Clean CTDE,7326,0.027536574641359026
+clean_discovery,Clean CTDE,7351,0.025983139993120852
+clean_discovery,Clean CTDE,7376,0.022772773853081154
+clean_discovery,Clean CTDE,7401,0.023040468789353317
+clean_discovery,Clean CTDE,7426,0.017161229652061582
+clean_discovery,Clean CTDE,7451,0.01718997965611196
+clean_discovery,Clean CTDE,7476,0.018582708166810322
+clean_discovery,Clean CTDE,7501,0.017520903360171352
+clean_discovery,Clean CTDE,7526,0.016162544244638408
+clean_discovery,Clean CTDE,7551,0.01615029425321699
+clean_discovery,Clean CTDE,7576,0.017053947243868595
+clean_discovery,Clean CTDE,7601,0.01789075850908556
+clean_discovery,Clean CTDE,7626,0.016283789239292662
+clean_discovery,Clean CTDE,7651,0.01855936008252319
+clean_discovery,Clean CTDE,7676,0.01683228690693066
+clean_discovery,Clean CTDE,7701,0.015386161359347155
+clean_discovery,Clean CTDE,7726,0.0159078447849606
+clean_discovery,Clean CTDE,7751,0.015936344780850032
+clean_discovery,Clean CTDE,7776,0.013314829663555416
+clean_discovery,Clean CTDE,7801,0.012611556918593112
+clean_discovery,Clean CTDE,7826,0.01760523089287016
+clean_discovery,Clean CTDE,7851,0.015230160045866789
+clean_discovery,Clean CTDE,7876,0.018047069443775394
+clean_discovery,Clean CTDE,7901,0.018154819442686848
+clean_discovery,Clean CTDE,7926,0.014884258941521683
+clean_discovery,Clean CTDE,7951,0.019292265218471577
+clean_discovery,Clean CTDE,7976,0.019324515214706472
+clean_discovery,Clean CTDE,8001,0.019260260204086072
+clean_discovery,Clean CTDE,8026,0.019982543771191547
+clean_discovery,Clean CTDE,8051,0.021663753650209387
+clean_discovery,Clean CTDE,8076,0.01665529061319102
+clean_discovery,Clean CTDE,8101,0.01945823270428081
+clean_discovery,Clean CTDE,8126,0.01698663566692994
+clean_discovery,Clean CTDE,8151,0.015053853382138183
+clean_discovery,Clean CTDE,8176,0.017488493074939465
+clean_discovery,Clean CTDE,8201,0.0181670293889183
+clean_discovery,Clean CTDE,8226,0.014776060232812591
+clean_discovery,Clean CTDE,8251,0.013106100356941167
+clean_discovery,Clean CTDE,8276,0.01312185034800495
+clean_discovery,Clean CTDE,8301,0.014481651787209554
+clean_discovery,Clean CTDE,8326,0.01809175637248699
+clean_discovery,Clean CTDE,8351,0.018653767521107506
+clean_discovery,Clean CTDE,8376,0.016175627832388267
+clean_discovery,Clean CTDE,8401,0.015137354855018199
+clean_discovery,Clean CTDE,8426,0.01514448328960134
+clean_discovery,Clean CTDE,8451,0.015162983293172148
+clean_discovery,Clean CTDE,8476,0.01770373987595667
+clean_discovery,Clean CTDE,8501,0.020483905378008784
+clean_discovery,Clean CTDE,8526,0.021094344054421524
+clean_discovery,Clean CTDE,8551,0.022136926712271812
+clean_discovery,Clean CTDE,8576,0.024229406256410582
+clean_discovery,Clean CTDE,8601,0.022805372878785417
+clean_discovery,Clean CTDE,8626,0.02236395837547024
+clean_discovery,Clean CTDE,8651,0.022341708375613955
+clean_discovery,Clean CTDE,8676,0.019729951799752593
+clean_discovery,Clean CTDE,8701,0.012622630540543469
+clean_discovery,Clean CTDE,8726,0.010949220253300156
+clean_discovery,Clean CTDE,8751,0.006657402452998218
+clean_discovery,Clean CTDE,8776,0.0044484854074398825
+clean_discovery,Clean CTDE,8801,0.014069901531809597
+clean_discovery,Clean CTDE,8826,0.016729259974832534
+clean_discovery,Clean CTDE,8851,0.016722509974810243
+clean_discovery,Clean CTDE,8876,0.020638184337571155
+clean_discovery,Clean CTDE,8901,0.02235479963973922
+clean_discovery,Clean CTDE,8926,0.021777543867654466
+clean_discovery,Clean CTDE,8951,0.021764543868695915
+clean_discovery,Clean CTDE,8976,0.02320521553402796
+clean_stable,Clean CTDE + stable reward,1,0.0001000000847852
+clean_stable,Clean CTDE + stable reward,26,0.0008776922362672807
+clean_stable,Clean CTDE + stable reward,51,0.010796399283600612
+clean_stable,Clean CTDE + stable reward,76,0.013966920286724109
+clean_stable,Clean CTDE + stable reward,101,0.02515380463159772
+clean_stable,Clean CTDE + stable reward,126,0.02783811980089732
+clean_stable,Clean CTDE + stable reward,151,0.023450881402919493
+clean_stable,Clean CTDE + stable reward,176,0.022352882001789753
+clean_stable,Clean CTDE + stable reward,201,0.019876236145028064
+clean_stable,Clean CTDE + stable reward,226,0.019964036141682278
+clean_stable,Clean CTDE + stable reward,251,0.017452304303878896
+clean_stable,Clean CTDE + stable reward,276,0.01692625757103085
+clean_stable,Clean CTDE + stable reward,301,0.011137716084922412
+clean_stable,Clean CTDE + stable reward,326,0.006334521940843822
+clean_stable,Clean CTDE + stable reward,351,0.006183071939267375
+clean_stable,Clean CTDE + stable reward,376,0.009195506012874811
+clean_stable,Clean CTDE + stable reward,401,0.016163706645202166
+clean_stable,Clean CTDE + stable reward,426,0.022436313641810538
+clean_stable,Clean CTDE + stable reward,451,0.022398713643415235
+clean_stable,Clean CTDE + stable reward,476,0.022279299397996496
+clean_stable,Clean CTDE + stable reward,501,0.02671717520766832
+clean_stable,Clean CTDE + stable reward,526,0.028329160787252467
+clean_stable,Clean CTDE + stable reward,551,0.028495060789209655
+clean_stable,Clean CTDE + stable reward,576,0.023580255998749623
+clean_stable,Clean CTDE + stable reward,601,0.016515255375124965
+clean_stable,Clean CTDE + stable reward,626,0.010012848375699818
+clean_stable,Clean CTDE + stable reward,651,0.01244589733716565
+clean_stable,Clean CTDE + stable reward,676,0.012976734155236036
+clean_stable,Clean CTDE + stable reward,701,0.006928158186346984
+clean_stable,Clean CTDE + stable reward,726,0.01001306630379985
+clean_stable,Clean CTDE + stable reward,751,0.009795716301814533
+clean_stable,Clean CTDE + stable reward,776,0.014076407418397134
+clean_stable,Clean CTDE + stable reward,801,0.01570774414969492
+clean_stable,Clean CTDE + stable reward,826,0.015711544153673457
+clean_stable,Clean CTDE + stable reward,851,0.016702165762544612
+clean_stable,Clean CTDE + stable reward,876,0.016176142817203074
+clean_stable,Clean CTDE + stable reward,901,0.01624559281721304
+clean_stable,Clean CTDE + stable reward,926,0.011414999113767414
+clean_stable,Clean CTDE + stable reward,951,0.01135459911347426
+clean_stable,Clean CTDE + stable reward,976,0.011790121203157483
+clean_stable,Clean CTDE + stable reward,1001,0.014637753847855506
+clean_stable,Clean CTDE + stable reward,1026,0.014538528847770085
+clean_stable,Clean CTDE + stable reward,1051,0.010978308276098706
+clean_stable,Clean CTDE + stable reward,1076,0.008985507473553318
+clean_stable,Clean CTDE + stable reward,1101,0.008859657473585705
+clean_stable,Clean CTDE + stable reward,1126,0.008862757476308637
+clean_stable,Clean CTDE + stable reward,1151,0.014006645772678916
+clean_stable,Clean CTDE + stable reward,1176,0.011140975257076224
+clean_stable,Clean CTDE + stable reward,1201,0.00791033077824979
+clean_stable,Clean CTDE + stable reward,1226,0.007913655771990323
+clean_stable,Clean CTDE + stable reward,1251,0.010402429717869397
+clean_stable,Clean CTDE + stable reward,1276,0.015333076226888825
+clean_stable,Clean CTDE + stable reward,1301,0.015191926221887135
+clean_stable,Clean CTDE + stable reward,1326,0.015083026216016173
+clean_stable,Clean CTDE + stable reward,1351,0.012082100281695627
+clean_stable,Clean CTDE + stable reward,1376,0.010105957589185009
+clean_stable,Clean CTDE + stable reward,1401,0.010278635714785225
+clean_stable,Clean CTDE + stable reward,1426,0.010291535712749494
+clean_stable,Clean CTDE + stable reward,1451,0.007719211755684256
+clean_stable,Clean CTDE + stable reward,1476,0.004668790791547538
+clean_stable,Clean CTDE + stable reward,1501,0.004771990791705348
+clean_stable,Clean CTDE + stable reward,1526,0.0047968407921871676
+clean_stable,Clean CTDE + stable reward,1551,0.0025691284276399824
+clean_stable,Clean CTDE + stable reward,1576,0.007388924732658809
+clean_stable,Clean CTDE + stable reward,1601,0.005636621695739482
+clean_stable,Clean CTDE + stable reward,1626,0.005552621695096639
+clean_stable,Clean CTDE + stable reward,1651,0.007764867478981651
+clean_stable,Clean CTDE + stable reward,1676,0.010039574154870971
+clean_stable,Clean CTDE + stable reward,1701,0.010000074157505916
+clean_stable,Clean CTDE + stable reward,1726,0.010019074156080061
+clean_stable,Clean CTDE + stable reward,1751,0.01000607415793642
+clean_stable,Clean CTDE + stable reward,1776,0.005096877854884989
+clean_stable,Clean CTDE + stable reward,1801,0.006990569673434982
+clean_stable,Clean CTDE + stable reward,1826,0.006994469675773905
+clean_stable,Clean CTDE + stable reward,1851,0.004742973895481589
+clean_stable,Clean CTDE + stable reward,1876,0.0004997916705179155
+clean_stable,Clean CTDE + stable reward,1901,0.0005250416704075534
+clean_stable,Clean CTDE + stable reward,1926,0.000527191673390952
+clean_stable,Clean CTDE + stable reward,1951,0.000572741670112043
+clean_stable,Clean CTDE + stable reward,1976,0.0004977916662028634
+clean_stable,Clean CTDE + stable reward,2001,-0.0013568501514236797
+clean_stable,Clean CTDE + stable reward,2026,0.0008466442113422419
+clean_stable,Clean CTDE + stable reward,2051,0.000767294208053534
+clean_stable,Clean CTDE + stable reward,2076,0.000737844213144888
+clean_stable,Clean CTDE + stable reward,2101,0.0006921942137705979
+clean_stable,Clean CTDE + stable reward,2126,0.000735344214408577
+clean_stable,Clean CTDE + stable reward,2151,0.0032940682797198283
+clean_stable,Clean CTDE + stable reward,2176,0.005870058614746116
+clean_stable,Clean CTDE + stable reward,2201,0.0058883086172864165
+clean_stable,Clean CTDE + stable reward,2226,0.008462333659263126
+clean_stable,Clean CTDE + stable reward,2251,0.012884925778198551
+clean_stable,Clean CTDE + stable reward,2276,0.012951675779695533
+clean_stable,Clean CTDE + stable reward,2301,0.015096603860147322
+clean_stable,Clean CTDE + stable reward,2326,0.015134803860273702
+clean_stable,Clean CTDE + stable reward,2351,0.012646079800833855
+clean_stable,Clean CTDE + stable reward,2376,0.010163089469060676
+clean_stable,Clean CTDE + stable reward,2401,0.010152539468399504
+clean_stable,Clean CTDE + stable reward,2426,0.00810348582992449
+clean_stable,Clean CTDE + stable reward,2451,0.006354409543564564
+clean_stable,Clean CTDE + stable reward,2476,0.00891202455473833
+clean_stable,Clean CTDE + stable reward,2501,0.009105200800331677
+clean_stable,Clean CTDE + stable reward,2526,0.009045200797409073
+clean_stable,Clean CTDE + stable reward,2551,0.017493486528037484
+clean_stable,Clean CTDE + stable reward,2576,0.017500436525915593
+clean_stable,Clean CTDE + stable reward,2601,0.019207464499813812
+clean_stable,Clean CTDE + stable reward,2626,0.016573098732369566
+clean_stable,Clean CTDE + stable reward,2651,0.013986032902794272
+clean_stable,Clean CTDE + stable reward,2676,0.011476017887434888
+clean_stable,Clean CTDE + stable reward,2701,0.01102718055084554
+clean_stable,Clean CTDE + stable reward,2726,0.013636005045227672
+clean_stable,Clean CTDE + stable reward,2751,0.005112119314544568
+clean_stable,Clean CTDE + stable reward,2776,0.010043323881836866
+clean_stable,Clean CTDE + stable reward,2801,0.01079540190061382
+clean_stable,Clean CTDE + stable reward,2826,0.015352254888457562
+clean_stable,Clean CTDE + stable reward,2851,0.015377354892007155
+clean_stable,Clean CTDE + stable reward,2876,0.01966267063009584
+clean_stable,Clean CTDE + stable reward,2901,0.021238918591443525
+clean_stable,Clean CTDE + stable reward,2926,0.018664594097099346
+clean_stable,Clean CTDE + stable reward,2951,0.020186579342007484
+clean_stable,Clean CTDE + stable reward,2976,0.01521057477290017
+clean_stable,Clean CTDE + stable reward,3001,0.012844318781171777
+clean_stable,Clean CTDE + stable reward,3026,0.008331115799446733
+clean_stable,Clean CTDE + stable reward,3051,0.008413215804102973
+clean_stable,Clean CTDE + stable reward,3076,0.004174450067293972
+clean_stable,Clean CTDE + stable reward,3101,0.0032555738606606845
+clean_stable,Clean CTDE + stable reward,3126,0.005637803865174668
+clean_stable,Clean CTDE + stable reward,3151,0.006390331928487305
+clean_stable,Clean CTDE + stable reward,3176,0.006572381929363488
+clean_stable,Clean CTDE + stable reward,3201,0.008737193338820372
+clean_stable,Clean CTDE + stable reward,3226,0.008741593337326787
+clean_stable,Clean CTDE + stable reward,3251,0.010864211693551631
+clean_stable,Clean CTDE + stable reward,3276,0.012758988051209603
+clean_stable,Clean CTDE + stable reward,3301,0.010249999305306129
+clean_stable,Clean CTDE + stable reward,3326,0.008075869303720541
+clean_stable,Clean CTDE + stable reward,3351,0.005958056001472872
+clean_stable,Clean CTDE + stable reward,3376,0.0059449060048064025
+clean_stable,Clean CTDE + stable reward,3401,0.008721748086172742
+clean_stable,Clean CTDE + stable reward,3426,0.008814898085765889
+clean_stable,Clean CTDE + stable reward,3451,0.011296571716302424
+clean_stable,Clean CTDE + stable reward,3476,0.013746311680370127
+clean_stable,Clean CTDE + stable reward,3501,0.01389906168558809
+clean_stable,Clean CTDE + stable reward,3526,0.013825811690112457
+clean_stable,Clean CTDE + stable reward,3551,0.017347207119164522
+clean_stable,Clean CTDE + stable reward,3576,0.01733805711599416
+clean_stable,Clean CTDE + stable reward,3601,0.015791645502758907
+clean_stable,Clean CTDE + stable reward,3626,0.02101461909282079
+clean_stable,Clean CTDE + stable reward,3651,0.016615327098770644
+clean_stable,Clean CTDE + stable reward,3676,0.01486426753479463
+clean_stable,Clean CTDE + stable reward,3701,0.01728578952039242
+clean_stable,Clean CTDE + stable reward,3726,0.017332389516232057
+clean_stable,Clean CTDE + stable reward,3751,0.018343844962437274
+clean_stable,Clean CTDE + stable reward,3776,0.022686552182640284
+clean_stable,Clean CTDE + stable reward,3801,0.01941591031169081
+clean_stable,Clean CTDE + stable reward,3826,0.01584410564621065
+clean_stable,Clean CTDE + stable reward,3851,0.01739627414510322
+clean_stable,Clean CTDE + stable reward,3876,0.0183489362691398
+clean_stable,Clean CTDE + stable reward,3901,0.01745874003743664
+clean_stable,Clean CTDE + stable reward,3926,0.02005791412273537
+clean_stable,Clean CTDE + stable reward,3951,0.018187212163757054
+clean_stable,Clean CTDE + stable reward,3976,0.01653653635097724
+clean_stable,Clean CTDE + stable reward,4001,0.01896060067581855
+clean_stable,Clean CTDE + stable reward,4026,0.026180335779099534
+clean_stable,Clean CTDE + stable reward,4051,0.03006731368681356
+clean_stable,Clean CTDE + stable reward,4076,0.026718944808380888
+clean_stable,Clean CTDE + stable reward,4101,0.025270269052853088
+clean_stable,Clean CTDE + stable reward,4126,0.02273769496536258
+clean_stable,Clean CTDE + stable reward,4151,0.022240773129706185
+clean_stable,Clean CTDE + stable reward,4176,0.021274909288076717
+clean_stable,Clean CTDE + stable reward,4201,0.018972794964392935
+clean_stable,Clean CTDE + stable reward,4226,0.010217690942481539
+clean_stable,Clean CTDE + stable reward,4251,0.0048465445374312995
+clean_stable,Clean CTDE + stable reward,4276,0.007318775547100785
+clean_stable,Clean CTDE + stable reward,4301,0.009756255991414919
+clean_stable,Clean CTDE + stable reward,4326,0.01214190291797419
+clean_stable,Clean CTDE + stable reward,4351,0.014610676527881845
+clean_stable,Clean CTDE + stable reward,4376,0.017298324623625346
+clean_stable,Clean CTDE + stable reward,4401,0.018988919654911996
+clean_stable,Clean CTDE + stable reward,4426,0.020586346591444427
+clean_stable,Clean CTDE + stable reward,4451,0.022535206167667618
+clean_stable,Clean CTDE + stable reward,4476,0.02009042516707266
+clean_stable,Clean CTDE + stable reward,4501,0.017701644726948847
+clean_stable,Clean CTDE + stable reward,4526,0.017901281339618415
+clean_stable,Clean CTDE + stable reward,4551,0.01599585463933179
+clean_stable,Clean CTDE + stable reward,4576,0.014182761893607655
+clean_stable,Clean CTDE + stable reward,4601,0.014979556110811225
+clean_stable,Clean CTDE + stable reward,4626,0.020276794533347103
+clean_stable,Clean CTDE + stable reward,4651,0.02468224014941368
+clean_stable,Clean CTDE + stable reward,4676,0.026460452475221222
+clean_stable,Clean CTDE + stable reward,4701,0.03329608969739636
+clean_stable,Clean CTDE + stable reward,4726,0.030695906163564334
+clean_stable,Clean CTDE + stable reward,4751,0.029727200636370955
+clean_stable,Clean CTDE + stable reward,4776,0.027349127724992258
+clean_stable,Clean CTDE + stable reward,4801,0.027494988144935607
+clean_stable,Clean CTDE + stable reward,4826,0.020633972779796724
+clean_stable,Clean CTDE + stable reward,4851,0.01681771631621811
+clean_stable,Clean CTDE + stable reward,4876,0.017679693944228317
+clean_stable,Clean CTDE + stable reward,4901,0.01797576634664435
+clean_stable,Clean CTDE + stable reward,4926,0.018229866335495868
+clean_stable,Clean CTDE + stable reward,4951,0.018986393988197927
+clean_stable,Clean CTDE + stable reward,4976,0.021232489278809195
+clean_stable,Clean CTDE + stable reward,5001,0.018680139603493413
+clean_stable,Clean CTDE + stable reward,5026,0.022361502355379318
+clean_stable,Clean CTDE + stable reward,5051,0.0198230536250048
+clean_stable,Clean CTDE + stable reward,5076,0.018794131240138057
+clean_stable,Clean CTDE + stable reward,5101,0.011757221606712815
+clean_stable,Clean CTDE + stable reward,5126,0.011582121616338523
+clean_stable,Clean CTDE + stable reward,5151,0.011789665686264897
+clean_stable,Clean CTDE + stable reward,5176,0.014607817229370964
+clean_stable,Clean CTDE + stable reward,5201,0.017061706064523577
+clean_stable,Clean CTDE + stable reward,5226,0.015678547022071113
+clean_stable,Clean CTDE + stable reward,5251,0.020119502409033853
+clean_stable,Clean CTDE + stable reward,5276,0.0186055348348236
+clean_stable,Clean CTDE + stable reward,5301,0.022453483060198745
+clean_stable,Clean CTDE + stable reward,5326,0.025876845635830224
+clean_stable,Clean CTDE + stable reward,5351,0.024974615666251313
+clean_stable,Clean CTDE + stable reward,5376,0.019953568830860573
+clean_stable,Clean CTDE + stable reward,5401,0.019276780425134317
+clean_stable,Clean CTDE + stable reward,5426,0.017006426716070534
+clean_stable,Clean CTDE + stable reward,5451,0.017720051891519657
+clean_stable,Clean CTDE + stable reward,5476,0.02019187509664331
+clean_stable,Clean CTDE + stable reward,5501,0.018738657786270745
+clean_stable,Clean CTDE + stable reward,5526,0.01775100872819163
+clean_stable,Clean CTDE + stable reward,5551,0.016181198505655595
+clean_stable,Clean CTDE + stable reward,5576,0.020541964354306365
+clean_stable,Clean CTDE + stable reward,5601,0.020591475389737712
+clean_stable,Clean CTDE + stable reward,5626,0.0207093253865241
+clean_stable,Clean CTDE + stable reward,5651,0.017266465822249263
+clean_stable,Clean CTDE + stable reward,5676,0.014811692615803583
+clean_stable,Clean CTDE + stable reward,5701,0.016539295012735197
+clean_stable,Clean CTDE + stable reward,5726,0.014178431496220542
+clean_stable,Clean CTDE + stable reward,5751,0.014131031497745387
+clean_stable,Clean CTDE + stable reward,5776,0.014770756326033694
+clean_stable,Clean CTDE + stable reward,5801,0.013041494872886649
+clean_stable,Clean CTDE + stable reward,5826,0.015375375113508161
+clean_stable,Clean CTDE + stable reward,5851,0.016038942162995187
+clean_stable,Clean CTDE + stable reward,5876,0.022524220164814288
+clean_stable,Clean CTDE + stable reward,5901,0.023537995908372942
+clean_stable,Clean CTDE + stable reward,5926,0.02511628584685237
+clean_stable,Clean CTDE + stable reward,5951,0.025119535850535578
+clean_stable,Clean CTDE + stable reward,5976,0.021774146527641244
+clean_stable,Clean CTDE + stable reward,6001,0.021730896516528406
+clean_stable,Clean CTDE + stable reward,6026,0.01937126628832626
+clean_stable,Clean CTDE + stable reward,6051,0.019599035159590092
+clean_stable,Clean CTDE + stable reward,6076,0.01808175369926171
+clean_stable,Clean CTDE + stable reward,6101,0.01771764023706051
+clean_stable,Clean CTDE + stable reward,6126,0.01852038880082542
+clean_stable,Clean CTDE + stable reward,6151,0.022703372782962066
+clean_stable,Clean CTDE + stable reward,6176,0.025422645266116848
+clean_stable,Clean CTDE + stable reward,6201,0.027190365247733966
+clean_stable,Clean CTDE + stable reward,6226,0.02715401524128534
+clean_stable,Clean CTDE + stable reward,6251,0.024638758317050775
+clean_stable,Clean CTDE + stable reward,6276,0.021249962718102283
+clean_stable,Clean CTDE + stable reward,6301,0.01931446742368276
+clean_stable,Clean CTDE + stable reward,6326,0.019611095142572556
+clean_stable,Clean CTDE + stable reward,6351,0.018000947279870127
+clean_stable,Clean CTDE + stable reward,6376,0.013746723439398882
+clean_stable,Clean CTDE + stable reward,6401,0.01905417154965104
+clean_stable,Clean CTDE + stable reward,6426,0.02142152675754911
+clean_stable,Clean CTDE + stable reward,6451,0.021517776757318606
+clean_stable,Clean CTDE + stable reward,6476,0.020015925812258466
+clean_stable,Clean CTDE + stable reward,6501,0.019447961598380022
+clean_stable,Clean CTDE + stable reward,6526,0.018826037509861594
+clean_stable,Clean CTDE + stable reward,6551,0.01792989476420185
+clean_stable,Clean CTDE + stable reward,6576,0.019357412404533494
+clean_stable,Clean CTDE + stable reward,6601,0.012280994315660751
+clean_stable,Clean CTDE + stable reward,6626,0.009953489101826524
+clean_stable,Clean CTDE + stable reward,6651,0.009839989117099282
+clean_stable,Clean CTDE + stable reward,6676,0.01476295221484175
+clean_stable,Clean CTDE + stable reward,6701,0.014976180469202481
+clean_stable,Clean CTDE + stable reward,6726,0.015352935111550283
+clean_stable,Clean CTDE + stable reward,6751,0.01831496719267303
+clean_stable,Clean CTDE + stable reward,6776,0.02114265672254983
+clean_stable,Clean CTDE + stable reward,6801,0.026599466728803197
+clean_stable,Clean CTDE + stable reward,6826,0.028150727358661202
+clean_stable,Clean CTDE + stable reward,6851,0.028082627361727605
+clean_stable,Clean CTDE + stable reward,6876,0.023071714265497537
+clean_stable,Clean CTDE + stable reward,6901,0.02209698366354129
+clean_stable,Clean CTDE + stable reward,6926,0.019729486876785777
+clean_stable,Clean CTDE + stable reward,6951,0.015188261420807939
+clean_stable,Clean CTDE + stable reward,6976,0.013411394290524148
+clean_stable,Clean CTDE + stable reward,7001,0.017447682936908637
+clean_stable,Clean CTDE + stable reward,7026,0.02240573753213535
+clean_stable,Clean CTDE + stable reward,7051,0.024353671963835907
+clean_stable,Clean CTDE + stable reward,7076,0.026545325712650038
+clean_stable,Clean CTDE + stable reward,7101,0.025160491976712326
+clean_stable,Clean CTDE + stable reward,7126,0.025193991975429486
+clean_stable,Clean CTDE + stable reward,7151,0.026775910114702088
+clean_stable,Clean CTDE + stable reward,7176,0.029284348072032985
+clean_stable,Clean CTDE + stable reward,7201,0.02124465781962495
+clean_stable,Clean CTDE + stable reward,7226,0.022304049380290923
+clean_stable,Clean CTDE + stable reward,7251,0.023006188974140928
+clean_stable,Clean CTDE + stable reward,7276,0.025673783925194545
+clean_stable,Clean CTDE + stable reward,7301,0.025702283923637836
+clean_stable,Clean CTDE + stable reward,7326,0.03178676654326405
+clean_stable,Clean CTDE + stable reward,7351,0.030302848397623126
+clean_stable,Clean CTDE + stable reward,7376,0.027070982282893924
+clean_stable,Clean CTDE + stable reward,7401,0.027328293933060153
+clean_stable,Clean CTDE + stable reward,7426,0.021426556202750323
+clean_stable,Clean CTDE + stable reward,7451,0.020897800916791272
+clean_stable,Clean CTDE + stable reward,7476,0.01954762951914741
+clean_stable,Clean CTDE + stable reward,7501,0.02087825517242887
+clean_stable,Clean CTDE + stable reward,7526,0.019866246720921445
+clean_stable,Clean CTDE + stable reward,7551,0.01984989672124353
+clean_stable,Clean CTDE + stable reward,7576,0.02067979951669254
+clean_stable,Clean CTDE + stable reward,7601,0.019145579464020516
+clean_stable,Clean CTDE + stable reward,7626,0.019778006819469694
+clean_stable,Clean CTDE + stable reward,7651,0.022286121392607994
+clean_stable,Clean CTDE + stable reward,7676,0.022719425657451168
+clean_stable,Clean CTDE + stable reward,7701,0.021255300005614073
+clean_stable,Clean CTDE + stable reward,7726,0.021387482676545867
+clean_stable,Clean CTDE + stable reward,7751,0.02140708267212171
+clean_stable,Clean CTDE + stable reward,7776,0.018838567993952848
+clean_stable,Clean CTDE + stable reward,7801,0.0201663431381166
+clean_stable,Clean CTDE + stable reward,7826,0.022959369986674534
+clean_stable,Clean CTDE + stable reward,7851,0.01837333666087939
+clean_stable,Clean CTDE + stable reward,7876,0.019464118413488867
+clean_stable,Clean CTDE + stable reward,7901,0.019613368409445643
+clean_stable,Clean CTDE + stable reward,7926,0.021310610317559583
+clean_stable,Clean CTDE + stable reward,7951,0.02928417707193144
+clean_stable,Clean CTDE + stable reward,7976,0.029304677074542235
+clean_stable,Clean CTDE + stable reward,8001,0.029537571995606377
+clean_stable,Clean CTDE + stable reward,8026,0.027792462174220378
+clean_stable,Clean CTDE + stable reward,8051,0.027875412182875113
+clean_stable,Clean CTDE + stable reward,8076,0.022861948863610412
+clean_stable,Clean CTDE + stable reward,8101,0.025636807358714542
+clean_stable,Clean CTDE + stable reward,8126,0.018593308629096972
+clean_stable,Clean CTDE + stable reward,8151,0.013080965719236662
+clean_stable,Clean CTDE + stable reward,8176,0.017866036273298923
+clean_stable,Clean CTDE + stable reward,8201,0.01815082229488322
+clean_stable,Clean CTDE + stable reward,8226,0.01715782178958758
+clean_stable,Clean CTDE + stable reward,8251,0.017083121787327366
+clean_stable,Clean CTDE + stable reward,8276,0.01920245062010505
+clean_stable,Clean CTDE + stable reward,8301,0.02012721587914708
+clean_stable,Clean CTDE + stable reward,8326,0.024122087009854992
+clean_stable,Clean CTDE + stable reward,8351,0.023597081770458283
+clean_stable,Clean CTDE + stable reward,8376,0.01869518074850927
+clean_stable,Clean CTDE + stable reward,8401,0.018052783133934977
+clean_stable,Clean CTDE + stable reward,8426,0.015540270213859881
+clean_stable,Clean CTDE + stable reward,8451,0.01554332020899889
+clean_stable,Clean CTDE + stable reward,8476,0.015965847840234314
+clean_stable,Clean CTDE + stable reward,8501,0.019326282494148438
+clean_stable,Clean CTDE + stable reward,8526,0.019867054518108454
+clean_stable,Clean CTDE + stable reward,8551,0.020136674177301722
+clean_stable,Clean CTDE + stable reward,8576,0.02229403361136061
+clean_stable,Clean CTDE + stable reward,8601,0.02090797513872527
+clean_stable,Clean CTDE + stable reward,8626,0.021024975131658685
+clean_stable,Clean CTDE + stable reward,8651,0.022609876921633222
+clean_stable,Clean CTDE + stable reward,8676,0.019992020452555118
+clean_stable,Clean CTDE + stable reward,8701,0.01277405874276152
+clean_stable,Clean CTDE + stable reward,8726,0.010764948178184536
+clean_stable,Clean CTDE + stable reward,8751,0.008309859921173455
+clean_stable,Clean CTDE + stable reward,8776,0.006086280960662377
+clean_stable,Clean CTDE + stable reward,8801,0.013312715254651237
+clean_stable,Clean CTDE + stable reward,8826,0.017917475507274475
+clean_stable,Clean CTDE + stable reward,8851,0.016266023719290357
+clean_stable,Clean CTDE + stable reward,8876,0.018405575894539623
+clean_stable,Clean CTDE + stable reward,8901,0.01837894170148499
+clean_stable,Clean CTDE + stable reward,8926,0.017828086413282984
+clean_stable,Clean CTDE + stable reward,8951,0.017827286415013043
+clean_stable,Clean CTDE + stable reward,8976,0.01961547051236263

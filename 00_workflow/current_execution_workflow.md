@@ -27,6 +27,15 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 - This is an exploratory method-development result. It is not sufficient for a TWC claim because absolute discovery remains low and the first seed informed method tuning.
 - The next blocking task is a clean `N=10`, 300-slot MARL learnability run with local candidate/table processing but no pair phase, role hint, action target, or global-derived actor input.
 
+## Clean CTDE Gate Status (2026-07-10)
+
+- The first clean planar run uses `N=10`, 24 azimuth beams (15 degrees), 300 slots, 30 training episodes, and 10 paired held-out scenarios.
+- Clean CTDE discovery-first reaches 29.56% discovery versus 18.22% for uniform random: paired delta +11.33 percentage points, exact sign-flip `p=0.013672`.
+- Wang2025 reaches 54.44% in the same scenarios; clean CTDE remains 24.89 percentage points lower and loses all 10 paired scenarios.
+- The stable-reward variant improves TX fraction balance but reduces discovery to 27.33%, so it is rejected.
+- The current clean method passes the random learnability gate but not the Wang competitiveness gate. Transfer and 3-D experiments remain blocked.
+- Next method task: learn decentralized role balance/decorrelation from local actor observations and centralized training batches without pair phase, role hints, action teachers, or execution-time global information.
+
 ## Discovery-First Metric Reset
 
 - The primary objective is neighbor discovery performance, not collision
