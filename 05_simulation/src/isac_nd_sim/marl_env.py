@@ -329,14 +329,17 @@ class MarlNeighborDiscoveryEnv:
             score = (raw_score - score_min) / score_span
         else:
             score = np.full_like(raw_score, 0.5, dtype=float)
-        top_k = min(self.n_beams, max(4, int(np.ceil(np.sqrt(max(1, self.n_beams))))))
-        top_indices = np.argpartition(raw_score, -top_k)[-top_k:]
-        threshold = max(float(self.cfg.exploration_floor), float(np.quantile(belief, 0.90)) if self.n_beams > 1 else 0.0)
-        mask = (belief >= threshold).astype(np.float32)
-        mask[top_indices] = 1.0
-        last_beam = int(self._last_actions[node].beam)
-        if 0 <= last_beam < self.n_beams:
-            mask[last_beam] = 1.0
+        # Unknown cells remain selectable. Only locally sensed empty cells are
+        # pruned, and stale exclusions reopen to protect against missed detections.
+        retry_slots = max(4, int(round(0.25 / max(self.cfg.slot_duration_s, 1e-6))))
+        empty_evidence = self._sim.empty_beam_count[node] >= 1.0
+        positive_evidence = (belief >= float(self.cfg.exploration_floor)) | (self._sim.success_count[node] > 0.05)
+        retry_due = self._sim.age[node] >= float(retry_slots)
+        mask = (~empty_evidence | positive_evidence | retry_due).astype(np.float32)
+        if not np.any(mask > 0.5):
+            top_k = min(self.n_beams, max(4, int(np.ceil(np.sqrt(max(1, self.n_beams))))))
+            top_indices = np.argpartition(raw_score, -top_k)[-top_k:]
+            mask[top_indices] = 1.0
         if self.cfg.rendezvous_observation_enabled and rendezvous is not None:
             rendezvous_score = np.asarray(rendezvous["beam_score"], dtype=np.float32)
             score = np.maximum(score, rendezvous_score)

@@ -148,6 +148,34 @@ def test_exchanged_neighbor_table_updates_local_actor_candidate_features() -> No
     assert env._sim.last_positive_slot[0, target_beam] == 3
 
 
+def test_local_candidate_mask_keeps_unknown_cells_and_reopens_stale_empty_cells() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    observations, _ = env.reset(seed=20260711)
+    empty_beam = 3
+
+    assert np.all(observations[0]["candidate_mask"] == 1.0)
+
+    env._sim.empty_beam_count[0, empty_beam] = 1.0
+    env._sim.belief[0, empty_beam] = 0.0
+    env._sim.success_count[0, empty_beam] = 0.0
+    env._sim.age[0, empty_beam] = 0.0
+    rejected = env._observation_for(0)
+
+    assert rejected["candidate_mask"][empty_beam] == 0.0
+    assert np.all(np.delete(rejected["candidate_mask"], empty_beam) == 1.0)
+
+    env._sim.age[0, empty_beam] = 50.0
+    reopened = env._observation_for(0)
+
+    assert reopened["candidate_mask"][empty_beam] == 1.0
+
+
 def test_clean_ctde_forces_rendezvous_observation_off() -> None:
     module = load_training_module()
     cfg = load_config("05_simulation/configs/twc_canonical_n10_b10.yaml")
