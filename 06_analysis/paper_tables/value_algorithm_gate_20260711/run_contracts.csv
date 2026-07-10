@@ -1,0 +1,6 @@
+method,training_contract_version,reward_scope,centralized_training,independent_agent_parameters,independent_agent_replay,parameter_sharing,training_episodes,training_seed,slots_per_episode,eval_episodes_per_variant,peak_rss_mb
+idqn,common_local_residual_value_v1,team,False,True,True,False,30,29260711,300,10,556.14453125
+idqn_local_reward,common_local_residual_value_v1,local,False,True,True,False,30,29260711,300,10,555.73828125
+shared_idqn,common_local_residual_value_v1,team,False,False,False,True,30,29260711,300,10,571.22265625
+vdn,common_local_residual_value_v1,team,True,False,False,True,30,29260711,300,10,571.578125
+qmix,common_local_residual_value_v1,team,True,False,False,True,30,29260711,300,10,576.62890625
