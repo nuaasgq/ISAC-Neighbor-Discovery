@@ -15,7 +15,7 @@ PL(d) = FSPL(d_0) + 10 n log10(d / d_0) + X_sigma + L_sys,
 FSPL(d_0) = 20 log10(4 pi f_c d_0 / c).
 ```
 
-`X_sigma` is one reciprocal, episode-level log-normal shadowing realization per UAV pair. The first single-hop study uses `n=2`, consistent with an unobstructed LoS reference, and must later sweep or calibrate this value. This generic close-in model is not presented as a verbatim 3GPP UMi/UMa formula.
+`X_sigma` is one reciprocal, episode-level log-normal shadowing realization per UAV pair. The calibrated nominal single-hop study uses `n=2.1`; sensitivity experiments retain `n=1.8-3.0`. This generic close-in model is not presented as a verbatim 3GPP UMi/UMa formula.
 
 3GPP TR 38.901 supplies the broader 0.5-100 GHz channel-modeling framework, while 3GPP TR 36.777 motivates explicit aerial-link treatment. Relevant official records are:
 
@@ -73,7 +73,7 @@ Failures are recorded separately as forward decode failure, ACK decode failure, 
 
 ## TWC Training Parameters
 
-The initial `twc_trainable_n10.yaml` values are:
+The calibrated `twc_trainable_n10.yaml` values are:
 
 | Parameter | Value |
 |---|---:|
@@ -81,14 +81,16 @@ The initial `twc_trainable_n10.yaml` values are:
 | Bandwidth | 64 MHz |
 | TX power | 1 W |
 | Noise figure | 7 dB |
-| Path-loss exponent | 2.0 |
+| Path-loss exponent | 2.1 |
 | Shadowing standard deviation | 2 dB |
 | Rician K-factor | 10 dB |
 | SINR threshold | 5 dB |
 | Antenna efficiency | 0.70 |
 | Sidelobe gain | -10 dBi |
 
-These values define a reproducible first operating point, not a final calibrated claim. Paper experiments must include sensitivity sweeps for SINR threshold, K-factor, shadowing, sidelobe gain, transmit power, bandwidth, and path-loss exponent.
+These values define the calibrated nominal operating point. The calibration uses 20,000 common-random-number Monte Carlo samples per condition and Wilson 95% confidence intervals. At the 17.32 km region diagonal, the nominal isolated-link coverage is 0.9448 (95% CI 0.9415-0.9478); equal-power two-signal decoding is 0.1837; and 3 km/10 km near-far capture is 0.9317.
+
+The reproducible script is `05_simulation/run_communication_phy_calibration.py`. Its dated tables, figures, assumptions, and interpretation are documented in `06_analysis/communication_phy_sensitivity_calibration_20260710.md`.
 
 ## Known Limitations
 

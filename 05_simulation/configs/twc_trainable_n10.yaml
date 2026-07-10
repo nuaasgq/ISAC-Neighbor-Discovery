@@ -72,7 +72,7 @@ phy_communication:
   bandwidth_hz: 64000000
   tx_power_w: 1.0
   noise_figure_db: 7.0
-  path_loss_exponent: 2.0
+  path_loss_exponent: 2.1
   reference_distance_m: 1.0
   system_loss_db: 0.0
   shadowing_std_db: 2.0
