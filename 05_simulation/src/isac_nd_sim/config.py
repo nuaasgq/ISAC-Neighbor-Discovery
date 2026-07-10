@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +83,9 @@ class SimulationConfig:
     communication_sidelobe_gain_db: float = -10.0
     communication_fading_enabled: bool = True
     communication_shadowing_enabled: bool = True
+    communication_antenna_gain_mode: str = "legacy_sector"
+    communication_fixed_main_lobe_gain_db: float = 21.0
+    shared_waveform_power_enabled: bool = False
 
     @property
     def n_beams(self) -> int:
@@ -131,6 +134,20 @@ def load_config(path: str | Path) -> SimulationConfig:
     energy = raw.get("energy", {})
     phy = raw.get("phy_sensing", {})
     comm_phy = raw.get("phy_communication", {})
+    shared_phy = raw.get("phy_shared", {})
+    shared_power_enabled = bool(shared_phy.get("enabled", False))
+    shared_power_w = float(shared_phy.get("tx_power_w", energy.get("tx_power_w", 1.0)))
+    energy_tx_power_w = shared_power_w if shared_power_enabled else float(energy.get("tx_power_w", 1.0))
+    sensing_tx_power_w = (
+        shared_power_w
+        if shared_power_enabled
+        else float(phy.get("tx_power_w", energy.get("tx_power_w", 1.0)))
+    )
+    communication_tx_power_w = (
+        shared_power_w
+        if shared_power_enabled
+        else float(comm_phy.get("tx_power_w", energy.get("tx_power_w", 1.0)))
+    )
 
     return SimulationConfig(
         name=str(experiment["name"]),
@@ -169,7 +186,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         confidence_decay=float(protocol["confidence_decay"]),
         piggyback_sensing_period_multiplier=float(protocol.get("piggyback_sensing_period_multiplier", 1.0)),
         baselines=tuple(str(v) for v in raw["baselines"]),
-        tx_power_w=float(energy.get("tx_power_w", 1.0)),
+        tx_power_w=energy_tx_power_w,
         rx_power_w=float(energy.get("rx_power_w", 0.6)),
         sense_power_w=float(energy.get("sense_power_w", 1.2)),
         idle_power_w=float(energy.get("idle_power_w", 0.05)),
@@ -180,7 +197,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         bandwidth_hz=float(phy.get("bandwidth_hz", 64.0e6)),
         radar_cross_section_m2=float(phy.get("radar_cross_section_m2", 1.0)),
         noise_psd_w_per_hz=float(phy.get("noise_psd_w_per_hz", 2.0e-21)),
-        isac_tx_power_w=float(phy.get("tx_power_w", energy.get("tx_power_w", 1.0))),
+        isac_tx_power_w=sensing_tx_power_w,
         isac_processing_gain_db=float(phy.get("processing_gain_db", 0.0)),
         isac_piggyback_loss_db=float(phy.get("piggyback_loss_db", 0.0)),
         detection_midpoint_snr_db=float(phy.get("detection_midpoint_snr_db", -10.0)),
@@ -197,9 +214,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         communication_bandwidth_hz=float(
             comm_phy.get("bandwidth_hz", phy.get("bandwidth_hz", 64.0e6))
         ),
-        communication_tx_power_w=float(
-            comm_phy.get("tx_power_w", energy.get("tx_power_w", 1.0))
-        ),
+        communication_tx_power_w=communication_tx_power_w,
         communication_noise_figure_db=float(comm_phy.get("noise_figure_db", 7.0)),
         communication_path_loss_exponent=float(comm_phy.get("path_loss_exponent", 2.0)),
         communication_reference_distance_m=float(comm_phy.get("reference_distance_m", 1.0)),
@@ -211,4 +226,17 @@ def load_config(path: str | Path) -> SimulationConfig:
         communication_sidelobe_gain_db=float(comm_phy.get("sidelobe_gain_db", -10.0)),
         communication_fading_enabled=bool(comm_phy.get("fading_enabled", True)),
         communication_shadowing_enabled=bool(comm_phy.get("shadowing_enabled", True)),
+        communication_antenna_gain_mode=str(comm_phy.get("antenna_gain_mode", "legacy_sector")),
+        communication_fixed_main_lobe_gain_db=float(comm_phy.get("fixed_main_lobe_gain_db", 21.0)),
+        shared_waveform_power_enabled=shared_power_enabled,
     )
+
+
+def with_communication_tx_power(cfg: SimulationConfig, power_w: float) -> SimulationConfig:
+    """Apply a communication power point without breaking a shared ISAC waveform budget."""
+
+    power = float(power_w)
+    updates: dict[str, float] = {"communication_tx_power_w": power}
+    if cfg.shared_waveform_power_enabled:
+        updates.update(tx_power_w=power, isac_tx_power_w=power)
+    return replace(cfg, **updates)

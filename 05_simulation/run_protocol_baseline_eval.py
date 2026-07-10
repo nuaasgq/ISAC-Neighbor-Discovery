@@ -153,6 +153,9 @@ def run_protocol_eval(protocol: str, cfg: SimulationConfig, args: argparse.Names
             }
         )
         rows.append(row)
+        # Persist episode-level progress so a resource timeout does not erase
+        # all completed seeds for a long narrow-beam baseline run.
+        write_rows(output / "eval_episode_metrics.csv", rows)
     write_rows(output / "eval_episode_metrics.csv", rows)
     write_rows(output / "resource_log.csv", resource_rows)
     manifest = build_manifest(protocol, cfg, args, output, rows)
@@ -191,6 +194,22 @@ def build_manifest(
         "elevation_cells": int(cfg.elevation_cells),
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
+        "communication_phy": {
+            "model": cfg.communication_phy_model,
+            "carrier_frequency_hz": cfg.communication_carrier_frequency_hz,
+            "bandwidth_hz": cfg.communication_bandwidth_hz,
+            "tx_power_w": cfg.communication_tx_power_w,
+            "noise_figure_db": cfg.communication_noise_figure_db,
+            "path_loss_exponent": cfg.communication_path_loss_exponent,
+            "shadowing_std_db": cfg.communication_shadowing_std_db,
+            "rician_k_db": cfg.communication_rician_k_db,
+            "sinr_threshold_db": cfg.communication_sinr_threshold_db,
+            "sidelobe_gain_db": cfg.communication_sidelobe_gain_db,
+            "antenna_gain_mode": cfg.communication_antenna_gain_mode,
+            "channel_seed_policy": "scenario_seed_only",
+        },
+        "sensing_seed_policy": "scenario_slot_node_beam_event",
+        "shared_waveform_power_enabled": bool(cfg.shared_waveform_power_enabled),
         "env_protocol": protocol,
         "feature_flags": {
             "candidate_mask": False,
@@ -221,6 +240,8 @@ def method_label(protocol: str) -> str:
         "improved_rl_isac": "Proxy improved ISAC",
         "trust_gated_isac_tables": "Trust-gated ISAC tables",
         "budgeted_collision_aware_isac": "Budgeted collision-aware ISAC",
+        "wang2025_isac_tables": "Wang2025 ISAC with table exchange",
+        "improved_rl_isac_tables": "Rule ISAC with table exchange",
     }
     return labels.get(protocol, protocol.replace("_", " "))
 

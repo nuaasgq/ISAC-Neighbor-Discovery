@@ -140,7 +140,7 @@ def test_table_exchange_does_not_infer_targets_from_global_truth() -> None:
     assert simulator.belief[0, target_beam] == before
 
 
-def test_policy_rng_consumption_does_not_change_sensing_noise() -> None:
+def test_sensing_noise_depends_on_scenario_not_policy_seed_or_call_order() -> None:
     cfg = replace(
         load_config("05_simulation/configs/twc_trainable_n10.yaml"),
         n_nodes=2,
@@ -150,7 +150,7 @@ def test_policy_rng_consumption_does_not_change_sensing_noise() -> None:
         miss_detection_rate=0.5,
     )
     first = NeighborDiscoverySimulator(cfg, "improved_rl_isac_tables", seed=80, scenario_seed=81)
-    second = NeighborDiscoverySimulator(cfg, "improved_rl_isac_tables", seed=80, scenario_seed=81)
+    second = NeighborDiscoverySimulator(cfg, "improved_rl_isac_tables", seed=999, scenario_seed=81)
     first.reset()
     second.reset()
     second.rng.random(100)
@@ -159,8 +159,9 @@ def test_policy_rng_consumption_does_not_change_sensing_noise() -> None:
     first.invalidate_geometry_cache()
     second.invalidate_geometry_cache()
 
-    first_value = first.sample_sensing_observation(0, 0, cfg.sensing_range_m, piggyback=True)
-    second_value = second.sample_sensing_observation(0, 0, cfg.sensing_range_m, piggyback=True)
+    second.sample_sensing_observation(0, 1, cfg.sensing_range_m, piggyback=True, slot=7)
+    first_value = first.sample_sensing_observation(0, 0, cfg.sensing_range_m, piggyback=True, slot=7)
+    second_value = second.sample_sensing_observation(0, 0, cfg.sensing_range_m, piggyback=True, slot=7)
 
     assert first_value == second_value
 

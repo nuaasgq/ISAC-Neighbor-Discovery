@@ -7,8 +7,11 @@ import pytest
 
 from isac_nd_sim.communication_phy import (
     CommunicationPhy,
+    beam_solid_angle_sr,
     close_in_path_loss_db,
+    db_to_linear,
     free_space_path_loss_db,
+    link_received_power_w,
     main_lobe_gain_db,
     sample_rician_power,
     thermal_noise_power_w,
@@ -67,6 +70,33 @@ def test_directional_gain_and_noise_budget_are_physical() -> None:
     assert 1e-13 < thermal_noise_power_w(narrow) < 1e-11
 
 
+def test_normalized_sector_gain_conserves_integrated_realized_gain() -> None:
+    cfg = replace(
+        _deterministic_phy_config(),
+        communication_antenna_gain_mode="normalized_sector",
+        communication_sidelobe_gain_db=-10.0,
+        communication_antenna_efficiency=0.70,
+    )
+    solid_angle = beam_solid_angle_sr(cfg)
+    main_gain = float(db_to_linear(main_lobe_gain_db(cfg)))
+    side_gain = float(db_to_linear(cfg.communication_sidelobe_gain_db))
+    integrated_gain = main_gain * solid_angle + side_gain * (4.0 * np.pi - solid_angle)
+
+    np.testing.assert_allclose(integrated_gain, 4.0 * np.pi * cfg.communication_antenna_efficiency)
+
+
+def test_fixed_main_gain_is_independent_of_codebook_resolution() -> None:
+    wide = replace(
+        _deterministic_phy_config(azimuth_cells=12, elevation_cells=6),
+        communication_antenna_gain_mode="fixed_main_gain",
+        communication_fixed_main_lobe_gain_db=21.0,
+    )
+    narrow = replace(wide, azimuth_cells=36, elevation_cells=18)
+
+    assert main_lobe_gain_db(wide) == 21.0
+    assert main_lobe_gain_db(narrow) == 21.0
+
+
 def test_rician_power_is_normalized_to_unit_mean() -> None:
     values = sample_rician_power(np.random.default_rng(101), (200_000,), 10.0)
 
@@ -97,6 +127,28 @@ def test_isolated_two_phase_link_passes_sinr_threshold() -> None:
     assert result.success_matrix[0, 1]
     assert result.forward_sinr_db[0, 1] > cfg.communication_sinr_threshold_db
     assert result.ack_sinr_db[0, 1] > cfg.communication_sinr_threshold_db
+
+
+def test_runtime_received_power_matches_common_link_budget() -> None:
+    cfg = _deterministic_phy_config(n_nodes=2)
+    phy = CommunicationPhy(cfg, np.random.default_rng(110))
+    phy.reset(2)
+    selected = np.asarray([0, 1])
+    true_beams = np.asarray([[0, 0], [1, 0]])
+    distance = np.asarray([[0.0, 1000.0], [1000.0, 0.0]])
+    channel = np.asarray([[0.0, 1.0], [1.0, 0.0]])
+    received = phy.received_power_matrix(
+        selected,
+        true_beams,
+        distance,
+        np.asarray([True, False]),
+        np.asarray([False, True]),
+        channel,
+    )
+    main_gain = float(db_to_linear(main_lobe_gain_db(cfg)))
+    expected = link_received_power_w(cfg, 1000.0, main_gain, main_gain)
+
+    np.testing.assert_allclose(received[0, 1], expected)
 
 
 def test_equal_power_aligned_interferers_are_interference_limited() -> None:
@@ -169,6 +221,9 @@ def test_simulator_records_phy_outage_when_threshold_is_unreachable() -> None:
 
     assert discovered == []
     assert simulator.handshake_attempts == 1
+    assert simulator.role_compatible_pairs == 1
+    assert simulator.aligned_handshake_opportunities == 1
+    assert simulator.forward_decodes == 0
     assert simulator.forward_decode_failures == 1
     assert simulator.phy_outage_failures == 1
     assert simulator.interference_limited_failures == 0

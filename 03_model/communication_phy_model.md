@@ -24,14 +24,18 @@ FSPL(d_0) = 20 log10(4 pi f_c d_0 / c).
 
 ## Directional Antenna Gain
 
-One codebook cell is represented by an ideal sectored beam. With azimuth width `Delta_phi`, elevation width `Delta_theta`, and aperture efficiency `eta`,
+One codebook cell is represented by a sectored beam. The implementation exposes three explicit gain modes: `legacy_sector` for historical reproducibility, `normalized_sector` for an energy-conserving physical pattern, and `fixed_main_gain` for a protocol-isolation control.
+
+For `normalized_sector`, with azimuth width `Delta_phi`, elevation width `Delta_theta`, efficiency `eta`, and sidelobe gain `G_side`,
 
 ```text
 Omega_B = Delta_phi * 2 sin(Delta_theta / 2),
-G_main = eta * 4 pi / Omega_B.
+G_main Omega_B + G_side (4 pi - Omega_B) = 4 pi eta.
 ```
 
-If the selected beam contains the target direction, `G_main` is applied; otherwise the configurable sidelobe gain is applied. Both transmitter and receiver gains enter every desired and interfering link. The model therefore captures beamwidth-dependent array gain and directional interference suppression without assuming that non-selected candidate beams are active.
+If the selected beam contains the target direction, `G_main` is applied; otherwise the configurable sidelobe gain is applied. Both transmitter and receiver gains enter every desired and interfering link. An infeasible sidelobe/efficiency combination is rejected instead of silently increasing total radiated power.
+
+The canonical configuration also enables a shared waveform power budget. Its communication-link power, radar-sensing power, and TX energy accounting are changed together during a power sweep.
 
 ## Small-Scale Fading and Noise
 

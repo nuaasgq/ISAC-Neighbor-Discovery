@@ -19,7 +19,7 @@ EVAL_SCRIPT = ROOT / "05_simulation" / "run_marl_evaluate.py"
 PROTOCOL_EVAL_SCRIPT = ROOT / "05_simulation" / "run_protocol_baseline_eval.py"
 TRANSFER_PLOT_SCRIPT = ROOT / "06_analysis" / "scripts" / "plot_marl_transfer_results.py"
 METHOD_PLOT_SCRIPT = ROOT / "06_analysis" / "scripts" / "plot_marl_method_comparison.py"
-DEFAULT_CONFIG = ROOT / "05_simulation" / "configs" / "paper_transfer_train_n10_b10_singlehop.yaml"
+DEFAULT_CONFIG = ROOT / "05_simulation" / "configs" / "twc_canonical_n10_b10.yaml"
 
 DEFAULT_MAPP0_NO_ISAC = (
     ROOT
@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
             "MAPPO no-ISAC, contention no-ISAC, and contention-aware ISAC-MARL."
         )
     )
-    parser.add_argument("--campaign", default="phase8_fiveway_n100_b10_b30_3000slot_10ep_stoch")
+    parser.add_argument("--campaign", default="twc_n10_b10_300slot_baseline_gate")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--output-root", default="05_simulation/results_raw/marl_campaign")
     parser.add_argument("--analysis-output-root", default="06_analysis/paper_tables/marl")
@@ -91,10 +91,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mappo-no-isac-checkpoint", default=str(DEFAULT_MAPP0_NO_ISAC))
     parser.add_argument("--contention-no-isac-checkpoint", default=str(DEFAULT_CONTENTION_NO_ISAC))
     parser.add_argument("--contention-actor-checkpoint", default=str(DEFAULT_CONTENTION_ACTOR))
-    parser.add_argument("--node-counts", type=int, nargs="+", default=[100])
-    parser.add_argument("--beamwidths", type=int, nargs="+", default=[10, 15, 30])
-    parser.add_argument("--eval-slots", type=int, nargs="+", default=[3000])
-    parser.add_argument("--eval-episodes", type=int, default=10)
+    parser.add_argument("--node-counts", type=int, nargs="+", default=[10])
+    parser.add_argument("--beamwidths", type=int, nargs="+", default=[10])
+    parser.add_argument("--eval-slots", type=int, nargs="+", default=[300])
+    parser.add_argument("--eval-episodes", type=int, default=30)
     parser.add_argument(
         "--area-scale",
         choices=["config", "fixed", "density"],
@@ -113,16 +113,16 @@ def parse_args() -> argparse.Namespace:
         help="Optional base area for fixed/density scaling. Defaults to network.area_size_m in --config.",
     )
     parser.add_argument("--train-node-count", type=int, default=10)
-    parser.add_argument("--communication-range", type=float, default=900.0)
-    parser.add_argument("--sensing-range", type=float, default=900.0)
+    parser.add_argument("--communication-range", type=float, default=18000.0)
+    parser.add_argument("--sensing-range", type=float, default=18000.0)
     parser.add_argument("--seed", type=int, default=20364205)
     parser.add_argument("--torch-threads", type=int, default=2)
     parser.add_argument("--resource-log-period", type=int, default=500)
     parser.add_argument("--max-rss-mb", type=float, default=10000.0)
     parser.add_argument("--max-system-memory-percent", type=float, default=90.0)
     parser.add_argument("--command-timeout-seconds", type=int, default=0)
-    parser.add_argument("--comparison-slots", type=int, default=3000)
-    parser.add_argument("--comparison-node-count", type=int, default=100)
+    parser.add_argument("--comparison-slots", type=int, default=300)
+    parser.add_argument("--comparison-node-count", type=int, default=10)
     parser.add_argument("--comparison-phase", default="eval_stochastic")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--no-aggregate", action="store_true")

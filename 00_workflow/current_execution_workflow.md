@@ -12,8 +12,8 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 
 ## Active Paper Evidence Line
 
-- Training setting: small-scale decentralized MARL training with `N=10`, 10-degree beams, and 300 slots per episode.
-- Transfer setting: zero-shot large-scale evaluation with `N=100`, 3000 slots, and final main beamwidths of 10 and 15 degrees.
+- Training gate: small-scale decentralized environment with `N=10`, 10-degree beams, and 300 slots per episode.
+- Transfer experiments are blocked until a trained policy beats the N=10 common-environment baselines. No 3000-slot or N=100 campaign is active.
 - Boundary evidence: 3- and 5-degree cases are treated as extremely narrow stress regimes; the archived 30-degree sweep is retained only as historical boundary evidence.
 - Main comparisons: uniform random, SkyOrbs-like directional baseline, communication-only MARL without ISAC, ISAC MARL variants, and decentralized gate-family ablations.
 - Current mechanism extensions: `trust_gated_isac_tables` for guarded neighbor/sensing-table fusion, and Budgeted ISAC expert gate behavior cloning for MARL access-control learning.
@@ -44,7 +44,9 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 3. Redesign MARL reward/evaluation around new discoveries, early discoveries,
    topology improvement, empty-scan reduction, and moderate access cost.
 4. Keep standalone SENSE disabled; ISAC remains TX-coupled piggyback sensing.
-5. Train small-scale MARL at N=10 and test transfer to larger N and different
-   beam widths only after the Wang-style 200-slot evidence is corrected.
-6. Keep every phase-level artifact committed and pushed; if push fails, keep
+5. Establish nonzero reciprocal rendezvous opportunities at N=10/B=10 before
+   starting MARL; zero-discovery environments are a failed learnability gate.
+6. Train small-scale MARL at N=10 only after the random, Wang, and rule-ISAC
+   baselines are reproducible under the canonical SINR-PHY configuration.
+7. Keep every phase-level artifact committed and pushed; if push fails, keep
    the local commit before moving to the next major phase.

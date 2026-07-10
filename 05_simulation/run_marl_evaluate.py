@@ -36,7 +36,7 @@ from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_SENSE  # noqa: E402
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a trained shared MARL policy under transfer settings.")
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--config", default="05_simulation/configs/twc_trainable_n10.yaml")
+    parser.add_argument("--config", default="05_simulation/configs/twc_canonical_n10_b10.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_eval")
     parser.add_argument("--eval-episodes", type=int, default=10)
     parser.add_argument("--slots", type=int, default=300)

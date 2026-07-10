@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
             "The script logs per-step rewards, per-episode returns, resource usage, and held-out evaluation."
         )
     )
-    parser.add_argument("--config", default="05_simulation/configs/twc_trainable_n10.yaml")
+    parser.add_argument("--config", default="05_simulation/configs/twc_canonical_n10_b10.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_training")
     parser.add_argument("--algorithm", choices=["ippo", "mappo", "isac_mappo"], default="isac_mappo")
     parser.add_argument(

@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from isac_nd_sim.config import load_config
+from isac_nd_sim.config import load_config, with_communication_tx_power
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
 from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic
 
@@ -46,6 +46,20 @@ def test_isac_mappo_defaults_to_soft_isac_observation_without_rule_priors() -> N
     assert module.disabled_modes_from_args(
         Namespace(allow_standalone_sense=False, allow_idle=False, forbid_sense=False)
     ) == ("sense", "idle")
+
+
+def test_canonical_config_uses_b10_shared_power_and_sinr_phy() -> None:
+    cfg = load_config("05_simulation/configs/twc_canonical_n10_b10.yaml")
+
+    assert (cfg.azimuth_cells, cfg.elevation_cells) == (36, 18)
+    assert cfg.slots_per_episode == 300
+    assert cfg.communication_phy_model == "close_in_rician_sinr"
+    assert cfg.communication_antenna_gain_mode == "normalized_sector"
+    assert cfg.shared_waveform_power_enabled
+    assert cfg.tx_power_w == cfg.isac_tx_power_w == cfg.communication_tx_power_w == 1.0
+
+    low_power = with_communication_tx_power(cfg, 0.25)
+    assert low_power.tx_power_w == low_power.isac_tx_power_w == low_power.communication_tx_power_w == 0.25
 
 
 def test_disabled_structured_features_do_not_leak_through_aggregate_paths() -> None:

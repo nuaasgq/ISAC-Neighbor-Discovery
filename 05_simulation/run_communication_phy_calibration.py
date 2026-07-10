@@ -20,13 +20,13 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.communication_phy import (  # noqa: E402
-    close_in_path_loss_db,
     db_to_linear,
+    link_received_power_w,
     main_lobe_gain_db,
     sample_rician_power,
     thermal_noise_power_w,
 )
-from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
+from isac_nd_sim.config import SimulationConfig, load_config, with_communication_tx_power  # noqa: E402
 from isac_nd_sim.simulator import NeighborDiscoverySimulator  # noqa: E402
 
 
@@ -34,7 +34,7 @@ PARAMETER_SWEEPS: dict[str, tuple[float, ...]] = {
     "path_loss_exponent": (1.8, 2.0, 2.1, 2.2, 2.5, 3.0),
     "rician_k_db": (0.0, 5.0, 10.0, 13.3, 22.0),
     "shadowing_std_db": (0.0, 2.0, 4.0, 6.0, 8.0),
-    "sidelobe_gain_db": (-30.0, -20.0, -10.0, -5.0, 0.0),
+    "sidelobe_gain_db": (-30.0, -20.0, -10.0, -5.0, -3.0),
     "sinr_threshold_db": (-5.0, 0.0, 5.0, 10.0, 15.0),
     "tx_power_w": (0.1, 0.25, 0.5, 1.0, 2.0),
 }
@@ -90,14 +90,6 @@ def sampled_link_power_w(
     tx_gain_db: float,
     rx_gain_db: float,
 ) -> np.ndarray:
-    base_loss_db = float(
-        close_in_path_loss_db(
-            distance_m,
-            cfg.communication_carrier_frequency_hz,
-            cfg.communication_path_loss_exponent,
-            cfg.communication_reference_distance_m,
-        )
-    ) + float(cfg.communication_system_loss_db)
     if cfg.communication_shadowing_enabled:
         shadowing_db = rng.standard_normal(size=samples) * cfg.communication_shadowing_std_db
     else:
@@ -106,12 +98,16 @@ def sampled_link_power_w(
         fading_power = sample_rician_power(rng, (samples,), cfg.communication_rician_k_db)
     else:
         fading_power = np.ones(samples, dtype=float)
-    gain_linear = float(db_to_linear(tx_gain_db + rx_gain_db))
-    return (
-        cfg.communication_tx_power_w
-        * gain_linear
-        * fading_power
-        * db_to_linear(-(base_loss_db + shadowing_db))
+    return np.asarray(
+        link_received_power_w(
+            cfg,
+            distance_m,
+            db_to_linear(tx_gain_db),
+            db_to_linear(rx_gain_db),
+            fading_power,
+            shadowing_db,
+        ),
+        dtype=float,
     )
 
 
@@ -251,7 +247,11 @@ def run_calibration(args: argparse.Namespace) -> dict[str, Any]:
     for parameter, values in PARAMETER_SWEEPS.items():
         field = CONFIG_FIELDS[parameter]
         for value in values:
-            condition = replace(cfg, **{field: value})
+            condition = (
+                with_communication_tx_power(cfg, value)
+                if parameter == "tx_power_w"
+                else replace(cfg, **{field: value})
+            )
             metrics = evaluate_operating_point(
                 condition,
                 args.samples,
@@ -301,8 +301,8 @@ def run_calibration(args: argparse.Namespace) -> dict[str, Any]:
                     cfg,
                     communication_path_loss_exponent=exponent,
                     communication_sinr_threshold_db=threshold_db,
-                    communication_tx_power_w=tx_power_w,
                 )
+                condition = with_communication_tx_power(condition, tx_power_w)
                 metrics = evaluate_operating_point(
                     condition,
                     args.samples,
@@ -354,6 +354,15 @@ def run_calibration(args: argparse.Namespace) -> dict[str, Any]:
         "samples_per_condition": int(args.samples),
         "seed": int(args.seed),
         "method": "vectorized_monte_carlo_common_random_number_design",
+        "communication_phy": {
+            "model": cfg.communication_phy_model,
+            "antenna_gain_mode": cfg.communication_antenna_gain_mode,
+            "main_lobe_gain_db": main_lobe_gain_db(cfg),
+            "sidelobe_gain_db": cfg.communication_sidelobe_gain_db,
+            "antenna_efficiency": cfg.communication_antenna_efficiency,
+            "shared_waveform_power_enabled": cfg.shared_waveform_power_enabled,
+            "tx_power_w": cfg.communication_tx_power_w,
+        },
         "baseline": baseline,
         "parameter_sweeps": {key: list(values) for key, values in PARAMETER_SWEEPS.items()},
         "joint_sweep": {
@@ -462,8 +471,8 @@ def validate_profiles_in_protocol(
             slots_per_episode=slots,
             communication_path_loss_exponent=float(profile["path_loss_exponent"]),
             communication_sinr_threshold_db=float(profile["sinr_threshold_db"]),
-            communication_tx_power_w=float(profile["tx_power_w"]),
         )
+        profile_cfg = with_communication_tx_power(profile_cfg, float(profile["tx_power_w"]))
         for episode in range(episodes):
             scenario_seed = seed + 1009 * episode
             policy_seed = scenario_seed + sum((index + 1) * ord(char) for index, char in enumerate(protocol))
@@ -485,6 +494,10 @@ def validate_profiles_in_protocol(
                     "tx_power_w": profile["tx_power_w"],
                     "discovered_edges": result["discovered_edges"],
                     "discovery_rate": result["discovery_rate"],
+                    "hello_transmissions": result["hello_transmissions"],
+                    "role_compatible_pairs": result["role_compatible_pairs"],
+                    "aligned_handshake_opportunities": result["aligned_handshake_opportunities"],
+                    "forward_decodes": result["forward_decodes"],
                     "handshake_attempts": attempts,
                     "handshake_successes": result["handshake_successes"],
                     "handshake_success_rate": result["handshake_successes"] / max(1, attempts),
@@ -506,6 +519,12 @@ def validate_profiles_in_protocol(
                 "tx_power_w": profile["tx_power_w"],
                 "discovered_edges_mean": float(np.mean([row["discovered_edges"] for row in selected])),
                 "discovery_rate_mean": float(np.mean([row["discovery_rate"] for row in selected])),
+                "hello_transmissions_total": int(sum(row["hello_transmissions"] for row in selected)),
+                "role_compatible_pairs_total": int(sum(row["role_compatible_pairs"] for row in selected)),
+                "aligned_handshake_opportunities_total": int(
+                    sum(row["aligned_handshake_opportunities"] for row in selected)
+                ),
+                "forward_decodes_total": int(sum(row["forward_decodes"] for row in selected)),
                 "handshake_attempts_total": int(sum(row["handshake_attempts"] for row in selected)),
                 "handshake_successes_total": int(sum(row["handshake_successes"] for row in selected)),
                 "handshake_success_rate_pooled": sum(row["handshake_successes"] for row in selected)

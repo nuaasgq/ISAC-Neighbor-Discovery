@@ -1,0 +1,114 @@
+experiment:
+  name: "twc_canonical_n10_b10"
+  seed: 20260710
+  episodes: 2000
+  slots_per_episode: 300
+  slot_metric_period: 1
+  slot_duration_ms: 5
+
+network:
+  node_count: 10
+  area_shape: "cube"
+  area_size_m: [10000, 10000, 10000]
+  # The first study is single-hop at the range-filter level. PHY decoding
+  # remains probabilistic through path loss, fading, shadowing, and SINR.
+  communication_range_m: 18000
+  sensing_range_m: 18000
+  self_localization_available: true
+  self_attitude_available: true
+  mobility:
+    model: "gauss_markov"
+    speed_min_mps: 3.0
+    speed_max_mps: 15.0
+    mean_speed_mps: 9.0
+    speed_std_mps: 2.0
+    gauss_markov_alpha: 0.90
+    direction_update_period_slots: 25
+
+beam:
+  azimuth_cells: [36]
+  elevation_cells: [18]
+  alignment_tolerance_cells: 0
+  rf_chains: [1]
+  main_lobe_model: "normalized_sector"
+  sidelobe_model: "normalized_sector"
+
+slot:
+  synchronized: true
+  p_sense: 0.0
+  p_tx: 0.5
+  p_rx: 0.5
+  p_idle: 0.0
+
+# One TX action emits one ISAC waveform. Communication decoding, sensing SNR,
+# and radio-energy accounting therefore use the same radiated-power setting.
+phy_shared:
+  enabled: true
+  tx_power_w: 1.0
+
+isac_error:
+  false_alarm_rates: [0.01]
+  miss_detection_rates: [0.05]
+  angular_cell_offsets: [0.25]
+  sensing_periods: [1]
+  belief_update_rho: 0.55
+
+phy_sensing:
+  model: "radar_snr"
+  waveform: "mimo_otfs"
+  carrier_frequency_hz: 30000000000
+  bandwidth_hz: 64000000
+  radar_cross_section_m2: 1.0
+  noise_psd_w_per_hz: 2.0e-21
+  processing_gain_db: 95.0
+  piggyback_loss_db: 1.5
+  detection_midpoint_snr_db: -10.0
+  detection_slope_per_db: 0.5
+  min_detection_probability: 0.02
+  max_detection_probability: 0.98
+  angular_footprint_radius_cells: 0
+  position_error_std_m: 25.0
+  report_ttl_slots: 100
+
+phy_communication:
+  model: "close_in_rician_sinr"
+  carrier_frequency_hz: 30000000000
+  bandwidth_hz: 64000000
+  noise_figure_db: 7.0
+  path_loss_exponent: 2.1
+  reference_distance_m: 1.0
+  system_loss_db: 0.0
+  shadowing_std_db: 2.0
+  rician_k_db: 10.0
+  sinr_threshold_db: 5.0
+  antenna_efficiency: 0.70
+  sidelobe_gain_db: -10.0
+  antenna_gain_mode: "normalized_sector"
+  fixed_main_lobe_gain_db: 21.0
+  fading_enabled: true
+  shadowing_enabled: true
+
+protocol:
+  exploration_floor: 0.08
+  softmax_beta: 3.0
+  target_degree: 9
+  alpha_occupancy: 2.2
+  beta_diversity: 0.5
+  gamma_degree_need: 0.5
+  eta_staleness: 0.2
+  confidence_decay: 0.98
+  piggyback_sensing_period_multiplier: 1.0
+
+energy:
+  # tx_power_w is overridden by phy_shared.tx_power_w when shared power is enabled.
+  tx_power_w: 1.0
+  rx_power_w: 0.6
+  sense_power_w: 1.2
+  idle_power_w: 0.05
+  piggyback_sense_power_w: 0.2
+
+baselines:
+  - "uniform_random"
+  - "wang2025_isac_tables"
+  - "improved_rl_isac_tables"
+  - "structured_marl_no_isac"

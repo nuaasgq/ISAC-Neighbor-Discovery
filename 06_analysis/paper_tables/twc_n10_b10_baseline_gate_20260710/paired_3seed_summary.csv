@@ -1,0 +1,4 @@
+method,episodes,discovery_rate_mean,discovered_edges_mean,hello_transmissions_mean,role_compatible_pairs_mean,aligned_opportunities_total,forward_decodes_total,handshake_successes_total,empty_scan_ratio_mean
+uniform_random,3,0.0,0.0,1524.333333,6741.666667,0,0,0,0.987556
+wang2025_isac_tables,3,0.0,0.0,1474.666667,6728.0,0,0,0,0.985444
+improved_rl_isac_tables,3,0.0,0.0,1659.0,6469.333333,0,0,0,0.972025

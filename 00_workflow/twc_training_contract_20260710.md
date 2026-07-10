@@ -11,7 +11,7 @@ This contract defines the first scientifically auditable MARL environment after 
 - Radio: one RF chain; one selected beam is active in one slot.
 - Action: `TX/RX x beam` by default. Standalone `SENSE` and `IDLE` require explicit opt-in.
 - ISAC: sensing is piggybacked on TX only. One TX observes one sensing cell unless an explicit footprint radius is configured.
-- Handshake: a candidate link succeeds only when both its TX endpoint and RX endpoint participate in exactly one candidate handshake in that slot.
+- Handshake: mutually aligned TX/RX candidates are decoded through aggregate-interference SINR. A receiver decodes at most one strongest eligible HELLO, so near-far capture is possible; the reciprocal ACK must also decode.
 - Duplicate handling: all methods use the same duplicate-response suppression rule.
 - Range: sensing uses `sensing_range_m`; communication success remains bounded by `communication_range_m`.
 - Table exchange: confirmed neighbor positions and noisy anonymous sensing-position estimates may be shared after a successful handshake. Table exchange cannot query the current global target identity, direction, or topology.
@@ -31,12 +31,14 @@ The optional beam-ranking loss is measurement-driven: its target is the local ca
 
 ## Reference Configuration
 
-`05_simulation/configs/twc_trainable_n10.yaml` defines the first training configuration:
+`05_simulation/configs/twc_canonical_n10_b10.yaml` is the authoritative pre-training configuration:
 
-- `N=10`, 15-degree azimuth/elevation cells, 288 beams;
+- `N=10`, 10-degree azimuth/elevation cells, 648 beams;
 - one RF chain and 300 slots per episode;
 - communication and sensing radii of 18 km, exceeding the 10 km cube diagonal;
 - radar-SNR sensing abstraction with MIMO-OTFS metadata;
+- close-in/Rician/SINR communication PHY with an energy-normalized sectored antenna;
+- one shared waveform TX power for communication, sensing, and radio-energy accounting;
 - Gauss-Markov UAV mobility.
 
 Recommended first convergence run:
@@ -47,19 +49,19 @@ python 05_simulation/run_marl_training.py `
   --separate-action-loss --beam-rank-aux-coef 0.05 `
   --eval-interval 50 --eval-episodes 10 --stochastic-eval `
   --checkpoint-interval 50 `
-  --output 05_simulation/results_raw/twc_n10_b15_seed20260705
+  --output 05_simulation/results_raw/twc_n10_b10_seed20260705
 ```
 
 This is a campaign command, not a claim that 2000 episodes is optimal. Convergence, multiple seeds, and held-out comparison must determine the final budget.
 
 ## Verification Completed
 
-- Full test suite: 76 tests passed after the refactor.
+- Full test suite: 94 tests passed after the PHY/MAC consistency update.
 - Three-episode/20-slot smoke: checkpoints, losses, per-step logs, held-out evaluation, runtime metadata, and resource logs were generated.
 - Policy update check: 28 of 30 policy tensors changed between episode 1 and the final checkpoint; parameter delta L2 was approximately 0.0302.
 - One-episode/300-slot TX/RX smoke: 3000 active actions, zero standalone sensing actions, zero idle actions, finite PPO/value/beam-ranking losses, and peak memory below configured limits.
 
-The smoke runs produced zero discovered links for the untrained policy. This is expected evidence of sparse exploration at 15 degrees, not evidence of convergence or method performance. These runs must not appear in paper result tables.
+The 2026-07-10 baseline gate found zero reciprocal beam-alignment opportunities for random, Wang-table, and rule-ISAC methods in the same first three B=10/300-slot seeds. This is a failed learnability gate, not evidence of method performance. MARL training remains blocked until the sensing-to-rendezvous mechanism yields nonzero opportunities without simulator-truth leakage.
 
 ## Invalidated Evidence
 

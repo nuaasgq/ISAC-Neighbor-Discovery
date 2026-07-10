@@ -42,21 +42,88 @@ def close_in_path_loss_db(
     return float(result) if np.asarray(result).ndim == 0 else result
 
 
-def main_lobe_gain_db(cfg: SimulationConfig) -> float:
-    """Ideal sectored-beam gain derived from one codebook cell's solid angle."""
-
+def beam_solid_angle_sr(cfg: SimulationConfig) -> float:
     azimuth_width = 2.0 * math.pi / max(1, int(cfg.azimuth_cells))
     elevation_width = math.pi / max(1, int(cfg.elevation_cells))
-    solid_angle = azimuth_width * 2.0 * math.sin(elevation_width / 2.0)
-    directivity = 4.0 * math.pi / max(solid_angle, 1e-12)
+    return azimuth_width * 2.0 * math.sin(elevation_width / 2.0)
+
+
+def main_lobe_gain_db(cfg: SimulationConfig) -> float:
+    """Return the configured sectored-beam main gain.
+
+    ``legacy_sector`` preserves historical results. ``normalized_sector``
+    conserves the integrated realized-gain budget after including sidelobes.
+    ``fixed_main_gain`` is a protocol-isolation control where angular search
+    resolution changes without changing the main-link gain.
+    """
+
+    mode = str(cfg.communication_antenna_gain_mode)
+    side_gain = float(db_to_linear(cfg.communication_sidelobe_gain_db))
+    if mode == "fixed_main_gain":
+        main_gain_db = float(cfg.communication_fixed_main_lobe_gain_db)
+        if main_gain_db <= float(cfg.communication_sidelobe_gain_db):
+            raise ValueError("Fixed main-lobe gain must exceed sidelobe gain.")
+        return main_gain_db
+
+    solid_angle = beam_solid_angle_sr(cfg)
     efficiency = float(np.clip(cfg.communication_antenna_efficiency, 1e-6, 1.0))
-    return 10.0 * math.log10(max(efficiency * directivity, 1e-12))
+    if mode == "legacy_sector":
+        directivity = 4.0 * math.pi / max(solid_angle, 1e-12)
+        return 10.0 * math.log10(max(efficiency * directivity, 1e-12))
+    if mode != "normalized_sector":
+        raise ValueError(
+            "Communication antenna gain mode must be 'legacy_sector', "
+            "'normalized_sector', or 'fixed_main_gain'."
+        )
+
+    total_budget = 4.0 * math.pi * efficiency
+    sidelobe_budget = side_gain * max(0.0, 4.0 * math.pi - solid_angle)
+    remaining_budget = total_budget - sidelobe_budget
+    if remaining_budget <= 0.0:
+        raise ValueError(
+            "Sidelobe gain consumes the full antenna efficiency budget; "
+            "reduce sidelobe_gain_db or increase antenna_efficiency."
+        )
+    main_gain = remaining_budget / max(solid_angle, 1e-12)
+    if main_gain <= side_gain:
+        raise ValueError("Normalized main-lobe gain must exceed sidelobe gain.")
+    return 10.0 * math.log10(main_gain)
 
 
 def thermal_noise_power_w(cfg: SimulationConfig) -> float:
     bandwidth = max(float(cfg.communication_bandwidth_hz), 1.0)
     noise_factor = float(db_to_linear(cfg.communication_noise_figure_db))
     return BOLTZMANN_J_PER_K * REFERENCE_TEMPERATURE_K * bandwidth * noise_factor
+
+
+def link_received_power_w(
+    cfg: SimulationConfig,
+    distance_m: float | np.ndarray,
+    tx_gain_linear: float | np.ndarray,
+    rx_gain_linear: float | np.ndarray,
+    channel_power: float | np.ndarray = 1.0,
+    shadowing_db: float | np.ndarray = 0.0,
+) -> float | np.ndarray:
+    """Evaluate the common close-in link budget used by runtime and calibration."""
+
+    loss_db = (
+        close_in_path_loss_db(
+            distance_m,
+            cfg.communication_carrier_frequency_hz,
+            cfg.communication_path_loss_exponent,
+            cfg.communication_reference_distance_m,
+        )
+        + float(cfg.communication_system_loss_db)
+        + np.asarray(shadowing_db, dtype=float)
+    )
+    result = (
+        float(cfg.communication_tx_power_w)
+        * np.asarray(tx_gain_linear, dtype=float)
+        * np.asarray(rx_gain_linear, dtype=float)
+        * np.asarray(channel_power, dtype=float)
+        * db_to_linear(-loss_db)
+    )
+    return float(result) if np.asarray(result).ndim == 0 else result
 
 
 def sample_rician_power(rng: np.random.Generator, shape: tuple[int, ...], k_db: float) -> np.ndarray:
@@ -104,6 +171,7 @@ class CommunicationPhy:
             raise ValueError("Communication bandwidth and transmit power must be positive.")
         if cfg.communication_reference_distance_m <= 0.0:
             raise ValueError("Communication reference distance must be positive.")
+        main_lobe_gain_db(cfg)
         self._shadowing_db = np.zeros((0, 0), dtype=float)
         self._fading_slot: int | None = None
         self._fading_power = np.zeros((0, 0), dtype=float)
@@ -169,19 +237,27 @@ class CommunicationPhy:
     ) -> np.ndarray:
         main_gain = float(db_to_linear(main_lobe_gain_db(self.cfg)))
         side_gain = float(db_to_linear(self.cfg.communication_sidelobe_gain_db))
-        path_gain = db_to_linear(-self.path_loss_matrix_db(distance_m))
         pointing = self._beam_match_matrix(selected_beams, true_beams)
         tx_gain = np.where(pointing, main_gain, side_gain)
         rx_gain = np.where(pointing.T, main_gain, side_gain)
         active_links = emitter_mask[:, None] & receiver_mask[None, :]
-        power = (
-            float(self.cfg.communication_tx_power_w)
-            * path_gain
-            * tx_gain
-            * rx_gain
-            * channel_power
-            * active_links
+        shadowing_db = (
+            self._shadowing_db
+            if self._shadowing_db.shape == np.asarray(distance_m).shape
+            else np.zeros_like(distance_m, dtype=float)
         )
+        power = np.asarray(
+            link_received_power_w(
+                self.cfg,
+                distance_m,
+                tx_gain,
+                rx_gain,
+                channel_power,
+                shadowing_db,
+            ),
+            dtype=float,
+        )
+        power *= active_links
         np.fill_diagonal(power, 0.0)
         return power
 

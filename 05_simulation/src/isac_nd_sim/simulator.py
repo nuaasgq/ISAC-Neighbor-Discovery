@@ -81,7 +81,11 @@ class EpisodeResult:
     p95_delay_censored: float
     p99_delay_censored: float
     empty_scan_ratio: float
+    hello_transmissions: int
     handshake_attempts: int
+    role_compatible_pairs: int
+    aligned_handshake_opportunities: int
+    forward_decodes: int
     handshake_successes: int
     forward_decode_failures: int
     ack_decode_failures: int
@@ -134,7 +138,7 @@ class NeighborDiscoverySimulator:
         self.seed = seed
         self.scenario_seed = seed if scenario_seed is None else scenario_seed
         self.mobility_rng = np.random.default_rng(self.scenario_seed)
-        sensing_seed = np.random.SeedSequence([self.scenario_seed, self.seed, 0x15AC])
+        sensing_seed = np.random.SeedSequence([self.scenario_seed, 0x15AC])
         self.sensing_rng = np.random.default_rng(sensing_seed)
         communication_seed = np.random.SeedSequence([self.scenario_seed, 0xC011])
         self.communication_rng = np.random.default_rng(communication_seed)
@@ -168,6 +172,9 @@ class NeighborDiscoverySimulator:
         self.empty_scans = 0
         self.scan_actions = 0
         self.handshake_attempts = 0
+        self.role_compatible_pairs = 0
+        self.aligned_handshake_opportunities = 0
+        self.forward_decodes = 0
         self.handshake_successes = 0
         self.forward_decode_failures = 0
         self.ack_decode_failures = 0
@@ -229,6 +236,9 @@ class NeighborDiscoverySimulator:
         self.empty_scans = 0
         self.scan_actions = 0
         self.handshake_attempts = 0
+        self.role_compatible_pairs = 0
+        self.aligned_handshake_opportunities = 0
+        self.forward_decodes = 0
         self.handshake_successes = 0
         self.forward_decode_failures = 0
         self.ack_decode_failures = 0
@@ -322,7 +332,11 @@ class NeighborDiscoverySimulator:
             "active_discovered_edges": len(active_edges),
             "new_edges": len(new_edges),
             "empty_scan_ratio": self.empty_scans / max(1, self.scan_actions),
+            "hello_transmissions": self.tx_actions,
             "handshake_attempts": self.handshake_attempts,
+            "role_compatible_pairs": self.role_compatible_pairs,
+            "aligned_handshake_opportunities": self.aligned_handshake_opportunities,
+            "forward_decodes": self.forward_decodes,
             "handshake_successes": self.handshake_successes,
             "forward_decode_failures": self.forward_decode_failures,
             "ack_decode_failures": self.ack_decode_failures,
@@ -868,6 +882,7 @@ class NeighborDiscoverySimulator:
                             int(sensed_beam),
                             useful_sensing_range,
                             piggyback=True,
+                            slot=slot,
                         )
                     observation[sensed_beam] = observed_value
                     if observed_value <= 0.0:
@@ -914,6 +929,7 @@ class NeighborDiscoverySimulator:
                         int(sensed_beam),
                         useful_sensing_range,
                         piggyback=False,
+                        slot=slot,
                     )
                 observation[sensed_beam] = observed_value
                 self.update_wang2025_sensing_table_from_observation(
@@ -1033,7 +1049,39 @@ class NeighborDiscoverySimulator:
                 return True
         return False
 
-    def sample_sensing_observation(self, node: int, sensed_beam: int, radius: float, *, piggyback: bool) -> float:
+    def _sensing_event_rng(
+        self,
+        slot: int | None,
+        node: int,
+        sensed_beam: int,
+        event_kind: int,
+        *event_index: int,
+    ) -> np.random.Generator:
+        """Return action-order-independent sensing randomness for paired comparisons."""
+
+        slot_key = 0 if slot is None else int(slot) + 1
+        seed = np.random.SeedSequence(
+            [
+                int(self.scenario_seed),
+                0x15AC,
+                slot_key,
+                int(node),
+                int(sensed_beam),
+                int(event_kind),
+                *(int(value) for value in event_index),
+            ]
+        )
+        return np.random.default_rng(seed)
+
+    def sample_sensing_observation(
+        self,
+        node: int,
+        sensed_beam: int,
+        radius: float,
+        *,
+        piggyback: bool,
+        slot: int | None = None,
+    ) -> float:
         true_sector_candidates: list[tuple[float, float]] = []
         profile = self.sensing_profile(radius, piggyback)
         for true_beam in self.matching_true_beams(int(sensed_beam)):
@@ -1044,8 +1092,17 @@ class NeighborDiscoverySimulator:
         max_pd = max((pd for pd, _snr_db in true_sector_candidates), default=0.0)
         max_snr_db = max((snr_db for _pd, snr_db in true_sector_candidates), default=-300.0)
         for true_beam, angular_match_probability in self.observable_true_beams(int(sensed_beam)):
-            for pd, _snr_db in profile[node][int(true_beam)]:
-                if self.sensing_rng.random() < pd * angular_match_probability:
+            for candidate_index, (pd, _snr_db) in enumerate(profile[node][int(true_beam)]):
+                event_rng = self._sensing_event_rng(
+                    slot,
+                    node,
+                    sensed_beam,
+                    1,
+                    int(true_beam),
+                    int(candidate_index),
+                    int(bool(piggyback)),
+                )
+                if event_rng.random() < pd * angular_match_probability:
                     detected = True
                     break
             if detected:
@@ -1062,7 +1119,14 @@ class NeighborDiscoverySimulator:
                 self.sensing_detection_count += 1
                 return 1.0
             self.sensing_miss_count += 1
-        if self.sensing_rng.random() < self.cfg.false_alarm_rate:
+        false_alarm_rng = self._sensing_event_rng(
+            slot,
+            node,
+            sensed_beam,
+            2,
+            int(bool(piggyback)),
+        )
+        if false_alarm_rng.random() < self.cfg.false_alarm_rate:
             self.sensing_false_alarm_count += 1
             return 1.0
         return 0.0
@@ -1119,7 +1183,8 @@ class NeighborDiscoverySimulator:
         error_std = max(0.0, float(self.cfg.sensing_position_error_std_m))
         estimate = self.states[target].position.copy()
         if error_std > 0.0:
-            estimate += self.sensing_rng.normal(0.0, error_std, size=3)
+            position_rng = self._sensing_event_rng(slot, node, sensed_beam, 3, int(target))
+            estimate += position_rng.normal(0.0, error_std, size=3)
         estimate = np.clip(estimate, np.zeros(3), np.asarray(self.cfg.area_size_m, dtype=float))
         self.sensing_report_position[node, sensed_beam] = estimate
         self.sensing_report_confidence[node, sensed_beam] = float(self.belief[node, sensed_beam])
@@ -1319,16 +1384,15 @@ class NeighborDiscoverySimulator:
         ready_forward = ready_mask[node_idx, beams]
         tx_mask = modes == MODE_TX
         rx_mask = modes == MODE_RX
-        candidate_matrix = (
-            true_mask
-            & tx_mask[:, None]
-            & rx_mask[None, :]
-            & ready_forward
-            & ready_forward.T
-        )
+        role_matrix = true_mask & tx_mask[:, None] & rx_mask[None, :]
         for node_a, node_b in self.discovered_edges:
-            candidate_matrix[node_a, node_b] = False
-            candidate_matrix[node_b, node_a] = False
+            role_matrix[node_a, node_b] = False
+            role_matrix[node_b, node_a] = False
+        candidate_matrix = role_matrix & ready_forward & ready_forward.T
+        self.role_compatible_pairs += int(role_matrix.sum())
+        self.aligned_handshake_opportunities += int(candidate_matrix.sum())
+        # Backward-compatible alias. Historical "attempts" were aligned,
+        # undiscovered opportunities rather than all transmitted HELLOs.
         self.handshake_attempts += int(candidate_matrix.sum())
 
         if self.cfg.communication_phy_model == "ideal":
@@ -1336,6 +1400,8 @@ class NeighborDiscoverySimulator:
             rx_degree = candidate_matrix.sum(axis=0)
             collision_matrix = candidate_matrix & ((tx_degree[:, None] > 1) | (rx_degree[None, :] > 1))
             self._record_failed_handshakes(collision_matrix, collision_matrix, actions)
+            forward_decoded_matrix = candidate_matrix & (rx_degree[None, :] == 1)
+            self.forward_decodes += int(forward_decoded_matrix.sum())
             success_matrix = candidate_matrix & (tx_degree[:, None] == 1) & (rx_degree[None, :] == 1)
         else:
             phy_result = self.communication_phy.resolve_handshake(
@@ -1348,6 +1414,7 @@ class NeighborDiscoverySimulator:
                 slot=slot,
             )
             success_matrix = phy_result.success_matrix
+            self.forward_decodes += int(phy_result.forward_decoded_matrix.sum())
             forward_failed = candidate_matrix & ~phy_result.forward_decoded_matrix
             ack_failed = phy_result.forward_decoded_matrix & ~success_matrix
             interference_failed = (
@@ -1540,7 +1607,11 @@ class NeighborDiscoverySimulator:
             p95_delay_censored=float(np.percentile(delays, 95)),
             p99_delay_censored=float(np.percentile(delays, 99)),
             empty_scan_ratio=self.empty_scans / max(1, self.scan_actions),
+            hello_transmissions=self.tx_actions,
             handshake_attempts=self.handshake_attempts,
+            role_compatible_pairs=self.role_compatible_pairs,
+            aligned_handshake_opportunities=self.aligned_handshake_opportunities,
+            forward_decodes=self.forward_decodes,
             handshake_successes=self.handshake_successes,
             forward_decode_failures=self.forward_decode_failures,
             ack_decode_failures=self.ack_decode_failures,
