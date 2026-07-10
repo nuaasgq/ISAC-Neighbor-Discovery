@@ -701,6 +701,15 @@ class MarlNeighborDiscoveryEnv:
             "mean_sensing_snr_db": self._sim.sensing_snr_db_sum / max(1, self._sim.sensing_snr_sample_count),
             "discovery_per_scan_action": len(self._sim.discovered_edges) / max(1, self._sim.scan_actions),
             "empty_scan_ratio": self._sim.empty_scans / max(1, self._sim.scan_actions),
+            "handshake_attempts": self._sim.handshake_attempts,
+            "handshake_successes": self._sim.handshake_successes,
+            "forward_decode_failures": self._sim.forward_decode_failures,
+            "ack_decode_failures": self._sim.ack_decode_failures,
+            "interference_limited_failures": self._sim.interference_limited_failures,
+            "phy_outage_failures": self._sim.phy_outage_failures,
+            "mean_handshake_sinr_db": float(np.mean(self._sim.handshake_sinr_samples_db))
+            if self._sim.handshake_sinr_samples_db
+            else 0.0,
             "collision_count": self._sim.collision_count,
             "largest_component_size": largest,
             "connected_components": len(components),

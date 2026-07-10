@@ -517,6 +517,13 @@ def collect_trajectory(
                 "true_edges": true_edges,
                 "discovery_rate": int(info["discovered_edges_count"]) / true_edges,
                 "empty_scan_ratio": float(info["empty_scan_ratio"]),
+                "handshake_attempts": int(info.get("handshake_attempts", 0)),
+                "handshake_successes": int(info.get("handshake_successes", 0)),
+                "forward_decode_failures": int(info.get("forward_decode_failures", 0)),
+                "ack_decode_failures": int(info.get("ack_decode_failures", 0)),
+                "interference_limited_failures": int(info.get("interference_limited_failures", 0)),
+                "phy_outage_failures": int(info.get("phy_outage_failures", 0)),
+                "mean_handshake_sinr_db": float(info.get("mean_handshake_sinr_db", 0.0)),
                 "collision_count": int(info["collision_count"]),
                 "lambda2": float(info["lambda2"]),
                 "knowledge_lambda2": float(info.get("knowledge_lambda2", info["lambda2"])),
@@ -1554,8 +1561,13 @@ def build_manifest(
         "rule_residual_scale": float(getattr(args, "rule_residual_scale", 1.0)),
         "single_rf_chain": int(cfg.rf_chains) == 1,
         "isac_trigger": "tx_piggyback_only",
-        "handshake_collision_model": "unique_tx_and_unique_rx",
+        "handshake_collision_model": (
+            "unique_tx_and_unique_rx"
+            if cfg.communication_phy_model == "ideal"
+            else "two_phase_hello_ack_sinr_capture"
+        ),
         "table_exchange_information": "confirmed_neighbor_positions_and_noisy_anonymous_sensing_reports",
+        "communication_phy": communication_phy_manifest(cfg),
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,
         "centralized_critic_uses_training_state_only": bool(centralized),
@@ -1601,6 +1613,28 @@ def git_revision() -> str:
     except (OSError, subprocess.CalledProcessError):
         return "unavailable"
     return completed.stdout.strip()
+
+
+def communication_phy_manifest(cfg: SimulationConfig) -> dict[str, Any]:
+    return {
+        "model": cfg.communication_phy_model,
+        "carrier_frequency_hz": cfg.communication_carrier_frequency_hz,
+        "bandwidth_hz": cfg.communication_bandwidth_hz,
+        "tx_power_w": cfg.communication_tx_power_w,
+        "noise_figure_db": cfg.communication_noise_figure_db,
+        "path_loss_exponent": cfg.communication_path_loss_exponent,
+        "reference_distance_m": cfg.communication_reference_distance_m,
+        "system_loss_db": cfg.communication_system_loss_db,
+        "shadowing_std_db": cfg.communication_shadowing_std_db,
+        "rician_k_db": cfg.communication_rician_k_db,
+        "sinr_threshold_db": cfg.communication_sinr_threshold_db,
+        "antenna_efficiency": cfg.communication_antenna_efficiency,
+        "sidelobe_gain_db": cfg.communication_sidelobe_gain_db,
+        "fading_enabled": cfg.communication_fading_enabled,
+        "shadowing_enabled": cfg.communication_shadowing_enabled,
+        "handshake": "two_phase_hello_ack_sinr_capture",
+        "channel_seed_policy": "scenario_seed_only",
+    }
 
 
 def main() -> None:

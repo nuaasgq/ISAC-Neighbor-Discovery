@@ -7,6 +7,7 @@ from typing import Iterable
 import numpy as np
 
 from .beam import beam_for_target, beam_matches, rotation_body_to_global, shift_beam
+from .communication_phy import CommunicationPhy
 from .config import SimulationConfig
 from .mobility import NodeState, initialize_states, step_states
 from .phy_sensing import detection_probability, radar_snr_db
@@ -80,6 +81,14 @@ class EpisodeResult:
     p95_delay_censored: float
     p99_delay_censored: float
     empty_scan_ratio: float
+    handshake_attempts: int
+    handshake_successes: int
+    forward_decode_failures: int
+    ack_decode_failures: int
+    interference_limited_failures: int
+    phy_outage_failures: int
+    mean_handshake_sinr_db: float
+    p10_handshake_sinr_db: float
     collision_count: int
     empty_scan_count: int
     scan_actions: int
@@ -127,6 +136,11 @@ class NeighborDiscoverySimulator:
         self.mobility_rng = np.random.default_rng(self.scenario_seed)
         sensing_seed = np.random.SeedSequence([self.scenario_seed, self.seed, 0x15AC])
         self.sensing_rng = np.random.default_rng(sensing_seed)
+        communication_seed = np.random.SeedSequence([self.scenario_seed, 0xC011])
+        self.communication_rng = np.random.default_rng(communication_seed)
+        if self.cfg.communication_phy_model != "ideal" and int(self.cfg.rf_chains) != 1:
+            raise ValueError("SINR communication PHY currently requires exactly one RF chain.")
+        self.communication_phy = CommunicationPhy(self.cfg, self.communication_rng)
         self.states: list[NodeState] = []
         self.initial_positions: np.ndarray | None = None
         self.belief = np.zeros((self.cfg.n_nodes, self.cfg.n_beams), dtype=float)
@@ -153,6 +167,13 @@ class NeighborDiscoverySimulator:
         self.discovery_slot: dict[tuple[int, int], int] = {}
         self.empty_scans = 0
         self.scan_actions = 0
+        self.handshake_attempts = 0
+        self.handshake_successes = 0
+        self.forward_decode_failures = 0
+        self.ack_decode_failures = 0
+        self.interference_limited_failures = 0
+        self.phy_outage_failures = 0
+        self.handshake_sinr_samples_db: list[float] = []
         self.collision_count = 0
         self.node_empty_scans = np.zeros(self.cfg.n_nodes, dtype=int)
         self.node_scan_actions = np.zeros(self.cfg.n_nodes, dtype=int)
@@ -197,6 +218,7 @@ class NeighborDiscoverySimulator:
         self.wang_node_num.fill(-1.0)
         self.wang_dis_num.fill(0.0)
         self.wang_snr_db.fill(-300.0)
+        self.communication_phy.reset(self.cfg.n_nodes)
         self.neighbor_records = [{} for _ in range(self.cfg.n_nodes)]
         self.sensing_report_position.fill(np.nan)
         self.sensing_report_confidence.fill(0.0)
@@ -206,6 +228,13 @@ class NeighborDiscoverySimulator:
         self.discovery_slot.clear()
         self.empty_scans = 0
         self.scan_actions = 0
+        self.handshake_attempts = 0
+        self.handshake_successes = 0
+        self.forward_decode_failures = 0
+        self.ack_decode_failures = 0
+        self.interference_limited_failures = 0
+        self.phy_outage_failures = 0
+        self.handshake_sinr_samples_db = []
         self.collision_count = 0
         self.node_empty_scans.fill(0)
         self.node_scan_actions.fill(0)
@@ -293,6 +322,15 @@ class NeighborDiscoverySimulator:
             "active_discovered_edges": len(active_edges),
             "new_edges": len(new_edges),
             "empty_scan_ratio": self.empty_scans / max(1, self.scan_actions),
+            "handshake_attempts": self.handshake_attempts,
+            "handshake_successes": self.handshake_successes,
+            "forward_decode_failures": self.forward_decode_failures,
+            "ack_decode_failures": self.ack_decode_failures,
+            "interference_limited_failures": self.interference_limited_failures,
+            "phy_outage_failures": self.phy_outage_failures,
+            "mean_handshake_sinr_db": float(np.mean(self.handshake_sinr_samples_db))
+            if self.handshake_sinr_samples_db
+            else 0.0,
             "collision_count": self.collision_count,
             "empty_scan_count": self.empty_scans,
             "scan_actions": self.scan_actions,
@@ -1288,20 +1326,46 @@ class NeighborDiscoverySimulator:
             & ready_forward
             & ready_forward.T
         )
+        for node_a, node_b in self.discovered_edges:
+            candidate_matrix[node_a, node_b] = False
+            candidate_matrix[node_b, node_a] = False
+        self.handshake_attempts += int(candidate_matrix.sum())
 
-        tx_degree = candidate_matrix.sum(axis=1)
-        rx_degree = candidate_matrix.sum(axis=0)
-        collision_matrix = candidate_matrix & ((tx_degree[:, None] > 1) | (rx_degree[None, :] > 1))
-        collided_pairs = np.argwhere(collision_matrix)
-        self.collision_count += int(len(collided_pairs))
-        for tx_node, rx_node in collided_pairs.astype(int).tolist():
-            for node in (tx_node, rx_node):
-                beam = int(actions[node].beam)
-                self.fail_count[node, beam] += 1.0
-                self.collision_fail_count[node, beam] += 1.0
-                self.node_collision_count[node] += 1
+        if self.cfg.communication_phy_model == "ideal":
+            tx_degree = candidate_matrix.sum(axis=1)
+            rx_degree = candidate_matrix.sum(axis=0)
+            collision_matrix = candidate_matrix & ((tx_degree[:, None] > 1) | (rx_degree[None, :] > 1))
+            self._record_failed_handshakes(collision_matrix, collision_matrix, actions)
+            success_matrix = candidate_matrix & (tx_degree[:, None] == 1) & (rx_degree[None, :] == 1)
+        else:
+            phy_result = self.communication_phy.resolve_handshake(
+                candidate_matrix=candidate_matrix,
+                selected_beams=np.asarray([action.beam for action in actions], dtype=int),
+                true_beams=beams,
+                distance_m=np.sqrt(np.maximum(self.distance_matrix(), 0.0)),
+                tx_mask=tx_mask,
+                rx_mask=rx_mask,
+                slot=slot,
+            )
+            success_matrix = phy_result.success_matrix
+            forward_failed = candidate_matrix & ~phy_result.forward_decoded_matrix
+            ack_failed = phy_result.forward_decoded_matrix & ~success_matrix
+            interference_failed = (
+                phy_result.forward_interference_failures | phy_result.ack_interference_failures
+            )
+            outage_failed = phy_result.forward_outage_failures | phy_result.ack_outage_failures
+            self.forward_decode_failures += int(forward_failed.sum())
+            self.ack_decode_failures += int(ack_failed.sum())
+            self.interference_limited_failures += int(interference_failed.sum())
+            self.phy_outage_failures += int(outage_failed.sum())
+            self.handshake_sinr_samples_db.extend(phy_result.sinr_samples_db.astype(float).tolist())
+            self._record_failed_handshakes(
+                candidate_matrix & ~success_matrix,
+                interference_failed,
+                actions,
+            )
 
-        success_matrix = candidate_matrix & (tx_degree[:, None] == 1) & (rx_degree[None, :] == 1)
+        self.handshake_successes += int(success_matrix.sum())
         for tx_node, rx_node in np.argwhere(success_matrix).astype(int).tolist():
             edge = canonical_edge(tx_node, rx_node)
             is_new = edge not in self.discovered_edges
@@ -1333,6 +1397,23 @@ class NeighborDiscoverySimulator:
             if self.protocol in COMM_TABLE_PROTOCOLS:
                 self.exchange_neighbor_and_sensing_tables(tx_node, rx_node, slot)
         return new_edges
+
+    def _record_failed_handshakes(
+        self,
+        failed_matrix: np.ndarray,
+        interference_matrix: np.ndarray,
+        actions: list[Action],
+    ) -> None:
+        interference_count = int(interference_matrix.sum())
+        self.collision_count += interference_count
+        for tx_node, rx_node in np.argwhere(failed_matrix).astype(int).tolist():
+            is_interference = bool(interference_matrix[tx_node, rx_node])
+            for node in (tx_node, rx_node):
+                beam = int(actions[node].beam)
+                self.fail_count[node, beam] += 1.0
+                if is_interference:
+                    self.collision_fail_count[node, beam] += 1.0
+                    self.node_collision_count[node] += 1
 
     def exchange_neighbor_and_sensing_tables(self, node_a: int, node_b: int, slot: int) -> None:
         include_sensing = self.protocol in SENSING_TABLE_PROTOCOLS
@@ -1433,6 +1514,12 @@ class NeighborDiscoverySimulator:
         sensing_miss_ratio = self.sensing_miss_count / max(1, self.sensing_target_observations)
         mean_sensing_pd = self.sensing_pd_sum / max(1, self.sensing_target_observations)
         mean_sensing_snr_db = self.sensing_snr_db_sum / max(1, self.sensing_snr_sample_count)
+        mean_handshake_sinr_db = (
+            float(np.mean(self.handshake_sinr_samples_db)) if self.handshake_sinr_samples_db else 0.0
+        )
+        p10_handshake_sinr_db = (
+            float(np.percentile(self.handshake_sinr_samples_db, 10)) if self.handshake_sinr_samples_db else 0.0
+        )
         discoveries_per_joule = discovered_count / max(energy_j, 1e-12)
         energy_per_discovery = energy_j / max(1, discovered_count)
         moved = 0.0
@@ -1453,6 +1540,14 @@ class NeighborDiscoverySimulator:
             p95_delay_censored=float(np.percentile(delays, 95)),
             p99_delay_censored=float(np.percentile(delays, 99)),
             empty_scan_ratio=self.empty_scans / max(1, self.scan_actions),
+            handshake_attempts=self.handshake_attempts,
+            handshake_successes=self.handshake_successes,
+            forward_decode_failures=self.forward_decode_failures,
+            ack_decode_failures=self.ack_decode_failures,
+            interference_limited_failures=self.interference_limited_failures,
+            phy_outage_failures=self.phy_outage_failures,
+            mean_handshake_sinr_db=mean_handshake_sinr_db,
+            p10_handshake_sinr_db=p10_handshake_sinr_db,
             collision_count=self.collision_count,
             empty_scan_count=self.empty_scans,
             scan_actions=self.scan_actions,

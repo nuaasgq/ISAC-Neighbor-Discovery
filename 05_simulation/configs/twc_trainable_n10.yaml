@@ -66,6 +66,23 @@ phy_sensing:
   position_error_std_m: 25.0
   report_ttl_slots: 100
 
+phy_communication:
+  model: "close_in_rician_sinr"
+  carrier_frequency_hz: 30000000000
+  bandwidth_hz: 64000000
+  tx_power_w: 1.0
+  noise_figure_db: 7.0
+  path_loss_exponent: 2.0
+  reference_distance_m: 1.0
+  system_loss_db: 0.0
+  shadowing_std_db: 2.0
+  rician_k_db: 10.0
+  sinr_threshold_db: 5.0
+  antenna_efficiency: 0.70
+  sidelobe_gain_db: -10.0
+  fading_enabled: true
+  shadowing_enabled: true
+
 protocol:
   exploration_floor: 0.08
   softmax_beta: 3.0

@@ -2,6 +2,7 @@
 
 __all__ = [
     "beam",
+    "communication_phy",
     "config",
     "marl_env",
     "mobility",

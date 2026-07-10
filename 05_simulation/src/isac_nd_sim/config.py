@@ -68,6 +68,21 @@ class SimulationConfig:
     sensing_footprint_radius_cells: int = 0
     sensing_position_error_std_m: float = 25.0
     sensing_report_ttl_slots: int = 100
+    communication_phy_model: str = "ideal"
+    communication_carrier_frequency_hz: float = 30.0e9
+    communication_bandwidth_hz: float = 64.0e6
+    communication_tx_power_w: float = 1.0
+    communication_noise_figure_db: float = 7.0
+    communication_path_loss_exponent: float = 2.0
+    communication_reference_distance_m: float = 1.0
+    communication_system_loss_db: float = 0.0
+    communication_shadowing_std_db: float = 0.0
+    communication_rician_k_db: float = 10.0
+    communication_sinr_threshold_db: float = 5.0
+    communication_antenna_efficiency: float = 0.70
+    communication_sidelobe_gain_db: float = -10.0
+    communication_fading_enabled: bool = True
+    communication_shadowing_enabled: bool = True
 
     @property
     def n_beams(self) -> int:
@@ -115,6 +130,7 @@ def load_config(path: str | Path) -> SimulationConfig:
     protocol = raw["protocol"]
     energy = raw.get("energy", {})
     phy = raw.get("phy_sensing", {})
+    comm_phy = raw.get("phy_communication", {})
 
     return SimulationConfig(
         name=str(experiment["name"]),
@@ -174,4 +190,25 @@ def load_config(path: str | Path) -> SimulationConfig:
         sensing_footprint_radius_cells=int(phy.get("angular_footprint_radius_cells", 0)),
         sensing_position_error_std_m=float(phy.get("position_error_std_m", 25.0)),
         sensing_report_ttl_slots=int(phy.get("report_ttl_slots", 100)),
+        communication_phy_model=str(comm_phy.get("model", "ideal")),
+        communication_carrier_frequency_hz=float(
+            comm_phy.get("carrier_frequency_hz", phy.get("carrier_frequency_hz", 30.0e9))
+        ),
+        communication_bandwidth_hz=float(
+            comm_phy.get("bandwidth_hz", phy.get("bandwidth_hz", 64.0e6))
+        ),
+        communication_tx_power_w=float(
+            comm_phy.get("tx_power_w", energy.get("tx_power_w", 1.0))
+        ),
+        communication_noise_figure_db=float(comm_phy.get("noise_figure_db", 7.0)),
+        communication_path_loss_exponent=float(comm_phy.get("path_loss_exponent", 2.0)),
+        communication_reference_distance_m=float(comm_phy.get("reference_distance_m", 1.0)),
+        communication_system_loss_db=float(comm_phy.get("system_loss_db", 0.0)),
+        communication_shadowing_std_db=float(comm_phy.get("shadowing_std_db", 0.0)),
+        communication_rician_k_db=float(comm_phy.get("rician_k_db", 10.0)),
+        communication_sinr_threshold_db=float(comm_phy.get("sinr_threshold_db", 5.0)),
+        communication_antenna_efficiency=float(comm_phy.get("antenna_efficiency", 0.70)),
+        communication_sidelobe_gain_db=float(comm_phy.get("sidelobe_gain_db", -10.0)),
+        communication_fading_enabled=bool(comm_phy.get("fading_enabled", True)),
+        communication_shadowing_enabled=bool(comm_phy.get("shadowing_enabled", True)),
     )

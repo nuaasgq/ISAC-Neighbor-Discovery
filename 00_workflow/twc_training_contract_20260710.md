@@ -75,7 +75,7 @@ Results generated before this contract must not be combined with post-refactor r
 
 ## Remaining TWC Blockers
 
-1. Add and validate a communication PHY adapter with path loss, directional gain, fading, aggregate interference, receiver noise, and SINR/outage-based handshake success.
+1. Calibrate the implemented close-in/Rician/SINR communication PHY against cited UAV/mmWave operating points, then add blockage, Doppler/temporal correlation, and BLER sensitivity where justified.
 2. Calibrate the sensing detector and communication PHY against cited MIMO-OTFS/mmWave parameters; do not treat waveform metadata as waveform simulation.
 3. Establish learnability with multi-seed convergence runs before any scale-transfer campaign.
 4. Run common-environment comparisons against random, Wang-aligned, MARL without ISAC, base MARL with ISAC, and the proposed network/learning enhancements.
