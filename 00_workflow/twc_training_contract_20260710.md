@@ -1,5 +1,10 @@
 # TWC-Oriented Training Contract (2026-07-10)
 
+> Main-method correction: the authoritative actor/critic information boundary is now
+> `00_workflow/clean_ctde_contract_20260710.md`. Position-pair rendezvous phase,
+> deterministic TX/RX role hints, and action-target auxiliary losses are rule-guided
+> upper-bound mechanisms, not clean MARL evidence.
+
 ## Scope
 
 This contract defines the first scientifically auditable MARL environment after the 2026-07-10 refactor. It establishes a trustworthy training baseline; it does **not** mean that the simulator or results are already sufficient for an IEEE TWC submission.
@@ -21,13 +26,13 @@ This contract defines the first scientifically auditable MARL environment after 
 
 - Algorithm: ISAC-MAPPO with CTDE and decentralized parameter-shared actors.
 - Network: contention-aware shared actor-critic.
-- ISAC input: soft local candidate score enabled.
+- ISAC input: local candidate score/mask may be derived from the node's own sensing, history, and post-handshake exchanged tables.
 - Disabled by default: hard candidate mask, topology-deficit token, rule residual, contention mode prior, behavior cloning, standalone sensing, and idle action.
 - Sensing and policy random-number streams are independent.
 - Evaluation saves/restores training RNG state and uses a checkpoint/config fingerprint for resume safety.
 - Checkpoints store the resolved environment protocol, feature flags, and contract version.
 
-The optional beam-ranking loss is measurement-driven: its target is the local candidate score created from the node's own ISAC/protocol memory. The rendezvous beam/role losses use only reprojected anonymous sensing reports and local role hints. The optional ISAC evidence adapter is zero-initialized and produces no behavioral change before training; its beam residual is normalized by `log(M)` for codebook size `M`. These components do not use true neighbor beams or identities. Any paper result using them must report all coefficients, adapter learning rate, and adapter-zero/observation-zero ablations.
+Beam ranking and candidate exclusion derived from local sensing/history are valid distributed protocol processing. However, position-pair phase, complementary role hints, rendezvous beam/role action targets, and adapters fitted to those targets solve part of the action-coordination problem by construction. Runs using them must be labeled rule-guided and cannot serve as the main clean-MARL result.
 
 ## Reference Configuration
 
@@ -41,7 +46,7 @@ The optional beam-ranking loss is measurement-driven: its target is the local ca
 - one shared waveform TX power for communication, sensing, and radio-energy accounting;
 - Gauss-Markov UAV mobility.
 
-Validated learnability-screen command:
+Historical rule-guided learnability-screen command:
 
 ```powershell
 python 05_simulation/run_marl_training.py `
@@ -54,7 +59,7 @@ python 05_simulation/run_marl_training.py `
   --output 05_simulation/results_raw/twc_rendezvous_screen_seed20260705
 ```
 
-This is a short learnability screen, not a convergence or final-paper command. A longer budget must be selected only after the reciprocal-report/phase mechanism is improved.
+This command is retained for upper-bound reproducibility only. It is not a valid main-method training command.
 
 ## Verification Completed
 
@@ -63,7 +68,7 @@ This is a short learnability screen, not a convergence or final-paper command. A
 - Policy update check: 28 of 30 policy tensors changed between episode 1 and the final checkpoint; parameter delta L2 was approximately 0.0302.
 - One-episode/300-slot TX/RX smoke: 3000 active actions, zero standalone sensing actions, zero idle actions, finite PPO/value/beam-ranking losses, and peak memory below configured limits.
 
-The updated 2026-07-10 gate passed after adding local rendezvous observations, measurement-derived auxiliary objectives, and the zero-initialized learned evidence adapter. Across three training seeds and six held-out episodes, the complete method discovered eight edges (mean discovery rate 2.96%, 5/6 nonzero), while random, Wang-table, and adapter-zero controls remained at zero on the same scenarios. This is exploratory learnability evidence only; scale transfer remains blocked.
+The updated 2026-07-10 gate passed only after adding rule-guided rendezvous observations, action-target auxiliary objectives, and the learned evidence adapter. It is therefore an exploratory upper bound, not evidence that decentralized MARL learned the coordination mechanism independently. Scale transfer remains blocked until clean CTDE beats random on untouched seeds.
 
 ## Invalidated Evidence
 

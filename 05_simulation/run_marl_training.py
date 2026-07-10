@@ -49,6 +49,9 @@ from isac_nd_sim.simulator import (  # noqa: E402
 )
 
 
+CLEAN_CTDE_CONTRACT_VERSION = "clean_local_ctde_v1"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -178,6 +181,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--disable-contention-mode-prior", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--disable-isac-features", action="store_true", help="Disable all ISAC/structured feature flags.")
+    parser.add_argument(
+        "--clean-ctde",
+        action="store_true",
+        help=(
+            "Enforce a decentralized-observation CTDE contract: actors may use local ISAC candidate processing "
+            "and exchanged tables, while global truth and pair-derived action guidance remain critic-only/forbidden."
+        ),
+    )
     parser.add_argument(
         "--forbid-sense",
         action="store_true",
@@ -385,6 +396,40 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--rendezvous-adapter requires a contention network.")
     if bool(getattr(args, "separate_action_loss", False)) and str(getattr(args, "network", "")) == "scalegraph_beam":
         raise ValueError("--separate-action-loss is not implemented for scalegraph_beam.")
+    violations = clean_ctde_violations(args)
+    if violations:
+        raise ValueError("--clean-ctde forbids: " + ", ".join(violations))
+
+
+def clean_ctde_violations(args: argparse.Namespace) -> list[str]:
+    if not bool(getattr(args, "clean_ctde", False)):
+        return []
+    violations: list[str] = []
+    if str(getattr(args, "algorithm", "")) not in {"mappo", "isac_mappo"}:
+        violations.append("non-centralized algorithm")
+    if str(getattr(args, "network", "shared")) not in {"shared", "scalegraph_beam", "contention_shared"}:
+        violations.append("rule-gated network")
+    forbidden_flags = {
+        "rule_residual": "rule residual",
+        "contention_mode_prior": "contention mode prior",
+        "rendezvous_adapter": "rendezvous adapter",
+    }
+    for field, label in forbidden_flags.items():
+        if bool(getattr(args, field, False)):
+            violations.append(label)
+    rendezvous_observation = getattr(args, "rendezvous_observation", None)
+    if rendezvous_observation is True:
+        violations.append("rendezvous observation")
+    forbidden_coefficients = {
+        "expert_bc_weight": "behavior cloning",
+        "beam_rank_aux_coef": "beam-ranking action target",
+        "rendezvous_beam_aux_coef": "rendezvous beam target",
+        "rendezvous_role_aux_coef": "rendezvous role target",
+    }
+    for field, label in forbidden_coefficients.items():
+        if float(getattr(args, field, 0.0)) > 0.0:
+            violations.append(label)
+    return violations
 
 
 def disabled_modes_from_args(args: argparse.Namespace) -> tuple[str, ...]:
@@ -402,6 +447,8 @@ def disabled_modes_from_args(args: argparse.Namespace) -> tuple[str, ...]:
 
 
 def contention_mode_prior_enabled(args: argparse.Namespace) -> bool:
+    if bool(getattr(args, "clean_ctde", False)):
+        return False
     enabled = bool(getattr(args, "contention_mode_prior", False))
     return enabled and not bool(getattr(args, "disable_contention_mode_prior", False))
 
@@ -431,7 +478,9 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
     if area_size is not None:
         replacements["area_size_m"] = tuple(float(value) for value in area_size)
     rendezvous_observation = getattr(args, "rendezvous_observation", None)
-    if rendezvous_observation is not None:
+    if bool(getattr(args, "clean_ctde", False)):
+        replacements["rendezvous_observation_enabled"] = False
+    elif rendezvous_observation is not None:
         replacements["rendezvous_observation_enabled"] = bool(rendezvous_observation)
     mobility = dict(config.mobility)
     if args.mobility_model is not None:
@@ -444,6 +493,15 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
 
 
 def resolved_feature_flags(args: argparse.Namespace) -> dict[str, bool]:
+    if bool(getattr(args, "clean_ctde", False)):
+        is_isac = str(getattr(args, "algorithm", "")) == "isac_mappo"
+        candidate_score = getattr(args, "candidate_score", None)
+        return {
+            "candidate_mask": bool(getattr(args, "candidate_mask", False)),
+            "candidate_score": is_isac if candidate_score is None else bool(candidate_score),
+            "topology_deficit": bool(getattr(args, "topology_deficit", False)),
+            "rule_residual": False,
+        }
     if bool(args.disable_isac_features):
         return {
             "candidate_mask": False,
@@ -1720,7 +1778,9 @@ def save_checkpoint(
     checkpoint = {
         "episode": int(episode),
         "algorithm": str(args.algorithm),
-        "training_contract_version": "twc_trainable_v1",
+        "training_contract_version": (
+            CLEAN_CTDE_CONTRACT_VERSION if bool(getattr(args, "clean_ctde", False)) else "twc_trainable_v1"
+        ),
         "feature_flags": resolved_feature_flags(args),
         "env_protocol": resolved_env_protocol(args),
         "policy_state_dict": policy.model.state_dict(),
@@ -1923,6 +1983,14 @@ def build_manifest(
         "rendezvous_role_aux_coef": float(getattr(args, "rendezvous_role_aux_coef", 0.0)),
         "rendezvous_adapter": bool(getattr(args, "rendezvous_adapter", False)),
         "rendezvous_adapter_learning_rate": float(getattr(args, "rendezvous_adapter_learning_rate", 0.03)),
+        "clean_ctde": bool(getattr(args, "clean_ctde", False)),
+        "actor_observation_contract": (
+            CLEAN_CTDE_CONTRACT_VERSION if bool(getattr(args, "clean_ctde", False)) else "legacy_local_features"
+        ),
+        "action_teacher_free": bool(getattr(args, "clean_ctde", False)),
+        "local_candidate_processing_allowed": bool(getattr(args, "clean_ctde", False)),
+        "pair_derived_action_guidance_enabled": bool(cfg.rendezvous_observation_enabled),
+        "post_handshake_table_exchange_protocol": env_protocol,
         "feature_flags": feature_flags,
         "rendezvous_observation_enabled": bool(cfg.rendezvous_observation_enabled),
         "contention_mode_prior": contention_mode_prior_enabled(args),

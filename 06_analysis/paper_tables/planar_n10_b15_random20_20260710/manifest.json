@@ -1,6 +1,6 @@
 {
-  "created_at": "2026-07-10T20:40:44",
-  "scope": "planar_n10_b15_random20_marl_validation",
+  "created_at": "2026-07-10T21:21:11",
+  "scope": "planar_n10_b15_random20_rule_guided_upper_bound",
   "raw_root": "05_simulation\\results_raw\\planar_n10_b15_marl_screen_20260710",
   "output": "06_analysis\\paper_tables\\planar_n10_b15_random20_20260710",
   "figures": "06_analysis\\paper_figures\\planar_n10_b15_random20_20260710",
@@ -10,7 +10,7 @@
   ],
   "font_family": "Times New Roman with serif fallback",
   "methods": [
-    "isac_marl",
+    "rule_guided_marl",
     "wang2025",
     "adapter_zero",
     "no_isac_observation",

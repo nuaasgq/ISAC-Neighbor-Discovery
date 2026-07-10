@@ -59,6 +59,123 @@ def test_isac_mappo_defaults_to_soft_isac_observation_without_rule_priors() -> N
     ) == ("sense", "idle")
 
 
+def test_clean_ctde_profile_disables_action_teacher_features() -> None:
+    module = load_training_module()
+    args = Namespace(
+        clean_ctde=True,
+        algorithm="isac_mappo",
+        network="contention_shared",
+        candidate_source="default",
+        candidate_mask=True,
+        candidate_score=None,
+        topology_deficit=True,
+        rule_residual=False,
+        contention_mode_prior=False,
+        rendezvous_adapter=False,
+        rendezvous_observation=None,
+        expert_bc_weight=0.0,
+        beam_rank_aux_coef=0.0,
+        rendezvous_beam_aux_coef=0.0,
+        rendezvous_role_aux_coef=0.0,
+    )
+
+    assert module.clean_ctde_violations(args) == []
+    assert module.resolved_feature_flags(args) == {
+        "candidate_mask": True,
+        "candidate_score": True,
+        "topology_deficit": True,
+        "rule_residual": False,
+    }
+    assert module.contention_mode_prior_enabled(args) is False
+
+
+def test_clean_ctde_rejects_rule_guided_action_targets() -> None:
+    module = load_training_module()
+    args = Namespace(
+        clean_ctde=True,
+        algorithm="isac_mappo",
+        network="contention_shared",
+        candidate_source="wang_table",
+        candidate_mask=True,
+        candidate_score=True,
+        rule_residual=True,
+        contention_mode_prior=True,
+        rendezvous_adapter=True,
+        rendezvous_observation=True,
+        expert_bc_weight=0.1,
+        beam_rank_aux_coef=0.1,
+        rendezvous_beam_aux_coef=0.1,
+        rendezvous_role_aux_coef=0.1,
+    )
+
+    violations = module.clean_ctde_violations(args)
+    assert "rule residual" in violations
+    assert "contention mode prior" in violations
+    assert "rendezvous adapter" in violations
+    assert "rendezvous observation" in violations
+    assert "behavior cloning" in violations
+    assert "beam-ranking action target" in violations
+    assert "rendezvous beam target" in violations
+    assert "rendezvous role target" in violations
+
+
+def test_exchanged_neighbor_table_updates_local_actor_candidate_features() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_trainable_n10.yaml"),
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=1,
+        belief_update_rho=0.6,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260710)
+    env._sim.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([0.0, 100.0, 0.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    env._slot = 3
+    target_beam = env._sim.beam_from_to(0, 2)
+    before = env._observation_for(0)
+    env._sim.neighbor_records[1][2] = (env._sim.states[2].position.copy(), 3)
+
+    env._sim.exchange_neighbor_and_sensing_tables(0, 1, slot=3)
+    after = env._observation_for(0)
+
+    assert after["beam_belief"][target_beam] > before["beam_belief"][target_beam]
+    assert after["candidate_score"][target_beam] > before["candidate_score"][target_beam]
+    assert env._sim.last_positive_slot[0, target_beam] == 3
+
+
+def test_clean_ctde_forces_rendezvous_observation_off() -> None:
+    module = load_training_module()
+    cfg = load_config("05_simulation/configs/twc_canonical_n10_b10.yaml")
+    args = Namespace(
+        episodes=1,
+        slots=300,
+        seed=20260710,
+        node_count=None,
+        azimuth_cells=None,
+        elevation_cells=None,
+        communication_range=None,
+        sensing_range=None,
+        false_alarm_rate=None,
+        miss_detection_rate=None,
+        angular_cell_offset_std=None,
+        sensing_period_slots=None,
+        area_size_m=None,
+        mobility_model=None,
+        spatial_dimensions=None,
+        rendezvous_observation=None,
+        clean_ctde=True,
+    )
+
+    resolved = module.override_config(cfg, args)
+
+    assert not resolved.rendezvous_observation_enabled
+
+
 def test_canonical_config_uses_b10_shared_power_and_sinr_phy() -> None:
     cfg = load_config("05_simulation/configs/twc_canonical_n10_b10.yaml")
 
@@ -288,7 +405,9 @@ def test_disabled_structured_features_do_not_leak_through_aggregate_paths() -> N
     changed = {key: value.copy() if hasattr(value, "copy") else value for key, value in base.items()}
     changed["candidate_mask"][:] = 1.0 - changed["candidate_mask"]
     changed["candidate_score"][:] = np.linspace(0.0, 1.0, cfg.n_beams, dtype=np.float32)
+    changed["rendezvous_beam_score"][:] = np.linspace(1.0, 0.0, cfg.n_beams, dtype=np.float32)
     changed["rendezvous_beam_role"][:] = 1.0
+    changed["rendezvous_role_hint"][:] = 1.0
     changed["local_summary"][3] = 1.0
     changed["topology_deficit"][:] = 1.0
     changed["rule_mode_logits"][:] = np.asarray([9.0, -9.0, 7.0, -7.0], dtype=np.float32)

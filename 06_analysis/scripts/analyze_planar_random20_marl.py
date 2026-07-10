@@ -11,7 +11,7 @@ from pathlib import Path
 FIGSIZE = (6.4, 4.8)
 DPI = 300
 METHODS = (
-    ("isac_marl", "ISAC-MARL", "seed23260800/eval_episode_metrics.csv", "#0072B2"),
+    ("rule_guided_marl", "Rule-guided MARL", "seed23260800/eval_episode_metrics.csv", "#0072B2"),
     ("wang2025", "Wang2025", "paired_baselines_seed23260800/wang2025_isac_tables/eval_episode_metrics.csv", "#D55E00"),
     ("adapter_zero", "Adapter zero", "adapter_zero_seed23260800/eval_episode_metrics.csv", "#009E73"),
     ("no_isac_observation", "No ISAC observation", "no_isac_observation_seed23260800/eval_episode_metrics.csv", "#CC79A7"),
@@ -78,7 +78,7 @@ def main() -> None:
     summary = pd.DataFrame(summary_rows)
     summary.to_csv(output / "method_summary.csv", index=False)
 
-    reference = frames["isac_marl"].sort_values("scenario_seed")
+    reference = frames["rule_guided_marl"].sort_values("scenario_seed")
     paired_rows = []
     for method, label, _, _ in METHODS[1:]:
         comparison = frames[method].sort_values("scenario_seed")
@@ -88,7 +88,7 @@ def main() -> None:
         mean, std, low, high = mean_ci(delta)
         paired_rows.append(
             {
-                "reference": "isac_marl",
+                "reference": "rule_guided_marl",
                 "comparison": method,
                 "comparison_label": label,
                 "episodes": len(delta),
@@ -97,7 +97,7 @@ def main() -> None:
                 "paired_delta_ci95_low": low,
                 "paired_delta_ci95_high": high,
                 "exact_sign_flip_p_two_sided": exact_sign_flip_p(delta),
-                "isac_marl_wins": int(np.sum(delta > 0.0)),
+                "rule_guided_marl_wins": int(np.sum(delta > 0.0)),
                 "ties": int(np.sum(delta == 0.0)),
             }
         )
@@ -116,7 +116,7 @@ def main() -> None:
     ]
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
-        "scope": "planar_n10_b15_random20_marl_validation",
+        "scope": "planar_n10_b15_random20_rule_guided_upper_bound",
         "raw_root": str(raw_root),
         "output": str(output),
         "figures": str(figures),
@@ -225,7 +225,7 @@ def plot_method_summary(frame, path: Path, plt) -> str:
 
 def plot_paired_episodes(frames, path: Path, plt) -> str:
     fig, ax = plt.subplots(figsize=FIGSIZE)
-    selected = {"isac_marl", "wang2025", "uniform_random"}
+    selected = {"rule_guided_marl", "wang2025", "uniform_random"}
     for method, label, _, color in METHODS:
         if method not in selected:
             continue
@@ -240,7 +240,7 @@ def plot_paired_episodes(frames, path: Path, plt) -> str:
         )
     ax.set_xlabel("Held-out scenario")
     ax.set_ylabel("Discovery rate")
-    ax.set_xticks(range(1, len(frames["isac_marl"]) + 1))
+    ax.set_xticks(range(1, len(frames["rule_guided_marl"]) + 1))
     ax.set_ylim(0.0, 1.0)
     ax.legend(frameon=False, ncol=3)
     return save_figure(fig, path)

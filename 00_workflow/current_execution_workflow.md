@@ -16,15 +16,16 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 - Transfer experiments remain blocked until the new rendezvous method passes an independent N=10 confirmation campaign. No 3000-slot or N=100 campaign is active.
 - Boundary evidence: 3- and 5-degree cases are treated as extremely narrow stress regimes; the archived 30-degree sweep is retained only as historical boundary evidence.
 - Main comparisons: uniform random, SkyOrbs-like directional baseline, communication-only MARL without ISAC, ISAC MARL variants, and decentralized gate-family ablations.
-- Current mechanism extension: local anonymous position reports are reprojected into the current body frame and processed by a zero-initialized learned ISAC evidence adapter. Hard candidate masks, rule residuals, behavior cloning, and diagnostic bootstrap actions remain disabled.
+- Main method contract: clean CTDE under `00_workflow/clean_ctde_contract_20260710.md`. Actors may rank/mask beams from their own ISAC observations and exchanged tables; global truth and pair-derived action recommendations are forbidden at execution and restricted to critic/reward evaluation during training.
+- Position-pair rendezvous phase, deterministic TX/RX role hints, and their beam/role auxiliary labels are rule-guided mechanisms. Their results are upper bounds and cannot support the main MARL claim.
 
-## Current Gate Status (2026-07-10)
+## Superseded Gate Status (2026-07-10)
 
-- The initial N=10/B=10/300-slot learnability gate passed on three training seeds and six held-out episodes.
+- The initial N=10/B=10/300-slot learnability gate passed only for a rule-guided actor and is superseded as clean-MARL evidence.
 - Full MARL + ISAC adapter: mean discovery rate 2.96%, 5/6 nonzero episodes, 8 total discovered edges.
 - Uniform random, Wang ISAC tables, and trained-checkpoint adapter-zero controls: zero discoveries in the same six scenarios.
 - This is an exploratory method-development result. It is not sufficient for a TWC claim because absolute discovery remains low and the first seed informed method tuning.
-- The next blocking task is robust reciprocal-report formation and phase consistency, followed by an untouched-seed confirmation campaign.
+- The next blocking task is a clean `N=10`, 300-slot MARL learnability run with local candidate/table processing but no pair phase, role hint, action target, or global-derived actor input.
 
 ## Discovery-First Metric Reset
 
@@ -52,13 +53,8 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 3. Redesign MARL reward/evaluation around new discoveries, early discoveries,
    topology improvement, empty-scan reduction, and moderate access cost.
 4. Keep standalone SENSE disabled; ISAC remains TX-coupled piggyback sensing.
-5. Preserve the passed nonzero N=10/B=10 gate while improving reciprocal-report
-   and phase opportunity rates; regression to zero is a failed learnability gate.
-6. The position-ordered diagnostic has passed the nonzero gate only after
-   reprojecting global ISAC position estimates into the current body-frame beam.
-   Expose reprojected beam score, rendezvous phase, and role hint to MARL; do not
-   hard-code the diagnostic bootstrap into the final actor.
-7. Run an untouched-seed N=10 confirmation only after reciprocal scheduling is
-   made robust; scale transfer remains blocked until that confirmation passes.
+5. Treat the position-ordered rendezvous result as a rule-guided upper bound only.
+6. Train the main actor from local ISAC candidate belief/history, exchanged tables, and local protocol feedback; do not expose pair phase, role hint, global recommendation, or rule action labels.
+7. Run an untouched-seed N=10 confirmation only after clean learning beats random; scale transfer remains blocked until that confirmation passes.
 8. Keep every phase-level artifact committed and pushed; if push fails, keep
    the local commit before moving to the next major phase.

@@ -4,6 +4,8 @@
 
 This audit checks whether the previous split-beam MARL result can be attributed to learned beam selection, or whether it depends on handcrafted priors. The environment is kept aligned with the Wang-style sensing-table setting: N=10, 105 beams, 200 slots, single RF, TX-coupled sensing, no standalone Sense action.
 
+Update: local candidate ranking/masking and post-handshake table exchange remain allowed because they use independently available node observations. Pair-derived rendezvous phase, deterministic TX/RX role hints, and supervised action targets are not allowed in the clean main method even when they are computed from noisy local position reports.
+
 ## Code-Level Prior Check
 
 - No oracle neighbor identity, hidden adjacency, or true position is directly exposed to the decentralized actor.
