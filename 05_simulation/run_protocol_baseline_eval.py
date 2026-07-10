@@ -57,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sensing-period-slots", type=int, default=None)
     parser.add_argument("--slot-metric-period", type=int, default=0)
     parser.add_argument("--mobility-model", default=None)
+    parser.add_argument("--spatial-dimensions", type=int, choices=(2, 3), default=None)
     parser.add_argument("--seed", type=int, default=20364205)
     parser.add_argument("--quiet", action="store_true")
     return parser.parse_args()
@@ -128,6 +129,9 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
     mobility = dict(config.mobility)
     if args.mobility_model is not None:
         mobility["model"] = str(args.mobility_model)
+    spatial_dims = getattr(args, "spatial_dimensions", None)
+    if spatial_dims is not None:
+        mobility["spatial_dimensions"] = int(spatial_dims)
     replacements["mobility"] = mobility
     return replace(config, **replacements)
 

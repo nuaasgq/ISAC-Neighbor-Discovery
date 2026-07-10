@@ -17,8 +17,22 @@ class NodeState:
     pause_remaining: int = 0
 
 
-def random_unit_vectors(rng: np.random.Generator, n: int) -> np.ndarray:
+def spatial_dimensions(mobility_cfg: dict[str, Any]) -> int:
+    dimensions = int(mobility_cfg.get("spatial_dimensions", 3))
+    if dimensions not in {2, 3}:
+        raise ValueError("mobility spatial_dimensions must be either 2 or 3")
+    return dimensions
+
+
+def planar_altitude(area: np.ndarray, mobility_cfg: dict[str, Any]) -> float:
+    altitude = float(mobility_cfg.get("fixed_altitude_m", area[2] / 2.0))
+    return float(np.clip(altitude, 0.0, area[2]))
+
+
+def random_unit_vectors(rng: np.random.Generator, n: int, dimensions: int = 3) -> np.ndarray:
     vec = rng.normal(size=(n, 3))
+    if dimensions == 2:
+        vec[:, 2] = 0.0
     norm = np.linalg.norm(vec, axis=1, keepdims=True)
     norm[norm == 0.0] = 1.0
     return vec / norm
@@ -41,17 +55,22 @@ def initialize_states(
     rng: np.random.Generator,
 ) -> list[NodeState]:
     area = np.asarray(area_size_m, dtype=float)
+    dimensions = spatial_dimensions(mobility_cfg)
     positions = rng.uniform(low=np.zeros(3), high=area, size=(n_nodes, 3))
+    if dimensions == 2:
+        positions[:, 2] = planar_altitude(area, mobility_cfg)
     speed_mean = float(mobility_cfg.get("speed_mean_mps", 15.0))
     speed_std = float(mobility_cfg.get("speed_std_mps", 3.0))
     speeds = np.maximum(0.0, rng.normal(speed_mean, speed_std, size=n_nodes))
-    velocities = random_unit_vectors(rng, n_nodes) * speeds[:, None]
+    velocities = random_unit_vectors(rng, n_nodes, dimensions) * speeds[:, None]
     states = [NodeState(positions[i], velocities[i]) for i in range(n_nodes)]
     for state in states:
         update_attitude(state)
     if mobility_cfg.get("model") == "random_waypoint":
         for state in states:
             state.waypoint = rng.uniform(low=np.zeros(3), high=area)
+            if dimensions == 2:
+                state.waypoint[2] = planar_altitude(area, mobility_cfg)
     return states
 
 
@@ -94,6 +113,8 @@ def step_states(
 ) -> None:
     model = str(mobility_cfg.get("model", "gauss_markov")).lower()
     area = np.asarray(area_size_m, dtype=float)
+    dimensions = spatial_dimensions(mobility_cfg)
+    altitude = planar_altitude(area, mobility_cfg) if dimensions == 2 else None
     boundary = str(mobility_cfg.get("boundary", "reflect")).lower()
     min_speed = float(mobility_cfg.get("min_speed_mps", 0.0)) or None
     max_speed = float(mobility_cfg.get("max_speed_mps", 0.0)) or None
@@ -112,8 +133,15 @@ def step_states(
         raise ValueError(f"Unsupported mobility model: {model}")
 
     for state in states:
+        if dimensions == 2:
+            state.velocity[2] = 0.0
+            state.velocity = cap_speed(state.velocity, min_speed, max_speed)
+            if state.waypoint is not None:
+                state.waypoint[2] = altitude
         state.position += state.velocity * dt_s
         apply_boundary(state, area, boundary)
+        if dimensions == 2:
+            state.position[2] = altitude
         update_attitude(state)
 
 
@@ -164,7 +192,7 @@ def step_random_direction(
     speed_std = float(mobility_cfg.get("speed_std_mps", 3.0))
     if slot % period != 0:
         return
-    directions = random_unit_vectors(rng, len(states))
+    directions = random_unit_vectors(rng, len(states), spatial_dimensions(mobility_cfg))
     speeds = np.maximum(0.0, rng.normal(speed_mean, speed_std, size=len(states)))
     for idx, state in enumerate(states):
         state.velocity = cap_speed(directions[idx] * speeds[idx], min_speed, max_speed)

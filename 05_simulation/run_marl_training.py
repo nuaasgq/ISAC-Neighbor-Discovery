@@ -81,6 +81,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-both", action="store_true", help="Run both deterministic and stochastic evaluations.")
     parser.add_argument("--checkpoint-interval", type=int, default=50)
     parser.add_argument("--node-count", type=int, default=None)
+    parser.add_argument("--area-size-m", type=float, nargs=3, default=None, metavar=("X", "Y", "Z"))
     parser.add_argument("--azimuth-cells", type=int, default=None)
     parser.add_argument("--elevation-cells", type=int, default=None)
     parser.add_argument("--communication-range", type=float, default=None)
@@ -90,6 +91,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--angular-cell-offset-std", type=float, default=None)
     parser.add_argument("--sensing-period-slots", type=int, default=None)
     parser.add_argument("--mobility-model", default=None)
+    parser.add_argument("--spatial-dimensions", type=int, choices=(2, 3), default=None)
     parser.add_argument("--env-protocol", default=None)
     parser.add_argument(
         "--candidate-source",
@@ -425,12 +427,18 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
         value = getattr(args, arg_name)
         if value is not None:
             replacements[field_name] = value
+    area_size = getattr(args, "area_size_m", None)
+    if area_size is not None:
+        replacements["area_size_m"] = tuple(float(value) for value in area_size)
     rendezvous_observation = getattr(args, "rendezvous_observation", None)
     if rendezvous_observation is not None:
         replacements["rendezvous_observation_enabled"] = bool(rendezvous_observation)
     mobility = dict(config.mobility)
     if args.mobility_model is not None:
         mobility["model"] = str(args.mobility_model)
+    spatial_dims = getattr(args, "spatial_dimensions", None)
+    if spatial_dims is not None:
+        mobility["spatial_dimensions"] = int(spatial_dims)
     replacements["mobility"] = mobility
     return replace(config, **replacements)
 
