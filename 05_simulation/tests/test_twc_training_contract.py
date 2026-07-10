@@ -176,6 +176,68 @@ def test_local_candidate_mask_keeps_unknown_cells_and_reopens_stale_empty_cells(
     assert reopened["candidate_mask"][empty_beam] == 1.0
 
 
+def test_evaluation_local_candidate_random_executor_uses_actor_visible_mask() -> None:
+    module = load_evaluation_module()
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=1,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260712)
+    target_beam = 5
+    env._sim.belief[0, :] = 0.0
+    env._sim.success_count[0, :] = 0.0
+    env._sim.empty_beam_count[0, :] = 1.0
+    env._sim.empty_beam_count[0, target_beam] = 0.0
+    env._sim.age[0, :] = 0.0
+
+    sampled = [module.local_candidate_random_beam(env, 0, "tx") for _ in range(20)]
+
+    assert sampled == [target_beam] * 20
+
+
+def test_evaluation_uniform_mode_executor_has_no_hidden_state_dependency() -> None:
+    module = load_evaluation_module()
+    cfg = replace(load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"), n_nodes=1)
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260713)
+
+    sampled = [module.uniform_tx_rx_mode(env) for _ in range(100)]
+
+    assert set(sampled) == {"tx", "rx"}
+    assert set(sampled).issubset({"tx", "rx"})
+
+
+def test_selected_beam_target_status_diagnostics_separate_remaining_known_and_empty() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260714)
+    env._sim.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([0.0, 100.0, 0.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    true_edges = env._sim.true_edges(cfg.communication_range_m)
+    beam_01 = env._sim.beam_from_to(0, 1)
+
+    env._sim.record_selected_beam_target_status([Action("tx", beam_01)], true_edges, slot=0)
+    env._sim.discovered_edges.add((0, 1))
+    env._sim.record_selected_beam_target_status([Action("tx", beam_01)], true_edges, slot=1)
+    env._sim.record_selected_beam_target_status([Action("tx", (beam_01 + 4) % 8)], true_edges, slot=2)
+
+    assert env._sim.undiscovered_target_beam_actions == 1
+    assert env._sim.known_only_beam_actions == 1
+    assert env._sim.empty_target_beam_actions == 1
+
+
 def test_clean_ctde_forces_rendezvous_observation_off() -> None:
     module = load_training_module()
     cfg = load_config("05_simulation/configs/twc_canonical_n10_b10.yaml")

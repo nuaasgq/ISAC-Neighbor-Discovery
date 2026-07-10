@@ -56,6 +56,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--angular-cell-offset-std", type=float, default=None)
     parser.add_argument("--sensing-period-slots", type=int, default=None)
     parser.add_argument("--slot-metric-period", type=int, default=0)
+    parser.add_argument(
+        "--target-status-diagnostics",
+        action="store_true",
+        help="Classify selected beams with offline true topology; disabled by default because it is expensive.",
+    )
     parser.add_argument("--mobility-model", default=None)
     parser.add_argument("--spatial-dimensions", type=int, choices=(2, 3), default=None)
     parser.add_argument("--seed", type=int, default=20364205)
@@ -144,7 +149,13 @@ def run_protocol_eval(protocol: str, cfg: SimulationConfig, args: argparse.Names
     for episode in range(int(args.eval_episodes)):
         scenario_seed = int(args.seed) + episode
         policy_seed = scenario_seed + offset
-        simulator = NeighborDiscoverySimulator(cfg, protocol, policy_seed, scenario_seed=scenario_seed)
+        simulator = NeighborDiscoverySimulator(
+            cfg,
+            protocol,
+            policy_seed,
+            scenario_seed=scenario_seed,
+            collect_target_status_metrics=bool(args.target_status_diagnostics),
+        )
         row = with_metric_aliases(simulator.run_episode(episode).as_dict(), cfg.n_nodes)
         row.update(
             {
@@ -224,6 +235,7 @@ def build_manifest(
         "deterministic": protocol == "skyorbs_like_skip_scan",
         "stochastic": protocol != "skyorbs_like_skip_scan",
         "eval_both": False,
+        "target_status_diagnostics": bool(args.target_status_diagnostics),
         "final_eval": rows[-1] if rows else {},
         "files": ["eval_episode_metrics.csv", "resource_log.csv", "manifest.json"],
     }

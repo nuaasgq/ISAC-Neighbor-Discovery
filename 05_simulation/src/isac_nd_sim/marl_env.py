@@ -57,6 +57,7 @@ class MarlNeighborDiscoveryEnv:
         candidate_source: str = "default",
         collect_slot_metrics: bool = True,
         rich_info: bool = True,
+        collect_target_status_metrics: bool = False,
     ):
         self.cfg = config
         self.seed = int(config.seed if seed is None else seed)
@@ -65,7 +66,13 @@ class MarlNeighborDiscoveryEnv:
         self.candidate_source = _parse_candidate_source(candidate_source)
         self.collect_slot_metrics = bool(collect_slot_metrics)
         self.rich_info = bool(rich_info)
-        self._sim = NeighborDiscoverySimulator(config, protocol=self.protocol, seed=self.seed)
+        self.collect_target_status_metrics = bool(collect_target_status_metrics)
+        self._sim = NeighborDiscoverySimulator(
+            config,
+            protocol=self.protocol,
+            seed=self.seed,
+            collect_target_status_metrics=self.collect_target_status_metrics,
+        )
         self._slot = 0
         self._last_actions: list[Action] = [Action(MODE_IDLE, 0) for _ in range(config.n_nodes)]
         self._access_gate_counts = {name: 0 for name in ACCESS_GATE_NAMES}
@@ -85,7 +92,12 @@ class MarlNeighborDiscoveryEnv:
     def reset(self, seed: int | None = None) -> tuple[list[dict[str, np.ndarray | int]], dict[str, Any]]:
         if seed is not None:
             self.seed = int(seed)
-        self._sim = NeighborDiscoverySimulator(self.cfg, protocol=self.protocol, seed=self.seed)
+        self._sim = NeighborDiscoverySimulator(
+            self.cfg,
+            protocol=self.protocol,
+            seed=self.seed,
+            collect_target_status_metrics=self.collect_target_status_metrics,
+        )
         self._sim.reset()
         self._slot = 0
         self._last_actions = [Action(MODE_IDLE, 0) for _ in range(self.n_agents)]
@@ -130,6 +142,8 @@ class MarlNeighborDiscoveryEnv:
         self._sim.snapshot_pre_sensing_candidates(self._slot)
         self._sim.update_action_counts(execution_actions, self._slot)
         self._sim.update_empty_scan_counts(execution_actions, true_comm_edges, self._slot)
+        if self.collect_target_status_metrics:
+            self._sim.record_selected_beam_target_status(execution_actions, true_comm_edges, self._slot)
         self._sim.update_sensing(execution_actions, self._slot)
         self._sim._candidate_pool_cache.clear()
         new_edges = self._sim.resolve_discoveries(self._slot, execution_actions, true_comm_edges)

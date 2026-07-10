@@ -30,7 +30,7 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
-from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_SENSE  # noqa: E402
+from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_RX, MODE_SENSE, MODE_TX  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -63,10 +63,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
     parser.add_argument(
         "--beam-executor",
-        choices=["policy", "rule_candidate", "wang_candidate_random"],
+        choices=["policy", "local_candidate_random", "rule_candidate", "wang_candidate_random"],
         default="policy",
         help=(
             "Beam execution rule. 'policy' uses neural beam actions; "
+            "'local_candidate_random' samples uniformly from the same local candidate mask seen by the actor; "
             "'rule_candidate' keeps neural mode/gate actions but executes the "
             "beam through the local ISAC candidate/memory rule; "
             "'wang_candidate_random' keeps neural mode/gate actions but samples "
@@ -75,10 +76,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode-executor",
-        choices=["policy", "rule_protocol"],
+        choices=["policy", "uniform_tx_rx", "rule_protocol"],
         default="policy",
         help=(
             "Mode execution rule. 'policy' uses neural mode actions; "
+            "'uniform_tx_rx' samples TX/RX with equal probability; "
             "'rule_protocol' uses the simulator's local protocol role rule while "
             "preserving the neural access-gate action."
         ),
@@ -153,6 +155,11 @@ def parse_args() -> argparse.Namespace:
         "--full-step-info",
         action="store_true",
         help="Collect per-slot metrics and rich step info during evaluation. Disabled by default for exact fast eval.",
+    )
+    parser.add_argument(
+        "--target-status-diagnostics",
+        action="store_true",
+        help="Classify selected beams with offline true topology; disabled by default because it is expensive.",
     )
     parser.add_argument(
         "--no-resume",
@@ -330,6 +337,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "fast_eval": {
             "collect_slot_metrics": bool(getattr(args, "full_step_info", False)),
             "rich_info": bool(getattr(args, "full_step_info", False)),
+            "target_status_diagnostics": bool(getattr(args, "target_status_diagnostics", False)),
         },
         "final_eval": eval_rows[-1] if eval_rows else {},
         "files": ["eval_episode_metrics.csv", "resource_log.csv", "manifest.json"],
@@ -399,6 +407,7 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
     defaults = {
         "area_size_m": None,
         "full_step_info": False,
+        "target_status_diagnostics": False,
         "no_resume": False,
         "resource_log_period": 500,
         "max_rss_mb": 12000.0,
@@ -545,6 +554,7 @@ def evaluation_fingerprint(
         "gate_temperature": float(args.gate_temperature),
         "beam_executor": str(args.beam_executor),
         "mode_executor": str(args.mode_executor),
+        "target_status_diagnostics": bool(getattr(args, "target_status_diagnostics", False)),
         "disable_rendezvous_adapter": bool(args.disable_rendezvous_adapter),
         "allow_idle": bool(args.allow_idle),
         "seed": int(args.seed),
@@ -598,6 +608,7 @@ def evaluate_policy(
                     candidate_source=candidate_source,
                     collect_slot_metrics=bool(getattr(args, "full_step_info", False)),
                     rich_info=bool(getattr(args, "full_step_info", False)),
+                    collect_target_status_metrics=bool(getattr(args, "target_status_diagnostics", False)),
                 )
                 observations, _ = env.reset(seed=seed)
                 rewards = []
@@ -702,16 +713,36 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
     for node, action in enumerate(actions):
         mode = action.mode
         beam = action.beam
-        if mode_executor == "rule_protocol":
+        if mode_executor == "uniform_tx_rx":
+            mode = uniform_tx_rx_mode(env)
+        elif mode_executor == "rule_protocol":
             mode = env._sim.select_mode(node, env._slot)
         if mode == MODE_IDLE:
             beam = 0
+        elif beam_executor == "local_candidate_random":
+            beam = local_candidate_random_beam(env, node, mode)
         elif beam_executor == "rule_candidate":
             beam = rule_candidate_beam(env, node, env._slot, mode)
         elif beam_executor == "wang_candidate_random":
             beam = wang_candidate_random_beam(env, node, mode)
         rewritten.append(Action(mode, int(beam), action.access_gate))
     return rewritten
+
+
+def uniform_tx_rx_mode(env: MarlNeighborDiscoveryEnv) -> str:
+    return MODE_TX if float(env._sim.rng.random()) < 0.5 else MODE_RX
+
+
+def local_candidate_random_beam(env: MarlNeighborDiscoveryEnv, node: int, mode: str) -> int:
+    """Sample from the actor-visible local mask without using hidden topology."""
+
+    if mode == MODE_IDLE:
+        return 0
+    candidate = env._candidate_features_for(int(node))
+    active = np.flatnonzero(np.asarray(candidate["mask"], dtype=float) > 0.5)
+    if active.size == 0:
+        active = np.arange(env.n_beams, dtype=int)
+    return int(env._sim.rng.choice(active))
 
 
 def rule_candidate_beam(env: MarlNeighborDiscoveryEnv, node: int, slot: int, mode: str) -> int:

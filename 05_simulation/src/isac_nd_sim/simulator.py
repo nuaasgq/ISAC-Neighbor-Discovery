@@ -103,6 +103,11 @@ class EpisodeResult:
     collision_count: int
     empty_scan_count: int
     scan_actions: int
+    undiscovered_target_beam_actions: int
+    known_only_beam_actions: int
+    empty_target_beam_actions: int
+    undiscovered_target_beam_ratio: float
+    known_only_beam_ratio: float
     tx_actions: int
     rx_actions: int
     sense_actions: int
@@ -140,12 +145,21 @@ class EpisodeResult:
 
 
 class NeighborDiscoverySimulator:
-    def __init__(self, config: SimulationConfig, protocol: str, seed: int, scenario_seed: int | None = None):
+    def __init__(
+        self,
+        config: SimulationConfig,
+        protocol: str,
+        seed: int,
+        scenario_seed: int | None = None,
+        *,
+        collect_target_status_metrics: bool = False,
+    ):
         self.cfg = config
         self.protocol = protocol
         self.rng = np.random.default_rng(seed)
         self.seed = seed
         self.scenario_seed = seed if scenario_seed is None else scenario_seed
+        self.collect_target_status_metrics = bool(collect_target_status_metrics)
         self.mobility_rng = np.random.default_rng(self.scenario_seed)
         sensing_seed = np.random.SeedSequence([self.scenario_seed, 0x15AC])
         self.sensing_rng = np.random.default_rng(sensing_seed)
@@ -194,6 +208,9 @@ class NeighborDiscoverySimulator:
         self.node_empty_scans = np.zeros(self.cfg.n_nodes, dtype=int)
         self.node_scan_actions = np.zeros(self.cfg.n_nodes, dtype=int)
         self.node_collision_count = np.zeros(self.cfg.n_nodes, dtype=int)
+        self.undiscovered_target_beam_actions = 0
+        self.known_only_beam_actions = 0
+        self.empty_target_beam_actions = 0
         self.tx_actions = 0
         self.rx_actions = 0
         self.sense_actions = 0
@@ -260,6 +277,9 @@ class NeighborDiscoverySimulator:
         self.node_empty_scans.fill(0)
         self.node_scan_actions.fill(0)
         self.node_collision_count.fill(0)
+        self.undiscovered_target_beam_actions = 0
+        self.known_only_beam_actions = 0
+        self.empty_target_beam_actions = 0
         self.tx_actions = 0
         self.rx_actions = 0
         self.sense_actions = 0
@@ -302,6 +322,8 @@ class NeighborDiscoverySimulator:
             self.snapshot_pre_sensing_candidates(slot)
             self.update_action_counts(actions, slot)
             self.update_empty_scan_counts(actions, true_comm_edges, slot)
+            if self.collect_target_status_metrics:
+                self.record_selected_beam_target_status(actions, true_comm_edges, slot)
             self.update_sensing(actions, slot)
             self._candidate_pool_cache.clear()
             new_edges = self.resolve_discoveries(slot, actions, true_comm_edges)
@@ -1474,6 +1496,38 @@ class NeighborDiscoverySimulator:
                 return True
         return False
 
+    def record_selected_beam_target_status(
+        self,
+        actions: list[Action],
+        true_comm_edges: set[tuple[int, int]],
+        slot: int,
+    ) -> None:
+        """Record offline-only beam opportunity diagnostics using true topology."""
+
+        beams = self.beam_matrix()
+        for node, action in enumerate(actions):
+            if action.mode not in (MODE_TX, MODE_RX):
+                continue
+            for selected_beam in self.active_beams_for_action(node, action, slot):
+                matching_edges: list[tuple[int, int]] = []
+                for edge in true_comm_edges:
+                    if node not in edge:
+                        continue
+                    other = edge[1] if edge[0] == node else edge[0]
+                    if beam_matches(
+                        int(selected_beam),
+                        int(beams[node, other]),
+                        self.cfg.azimuth_cells,
+                        self.cfg.alignment_tolerance_cells,
+                    ):
+                        matching_edges.append(edge)
+                if not matching_edges:
+                    self.empty_target_beam_actions += 1
+                elif any(edge not in self.discovered_edges for edge in matching_edges):
+                    self.undiscovered_target_beam_actions += 1
+                else:
+                    self.known_only_beam_actions += 1
+
     def resolve_discoveries(self, slot: int, actions: list[Action], true_comm_edges: set[tuple[int, int]]) -> list[tuple[int, int]]:
         new_edges: list[tuple[int, int]] = []
         n_nodes = self.cfg.n_nodes
@@ -1738,6 +1792,11 @@ class NeighborDiscoverySimulator:
             collision_count=self.collision_count,
             empty_scan_count=self.empty_scans,
             scan_actions=self.scan_actions,
+            undiscovered_target_beam_actions=self.undiscovered_target_beam_actions,
+            known_only_beam_actions=self.known_only_beam_actions,
+            empty_target_beam_actions=self.empty_target_beam_actions,
+            undiscovered_target_beam_ratio=self.undiscovered_target_beam_actions / max(1, self.scan_actions),
+            known_only_beam_ratio=self.known_only_beam_actions / max(1, self.scan_actions),
             tx_actions=self.tx_actions,
             rx_actions=self.rx_actions,
             sense_actions=self.sense_actions,
