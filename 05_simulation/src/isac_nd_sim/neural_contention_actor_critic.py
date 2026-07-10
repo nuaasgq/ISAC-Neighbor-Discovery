@@ -36,7 +36,7 @@ class ContentionGraphActorCritic:
         use_topology_deficit: bool = False,
         use_rule_residual: bool = False,
         rule_residual_scale: float = 1.0,
-        use_contention_mode_prior: bool = True,
+        use_contention_mode_prior: bool = False,
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
         disabled_modes: Sequence[str] | None = None,
@@ -140,14 +140,28 @@ class ContentionGraphActorCritic:
 
     def _prepare_tensors(self, tensors: dict):
         torch = self.torch
+        tensors = dict(tensors)
+        if not self.use_candidate_mask:
+            if "candidate_mask" in tensors:
+                tensors["candidate_mask"] = torch.zeros_like(tensors["candidate_mask"])
+            tensors["beam_features"] = tensors["beam_features"].clone()
+            tensors["beam_features"][..., 7] = 0.0
+            tensors["candidate_stats"] = tensors["candidate_stats"].clone()
+            tensors["candidate_stats"][..., 0] = 0.0
+            tensors["contention_state"] = tensors["contention_state"].clone()
+            tensors["contention_state"][..., 6] = 0.0
         if not self.use_candidate_score and "candidate_score" in tensors:
-            tensors = dict(tensors)
             tensors["candidate_score"] = torch.zeros_like(tensors["candidate_score"])
             tensors["beam_features"] = tensors["beam_features"].clone()
             tensors["beam_features"][..., 4] = 0.0
+            tensors["candidate_stats"] = tensors["candidate_stats"].clone()
+            tensors["candidate_stats"][..., 1:3] = 0.0
+            tensors["contention_state"] = tensors["contention_state"].clone()
+            tensors["contention_state"][..., 7:9] = 0.0
         if not self.use_topology_deficit and "topology_deficit" in tensors:
-            tensors = dict(tensors)
             tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
+            tensors["contention_state"] = tensors["contention_state"].clone()
+            tensors["contention_state"][..., 1] = 0.0
         return tensors
 
     def _mask_disabled_modes(self, mode_logits):

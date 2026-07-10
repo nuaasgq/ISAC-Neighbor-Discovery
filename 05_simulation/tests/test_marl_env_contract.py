@@ -125,7 +125,7 @@ def test_marl_env_step_accepts_mode_beam_actions_and_keeps_info_safe() -> None:
     assert info["rx_actions"] == 2
     assert info["sense_actions"] == 1
     assert info["idle_actions"] == 1
-    assert info["piggyback_sense_actions"] == 4
+    assert info["piggyback_sense_actions"] == 2
     assert "discovery_per_scan_action" in info
     _assert_no_forbidden_keys(info)
     _assert_no_forbidden_keys(next_observations)
@@ -263,7 +263,7 @@ def test_tx_coupled_ideal_isac_records_sensing_observations_without_sense_action
     _, _, _, _, info = env.step(actions)
 
     assert info["sense_actions"] == 0
-    assert info["piggyback_sense_actions"] == cfg.n_nodes
+    assert info["piggyback_sense_actions"] == 2
     assert info["sensing_observations"] > 0
     assert info["sensing_target_observations"] >= 0
 
@@ -286,6 +286,7 @@ def test_wang_table_env_uses_tx_only_piggyback_and_neighbor_table_exchange() -> 
     env.reset(seed=37)
 
     env._sim.discovered_edges.add((1, 2))
+    env._sim.neighbor_records[1][2] = (env._sim.states[2].position.copy(), 0)
     beam_02 = env._sim.beam_from_to(0, 2)
     env._sim.belief[0, beam_02] = 0.0
     env._sim.success_count[0, beam_02] = 0.0
@@ -399,6 +400,22 @@ def test_training_state_is_explicitly_separate_from_public_info() -> None:
     assert state["attitudes"].shape == (cfg.n_nodes, 3)
     assert state["true_adjacency"].shape == (cfg.n_nodes, cfg.n_nodes)
     assert state["discovered_adjacency"].shape == (cfg.n_nodes, cfg.n_nodes)
+
+
+def test_local_summary_uses_only_each_nodes_feedback_counters() -> None:
+    cfg = _small_cfg()
+    env = MarlNeighborDiscoveryEnv(cfg)
+    env.reset(seed=13)
+    env._sim.node_scan_actions[:] = [4, 2, 0, 0, 0, 0]
+    env._sim.node_empty_scans[:] = [3, 0, 0, 0, 0, 0]
+    env._sim.node_collision_count[:] = [2, 0, 0, 0, 0, 0]
+
+    node_zero = env._observation_for(0)["local_summary"]
+    node_one = env._observation_for(1)["local_summary"]
+
+    assert node_zero[2] == np.float32(0.75)
+    assert node_one[2] == np.float32(0.0)
+    assert node_zero[3] > node_one[3]
 
 
 def test_marl_env_truncates_at_episode_horizon() -> None:

@@ -159,6 +159,7 @@ class MarlNeighborDiscoveryEnv:
             self._slot,
             self._sim.mobility_rng,
         )
+        self._sim.invalidate_geometry_cache()
         self._last_actions = execution_actions
         self._slot += 1
 
@@ -216,8 +217,8 @@ class MarlNeighborDiscoveryEnv:
             [
                 degree / max(1, self.n_agents - 1),
                 self._slot / max(1, self.cfg.slots_per_episode),
-                self._sim.empty_scans / max(1, self._sim.scan_actions),
-                self._sim.collision_count / max(1, self._slot + 1),
+                self._sim.node_empty_scans[node] / max(1, self._sim.node_scan_actions[node]),
+                self._sim.node_collision_count[node] / max(1, self._slot + 1),
             ],
             dtype=np.float32,
         )
@@ -438,7 +439,7 @@ class MarlNeighborDiscoveryEnv:
     def _has_collision_evidence(self, node: int, beam: int) -> bool:
         beam_collision = float(self._sim.collision_fail_count[node, beam])
         beam_fail = float(self._sim.fail_count[node, beam])
-        episode_pressure = self._sim.collision_count / max(1.0, float(self._slot + 1))
+        episode_pressure = self._sim.node_collision_count[node] / max(1.0, float(self._slot + 1))
         return bool(beam_collision > 0.0 or (episode_pressure > 0.75 and beam_fail > 0.0))
 
     def _has_low_collision_evidence(self, node: int, beam: int) -> bool:
@@ -585,8 +586,6 @@ class MarlNeighborDiscoveryEnv:
                 rewards[node] -= 0.006 + 0.004 * min(1.0, deficit / max(1.0, float(self.cfg.target_degree)))
             elif action.mode in (MODE_TX, MODE_RX):
                 rewards[node] -= 0.002
-                if empty_by_node[node]:
-                    rewards[node] -= 0.015
 
             if sampled_actions[node].access_gate == ACCESS_AGGRESSIVE:
                 rewards[node] -= 0.001
@@ -658,10 +657,6 @@ class MarlNeighborDiscoveryEnv:
             elif action.mode == MODE_RX:
                 shaped[node] -= 0.004 * low_tx_pressure
 
-            if action.mode in (MODE_TX, MODE_RX) and not bool(empty_by_node[node]):
-                beam_bonus = 0.018 if action.mode == MODE_TX else 0.010
-                shaped[node] += beam_bonus + 0.010 * deficit_ratio
-
             if (
                 self.candidate_source == "wang_table"
                 and action.mode in (MODE_TX, MODE_RX)
@@ -676,7 +671,9 @@ class MarlNeighborDiscoveryEnv:
         return shaped.astype(np.float32, copy=False)
 
     def _safe_info(self, new_edges_count: int) -> dict[str, Any]:
-        components = connected_components(self.n_agents, self._sim.discovered_edges)
+        true_edges = self._sim.true_edges(self.cfg.communication_range_m)
+        active_edges = self._sim.discovered_edges.intersection(true_edges)
+        components = connected_components(self.n_agents, active_edges)
         largest = max((len(component) for component in components), default=0)
         isolated = sum(1 for component in components if len(component) == 1)
         return {
@@ -688,6 +685,7 @@ class MarlNeighborDiscoveryEnv:
             "access_gate_names": ACCESS_GATE_NAMES,
             "new_edges_count": int(new_edges_count),
             "discovered_edges_count": len(self._sim.discovered_edges),
+            "active_discovered_edges_count": len(active_edges),
             "scan_actions": self._sim.scan_actions,
             "tx_actions": self._sim.tx_actions,
             "rx_actions": self._sim.rx_actions,
@@ -708,7 +706,8 @@ class MarlNeighborDiscoveryEnv:
             "connected_components": len(components),
             "lcc_ratio": largest / max(1, self.n_agents),
             "isolated_node_ratio": isolated / max(1, self.n_agents),
-            "lambda2": algebraic_connectivity(self.n_agents, self._sim.discovered_edges),
+            "lambda2": algebraic_connectivity(self.n_agents, active_edges),
+            "knowledge_lambda2": algebraic_connectivity(self.n_agents, self._sim.discovered_edges),
             "mobility_model": str(self.cfg.mobility.get("model", "gauss_markov")),
             "reward_version": self.reward_version,
             **self.access_gate_summary(),

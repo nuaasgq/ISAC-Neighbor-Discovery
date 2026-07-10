@@ -65,6 +65,9 @@ class SimulationConfig:
     detection_slope_per_db: float = 0.5
     min_detection_probability: float = 0.02
     max_detection_probability: float = 0.98
+    sensing_footprint_radius_cells: int = 0
+    sensing_position_error_std_m: float = 25.0
+    sensing_report_ttl_slots: int = 100
 
     @property
     def n_beams(self) -> int:
@@ -168,4 +171,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         detection_slope_per_db=float(phy.get("detection_slope_per_db", 0.5)),
         min_detection_probability=float(phy.get("min_detection_probability", 0.02)),
         max_detection_probability=float(phy.get("max_detection_probability", 0.98)),
+        sensing_footprint_radius_cells=int(phy.get("angular_footprint_radius_cells", 0)),
+        sensing_position_error_std_m=float(phy.get("position_error_std_m", 25.0)),
+        sensing_report_ttl_slots=int(phy.get("report_ttl_slots", 100)),
     )

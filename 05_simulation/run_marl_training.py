@@ -4,6 +4,8 @@ import argparse
 import csv
 import json
 import os
+import platform
+import subprocess
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -53,7 +55,7 @@ def parse_args() -> argparse.Namespace:
             "The script logs per-step rewards, per-episode returns, resource usage, and held-out evaluation."
         )
     )
-    parser.add_argument("--config", default="05_simulation/configs/paper_transfer_train_n10_b10_singlehop.yaml")
+    parser.add_argument("--config", default="05_simulation/configs/twc_trainable_n10.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_training")
     parser.add_argument("--algorithm", choices=["ippo", "mappo", "isac_mappo"], default="isac_mappo")
     parser.add_argument(
@@ -67,9 +69,9 @@ def parse_args() -> argparse.Namespace:
             "topology_adaptive_gated_contention_shared",
             "balanced_topology_gated_contention_shared",
         ],
-        default="shared",
+        default="contention_shared",
     )
-    parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default="legacy")
+    parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default="discovery_first")
     parser.add_argument("--episodes", type=int, default=200)
     parser.add_argument("--slots", type=int, default=300)
     parser.add_argument("--eval-episodes", type=int, default=5)
@@ -128,20 +130,37 @@ def parse_args() -> argparse.Namespace:
         help="Local simulator protocol used as the behavior-cloning expert when --expert-bc-weight > 0.",
     )
     parser.add_argument("--candidate-mask", action="store_true", help="Use local ISAC candidate masks in beam sampling.")
-    parser.add_argument("--candidate-score", action="store_true", help="Use local candidate scores in beam-token features.")
+    parser.add_argument(
+        "--candidate-score",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Use local ISAC candidate scores in beam-token features (enabled by default for ISAC-MAPPO).",
+    )
     parser.add_argument("--topology-deficit", action="store_true", help="Use local discovered-degree deficit token.")
     parser.add_argument("--rule-residual", action="store_true", help="Use local rule logits and beam priors as residual policy logits.")
     parser.add_argument("--rule-residual-scale", type=float, default=1.0)
     parser.add_argument(
-        "--disable-contention-mode-prior",
-        action="store_true",
-        help="Disable the hand-coded contention/topology mode-logit prior in contention networks.",
+        "--contention-mode-prior",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Opt in to the hand-coded contention/topology mode-logit prior.",
     )
+    parser.add_argument("--disable-contention-mode-prior", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--disable-isac-features", action="store_true", help="Disable all ISAC/structured feature flags.")
     parser.add_argument(
         "--forbid-sense",
         action="store_true",
-        help="Disable standalone SENSE actions; ISAC feedback is obtained only through TX-coupled piggyback sensing.",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--allow-standalone-sense",
+        action="store_true",
+        help="Opt in to standalone SENSE actions; the default single-RF model senses only during TX.",
+    )
+    parser.add_argument(
+        "--allow-idle",
+        action="store_true",
+        help="Opt in to IDLE; the default neighbor-discovery action space contains only TX/RX and beam selection.",
     )
     parser.add_argument("--seed", type=int, default=20260705)
     parser.add_argument("--torch-threads", type=int, default=2)
@@ -204,7 +223,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         use_topology_deficit=feature_flags["topology_deficit"],
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=float(args.rule_residual_scale),
-        use_contention_mode_prior=not bool(getattr(args, "disable_contention_mode_prior", False)),
+        use_contention_mode_prior=contention_mode_prior_enabled(args),
         disabled_modes=disabled_modes_from_args(args),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
@@ -305,10 +324,27 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--beam-rank-aux-coef must be nonnegative.")
     if float(getattr(args, "beam_rank_temperature", 4.0)) <= 0.0:
         raise ValueError("--beam-rank-temperature must be positive.")
+    if bool(getattr(args, "separate_action_loss", False)) and str(getattr(args, "network", "")) == "scalegraph_beam":
+        raise ValueError("--separate-action-loss is not implemented for scalegraph_beam.")
 
 
 def disabled_modes_from_args(args: argparse.Namespace) -> tuple[str, ...]:
-    return (MODE_SENSE,) if bool(getattr(args, "forbid_sense", False)) else ()
+    disabled_modes: list[str] = []
+    if hasattr(args, "allow_standalone_sense"):
+        disable_sense = not bool(args.allow_standalone_sense)
+    else:
+        disable_sense = bool(getattr(args, "forbid_sense", False))
+    disable_sense = disable_sense or bool(getattr(args, "forbid_sense", False))
+    if disable_sense:
+        disabled_modes.append(MODE_SENSE)
+    if hasattr(args, "allow_idle") and not bool(args.allow_idle):
+        disabled_modes.append("idle")
+    return tuple(disabled_modes)
+
+
+def contention_mode_prior_enabled(args: argparse.Namespace) -> bool:
+    enabled = bool(getattr(args, "contention_mode_prior", False))
+    return enabled and not bool(getattr(args, "disable_contention_mode_prior", False))
 
 
 def override_config(config: SimulationConfig, args: argparse.Namespace) -> SimulationConfig:
@@ -349,14 +385,14 @@ def resolved_feature_flags(args: argparse.Namespace) -> dict[str, bool]:
         }
     if str(args.algorithm) == "isac_mappo":
         return {
-            "candidate_mask": True if not args.candidate_mask else bool(args.candidate_mask),
-            "candidate_score": True if not args.candidate_score else bool(args.candidate_score),
-            "topology_deficit": True if not args.topology_deficit else bool(args.topology_deficit),
-            "rule_residual": True if not args.rule_residual else bool(args.rule_residual),
+            "candidate_mask": bool(args.candidate_mask),
+            "candidate_score": True if args.candidate_score is None else bool(args.candidate_score),
+            "topology_deficit": bool(args.topology_deficit),
+            "rule_residual": bool(args.rule_residual),
         }
     return {
         "candidate_mask": bool(args.candidate_mask),
-        "candidate_score": bool(args.candidate_score),
+        "candidate_score": bool(args.candidate_score) if args.candidate_score is not None else False,
         "topology_deficit": bool(args.topology_deficit),
         "rule_residual": bool(args.rule_residual),
     }
@@ -372,7 +408,7 @@ def build_policy(
     | AdaptiveGatedContentionGraphActorCritic
     | TopologyAdaptiveGatedContentionGraphActorCritic
 ):
-    use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
+    use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", False))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
@@ -396,7 +432,7 @@ def resolved_env_protocol(args: argparse.Namespace) -> str:
         return str(args.env_protocol)
     if bool(args.disable_isac_features):
         return "structured_marl_no_isac"
-    return "isac_structured_marl"
+    return "improved_rl_isac_tables"
 
 
 def collect_trajectory(
@@ -439,7 +475,12 @@ def collect_trajectory(
         state = env.training_state()
         observations_by_step.append(copy_observations(observations))
         central_features.append(central_state_features(state, cfg))
-        expert_actions_by_step.append(expert_actions_for_env(env, str(getattr(args, "expert_protocol", "collision_aware_isac"))))
+        if float(getattr(args, "expert_bc_weight", 0.0)) > 0.0:
+            expert_actions_by_step.append(
+                expert_actions_for_env(env, str(getattr(args, "expert_protocol", "collision_aware_isac")))
+            )
+        else:
+            expert_actions_by_step.append([])
         with torch_module.no_grad():
             step = policy.act(observations, deterministic=False)
         observations, reward, _terminated, truncated, info = env.step(step.actions)
@@ -465,14 +506,20 @@ def collect_trajectory(
                 "env_protocol": env_protocol,
                 "reward_sum": float(reward_tensor.sum().item()),
                 "reward_mean": float(reward_tensor.mean().item()),
+                "reward_std_across_agents": float(reward_tensor.std(unbiased=False).item()),
+                "reward_min_agent": float(reward_tensor.min().item()),
+                "reward_max_agent": float(reward_tensor.max().item()),
+                "positive_reward_agents": int((reward_tensor > 0.0).sum().item()),
                 "episode_cumulative_reward": cumulative_reward,
                 "new_edges_count": int(info["new_edges_count"]),
                 "discovered_edges": int(info["discovered_edges_count"]),
+                "active_discovered_edges": int(info.get("active_discovered_edges_count", info["discovered_edges_count"])),
                 "true_edges": true_edges,
                 "discovery_rate": int(info["discovered_edges_count"]) / true_edges,
                 "empty_scan_ratio": float(info["empty_scan_ratio"]),
                 "collision_count": int(info["collision_count"]),
                 "lambda2": float(info["lambda2"]),
+                "knowledge_lambda2": float(info.get("knowledge_lambda2", info["lambda2"])),
                 "lcc_ratio": float(info["lcc_ratio"]),
                 "scan_actions": int(info["scan_actions"]),
                 "tx_actions": int(info["tx_actions"]),
@@ -1204,45 +1251,57 @@ def evaluate_policy(
     stochastic_eval: bool,
 ) -> list[dict[str, Any]]:
     rows = []
+    torch_rng_state = torch_module.random.get_rng_state()
+    numpy_rng_state = np.random.get_state()
+    was_training = bool(policy.model.training)
     policy.eval()
-    with torch_module.no_grad():
-        eval_modes = (False, True) if bool(args.eval_both) else (bool(stochastic_eval),)
-        eval_training_step = int(start_episode) * int(getattr(args, "slots", 1) or 1)
-        for mode_index, use_stochastic in enumerate(eval_modes):
-            for offset in range(int(args.eval_episodes)):
-                seed = seed_start + 10_000 * mode_index + offset
-                env = MarlNeighborDiscoveryEnv(
-                    cfg,
-                    seed=seed,
-                    protocol=env_protocol,
-                    reward_version=str(getattr(args, "reward_version", "legacy")),
-                    candidate_source=str(getattr(args, "candidate_source", "default")),
-                )
-                observations, _ = env.reset(seed=seed)
-                rewards = []
-                truncated = False
-                while not truncated:
-                    step = policy.act(observations, deterministic=not use_stochastic)
-                    observations, reward, _terminated, truncated, _info = env.step(step.actions)
-                    rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
-                rewards_tensor = torch_module.stack(rewards)
-                summary = env._sim.summarize(start_episode + offset).as_dict()
-                summary.update(env.access_gate_summary())
-                row = {
-                    "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
-                    "eval_after_episode": start_episode,
-                    "training_step": eval_training_step,
-                    "eval_episode": offset,
-                    "seed": seed,
-                    "algorithm": str(args.algorithm),
-                    "env_protocol": env_protocol,
-                    "episode_return_sum": float(rewards_tensor.sum().item()),
-                    "episode_return_mean_per_agent": float(rewards_tensor.sum(dim=0).mean().item()),
-                    "step_reward_mean": float(rewards_tensor.mean().item()),
-                }
-                row.update(summary)
-                rows.append(row)
-    policy.train()
+    try:
+        with torch_module.no_grad():
+            eval_modes = (False, True) if bool(args.eval_both) else (bool(stochastic_eval),)
+            eval_training_step = int(start_episode) * int(getattr(args, "slots", 1) or 1)
+            for mode_index, use_stochastic in enumerate(eval_modes):
+                for offset in range(int(args.eval_episodes)):
+                    seed = seed_start + 10_000 * mode_index + offset
+                    torch_module.manual_seed(seed)
+                    np.random.seed(seed)
+                    env = MarlNeighborDiscoveryEnv(
+                        cfg,
+                        seed=seed,
+                        protocol=env_protocol,
+                        reward_version=str(getattr(args, "reward_version", "legacy")),
+                        candidate_source=str(getattr(args, "candidate_source", "default")),
+                    )
+                    observations, _ = env.reset(seed=seed)
+                    rewards = []
+                    truncated = False
+                    while not truncated:
+                        step = policy.act(observations, deterministic=not use_stochastic)
+                        observations, reward, _terminated, truncated, _info = env.step(step.actions)
+                        rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
+                    rewards_tensor = torch_module.stack(rewards)
+                    summary = env._sim.summarize(start_episode + offset).as_dict()
+                    summary.update(env.access_gate_summary())
+                    row = {
+                        "phase": "eval_stochastic" if use_stochastic else "eval_deterministic",
+                        "eval_after_episode": start_episode,
+                        "training_step": eval_training_step,
+                        "eval_episode": offset,
+                        "seed": seed,
+                        "algorithm": str(args.algorithm),
+                        "env_protocol": env_protocol,
+                        "episode_return_sum": float(rewards_tensor.sum().item()),
+                        "episode_return_mean_per_agent": float(rewards_tensor.sum(dim=0).mean().item()),
+                        "step_reward_mean": float(rewards_tensor.mean().item()),
+                    }
+                    row.update(summary)
+                    rows.append(row)
+    finally:
+        torch_module.random.set_rng_state(torch_rng_state)
+        np.random.set_state(numpy_rng_state)
+        if was_training:
+            policy.train()
+        else:
+            policy.eval()
     return rows
 
 
@@ -1291,6 +1350,9 @@ def save_checkpoint(
     checkpoint = {
         "episode": int(episode),
         "algorithm": str(args.algorithm),
+        "training_contract_version": "twc_trainable_v1",
+        "feature_flags": resolved_feature_flags(args),
+        "env_protocol": resolved_env_protocol(args),
         "policy_state_dict": policy.model.state_dict(),
         "critic_state_dict": critic.state_dict() if critic is not None else None,
         "optimizer_state_dict": optimizer.state_dict(),
@@ -1450,6 +1512,12 @@ def build_manifest(
     episode_rows: list[dict[str, Any]],
     eval_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    try:
+        import torch
+
+        torch_version = str(torch.__version__)
+    except ImportError:  # pragma: no cover - training already requires torch
+        torch_version = "unavailable"
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "algorithm": str(args.algorithm),
@@ -1470,7 +1538,8 @@ def build_manifest(
         "sensing_range_m": float(cfg.sensing_range_m),
         "env_protocol": env_protocol,
         "candidate_source": str(getattr(args, "candidate_source", "default")),
-        "forbid_sense": bool(getattr(args, "forbid_sense", False)),
+        "allow_standalone_sense": bool(getattr(args, "allow_standalone_sense", False)),
+        "allow_idle": bool(getattr(args, "allow_idle", True)),
         "disabled_modes": list(disabled_modes_from_args(args)),
         "expert_bc_weight": float(getattr(args, "expert_bc_weight", 0.0)),
         "expert_protocol": str(getattr(args, "expert_protocol", "collision_aware_isac")),
@@ -1481,13 +1550,26 @@ def build_manifest(
         "beam_rank_aux_coef": float(getattr(args, "beam_rank_aux_coef", 0.0)),
         "beam_rank_temperature": float(getattr(args, "beam_rank_temperature", 4.0)),
         "feature_flags": feature_flags,
-        "contention_mode_prior": not bool(getattr(args, "disable_contention_mode_prior", False)),
+        "contention_mode_prior": contention_mode_prior_enabled(args),
+        "rule_residual_scale": float(getattr(args, "rule_residual_scale", 1.0)),
+        "single_rf_chain": int(cfg.rf_chains) == 1,
+        "isac_trigger": "tx_piggyback_only",
+        "handshake_collision_model": "unique_tx_and_unique_rx",
+        "table_exchange_information": "confirmed_neighbor_positions_and_noisy_anonymous_sensing_reports",
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,
         "centralized_critic_uses_training_state_only": bool(centralized),
         "logs_per_step_reward": True,
         "logs_episode_return": True,
         "torch_threads": int(args.torch_threads),
+        "command": [sys.executable, *sys.argv],
+        "git_commit": git_revision(),
+        "runtime": {
+            "python": platform.python_version(),
+            "numpy": str(np.__version__),
+            "torch": torch_version,
+            "platform": platform.platform(),
+        },
         "resource_limits": {
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
@@ -1505,6 +1587,20 @@ def build_manifest(
             "manifest.json",
         ],
     }
+
+
+def git_revision() -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unavailable"
+    return completed.stdout.strip()
 
 
 def main() -> None:

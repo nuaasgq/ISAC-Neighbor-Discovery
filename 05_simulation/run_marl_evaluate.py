@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
@@ -35,10 +36,10 @@ from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_SENSE  # noqa: E402
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a trained shared MARL policy under transfer settings.")
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--config", default="05_simulation/configs/paper_transfer_train_n10_b10_singlehop.yaml")
+    parser.add_argument("--config", default="05_simulation/configs/twc_trainable_n10.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_eval")
     parser.add_argument("--eval-episodes", type=int, default=10)
-    parser.add_argument("--slots", type=int, default=3000)
+    parser.add_argument("--slots", type=int, default=300)
     parser.add_argument("--node-count", type=int, default=None)
     parser.add_argument("--area-size-m", type=float, nargs=3, default=None, metavar=("X", "Y", "Z"))
     parser.add_argument("--azimuth-cells", type=int, default=None)
@@ -104,6 +105,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable standalone SENSE actions during evaluation. Defaults to the checkpoint setting when present.",
     )
+    parser.add_argument(
+        "--allow-idle",
+        action="store_true",
+        help="Allow IDLE even if the checkpoint used the TX/RX-only contract.",
+    )
     parser.add_argument("--eval-rule-residual-scale", type=float, default=None, help="Override rule residual scale at evaluation time.")
     parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default=None)
     parser.add_argument(
@@ -154,11 +160,19 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     cfg = override_config(load_config(args.config), args)
     checkpoint = load_checkpoint(args.checkpoint, torch)
     train_args = checkpoint.get("args", {})
-    checkpoint_feature_flags = checkpoint_feature_flags_from_args(train_args)
+    checkpoint_feature_flags = checkpoint_feature_flags_from_args(train_args, checkpoint.get("feature_flags"))
     feature_flags = apply_eval_feature_overrides(checkpoint_feature_flags, args)
     hidden_dim = int(train_args.get("hidden_dim", 128))
     train_network = str(train_args.get("network", "shared"))
-    forbid_sense = bool(args.forbid_sense or train_args.get("forbid_sense", False))
+    if "allow_standalone_sense" in train_args:
+        forbid_sense = bool(args.forbid_sense or not train_args.get("allow_standalone_sense", False))
+    else:
+        forbid_sense = bool(args.forbid_sense or train_args.get("forbid_sense", False))
+    forbid_idle = bool(
+        "allow_idle" in train_args
+        and not train_args.get("allow_idle", False)
+        and not args.allow_idle
+    )
     reward_version = str(args.reward_version or train_args.get("reward_version", "legacy"))
     ablation_seed = int(args.ablation_seed) if args.ablation_seed is not None else int(args.seed) + 9173
     if str(args.policy_ablation) in {"random_weights", "zero_weights"}:
@@ -169,7 +183,10 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         if args.eval_rule_residual_scale is not None
         else float(train_args.get("rule_residual_scale", 1.0))
     )
-    checkpoint_contention_mode_prior = not bool(train_args.get("disable_contention_mode_prior", False))
+    if "contention_mode_prior" in train_args:
+        checkpoint_contention_mode_prior = bool(train_args.get("contention_mode_prior", False))
+    else:
+        checkpoint_contention_mode_prior = not bool(train_args.get("disable_contention_mode_prior", False))
     use_contention_mode_prior = checkpoint_contention_mode_prior and not bool(args.disable_contention_mode_prior)
     policy = build_policy(
         train_network,
@@ -182,7 +199,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_rule_residual=feature_flags["rule_residual"],
         rule_residual_scale=rule_residual_scale,
         use_contention_mode_prior=use_contention_mode_prior,
-        disabled_modes=disabled_modes_from_flag(forbid_sense),
+        disabled_modes=disabled_modes_from_flags(forbid_sense, forbid_idle),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
     if checkpoint_loaded:
@@ -193,8 +210,17 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
 
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
-    env_protocol = str(args.env_protocol or train_args.get("env_protocol") or inferred_env_protocol(train_args))
+    env_protocol = str(
+        args.env_protocol
+        or checkpoint.get("env_protocol")
+        or train_args.get("resolved_env_protocol")
+        or train_args.get("env_protocol")
+        or inferred_env_protocol(train_args)
+    )
     candidate_source = str(args.candidate_source or train_args.get("candidate_source", "default"))
+    args._evaluation_fingerprint = evaluation_fingerprint(
+        args, cfg, feature_flags, env_protocol, candidate_source, reward_version
+    )
     resource_rows: list[dict[str, Any]] = []
     eval_rows = evaluate_policy(
         cfg,
@@ -232,7 +258,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "env_protocol": env_protocol,
         "candidate_source": candidate_source,
         "forbid_sense": forbid_sense,
-        "disabled_modes": list(disabled_modes_from_flag(forbid_sense)),
+        "forbid_idle": forbid_idle,
+        "disabled_modes": list(disabled_modes_from_flags(forbid_sense, forbid_idle)),
         "policy_ablation": str(args.policy_ablation),
         "ablation_label": str(args.ablation_label or args.policy_ablation),
         "ablation_seed": ablation_seed,
@@ -242,6 +269,8 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "rule_residual_scale": rule_residual_scale,
         "checkpoint_contention_mode_prior": checkpoint_contention_mode_prior,
         "contention_mode_prior": use_contention_mode_prior,
+        "training_contract_version": str(checkpoint.get("training_contract_version", "legacy")),
+        "evaluation_fingerprint": str(args._evaluation_fingerprint),
         "deterministic": bool(args.deterministic),
         "stochastic": bool(args.stochastic),
         "eval_both": bool(args.eval_both),
@@ -270,7 +299,14 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     return manifest
 
 
-def checkpoint_feature_flags_from_args(train_args: dict[str, Any]) -> dict[str, bool]:
+def checkpoint_feature_flags_from_args(
+    train_args: dict[str, Any], stored_flags: dict[str, Any] | None = None
+) -> dict[str, bool]:
+    if stored_flags is not None:
+        return {
+            name: bool(stored_flags.get(name, False))
+            for name in ("candidate_mask", "candidate_score", "topology_deficit", "rule_residual")
+        }
     feature_flags = {
         "candidate_mask": bool(train_args.get("candidate_mask", False)),
         "candidate_score": bool(train_args.get("candidate_score", False)),
@@ -334,6 +370,7 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "mode_executor": "policy",
         "candidate_source": None,
         "forbid_sense": False,
+        "allow_idle": False,
         "mode_temperature": 1.0,
         "beam_temperature": 1.0,
         "gate_temperature": 1.0,
@@ -408,11 +445,58 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
 def inferred_env_protocol(train_args: dict[str, Any]) -> str:
     if bool(train_args.get("disable_isac_features", False)):
         return "structured_marl_no_isac"
+    if "allow_standalone_sense" in train_args or "contention_mode_prior" in train_args:
+        return "improved_rl_isac_tables"
     return "isac_structured_marl"
 
 
+def disabled_modes_from_flags(forbid_sense: bool, forbid_idle: bool = False) -> tuple[str, ...]:
+    disabled = []
+    if bool(forbid_sense):
+        disabled.append(MODE_SENSE)
+    if bool(forbid_idle):
+        disabled.append(MODE_IDLE)
+    return tuple(disabled)
+
+
 def disabled_modes_from_flag(forbid_sense: bool) -> tuple[str, ...]:
-    return (MODE_SENSE,) if bool(forbid_sense) else ()
+    """Backward-compatible helper for historical analysis scripts."""
+
+    return disabled_modes_from_flags(forbid_sense, False)
+
+
+def evaluation_fingerprint(
+    args: argparse.Namespace,
+    cfg: SimulationConfig,
+    feature_flags: dict[str, bool],
+    env_protocol: str,
+    candidate_source: str,
+    reward_version: str,
+) -> str:
+    checkpoint_digest = hashlib.sha256(Path(args.checkpoint).read_bytes()).hexdigest()
+    payload = {
+        "checkpoint_sha256": checkpoint_digest,
+        "config": cfg.__dict__,
+        "feature_flags": feature_flags,
+        "env_protocol": env_protocol,
+        "candidate_source": candidate_source,
+        "reward_version": reward_version,
+        "policy_ablation": str(args.policy_ablation),
+        "ablation_seed": int(args.ablation_seed) if args.ablation_seed is not None else None,
+        "eval_episodes": int(args.eval_episodes),
+        "deterministic": bool(args.deterministic),
+        "stochastic": bool(args.stochastic),
+        "eval_both": bool(args.eval_both),
+        "mode_temperature": float(args.mode_temperature),
+        "beam_temperature": float(args.beam_temperature),
+        "gate_temperature": float(args.gate_temperature),
+        "beam_executor": str(args.beam_executor),
+        "mode_executor": str(args.mode_executor),
+        "allow_idle": bool(args.allow_idle),
+        "seed": int(args.seed),
+    }
+    encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def evaluate_policy(
@@ -426,7 +510,11 @@ def evaluate_policy(
     progress_dir: Path | None = None,
     resource_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    rows = existing_eval_rows(progress_dir) if progress_dir is not None and not bool(args.no_resume) else []
+    rows = (
+        existing_eval_rows(progress_dir, str(args._evaluation_fingerprint))
+        if progress_dir is not None and not bool(args.no_resume)
+        else []
+    )
     args._resume_existing_rows = len(rows)
     completed = {
         (str(row.get("phase", "")), int(row.get("eval_episode", -1)))
@@ -510,6 +598,7 @@ def evaluate_policy(
                     write_rows(progress_dir / "eval_episode_metrics.csv", rows)
                     progress = {
                         "updated_at": datetime.now().isoformat(timespec="seconds"),
+                        "evaluation_fingerprint": str(args._evaluation_fingerprint),
                         "completed_rows": len(rows),
                         "resumed_existing_rows": int(getattr(args, "_resume_existing_rows", 0)),
                         "eval_episodes": int(args.eval_episodes),
@@ -716,10 +805,27 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
-def existing_eval_rows(progress_dir: Path) -> list[dict[str, Any]]:
+def existing_eval_rows(progress_dir: Path, expected_fingerprint: str) -> list[dict[str, Any]]:
     data_path = progress_dir / "eval_episode_metrics.csv"
     if not data_path.exists() or data_path.stat().st_size == 0:
         return []
+    fingerprint = None
+    for metadata_name in ("progress.json", "manifest.json"):
+        metadata_path = progress_dir / metadata_name
+        if not metadata_path.exists():
+            continue
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        fingerprint = metadata.get("evaluation_fingerprint")
+        if fingerprint:
+            break
+    if fingerprint != expected_fingerprint:
+        raise RuntimeError(
+            "Existing evaluation rows do not match this checkpoint/config. "
+            "Use a new output directory or pass --no-resume."
+        )
     try:
         with data_path.open("r", newline="", encoding="utf-8-sig") as handle:
             return list(csv.DictReader(handle))
