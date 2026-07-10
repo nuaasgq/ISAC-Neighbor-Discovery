@@ -158,6 +158,10 @@ class ContentionGraphActorCritic:
             tensors["candidate_stats"][..., 1:3] = 0.0
             tensors["contention_state"] = tensors["contention_state"].clone()
             tensors["contention_state"][..., 7:9] = 0.0
+            if "rendezvous_beam_role" in tensors:
+                tensors["beam_features"][..., 5] = tensors["beam_collision_norm"]
+                tensors["local_summary"] = tensors["local_summary"].clone()
+                tensors["local_summary"][..., 3] = 0.0
         if not self.use_topology_deficit and "topology_deficit" in tensors:
             tensors["topology_deficit"] = torch.zeros_like(tensors["topology_deficit"])
             tensors["contention_state"] = tensors["contention_state"].clone()
@@ -571,6 +575,11 @@ def observation_to_contention_tensors(observation: dict, device, torch_module, n
     candidate_score = np.asarray(observation.get("candidate_score", np.zeros(observed_beams)), dtype=np.float32)
     beam_collision = np.log1p(np.asarray(observation.get("beam_collision", np.zeros(observed_beams)), dtype=np.float32))
     collision_norm = _normalize_vector(beam_collision)
+    rendezvous_role = np.asarray(
+        observation.get("rendezvous_beam_role", np.zeros(observed_beams)),
+        dtype=np.float32,
+    )
+    collision_or_role = np.where(np.abs(rendezvous_role) > 0.0, rendezvous_role, collision_norm)
     beam_belief = np.asarray(observation["beam_belief"], dtype=np.float32)
     uncertainty = beam_belief * (1.0 - beam_belief)
     beam_features = np.stack(
@@ -580,7 +589,7 @@ def observation_to_contention_tensors(observation: dict, device, torch_module, n
             np.log1p(np.asarray(observation["beam_success"], dtype=np.float32)),
             np.log1p(np.asarray(observation["beam_fail"], dtype=np.float32)),
             candidate_score,
-            collision_norm,
+            collision_or_role,
             uncertainty.astype(np.float32, copy=False),
             np.asarray(observation.get("candidate_mask", np.zeros(observed_beams)), dtype=np.float32),
         ],
@@ -615,6 +624,11 @@ def observation_to_contention_tensors(observation: dict, device, torch_module, n
         "beam_features": torch_module.as_tensor(beam_features, dtype=torch_module.float32, device=device),
         "candidate_score": torch_module.as_tensor(candidate_score, dtype=torch_module.float32, device=device),
         "beam_collision_norm": torch_module.as_tensor(collision_norm, dtype=torch_module.float32, device=device),
+        "rendezvous_beam_role": torch_module.as_tensor(
+            rendezvous_role,
+            dtype=torch_module.float32,
+            device=device,
+        ),
     }
     if "candidate_mask" in observation:
         tensors["candidate_mask"] = torch_module.as_tensor(candidate_mask, dtype=torch_module.float32, device=device)

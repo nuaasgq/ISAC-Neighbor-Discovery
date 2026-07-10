@@ -26,6 +26,8 @@ WANG2025_PROTOCOLS = (
     "wang2025_isac_tables",
 )
 
+RENDEZVOUS_DIAGNOSTIC_PROTOCOLS = ("position_ordered_isac_rendezvous",)
+
 ISAC_PROTOCOLS = (
     "improved_rl_isac",
     "improved_rl_isac_tables",
@@ -40,11 +42,16 @@ ISAC_PROTOCOLS = (
     "ablation_isac_no_candidate_set",
     "ablation_isac_no_beam_lock",
     "ablation_isac_no_topology",
+    *RENDEZVOUS_DIAGNOSTIC_PROTOCOLS,
 )
 
 WANG2025_COMM_TABLE_PROTOCOLS = ("wang2025_comm_tables", "wang2025_isac_tables")
 WANG2025_SENSING_TABLE_PROTOCOLS = ("wang2025_isac_tables",)
-OURS_TABLE_PROTOCOLS = ("improved_rl_isac_tables", "trust_gated_isac_tables")
+OURS_TABLE_PROTOCOLS = (
+    "improved_rl_isac_tables",
+    "trust_gated_isac_tables",
+    *RENDEZVOUS_DIAGNOSTIC_PROTOCOLS,
+)
 TRUST_GATED_TABLE_PROTOCOLS = ("trust_gated_isac_tables",)
 COMM_TABLE_PROTOCOLS = WANG2025_COMM_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
 SENSING_TABLE_PROTOCOLS = WANG2025_SENSING_TABLE_PROTOCOLS + OURS_TABLE_PROTOCOLS
@@ -101,6 +108,8 @@ class EpisodeResult:
     sense_actions: int
     idle_actions: int
     piggyback_sense_actions: int
+    rendezvous_guided_actions: int
+    rendezvous_fallback_actions: int
     sensing_observations: int
     sensing_target_observations: int
     sensing_detection_rate: float
@@ -190,6 +199,8 @@ class NeighborDiscoverySimulator:
         self.sense_actions = 0
         self.idle_actions = 0
         self.piggyback_sense_actions = 0
+        self.rendezvous_guided_actions = 0
+        self.rendezvous_fallback_actions = 0
         self.sensing_observations = 0
         self.sensing_target_observations = 0
         self.sensing_detection_count = 0
@@ -254,6 +265,8 @@ class NeighborDiscoverySimulator:
         self.sense_actions = 0
         self.idle_actions = 0
         self.piggyback_sense_actions = 0
+        self.rendezvous_guided_actions = 0
+        self.rendezvous_fallback_actions = 0
         self.sensing_observations = 0
         self.sensing_target_observations = 0
         self.sensing_detection_count = 0
@@ -353,6 +366,8 @@ class NeighborDiscoverySimulator:
             "sense_actions": self.sense_actions,
             "idle_actions": self.idle_actions,
             "piggyback_sense_actions": self.piggyback_sense_actions,
+            "rendezvous_guided_actions": self.rendezvous_guided_actions,
+            "rendezvous_fallback_actions": self.rendezvous_fallback_actions,
             "sensing_observations": self.sensing_observations,
             "sensing_target_observations": self.sensing_target_observations,
             "sensing_detection_rate": self.sensing_detection_count / max(1, self.sensing_target_observations),
@@ -448,6 +463,8 @@ class NeighborDiscoverySimulator:
         )
 
     def select_actions(self, slot: int, true_comm_edges: set[tuple[int, int]]) -> list[Action]:
+        if self.protocol in RENDEZVOUS_DIAGNOSTIC_PROTOCOLS:
+            return [self.position_ordered_rendezvous_action(node, slot) for node in range(self.cfg.n_nodes)]
         actions: list[Action] = []
         if self.protocol == "oracle":
             oracle_occupied = self.occupied_beams(self.cfg.communication_range_m)
@@ -458,6 +475,102 @@ class NeighborDiscoverySimulator:
             beam = self.select_beam(node, slot, mode, oracle_occupied[node], true_comm_edges)
             actions.append(Action(mode, beam))
         return actions
+
+    def position_ordered_rendezvous_action(self, node: int, slot: int) -> Action:
+        """Diagnostic local rendezvous using only anonymous sensing reports.
+
+        The public projection gives two endpoints complementary roles when both
+        hold reciprocal position estimates. It is a mechanism feasibility
+        probe, not the final learned policy.
+        """
+
+        bootstrap_slots = min(
+            max(0, int(self.cfg.n_beams)),
+            max(0, int(round(2.0 * int(self.cfg.slots_per_episode) / 3.0))),
+        )
+        if int(slot) < bootstrap_slots:
+            self.rendezvous_fallback_actions += 1
+            stride = self.near_coprime_stride(self.cfg.n_beams)
+            start = (node * max(1, self.cfg.n_beams // max(1, self.cfg.n_nodes))) % self.cfg.n_beams
+            beam = int((start + int(slot) * stride) % self.cfg.n_beams)
+            return Action(MODE_TX, beam)
+
+        candidate = self.local_rendezvous_candidate(node, slot)
+        if candidate is None:
+            self.rendezvous_fallback_actions += 1
+            mode = MODE_TX if self.rng.random() < float(np.clip(self.cfg.p_tx, 0.05, 0.95)) else MODE_RX
+            beam = self.memory_guided_beam(node, use_isac=True, topology=True)
+            return Action(mode, beam)
+
+        beam, estimated_position = candidate
+        self.rendezvous_guided_actions += 1
+        projection_axis = np.asarray([1.0, np.sqrt(2.0), np.sqrt(3.0)], dtype=float)
+        own_projection = float(np.dot(self.states[node].position, projection_axis))
+        target_projection = float(np.dot(estimated_position, projection_axis))
+        mode = MODE_TX if own_projection < target_projection else MODE_RX
+        return Action(mode, int(beam))
+
+    def local_rendezvous_candidate(self, node: int, slot: int) -> tuple[int, np.ndarray] | None:
+        report_age = int(slot) - self.sensing_report_slot[node]
+        valid_position = np.all(np.isfinite(self.sensing_report_position[node]), axis=1)
+        diagnostic_ttl = max(300, int(self.cfg.sensing_report_ttl_slots))
+        valid = (
+            valid_position
+            & (report_age >= 0)
+            & (report_age <= diagnostic_ttl)
+            & (self.sensing_report_confidence[node] > 0.0)
+        )
+        candidates = np.flatnonzero(valid)
+        if candidates.size == 0:
+            return None
+        rendezvous_period = 16
+        phases = np.asarray(
+            [
+                self.position_pair_rendezvous_phase(
+                    self.states[node].position,
+                    self.sensing_report_position[node, int(beam)],
+                    rendezvous_period,
+                )
+                for beam in candidates
+            ],
+            dtype=int,
+        )
+        scheduled = candidates[phases == int(slot) % rendezvous_period]
+        if scheduled.size == 0:
+            return None
+        candidates = scheduled
+        score = (
+            self.belief[node, candidates]
+            + 0.25 * self.sensing_report_confidence[node, candidates]
+            - 0.002 * report_age[candidates]
+            - 0.15 * np.log1p(self.success_count[node, candidates])
+        )
+        source_beam = int(candidates[int(np.argmax(score))])
+        estimated_position = self.sensing_report_position[node, source_beam].copy()
+        current_beam = beam_for_target(
+            self.states[node],
+            estimated_position,
+            self.cfg.azimuth_cells,
+            self.cfg.elevation_cells,
+        )
+        return int(current_beam), estimated_position
+
+    @staticmethod
+    def position_pair_rendezvous_phase(
+        own_position: np.ndarray,
+        estimated_position: np.ndarray,
+        period: int,
+    ) -> int:
+        """Map an unordered, coarsely quantized position pair to a common phase."""
+
+        quantization_m = 1000.0
+        first = tuple(np.rint(np.asarray(own_position, dtype=float) / quantization_m).astype(int).tolist())
+        second = tuple(np.rint(np.asarray(estimated_position, dtype=float) / quantization_m).astype(int).tolist())
+        lower, upper = sorted((first, second))
+        values = (*lower, *upper)
+        primes = (31, 37, 41, 43, 47, 53)
+        fingerprint = sum(prime * (value + 17) for prime, value in zip(primes, values, strict=True))
+        return int(fingerprint % max(1, int(period)))
 
     def select_mode(self, node: int, slot: int) -> str:
         if self.protocol == "deterministic_scan":
@@ -1187,7 +1300,10 @@ class NeighborDiscoverySimulator:
             estimate += position_rng.normal(0.0, error_std, size=3)
         estimate = np.clip(estimate, np.zeros(3), np.asarray(self.cfg.area_size_m, dtype=float))
         self.sensing_report_position[node, sensed_beam] = estimate
-        self.sensing_report_confidence[node, sensed_beam] = float(self.belief[node, sensed_beam])
+        self.sensing_report_confidence[node, sensed_beam] = max(
+            0.55,
+            float(self.belief[node, sensed_beam]),
+        )
         self.sensing_report_slot[node, sensed_beam] = int(slot)
 
     def max_sensing_snr_db(self, node: int, sensed_beam: int, radius: float, piggyback: bool) -> float:
@@ -1627,6 +1743,8 @@ class NeighborDiscoverySimulator:
             sense_actions=self.sense_actions,
             idle_actions=self.idle_actions,
             piggyback_sense_actions=self.piggyback_sense_actions,
+            rendezvous_guided_actions=self.rendezvous_guided_actions,
+            rendezvous_fallback_actions=self.rendezvous_fallback_actions,
             sensing_observations=self.sensing_observations,
             sensing_target_observations=self.sensing_target_observations,
             sensing_detection_rate=sensing_detection_rate,

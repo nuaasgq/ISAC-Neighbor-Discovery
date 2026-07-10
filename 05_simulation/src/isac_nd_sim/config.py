@@ -86,6 +86,7 @@ class SimulationConfig:
     communication_antenna_gain_mode: str = "legacy_sector"
     communication_fixed_main_lobe_gain_db: float = 21.0
     shared_waveform_power_enabled: bool = False
+    rendezvous_observation_enabled: bool = False
 
     @property
     def n_beams(self) -> int:
@@ -229,6 +230,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         communication_antenna_gain_mode=str(comm_phy.get("antenna_gain_mode", "legacy_sector")),
         communication_fixed_main_lobe_gain_db=float(comm_phy.get("fixed_main_lobe_gain_db", 21.0)),
         shared_waveform_power_enabled=shared_power_enabled,
+        rendezvous_observation_enabled=bool(protocol.get("rendezvous_observation_enabled", False)),
     )
 
 

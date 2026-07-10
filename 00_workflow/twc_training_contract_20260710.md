@@ -56,7 +56,7 @@ This is a campaign command, not a claim that 2000 episodes is optimal. Convergen
 
 ## Verification Completed
 
-- Full test suite: 94 tests passed after the PHY/MAC consistency update.
+- Full test suite: 96 tests passed after the PHY/MAC and rendezvous-observation updates.
 - Three-episode/20-slot smoke: checkpoints, losses, per-step logs, held-out evaluation, runtime metadata, and resource logs were generated.
 - Policy update check: 28 of 30 policy tensors changed between episode 1 and the final checkpoint; parameter delta L2 was approximately 0.0302.
 - One-episode/300-slot TX/RX smoke: 3000 active actions, zero standalone sensing actions, zero idle actions, finite PPO/value/beam-ranking losses, and peak memory below configured limits.

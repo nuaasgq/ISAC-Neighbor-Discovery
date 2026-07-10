@@ -10,6 +10,7 @@ import pytest
 
 from isac_nd_sim.config import load_config, with_communication_tx_power
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
+from isac_nd_sim.mobility import NodeState
 from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic
 
 
@@ -62,6 +63,38 @@ def test_canonical_config_uses_b10_shared_power_and_sinr_phy() -> None:
     assert low_power.tx_power_w == low_power.isac_tx_power_w == low_power.communication_tx_power_w == 0.25
 
 
+def test_marl_observation_reprojects_local_rendezvous_report() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_canonical_n10_b10.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=4,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    env.reset(seed=902)
+    env._sim.states = [
+        NodeState(np.asarray([100.0, 200.0, 300.0]), np.zeros(3), yaw=np.pi / 2.0),
+        NodeState(np.asarray([900.0, 800.0, 700.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    source_beam = 0
+    estimate = env._sim.states[1].position.copy()
+    env._sim.sensing_report_position[0, source_beam] = estimate
+    env._sim.sensing_report_confidence[0, source_beam] = 1.0
+    env._sim.sensing_report_slot[0, source_beam] = 200
+    phase = env._sim.position_pair_rendezvous_phase(env._sim.states[0].position, estimate, 16)
+    env._slot = phase + 208
+
+    observation = env._observation_for(0)
+    current_beam = env._sim.beam_from_to(0, 1)
+
+    assert observation["rendezvous_beam_score"][current_beam] > 0.0
+    assert observation["rendezvous_beam_role"][current_beam] == 1.0
+    assert observation["candidate_score"][current_beam] > 0.0
+    assert observation["rendezvous_role_hint"].tolist() == [1.0]
+    assert observation["local_summary"][3] == 1.0
+
+
 def test_disabled_structured_features_do_not_leak_through_aggregate_paths() -> None:
     torch = pytest.importorskip("torch")
     cfg = replace(load_config("05_simulation/configs/twc_trainable_n10.yaml"), n_nodes=1, azimuth_cells=4, elevation_cells=2)
@@ -71,6 +104,8 @@ def test_disabled_structured_features_do_not_leak_through_aggregate_paths() -> N
     changed = {key: value.copy() if hasattr(value, "copy") else value for key, value in base.items()}
     changed["candidate_mask"][:] = 1.0 - changed["candidate_mask"]
     changed["candidate_score"][:] = np.linspace(0.0, 1.0, cfg.n_beams, dtype=np.float32)
+    changed["rendezvous_beam_role"][:] = 1.0
+    changed["local_summary"][3] = 1.0
     changed["topology_deficit"][:] = 1.0
     changed["rule_mode_logits"][:] = np.asarray([9.0, -9.0, 7.0, -7.0], dtype=np.float32)
     changed["contention_state"][1] = 1.0

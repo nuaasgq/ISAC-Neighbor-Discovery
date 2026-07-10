@@ -98,6 +98,7 @@ protocol:
   eta_staleness: 0.2
   confidence_decay: 0.98
   piggyback_sensing_period_multiplier: 1.0
+  rendezvous_observation_enabled: true
 
 energy:
   # tx_power_w is overridden by phy_shared.tx_power_w when shared power is enabled.

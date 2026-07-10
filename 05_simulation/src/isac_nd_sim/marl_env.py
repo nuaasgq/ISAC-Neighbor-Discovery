@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from .beam import beam_for_target
 from .config import SimulationConfig
 from .mobility import step_states
 from .simulator import (
@@ -200,7 +201,8 @@ class MarlNeighborDiscoveryEnv:
         last_action = self._last_actions[node]
         mode_one_hot = np.zeros(len(MODE_NAMES), dtype=np.float32)
         mode_one_hot[MODE_TO_INDEX[last_action.mode]] = 1.0
-        candidate = self._candidate_features_for(node)
+        rendezvous = self._rendezvous_features_for(node)
+        candidate = self._candidate_features_for(node, rendezvous)
         contention_state = self._contention_state_for(node, degree, topology_deficit, candidate)
 
         self_state = np.asarray(
@@ -218,7 +220,9 @@ class MarlNeighborDiscoveryEnv:
                 degree / max(1, self.n_agents - 1),
                 self._slot / max(1, self.cfg.slots_per_episode),
                 self._sim.node_empty_scans[node] / max(1, self._sim.node_scan_actions[node]),
-                self._sim.node_collision_count[node] / max(1, self._slot + 1),
+                rendezvous["role_hint"]
+                if self.cfg.rendezvous_observation_enabled
+                else self._sim.node_collision_count[node] / max(1, self._slot + 1),
             ],
             dtype=np.float32,
         )
@@ -232,6 +236,9 @@ class MarlNeighborDiscoveryEnv:
             "beam_collision": self._sim.collision_fail_count[node].astype(np.float32).copy(),
             "candidate_mask": candidate["mask"],
             "candidate_score": candidate["score"],
+            "rendezvous_beam_score": rendezvous["beam_score"],
+            "rendezvous_beam_role": rendezvous["beam_role"],
+            "rendezvous_role_hint": np.asarray([rendezvous["role_hint"]], dtype=np.float32),
             "topology_deficit": np.asarray([topology_deficit], dtype=np.float32),
             "contention_state": contention_state,
             "rule_mode_logits": self._rule_mode_logits_for(node, topology_deficit, int(np.count_nonzero(candidate["mask"]))),
@@ -293,7 +300,11 @@ class MarlNeighborDiscoveryEnv:
             dtype=np.float32,
         )
 
-    def _candidate_features_for(self, node: int) -> dict[str, np.ndarray]:
+    def _candidate_features_for(
+        self,
+        node: int,
+        rendezvous: dict[str, np.ndarray | float] | None = None,
+    ) -> dict[str, np.ndarray]:
         """Local beam proposal features for candidate-constrained policies.
 
         These features are derived only from local belief/memory variables
@@ -326,10 +337,57 @@ class MarlNeighborDiscoveryEnv:
         last_beam = int(self._last_actions[node].beam)
         if 0 <= last_beam < self.n_beams:
             mask[last_beam] = 1.0
+        if self.cfg.rendezvous_observation_enabled and rendezvous is not None:
+            rendezvous_score = np.asarray(rendezvous["beam_score"], dtype=np.float32)
+            score = np.maximum(score, rendezvous_score)
+            mask[rendezvous_score > 0.0] = 1.0
         return {
             "mask": mask.astype(np.float32, copy=False),
             "score": score.astype(np.float32, copy=False),
         }
+
+    def _rendezvous_features_for(self, node: int) -> dict[str, np.ndarray | float]:
+        beam_score = np.zeros(self.n_beams, dtype=np.float32)
+        beam_role = np.zeros(self.n_beams, dtype=np.float32)
+        if not self.cfg.rendezvous_observation_enabled:
+            return {"beam_score": beam_score, "beam_role": beam_role, "role_hint": 0.0}
+
+        report_age = int(self._slot) - self._sim.sensing_report_slot[node]
+        ttl = max(1, int(self.cfg.sensing_report_ttl_slots))
+        valid_position = np.all(np.isfinite(self._sim.sensing_report_position[node]), axis=1)
+        valid = (
+            valid_position
+            & (report_age >= 0)
+            & (report_age <= ttl)
+            & (self._sim.sensing_report_confidence[node] > 0.0)
+        )
+        role_hint = 0.0
+        best_score = -1.0
+        axis = np.asarray([1.0, np.sqrt(2.0), np.sqrt(3.0)], dtype=float)
+        own_position = self._sim.states[node].position
+        for source_beam in np.flatnonzero(valid):
+            estimated_position = self._sim.sensing_report_position[node, int(source_beam)]
+            phase = self._sim.position_pair_rendezvous_phase(own_position, estimated_position, 16)
+            if int(self._slot) % 16 != phase:
+                continue
+            current_beam = beam_for_target(
+                self._sim.states[node],
+                estimated_position,
+                self.cfg.azimuth_cells,
+                self.cfg.elevation_cells,
+            )
+            freshness = 1.0 - float(report_age[int(source_beam)]) / float(ttl)
+            score = float(self._sim.sensing_report_confidence[node, int(source_beam)]) * max(0.0, freshness)
+            beam_score[int(current_beam)] = max(beam_score[int(current_beam)], score)
+            target_projection = float(np.dot(estimated_position, axis))
+            own_projection = float(np.dot(own_position, axis))
+            candidate_role = 1.0 if own_projection < target_projection else -1.0
+            if score >= beam_score[int(current_beam)]:
+                beam_role[int(current_beam)] = candidate_role
+            if score > best_score:
+                role_hint = candidate_role
+                best_score = score
+        return {"beam_score": beam_score, "beam_role": beam_role, "role_hint": role_hint}
 
     def _wang_table_candidate_features_for(self, node: int) -> dict[str, np.ndarray]:
         """Expose Wang sensing-table candidates to the MARL actor.
@@ -692,6 +750,8 @@ class MarlNeighborDiscoveryEnv:
             "sense_actions": self._sim.sense_actions,
             "idle_actions": self._sim.idle_actions,
             "piggyback_sense_actions": self._sim.piggyback_sense_actions,
+            "rendezvous_guided_actions": self._sim.rendezvous_guided_actions,
+            "rendezvous_fallback_actions": self._sim.rendezvous_fallback_actions,
             "sensing_observations": self._sim.sensing_observations,
             "sensing_target_observations": self._sim.sensing_target_observations,
             "sensing_detection_rate": self._sim.sensing_detection_count / max(1, self._sim.sensing_target_observations),

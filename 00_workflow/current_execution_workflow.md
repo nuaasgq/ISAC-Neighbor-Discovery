@@ -46,7 +46,11 @@ This addendum records the active workflow for the MARL+ISAC neighbor-discovery p
 4. Keep standalone SENSE disabled; ISAC remains TX-coupled piggyback sensing.
 5. Establish nonzero reciprocal rendezvous opportunities at N=10/B=10 before
    starting MARL; zero-discovery environments are a failed learnability gate.
-6. Train small-scale MARL at N=10 only after the random, Wang, and rule-ISAC
+6. The position-ordered diagnostic has passed the nonzero gate only after
+   reprojecting global ISAC position estimates into the current body-frame beam.
+   Expose reprojected beam score, rendezvous phase, and role hint to MARL; do not
+   hard-code the diagnostic bootstrap into the final actor.
+7. Train small-scale MARL at N=10 only after the random, Wang, and rule-ISAC
    baselines are reproducible under the canonical SINR-PHY configuration.
-7. Keep every phase-level artifact committed and pushed; if push fails, keep
+8. Keep every phase-level artifact committed and pushed; if push fails, keep
    the local commit before moving to the next major phase.

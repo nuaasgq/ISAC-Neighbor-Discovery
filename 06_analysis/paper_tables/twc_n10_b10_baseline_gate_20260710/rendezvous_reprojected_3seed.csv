@@ -1,0 +1,4 @@
+scenario_seed,aligned_handshake_opportunities,forward_decodes,handshake_successes,discovered_edges,discovery_rate,rendezvous_guided_actions,sensing_target_observations,sensing_detection_rate
+20260710,2,2,2,2,0.0444444444,127,97,0.8556701031
+20260711,4,4,4,4,0.0888888889,136,104,0.7403846154
+20260712,4,4,4,4,0.0888888889,125,111,0.7747747748

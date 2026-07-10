@@ -45,8 +45,23 @@ The next mechanism must convert a one-sided positive ISAC observation into a per
 
 Before training, a diagnostic policy must demonstrate nonzero `aligned_handshake_opportunities` in the same three seeds. Then random, Wang, rule ISAC, and the diagnostic policy must be rerun with paired seeds and the exact same PHY/MAC contract.
 
+## Rendezvous Follow-Up
+
+The first position-ordered diagnostic still produced zero alignments. It stored the beam index observed in the past, but UAV attitude changes made that body-frame index stale. The corrected diagnostic stores the anonymous global position estimate and reprojects it through the UAV's current position and attitude every slot.
+
+For feasibility only, it uses 200 TX sensing slots followed by 100 rendezvous slots, with a 300-slot diagnostic report lifetime. This is an upper-bound mechanism probe and is not the final MARL policy.
+
+| Seed | Aligned opportunities | Forward decodes | Successful handshakes | Discovered edges |
+|---:|---:|---:|---:|---:|
+| 20260710 | 2 | 2 | 2 | 2 |
+| 20260711 | 4 | 4 | 4 | 4 |
+| 20260712 | 4 | 4 | 4 | 4 |
+
+**Updated gate status: MECHANISM FEASIBILITY PASSED; MARL LEARNABILITY NOT YET PASSED.** The result proves that 300 slots can support discovery when ISAC position estimates are converted into current beams and coordinated rendezvous states. It does not justify copying the 200-slot bootstrap rule into the learned method.
+
 ## Raw Artifacts
 
 - Completed random/Wang: `05_simulation/results_raw/twc_n10_b10_baseline_gate_20260710/`
 - Three-seed rule probe: `05_simulation/results_raw/twc_n10_b10_rule_probe3_20260710/`
 - B=10 PHY calibration: `05_simulation/results_raw/communication_phy_calibration_v2_b10_20260710/`
+- Reprojected rendezvous diagnostic: `05_simulation/results_raw/twc_n10_b10_position_rendezvous_reproject_probe3_20260710/`

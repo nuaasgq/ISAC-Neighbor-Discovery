@@ -290,3 +290,46 @@ def test_bidirectional_handshake_rejects_one_tx_serving_two_receivers() -> None:
     assert discovered == []
     assert simulator.collision_count == 2
     assert simulator.node_collision_count.tolist() == [2, 1, 1]
+
+
+def test_position_ordered_rendezvous_uses_local_reports_for_complementary_roles() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_canonical_n10_b10.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=4,
+        sensing_position_error_std_m=0.0,
+    )
+    simulator = NeighborDiscoverySimulator(cfg, "position_ordered_isac_rendezvous", seed=901)
+    simulator.reset()
+    simulator.states = [
+        NodeState(np.asarray([100.0, 200.0, 300.0]), np.zeros(3)),
+        NodeState(np.asarray([900.0, 800.0, 700.0]), np.zeros(3)),
+    ]
+    simulator.invalidate_geometry_cache()
+    beam_01 = simulator.beam_from_to(0, 1)
+    beam_10 = simulator.beam_from_to(1, 0)
+    simulator.sensing_report_position[0, beam_01] = simulator.states[1].position
+    simulator.sensing_report_position[1, beam_10] = simulator.states[0].position
+    simulator.sensing_report_confidence[0, beam_01] = 0.9
+    simulator.sensing_report_confidence[1, beam_10] = 0.9
+    simulator.sensing_report_slot[0, beam_01] = 200
+    simulator.sensing_report_slot[1, beam_10] = 200
+    simulator.belief[0, beam_01] = 1.0
+    simulator.belief[1, beam_10] = 1.0
+
+    phase = simulator.position_pair_rendezvous_phase(
+        simulator.states[0].position,
+        simulator.states[1].position,
+        16,
+    )
+    actions = simulator.select_actions(slot=phase + 208, true_comm_edges=set())
+
+    assert actions[0].beam == beam_01
+    assert actions[1].beam == beam_10
+    assert {actions[0].mode, actions[1].mode} == {MODE_TX, MODE_RX}
+    assert simulator.rendezvous_guided_actions == 2
+
+    simulator.states[0].yaw = np.pi / 2.0
+    reprojected = simulator.position_ordered_rendezvous_action(0, phase + 224)
+    assert reprojected.beam == simulator.beam_from_to(0, 1)

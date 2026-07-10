@@ -242,6 +242,7 @@ def method_label(protocol: str) -> str:
         "budgeted_collision_aware_isac": "Budgeted collision-aware ISAC",
         "wang2025_isac_tables": "Wang2025 ISAC with table exchange",
         "improved_rl_isac_tables": "Rule ISAC with table exchange",
+        "position_ordered_isac_rendezvous": "Position-ordered ISAC rendezvous diagnostic",
     }
     return labels.get(protocol, protocol.replace("_", " "))
 
