@@ -89,6 +89,48 @@ def test_clean_ctde_profile_disables_action_teacher_features() -> None:
     assert module.contention_mode_prior_enabled(args) is False
 
 
+def test_residual_measurement_actor_contract_is_versioned_and_checkpoint_compatible() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    legacy = ContentionGraphActorCritic(8, hidden_dim=16, use_residual_measurement_features=False)
+    residual = ContentionGraphActorCritic(8, hidden_dim=16, use_residual_measurement_features=True)
+
+    assert legacy.model.beam_encoder[0].in_features == 8
+    assert residual.model.beam_encoder[0].in_features == 13
+    assert module.training_contract_version(Namespace(clean_ctde=True, residual_measurement_features=False)) == (
+        "clean_local_ctde_v1"
+    )
+    assert module.training_contract_version(Namespace(clean_ctde=True, residual_measurement_features=True)) == (
+        "clean_local_ctde_residual_v2"
+    )
+    assert torch.isfinite(next(residual.parameters())).all()
+
+
+def test_stochastic_support_constraints_preserve_both_roles_and_local_beam_exploration() -> None:
+    torch = pytest.importorskip("torch")
+    policy = ContentionGraphActorCritic(
+        4,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        role_probability_floor=0.30,
+        beam_uniform_mixture=0.60,
+        disabled_modes=("sense", "idle"),
+    )
+    mode_logits = torch.tensor([-1.0e9, 10.0, -10.0, -1.0e9])
+    beam_logits = torch.tensor([10.0, -10.0, -1.0e9, -1.0e9])
+    tensors = {"candidate_mask": torch.tensor([1.0, 1.0, 0.0, 0.0])}
+
+    bounded_mode, mixed_beam = policy._regularize_stochastic_support(mode_logits, beam_logits, tensors)
+    mode_probs = torch.softmax(bounded_mode, dim=-1)
+    beam_probs = torch.softmax(mixed_beam, dim=-1)
+
+    assert mode_probs[1].item() == pytest.approx(0.70, abs=1e-5)
+    assert mode_probs[2].item() == pytest.approx(0.30, abs=1e-5)
+    assert beam_probs[0].item() == pytest.approx(0.70, abs=1e-5)
+    assert beam_probs[1].item() == pytest.approx(0.30, abs=1e-5)
+    assert beam_probs[2:].sum().item() < 1e-8
+
+
 def test_clean_ctde_rejects_rule_guided_action_targets() -> None:
     module = load_training_module()
     args = Namespace(
@@ -148,6 +190,34 @@ def test_exchanged_neighbor_table_updates_local_actor_candidate_features() -> No
     assert env._sim.last_positive_slot[0, target_beam] == 3
 
 
+def test_actor_observation_exposes_only_local_anonymous_residual_measurement_state() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=1,
+        sensing_measurement_mode="ideal_count",
+        sensing_position_error_std_m=0.0,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260715)
+    env._sim.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([200.0, 0.0, 0.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    target_beam = env._sim.beam_from_to(0, 1)
+
+    env._sim.update_sensing([Action("tx", target_beam), Action("idle", 0), Action("idle", 0)], slot=0)
+    observation = env._observation_for(0)
+
+    assert observation["beam_target_count"][target_beam] == pytest.approx(2.0 / cfg.target_degree)
+    assert observation["beam_residual_target_count"][target_beam] == pytest.approx(2.0 / cfg.target_degree)
+    assert observation["beam_interaction_count"][target_beam] == 0.0
+    assert "target_id" not in observation
+
+
 def test_local_candidate_mask_keeps_unknown_cells_and_reopens_stale_empty_cells() -> None:
     cfg = replace(
         load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
@@ -174,6 +244,45 @@ def test_local_candidate_mask_keeps_unknown_cells_and_reopens_stale_empty_cells(
     reopened = env._observation_for(0)
 
     assert reopened["candidate_mask"][empty_beam] == 1.0
+
+
+def test_residual_candidate_uses_motion_aged_empty_and_exhausted_local_state() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(
+        cfg,
+        protocol="improved_rl_isac_tables",
+        candidate_source="residual_table",
+    )
+    env.reset(seed=20260716)
+    empty_beam = 2
+    occupied_beam = 5
+    env._sim.sensing_target_count_estimate[0, empty_beam] = 0.0
+    env._sim.sensing_measurement_confidence[0, empty_beam] = 1.0
+    env._sim.sensing_report_slot[0, empty_beam] = 0
+    env._sim.sensing_target_count_estimate[0, occupied_beam] = 2.0
+    env._sim.sensing_measurement_confidence[0, occupied_beam] = 1.0
+    env._sim.sensing_report_slot[0, occupied_beam] = 0
+    env._slot = 100
+
+    fresh = env._observation_for(0)
+
+    assert fresh["candidate_mask"][empty_beam] == 0.0
+    assert fresh["candidate_mask"][occupied_beam] == 1.0
+    assert fresh["candidate_score"][occupied_beam] > fresh["candidate_score"][0]
+
+    env._sim.beam_interaction_count[0, occupied_beam] = 2.0
+    exhausted = env._observation_for(0)
+    assert exhausted["candidate_mask"][occupied_beam] == 0.0
+
+    env._slot = 10_000
+    motion_stale = env._observation_for(0)
+    assert motion_stale["candidate_mask"][empty_beam] == 1.0
+    assert motion_stale["candidate_mask"][occupied_beam] == 1.0
 
 
 def test_evaluation_local_candidate_random_executor_uses_actor_visible_mask() -> None:

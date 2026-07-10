@@ -14,6 +14,7 @@ from .simulator import Action
 class ContentionFeatures:
     contention_dim: int = 10
     beam_dim: int = 8
+    residual_beam_dim: int = 13
     candidate_stats_dim: int = 4
 
 
@@ -38,6 +39,9 @@ class ContentionGraphActorCritic:
         rule_residual_scale: float = 1.0,
         use_contention_mode_prior: bool = False,
         use_rendezvous_adapter: bool = False,
+        use_residual_measurement_features: bool = False,
+        role_probability_floor: float = 0.0,
+        beam_uniform_mixture: float = 0.0,
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
         disabled_modes: Sequence[str] | None = None,
@@ -60,16 +64,27 @@ class ContentionGraphActorCritic:
         self.rule_residual_scale = float(rule_residual_scale)
         self.use_contention_mode_prior = bool(use_contention_mode_prior)
         self.use_rendezvous_adapter = bool(use_rendezvous_adapter)
+        self.use_residual_measurement_features = bool(use_residual_measurement_features)
+        self.role_probability_floor = float(role_probability_floor)
+        self.beam_uniform_mixture = float(beam_uniform_mixture)
+        disabled_mode_names = {mode for mode in (disabled_modes or ()) if mode in MODE_NAMES}
+        if not 0.0 <= self.role_probability_floor < 0.5:
+            raise ValueError("role_probability_floor must be in [0, 0.5).")
+        if self.role_probability_floor > 0.0 and not {"sense", "idle"}.issubset(disabled_mode_names):
+            raise ValueError("role_probability_floor requires the TX/RX-only action contract.")
+        if not 0.0 <= self.beam_uniform_mixture <= 1.0:
+            raise ValueError("beam_uniform_mixture must be in [0, 1].")
         self.use_access_gate = bool(use_access_gate)
         self.access_gate_variant = str(access_gate_variant)
         self.supports_access_gate_action = bool(use_access_gate)
-        self.disabled_mode_indices = tuple(MODE_NAMES.index(mode) for mode in (disabled_modes or ()) if mode in MODE_NAMES)
+        self.disabled_mode_indices = tuple(MODE_NAMES.index(mode) for mode in disabled_mode_names)
         self.model = _ContentionGraphActorCriticModule(
             self.n_beams,
             self.hidden_dim,
             self.use_access_gate,
             self.access_gate_variant,
             self.use_rendezvous_adapter,
+            self.use_residual_measurement_features,
         ).to(self.device)
 
     def parameters(self):
@@ -83,7 +98,13 @@ class ContentionGraphActorCritic:
 
     def logits_value(self, observation: dict, hard_mask: bool = False):
         torch = self.torch
-        tensors = observation_to_contention_tensors(observation, self.device, torch, self.n_beams)
+        tensors = observation_to_contention_tensors(
+            observation,
+            self.device,
+            torch,
+            self.n_beams,
+            use_residual_measurement_features=self.use_residual_measurement_features,
+        )
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, _gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
@@ -92,11 +113,18 @@ class ContentionGraphActorCritic:
             mask = tensors["candidate_mask"] > 0.5
             if bool(mask.any().item()):
                 beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
+        mode_logits, beam_logits = self._regularize_stochastic_support(mode_logits, beam_logits, tensors)
         return mode_logits, beam_logits, value
 
     def batched_logits_value(self, observations: Sequence[dict], hard_mask: bool = False):
         torch = self.torch
-        tensors = observations_to_batched_contention_tensors(observations, self.device, torch, self.n_beams)
+        tensors = observations_to_batched_contention_tensors(
+            observations,
+            self.device,
+            torch,
+            self.n_beams,
+            use_residual_measurement_features=self.use_residual_measurement_features,
+        )
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, _gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
@@ -109,11 +137,18 @@ class ContentionGraphActorCritic:
                 beam_logits.masked_fill(~mask, -1.0e9),
                 beam_logits,
             )
+        mode_logits, beam_logits = self._regularize_stochastic_support(mode_logits, beam_logits, tensors)
         return mode_logits, beam_logits, value
 
     def action_logits_value(self, observation: dict, hard_mask: bool = False):
         torch = self.torch
-        tensors = observation_to_contention_tensors(observation, self.device, torch, self.n_beams)
+        tensors = observation_to_contention_tensors(
+            observation,
+            self.device,
+            torch,
+            self.n_beams,
+            use_residual_measurement_features=self.use_residual_measurement_features,
+        )
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
@@ -122,11 +157,18 @@ class ContentionGraphActorCritic:
             mask = tensors["candidate_mask"] > 0.5
             if bool(mask.any().item()):
                 beam_logits = beam_logits.masked_fill(~mask, -1.0e9)
+        mode_logits, beam_logits = self._regularize_stochastic_support(mode_logits, beam_logits, tensors)
         return mode_logits, beam_logits, gate_logits, value
 
     def batched_action_logits_value(self, observations: Sequence[dict], hard_mask: bool = False):
         torch = self.torch
-        tensors = observations_to_batched_contention_tensors(observations, self.device, torch, self.n_beams)
+        tensors = observations_to_batched_contention_tensors(
+            observations,
+            self.device,
+            torch,
+            self.n_beams,
+            use_residual_measurement_features=self.use_residual_measurement_features,
+        )
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, gate_logits, value = self.model(tensors)
         mode_logits, beam_logits = self._apply_residuals(tensors, mode_logits, beam_logits)
@@ -139,7 +181,38 @@ class ContentionGraphActorCritic:
                 beam_logits.masked_fill(~mask, -1.0e9),
                 beam_logits,
             )
+        mode_logits, beam_logits = self._regularize_stochastic_support(mode_logits, beam_logits, tensors)
         return mode_logits, beam_logits, gate_logits, value
+
+    def _regularize_stochastic_support(self, mode_logits, beam_logits, tensors: dict):
+        torch = self.torch
+        if self.role_probability_floor > 0.0:
+            allowed = torch.isfinite(mode_logits) & (mode_logits > -1.0e8)
+            allowed_count = allowed.sum(dim=-1, keepdim=True).clamp(min=1)
+            epsilon = torch.clamp(
+                allowed_count.to(mode_logits.dtype) * self.role_probability_floor,
+                max=1.0,
+            )
+            probabilities = torch.softmax(mode_logits, dim=-1)
+            uniform = allowed.to(mode_logits.dtype) / allowed_count.to(mode_logits.dtype)
+            probabilities = (1.0 - epsilon) * probabilities + epsilon * uniform
+            mode_logits = torch.log(probabilities.clamp_min(1.0e-12))
+
+        if self.beam_uniform_mixture > 0.0:
+            if self.use_candidate_mask and "candidate_mask" in tensors:
+                allowed = tensors["candidate_mask"] > 0.5
+                has_allowed = allowed.any(dim=-1, keepdim=True)
+                allowed = torch.where(has_allowed, allowed, torch.ones_like(allowed))
+            else:
+                allowed = torch.ones_like(beam_logits, dtype=torch.bool)
+            allowed_count = allowed.sum(dim=-1, keepdim=True).clamp(min=1)
+            probabilities = torch.softmax(beam_logits, dim=-1)
+            uniform = allowed.to(beam_logits.dtype) / allowed_count.to(beam_logits.dtype)
+            probabilities = (1.0 - self.beam_uniform_mixture) * probabilities + self.beam_uniform_mixture * uniform
+            probabilities = probabilities * allowed.to(probabilities.dtype)
+            probabilities = probabilities / probabilities.sum(dim=-1, keepdim=True).clamp_min(1.0e-12)
+            beam_logits = torch.log(probabilities.clamp_min(1.0e-12))
+        return mode_logits, beam_logits
 
     def _prepare_tensors(self, tensors: dict):
         torch = self.torch
@@ -314,11 +387,13 @@ class _ContentionGraphActorCriticModule:
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
         use_rendezvous_adapter: bool = False,
+        use_residual_measurement_features: bool = False,
     ):
         import torch
         import torch.nn as nn
 
         dims = ContentionFeatures()
+        beam_dim = dims.residual_beam_dim if use_residual_measurement_features else dims.beam_dim
         gate_variant = str(access_gate_variant)
         if gate_variant not in {"legacy", "adaptive", "topology_preserving", "balanced_topology"}:
             raise ValueError(
@@ -334,7 +409,7 @@ class _ContentionGraphActorCriticModule:
                 self.use_rendezvous_adapter = bool(use_rendezvous_adapter)
                 self.access_gate_variant = gate_variant
                 self.beam_encoder = nn.Sequential(
-                    nn.Linear(dims.beam_dim, hidden_dim),
+                    nn.Linear(beam_dim, hidden_dim),
                     nn.LayerNorm(hidden_dim),
                     nn.SiLU(),
                     nn.Linear(hidden_dim, hidden_dim),
@@ -597,7 +672,14 @@ class BalancedTopologyGatedContentionGraphActorCritic(ContentionGraphActorCritic
         super().__init__(*args, **kwargs)
 
 
-def observation_to_contention_tensors(observation: dict, device, torch_module, n_beams: int) -> dict:
+def observation_to_contention_tensors(
+    observation: dict,
+    device,
+    torch_module,
+    n_beams: int,
+    *,
+    use_residual_measurement_features: bool = False,
+) -> dict:
     observed_beams = len(observation["beam_belief"])
     candidate_score = np.asarray(observation.get("candidate_score", np.zeros(observed_beams)), dtype=np.float32)
     beam_collision = np.log1p(np.asarray(observation.get("beam_collision", np.zeros(observed_beams)), dtype=np.float32))
@@ -609,19 +691,33 @@ def observation_to_contention_tensors(observation: dict, device, torch_module, n
     collision_or_role = np.where(np.abs(rendezvous_role) > 0.0, rendezvous_role, collision_norm)
     beam_belief = np.asarray(observation["beam_belief"], dtype=np.float32)
     uncertainty = beam_belief * (1.0 - beam_belief)
-    beam_features = np.stack(
-        [
-            beam_belief,
-            np.asarray(observation["beam_age"], dtype=np.float32),
-            np.log1p(np.asarray(observation["beam_success"], dtype=np.float32)),
-            np.log1p(np.asarray(observation["beam_fail"], dtype=np.float32)),
-            candidate_score,
-            collision_or_role,
-            uncertainty.astype(np.float32, copy=False),
-            np.asarray(observation.get("candidate_mask", np.zeros(observed_beams)), dtype=np.float32),
-        ],
-        axis=1,
-    )
+    feature_columns = [
+        beam_belief,
+        np.asarray(observation["beam_age"], dtype=np.float32),
+        np.log1p(np.asarray(observation["beam_success"], dtype=np.float32)),
+        np.log1p(np.asarray(observation["beam_fail"], dtype=np.float32)),
+        candidate_score,
+        collision_or_role,
+        uncertainty.astype(np.float32, copy=False),
+        np.asarray(observation.get("candidate_mask", np.zeros(observed_beams)), dtype=np.float32),
+    ]
+    if use_residual_measurement_features:
+        feature_columns.extend(
+            [
+                np.asarray(observation.get("beam_target_count", np.zeros(observed_beams)), dtype=np.float32),
+                np.asarray(
+                    observation.get("beam_target_count_variance", np.zeros(observed_beams)), dtype=np.float32
+                ),
+                np.asarray(
+                    observation.get("beam_measurement_confidence", np.zeros(observed_beams)), dtype=np.float32
+                ),
+                np.asarray(observation.get("beam_interaction_count", np.zeros(observed_beams)), dtype=np.float32),
+                np.asarray(
+                    observation.get("beam_residual_target_count", np.zeros(observed_beams)), dtype=np.float32
+                ),
+            ]
+        )
+    beam_features = np.stack(feature_columns, axis=1)
     candidate_mask = np.asarray(observation.get("candidate_mask", np.zeros(observed_beams)), dtype=np.float32)
     candidate_stats = np.asarray(
         [
@@ -676,8 +772,24 @@ def observation_to_contention_tensors(observation: dict, device, torch_module, n
     return tensors
 
 
-def observations_to_batched_contention_tensors(observations: Sequence[dict], device, torch_module, n_beams: int) -> dict:
-    tensors = [observation_to_contention_tensors(observation, device, torch_module, n_beams) for observation in observations]
+def observations_to_batched_contention_tensors(
+    observations: Sequence[dict],
+    device,
+    torch_module,
+    n_beams: int,
+    *,
+    use_residual_measurement_features: bool = False,
+) -> dict:
+    tensors = [
+        observation_to_contention_tensors(
+            observation,
+            device,
+            torch_module,
+            n_beams,
+            use_residual_measurement_features=use_residual_measurement_features,
+        )
+        for observation in observations
+    ]
     keys = set().union(*(tensor.keys() for tensor in tensors))
     batched = {}
     for key in keys:

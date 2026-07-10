@@ -6,7 +6,7 @@ import numpy as np
 
 from isac_nd_sim.config import load_config
 from isac_nd_sim.mobility import NodeState
-from isac_nd_sim.phy_sensing import detection_probability, radar_snr_db
+from isac_nd_sim.phy_sensing import SharedSensingReport, detection_probability, radar_snr_db
 from isac_nd_sim.runner import run
 from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_RX, MODE_TX, NeighborDiscoverySimulator
 
@@ -31,6 +31,168 @@ def test_default_config_keeps_constant_error_sensing_model() -> None:
     cfg = load_config("05_simulation/configs/mvp.yaml")
     assert cfg.isac_sensing_model == "constant_error"
     assert cfg.isac_waveform == "abstract"
+    assert cfg.sensing_measurement_mode == "noisy_count"
+
+
+def test_common_noisy_measurement_is_protocol_and_policy_seed_independent() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=1,
+        sensing_measurement_mode="noisy_count",
+    )
+    first = NeighborDiscoverySimulator(cfg, "improved_rl_isac_tables", seed=10, scenario_seed=20260711)
+    second = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=999, scenario_seed=20260711)
+    first.reset()
+    second.reset()
+    states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([200.0, 0.0, 0.0]), np.zeros(3)),
+    ]
+    first.states = [NodeState(state.position.copy(), state.velocity.copy()) for state in states]
+    second.states = [NodeState(state.position.copy(), state.velocity.copy()) for state in states]
+    first.invalidate_geometry_cache()
+    second.invalidate_geometry_cache()
+    beam = first.beam_from_to(0, 1)
+
+    first_measurement = first.sample_sensing_measurement(0, beam, cfg.sensing_range_m, piggyback=True, slot=7)
+    second_measurement = second.sample_sensing_measurement(0, beam, cfg.sensing_range_m, piggyback=True, slot=7)
+
+    assert first_measurement == second_measurement
+
+
+def test_measurement_modes_share_interface_and_bound_count_information() -> None:
+    base = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=1,
+        isac_sensing_model="constant_error",
+        miss_detection_rate=0.0,
+        false_alarm_rate=0.0,
+        angular_cell_offset_std=0.0,
+        sensing_position_error_std_m=0.0,
+    )
+    states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([200.0, 0.0, 0.0]), np.zeros(3)),
+    ]
+
+    counts = {}
+    for mode in ("ideal_count", "noisy_count", "binary_occupancy"):
+        simulator = NeighborDiscoverySimulator(replace(base, sensing_measurement_mode=mode), "wang2025_isac_tables", seed=20)
+        simulator.reset()
+        simulator.states = [NodeState(state.position.copy(), state.velocity.copy()) for state in states]
+        simulator.invalidate_geometry_cache()
+        beam = simulator.beam_from_to(0, 1)
+        measurement = simulator.sample_sensing_measurement(0, beam, base.sensing_range_m, piggyback=True, slot=0)
+        counts[mode] = measurement.estimated_target_count
+        assert measurement.mode == mode
+        assert all(not hasattr(item, "target_id") for item in measurement.detections)
+
+    assert counts == {"ideal_count": 2, "noisy_count": 2, "binary_occupancy": 1}
+
+
+def test_wang_count_uses_common_measurement_without_true_count_side_channel() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=3,
+        azimuth_cells=8,
+        elevation_cells=1,
+        sensing_measurement_mode="noisy_count",
+        isac_sensing_model="constant_error",
+        miss_detection_rate=1.0,
+        false_alarm_rate=0.0,
+        angular_cell_offset_std=0.0,
+    )
+    simulator = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=21)
+    simulator.reset()
+    simulator.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([200.0, 0.0, 0.0]), np.zeros(3)),
+    ]
+    simulator.invalidate_geometry_cache()
+    beam = simulator.beam_from_to(0, 1)
+
+    simulator.update_sensing([Action(MODE_TX, beam), Action(MODE_IDLE, 0), Action(MODE_IDLE, 0)], slot=0)
+
+    assert simulator.wang_node_num[0, beam] == 0.0
+    assert simulator.wang_sensing_flag[0, beam] == 0.0
+
+
+def test_multi_target_sensing_and_neighbor_tables_exchange_without_creating_direct_edges() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=4,
+        azimuth_cells=8,
+        elevation_cells=1,
+        sensing_measurement_mode="ideal_count",
+        sensing_position_error_std_m=0.0,
+    )
+    simulator = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=22)
+    simulator.reset()
+    simulator.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([0.0, 100.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([0.0, 200.0, 0.0]), np.zeros(3)),
+    ]
+    simulator.invalidate_geometry_cache()
+    source_beam = simulator.beam_from_to(1, 2)
+    simulator.sensing_report_detections[1][source_beam] = [
+        SharedSensingReport("report-2", tuple(simulator.states[2].position), 0.9, 10.0, 1, 3),
+        SharedSensingReport("report-3", tuple(simulator.states[3].position), 0.8, 9.0, 1, 3),
+    ]
+    simulator.sensing_report_ids[1].update({"report-2", "report-3"})
+    simulator.neighbor_records[1][2] = (simulator.states[2].position.copy(), 3)
+
+    simulator.exchange_neighbor_and_sensing_tables(0, 1, slot=3)
+
+    projected_beam = simulator.beam_from_to(0, 2)
+    assert 2 in simulator.neighbor_records[0]
+    assert simulator.sensing_target_count_estimate[0, projected_beam] >= 2.0
+    assert len(simulator.sensing_report_detections[0][projected_beam]) == 2
+    assert simulator.discovered_edges == set()
+
+    count_before = float(simulator.sensing_target_count_estimate[0, projected_beam])
+    simulator.exchange_neighbor_and_sensing_tables(0, 1, slot=4)
+    assert len(simulator.sensing_report_detections[0][projected_beam]) == 2
+    assert simulator.sensing_target_count_estimate[0, projected_beam] == count_before
+
+
+def test_neighbor_knowledge_metrics_do_not_promote_indirect_records_to_direct_edges() -> None:
+    cfg = replace(load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"), n_nodes=3)
+    simulator = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=23)
+    simulator.reset()
+    simulator.discovered_edges.add((0, 1))
+    simulator.first_true_slot[(0, 1)] = 0
+    simulator.discovery_slot[(0, 1)] = 0
+    simulator.neighbor_records[0][1] = (simulator.states[1].position.copy(), 0)
+    simulator.neighbor_records[1][0] = (simulator.states[0].position.copy(), 0)
+    simulator.neighbor_records[1][2] = (simulator.states[2].position.copy(), 0)
+
+    simulator.exchange_neighbor_and_sensing_tables(0, 1, slot=0)
+    summary = simulator.summarize(0)
+
+    assert summary.discovered_edges == 1
+    assert summary.neighbor_knowledge_pairs == 4
+    assert summary.indirect_knowledge_pairs == 2
+    assert 2 in simulator.neighbor_records[0]
+
+
+def test_result_carries_metric_availability_counts_and_flags() -> None:
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=3)
+    simulator = NeighborDiscoverySimulator(cfg, "uniform_random", seed=24)
+    simulator.reset()
+
+    summary = simulator.summarize(0)
+
+    assert summary.sensing_observations == 0
+    assert not summary.target_status_diagnostics_collected
 
 
 def test_wang2025_isac_tables_runs_with_phy_sensing_metrics() -> None:
@@ -92,6 +254,19 @@ def test_wang2025_sensing_table_closes_beam_after_discovered_target_count() -> N
 
     assert simulator.wang_dis_num[0, beam] == 1.0
     assert simulator.wang_sensing_flag[0, beam] == 0.0
+
+
+def test_wang2025_unsensed_passive_interaction_keeps_beam_open_for_later_sensing() -> None:
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=2, azimuth_cells=8, elevation_cells=1)
+    simulator = NeighborDiscoverySimulator(cfg, "wang2025_isac_tables", seed=13)
+    simulator.reset()
+    beam = 5
+
+    simulator.mark_wang2025_interaction(0, beam, slot=4)
+
+    assert simulator.wang_node_num[0, beam] == -1.0
+    assert simulator.wang_dis_num[0, beam] == 1.0
+    assert simulator.wang_sensing_flag[0, beam] == 1.0
 
 
 def test_ours_table_exchange_boosts_beam_to_peer_known_neighbor() -> None:

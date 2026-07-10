@@ -1,0 +1,6 @@
+comparison,metric,paired_scenarios,mean_difference,ci95_low,ci95_high,exact_sign_flip_p
+residual_random - default_random,discovery_rate,10,0.2444444444444444,0.1640876229204935,0.3248012659683953,0.00390625
+residual_support - wang_noisy_count,discovery_rate,10,0.011111111111111117,-0.11320788478549652,0.13543010700771876,0.876953125
+residual_support - residual_random_uniform,discovery_rate,10,-0.04666666666666666,-0.127874951958255,0.034541618624921666,0.25390625
+support_learned_beam - residual_random_uniform,discovery_rate,10,-0.055555555555555546,-0.13529862259426895,0.024187511483157863,0.16796875
+support_learned_mode - residual_random_uniform,discovery_rate,10,-0.08,-0.1891557252984565,0.029155725298456503,0.14453125

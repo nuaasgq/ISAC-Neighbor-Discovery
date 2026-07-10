@@ -37,6 +37,7 @@ from isac_nd_sim.marl_env import (  # noqa: E402
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
+from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.simulator import (  # noqa: E402
     ACCESS_AGGRESSIVE,
     ACCESS_BACKOFF,
@@ -50,6 +51,7 @@ from isac_nd_sim.simulator import (  # noqa: E402
 
 
 CLEAN_CTDE_CONTRACT_VERSION = "clean_local_ctde_v1"
+CLEAN_CTDE_RESIDUAL_CONTRACT_VERSION = "clean_local_ctde_residual_v2"
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,6 +95,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--miss-detection-rate", type=float, default=None)
     parser.add_argument("--angular-cell-offset-std", type=float, default=None)
     parser.add_argument("--sensing-period-slots", type=int, default=None)
+    parser.add_argument("--sensing-measurement-mode", choices=SENSING_MEASUREMENT_MODES, default=None)
     parser.add_argument("--mobility-model", default=None)
     parser.add_argument("--spatial-dimensions", type=int, choices=(2, 3), default=None)
     parser.add_argument("--env-protocol", default=None)
@@ -171,6 +174,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--topology-deficit", action="store_true", help="Use local discovered-degree deficit token.")
+    parser.add_argument(
+        "--residual-measurement-features",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Add local target-count, uncertainty, interaction, and residual-opportunity fields to beam tokens.",
+    )
+    parser.add_argument("--role-probability-floor", type=float, default=0.0)
+    parser.add_argument("--beam-uniform-mixture", type=float, default=0.0)
     parser.add_argument("--rule-residual", action="store_true", help="Use local rule logits and beam priors as residual policy logits.")
     parser.add_argument("--rule-residual-scale", type=float, default=1.0)
     parser.add_argument(
@@ -268,6 +279,9 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         rule_residual_scale=float(args.rule_residual_scale),
         use_contention_mode_prior=contention_mode_prior_enabled(args),
         use_rendezvous_adapter=bool(getattr(args, "rendezvous_adapter", False)),
+        use_residual_measurement_features=bool(getattr(args, "residual_measurement_features", False)),
+        role_probability_floor=float(getattr(args, "role_probability_floor", 0.0)),
+        beam_uniform_mixture=float(getattr(args, "beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_args(args),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
@@ -389,6 +403,19 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--rendezvous-role-aux-coef must be nonnegative.")
     if float(getattr(args, "rendezvous_adapter_learning_rate", 0.03)) <= 0.0:
         raise ValueError("--rendezvous-adapter-learning-rate must be positive.")
+    role_floor = float(getattr(args, "role_probability_floor", 0.0))
+    beam_mixture = float(getattr(args, "beam_uniform_mixture", 0.0))
+    if not 0.0 <= role_floor < 0.5:
+        raise ValueError("--role-probability-floor must be in [0, 0.5).")
+    if not 0.0 <= beam_mixture <= 1.0:
+        raise ValueError("--beam-uniform-mixture must be in [0, 1].")
+    if role_floor > 0.0 and (bool(getattr(args, "allow_standalone_sense", False)) or bool(getattr(args, "allow_idle", False))):
+        raise ValueError("--role-probability-floor requires the TX/RX-only action contract.")
+    if (role_floor > 0.0 or beam_mixture > 0.0) and str(getattr(args, "network", "")) in {
+        "shared",
+        "scalegraph_beam",
+    }:
+        raise ValueError("stochastic support constraints require a contention network.")
     if bool(getattr(args, "rendezvous_adapter", False)) and str(getattr(args, "network", "")) in {
         "shared",
         "scalegraph_beam",
@@ -469,9 +496,10 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
         "miss_detection_rate": "miss_detection_rate",
         "angular_cell_offset_std": "angular_cell_offset_std",
         "sensing_period_slots": "sensing_period_slots",
+        "sensing_measurement_mode": "sensing_measurement_mode",
     }
     for arg_name, field_name in optional_fields.items():
-        value = getattr(args, arg_name)
+        value = getattr(args, arg_name, None)
         if value is not None:
             replacements[field_name] = value
     area_size = getattr(args, "area_size_m", None)
@@ -536,12 +564,18 @@ def build_policy(
 ):
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", False))
     use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
+    use_residual_measurement_features = bool(kwargs.pop("use_residual_measurement_features", False))
+    role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
+    beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     kwargs["use_contention_mode_prior"] = use_contention_mode_prior
     kwargs["use_rendezvous_adapter"] = use_rendezvous_adapter
+    kwargs["use_residual_measurement_features"] = use_residual_measurement_features
+    kwargs["role_probability_floor"] = role_probability_floor
+    kwargs["beam_uniform_mixture"] = beam_uniform_mixture
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
@@ -1765,6 +1799,14 @@ def should_checkpoint(index: int, interval: int) -> bool:
     return interval > 0 and index % interval == 0
 
 
+def training_contract_version(args: argparse.Namespace) -> str:
+    if not bool(getattr(args, "clean_ctde", False)):
+        return "twc_trainable_v1"
+    if bool(getattr(args, "residual_measurement_features", False)):
+        return CLEAN_CTDE_RESIDUAL_CONTRACT_VERSION
+    return CLEAN_CTDE_CONTRACT_VERSION
+
+
 def save_checkpoint(
     path: Path,
     policy: SharedBeamActorCritic,
@@ -1778,9 +1820,7 @@ def save_checkpoint(
     checkpoint = {
         "episode": int(episode),
         "algorithm": str(args.algorithm),
-        "training_contract_version": (
-            CLEAN_CTDE_CONTRACT_VERSION if bool(getattr(args, "clean_ctde", False)) else "twc_trainable_v1"
-        ),
+        "training_contract_version": training_contract_version(args),
         "feature_flags": resolved_feature_flags(args),
         "env_protocol": resolved_env_protocol(args),
         "policy_state_dict": policy.model.state_dict(),
@@ -1985,8 +2025,13 @@ def build_manifest(
         "rendezvous_adapter_learning_rate": float(getattr(args, "rendezvous_adapter_learning_rate", 0.03)),
         "clean_ctde": bool(getattr(args, "clean_ctde", False)),
         "actor_observation_contract": (
-            CLEAN_CTDE_CONTRACT_VERSION if bool(getattr(args, "clean_ctde", False)) else "legacy_local_features"
+            training_contract_version(args) if bool(getattr(args, "clean_ctde", False)) else "legacy_local_features"
         ),
+        "residual_measurement_features": bool(getattr(args, "residual_measurement_features", False)),
+        "stochastic_support": {
+            "role_probability_floor": float(getattr(args, "role_probability_floor", 0.0)),
+            "beam_uniform_mixture": float(getattr(args, "beam_uniform_mixture", 0.0)),
+        },
         "action_teacher_free": bool(getattr(args, "clean_ctde", False)),
         "local_candidate_processing_allowed": bool(getattr(args, "clean_ctde", False)),
         "pair_derived_action_guidance_enabled": bool(cfg.rendezvous_observation_enabled),
@@ -2003,6 +2048,11 @@ def build_manifest(
             else "two_phase_hello_ack_sinr_capture"
         ),
         "table_exchange_information": "confirmed_neighbor_positions_and_noisy_anonymous_sensing_reports",
+        "sensing_measurement": {
+            "mode": cfg.sensing_measurement_mode,
+            "identity_exposed_before_handshake": False,
+            "common_protocol_interface": True,
+        },
         "communication_phy": communication_phy_manifest(cfg),
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,

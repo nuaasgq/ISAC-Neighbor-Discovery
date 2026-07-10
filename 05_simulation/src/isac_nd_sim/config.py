@@ -87,6 +87,7 @@ class SimulationConfig:
     communication_fixed_main_lobe_gain_db: float = 21.0
     shared_waveform_power_enabled: bool = False
     rendezvous_observation_enabled: bool = False
+    sensing_measurement_mode: str = "noisy_count"
 
     @property
     def n_beams(self) -> int:
@@ -231,6 +232,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         communication_fixed_main_lobe_gain_db=float(comm_phy.get("fixed_main_lobe_gain_db", 21.0)),
         shared_waveform_power_enabled=shared_power_enabled,
         rendezvous_observation_enabled=bool(protocol.get("rendezvous_observation_enabled", False)),
+        sensing_measurement_mode=str(phy.get("measurement_mode", "noisy_count")),
     )
 
 

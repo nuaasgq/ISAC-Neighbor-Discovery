@@ -1,10 +1,53 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 from .config import SimulationConfig
 
 LIGHT_SPEED_MPS = 299_792_458.0
+SENSING_MEASUREMENT_MODES = ("ideal_count", "noisy_count", "binary_occupancy")
+
+
+@dataclass(frozen=True)
+class AnonymousSensingDetection:
+    """One locally detected anonymous target; no neighbor identity is exposed."""
+
+    detection_id: str
+    position_m: tuple[float, float, float]
+    snr_db: float
+    detection_probability: float
+    confidence: float
+
+
+@dataclass(frozen=True)
+class BeamSensingMeasurement:
+    """Common physical-to-link measurement consumed by every protocol."""
+
+    measurement_id: str
+    node: int
+    beam: int
+    slot: int
+    mode: str
+    occupancy_value: float
+    estimated_target_count: int
+    count_variance: float
+    confidence: float
+    max_snr_db: float
+    detections: tuple[AnonymousSensingDetection, ...]
+    false_alarm_count: int = 0
+
+
+@dataclass(frozen=True)
+class SharedSensingReport:
+    """Anonymous table entry with immutable provenance for TTL and deduplication."""
+
+    detection_id: str
+    position_m: tuple[float, float, float]
+    confidence: float
+    snr_db: float
+    origin_node: int
+    origin_slot: int
 
 
 def radar_snr_linear(distance_m: float, cfg: SimulationConfig, *, piggyback: bool = False) -> float:

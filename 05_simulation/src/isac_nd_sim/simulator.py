@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
-from math import erf, isinf, sqrt
+from math import erf, isinf, prod, sqrt
 from typing import Iterable
 
 import numpy as np
@@ -10,7 +11,14 @@ from .beam import beam_for_target, beam_matches, rotation_body_to_global, shift_
 from .communication_phy import CommunicationPhy
 from .config import SimulationConfig
 from .mobility import NodeState, initialize_states, step_states
-from .phy_sensing import detection_probability, radar_snr_db
+from .phy_sensing import (
+    SENSING_MEASUREMENT_MODES,
+    AnonymousSensingDetection,
+    BeamSensingMeasurement,
+    SharedSensingReport,
+    detection_probability,
+    radar_snr_db,
+)
 
 MODE_SENSE = "sense"
 MODE_TX = "tx"
@@ -83,6 +91,12 @@ class EpisodeResult:
     true_edges_seen: int
     discovered_edges: int
     discovery_rate: float
+    neighbor_knowledge_pairs: int
+    neighbor_knowledge_recall: float
+    indirect_knowledge_pairs: int
+    indirect_knowledge_rate: float
+    knowledge_complete_nodes: int
+    networking_completion_slot_censored: int
     mean_delay_censored: float
     p90_delay_censored: float
     p95_delay_censored: float
@@ -103,6 +117,7 @@ class EpisodeResult:
     collision_count: int
     empty_scan_count: int
     scan_actions: int
+    target_status_diagnostics_collected: bool
     undiscovered_target_beam_actions: int
     known_only_beam_actions: int
     empty_target_beam_actions: int
@@ -115,11 +130,15 @@ class EpisodeResult:
     piggyback_sense_actions: int
     rendezvous_guided_actions: int
     rendezvous_fallback_actions: int
+    sensing_measurement_mode: str
     sensing_observations: int
     sensing_target_observations: int
     sensing_detection_rate: float
+    per_target_sensing_recall: float
     sensing_false_alarm_ratio: float
     sensing_miss_ratio: float
+    sensing_count_mae: float
+    sensing_position_rmse_m: float
     mean_sensing_pd: float
     mean_sensing_snr_db: float
     discovery_per_scan_action: float
@@ -155,6 +174,11 @@ class NeighborDiscoverySimulator:
         collect_target_status_metrics: bool = False,
     ):
         self.cfg = config
+        if self.cfg.sensing_measurement_mode not in SENSING_MEASUREMENT_MODES:
+            raise ValueError(
+                f"Unsupported sensing measurement mode: {self.cfg.sensing_measurement_mode}. "
+                f"Expected one of {SENSING_MEASUREMENT_MODES}."
+            )
         self.protocol = protocol
         self.rng = np.random.default_rng(seed)
         self.seed = seed
@@ -176,6 +200,7 @@ class NeighborDiscoverySimulator:
         self.fail_count = np.zeros_like(self.belief)
         self.collision_fail_count = np.zeros_like(self.belief)
         self.empty_beam_count = np.zeros_like(self.belief)
+        self.beam_interaction_count = np.zeros_like(self.belief)
         self.last_positive_slot = np.full_like(self.belief, -10**9)
         self.wang_sensing_flag = np.zeros_like(self.belief)
         self.wang_node_num = np.full_like(self.belief, -1.0)
@@ -189,9 +214,17 @@ class NeighborDiscoverySimulator:
         )
         self.sensing_report_confidence = np.zeros_like(self.belief)
         self.sensing_report_slot = np.full_like(self.belief, -10**9, dtype=int)
+        self.sensing_target_count_estimate = np.full_like(self.belief, -1.0)
+        self.sensing_target_count_variance = np.zeros_like(self.belief)
+        self.sensing_measurement_confidence = np.zeros_like(self.belief)
+        self.sensing_report_detections: list[list[list[SharedSensingReport]]] = [
+            [[] for _beam in range(self.cfg.n_beams)] for _node in range(self.cfg.n_nodes)
+        ]
+        self.sensing_report_ids: list[set[str]] = [set() for _node in range(self.cfg.n_nodes)]
         self.discovered_edges: set[tuple[int, int]] = set()
         self.first_true_slot: dict[tuple[int, int], int] = {}
         self.discovery_slot: dict[tuple[int, int], int] = {}
+        self.knowledge_completion_slot: int | None = None
         self.empty_scans = 0
         self.scan_actions = 0
         self.handshake_attempts = 0
@@ -221,8 +254,14 @@ class NeighborDiscoverySimulator:
         self.sensing_observations = 0
         self.sensing_target_observations = 0
         self.sensing_detection_count = 0
+        self.sensing_target_opportunity_count = 0
+        self.sensing_target_detection_count = 0
         self.sensing_false_alarm_count = 0
         self.sensing_miss_count = 0
+        self.sensing_count_abs_error_sum = 0.0
+        self.sensing_count_sample_count = 0
+        self.sensing_position_squared_error_sum = 0.0
+        self.sensing_position_sample_count = 0
         self.sensing_pd_sum = 0.0
         self.sensing_snr_db_sum = 0.0
         self.sensing_snr_sample_count = 0
@@ -248,6 +287,7 @@ class NeighborDiscoverySimulator:
         self.fail_count.fill(0.0)
         self.collision_fail_count.fill(0.0)
         self.empty_beam_count.fill(0.0)
+        self.beam_interaction_count.fill(0.0)
         self.last_positive_slot.fill(-10**9)
         self.wang_sensing_flag.fill(1.0)
         self.wang_node_num.fill(-1.0)
@@ -258,9 +298,17 @@ class NeighborDiscoverySimulator:
         self.sensing_report_position.fill(np.nan)
         self.sensing_report_confidence.fill(0.0)
         self.sensing_report_slot.fill(-10**9)
+        self.sensing_target_count_estimate.fill(-1.0)
+        self.sensing_target_count_variance.fill(0.0)
+        self.sensing_measurement_confidence.fill(0.0)
+        self.sensing_report_detections = [
+            [[] for _beam in range(self.cfg.n_beams)] for _node in range(self.cfg.n_nodes)
+        ]
+        self.sensing_report_ids = [set() for _node in range(self.cfg.n_nodes)]
         self.discovered_edges.clear()
         self.first_true_slot.clear()
         self.discovery_slot.clear()
+        self.knowledge_completion_slot = None
         self.empty_scans = 0
         self.scan_actions = 0
         self.handshake_attempts = 0
@@ -290,8 +338,14 @@ class NeighborDiscoverySimulator:
         self.sensing_observations = 0
         self.sensing_target_observations = 0
         self.sensing_detection_count = 0
+        self.sensing_target_opportunity_count = 0
+        self.sensing_target_detection_count = 0
         self.sensing_false_alarm_count = 0
         self.sensing_miss_count = 0
+        self.sensing_count_abs_error_sum = 0.0
+        self.sensing_count_sample_count = 0
+        self.sensing_position_squared_error_sum = 0.0
+        self.sensing_position_sample_count = 0
         self.sensing_pd_sum = 0.0
         self.sensing_snr_db_sum = 0.0
         self.sensing_snr_sample_count = 0
@@ -988,151 +1042,71 @@ class NeighborDiscoverySimulator:
         if not eligible_nodes:
             return
         useful_sensing_range = self.cfg.sensing_range_m
-        ideal_sensing = (
-            self.cfg.isac_sensing_model == "constant_error"
-            and self.cfg.false_alarm_rate <= 0.0
-            and self.cfg.miss_detection_rate <= 0.0
-            and self.cfg.angular_cell_offset_std <= 0.0
-        )
         for node, action in eligible_nodes:
             if slot is not None:
                 self.last_sense_slot[node] = slot
             observation = self.belief[node].copy()
             piggyback_isac = self.action_has_piggyback_isac(action)
-            if piggyback_isac:
-                sensed_beams = self.sensing_sectors_for_action(node, action, slot)
-                for sensed_beam in sensed_beams:
-                    if ideal_sensing:
-                        observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
-                        self.record_ideal_sensing_observation(
-                            node,
-                            int(sensed_beam),
-                            useful_sensing_range,
-                            piggyback=True,
-                            observed_value=observed_value,
-                        )
-                    else:
-                        observed_value = self.sample_sensing_observation(
-                            node,
-                            int(sensed_beam),
-                            useful_sensing_range,
-                            piggyback=True,
-                            slot=slot,
-                        )
-                    observation[sensed_beam] = observed_value
-                    if observed_value <= 0.0:
-                        self.fail_count[node, sensed_beam] += 0.10
-                        self.success_count[node, sensed_beam] *= 0.90
-                        if self.success_count[node, sensed_beam] <= 0.05:
-                            self.empty_beam_count[node, sensed_beam] += 1.0
-                    else:
-                        self.success_count[node, sensed_beam] += 0.25
-                        self.fail_count[node, sensed_beam] *= 0.5
-                        self.empty_beam_count[node, sensed_beam] = 0.0
-                        if slot is not None:
-                            self.last_positive_slot[node, sensed_beam] = slot
-                    self.update_wang2025_sensing_table_from_observation(
-                        node,
-                        int(sensed_beam),
-                        observed_value,
-                        slot,
-                        useful_sensing_range,
-                        piggyback=True,
-                    )
-                    if observed_value > 0.0 and slot is not None:
-                        self.record_sensing_position_estimate(
-                            node, int(sensed_beam), useful_sensing_range, slot
-                        )
-                rho = self.cfg.belief_update_rho
-                self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
-                self.age[node, sensed_beams] = 0.0
-                continue
             sensed_beams = self.sensing_sectors_for_action(node, action, slot)
             for sensed_beam in sensed_beams:
-                if ideal_sensing:
-                    observed_value = 1.0 if self.beam_has_sensing_target(node, int(sensed_beam), useful_sensing_range) else 0.0
-                    self.record_ideal_sensing_observation(
-                        node,
-                        int(sensed_beam),
-                        useful_sensing_range,
-                        piggyback=False,
-                        observed_value=observed_value,
-                    )
-                else:
-                    observed_value = self.sample_sensing_observation(
-                        node,
-                        int(sensed_beam),
-                        useful_sensing_range,
-                        piggyback=False,
-                        slot=slot,
-                    )
-                observation[sensed_beam] = observed_value
-                self.update_wang2025_sensing_table_from_observation(
-                    node,
-                    int(sensed_beam),
-                    observed_value,
-                    slot,
-                    useful_sensing_range,
-                    piggyback=False,
+                measurement = self.sample_sensing_measurement(
+                    node=node,
+                    sensed_beam=int(sensed_beam),
+                    radius=useful_sensing_range,
+                    piggyback=piggyback_isac,
+                    slot=slot,
                 )
-                if observed_value > 0.0 and slot is not None:
-                    self.record_sensing_position_estimate(
-                        node, int(sensed_beam), useful_sensing_range, slot
-                    )
+                observation[sensed_beam] = measurement.occupancy_value
+                self.apply_sensing_measurement(measurement)
             rho = self.cfg.belief_update_rho
             self.belief[node] = (1.0 - rho) * self.belief[node] + rho * observation
             self.age[node, sensed_beams] = 0.0
 
-    def update_wang2025_sensing_table_from_observation(
-        self,
-        node: int,
-        beam: int,
-        observed_value: float,
-        slot: int | None,
-        radius: float,
-        *,
-        piggyback: bool,
-    ) -> None:
+    def apply_sensing_measurement(self, measurement: BeamSensingMeasurement) -> None:
+        node = int(measurement.node)
+        beam = int(measurement.beam)
+        slot = int(measurement.slot)
+        observed_value = float(measurement.occupancy_value)
+        if observed_value <= 0.0:
+            self.fail_count[node, beam] += 0.10
+            self.success_count[node, beam] *= 0.90
+            if self.success_count[node, beam] <= 0.05:
+                self.empty_beam_count[node, beam] += 1.0
+        else:
+            self.success_count[node, beam] += 0.25
+            self.fail_count[node, beam] *= 0.5
+            self.empty_beam_count[node, beam] = 0.0
+            self.last_positive_slot[node, beam] = slot
+
+        self.sensing_target_count_estimate[node, beam] = float(measurement.estimated_target_count)
+        self.sensing_target_count_variance[node, beam] = float(measurement.count_variance)
+        self.sensing_measurement_confidence[node, beam] = float(measurement.confidence)
+        self.sensing_report_slot[node, beam] = slot
+        self.record_sensing_measurement_reports(measurement)
+        self.update_wang2025_sensing_table_from_measurement(measurement)
+
+    def update_wang2025_sensing_table_from_measurement(self, measurement: BeamSensingMeasurement) -> None:
         if self.protocol not in WANG2025_PROTOCOLS:
             return
-        node = int(node)
-        beam = int(beam)
-        if observed_value <= 0.0:
-            self.wang_node_num[node, beam] = 0.0
-            self.wang_dis_num[node, beam] = 0.0
+        node = int(measurement.node)
+        beam = int(measurement.beam)
+        if measurement.estimated_target_count <= 0:
+            self.wang_node_num[node, beam] = max(0.0, self.wang_dis_num[node, beam])
             self.wang_sensing_flag[node, beam] = 0.0
             return
 
-        sensed_targets = self.wang2025_sensing_target_count(node, beam, radius)
-        estimated_targets = max(1, int(sensed_targets))
+        estimated_targets = max(1, int(measurement.estimated_target_count))
         self.wang_node_num[node, beam] = max(float(estimated_targets), self.wang_node_num[node, beam])
-        self.wang_snr_db[node, beam] = max(
-            self.wang_snr_db[node, beam],
-            self.max_sensing_snr_db(node, beam, radius, piggyback),
-        )
-        if slot is not None:
-            self.last_positive_slot[node, beam] = slot
+        self.wang_snr_db[node, beam] = max(self.wang_snr_db[node, beam], float(measurement.max_snr_db))
+        self.last_positive_slot[node, beam] = int(measurement.slot)
         self.update_wang2025_flag_after_counts(node, beam)
-
-    def wang2025_sensing_target_count(self, node: int, sensed_beam: int, radius: float) -> int:
-        beams = self.beam_matrix()
-        dist2 = self.distance_matrix()
-        count = 0
-        for target in range(self.cfg.n_nodes):
-            if target == node or dist2[node, target] > float(radius) ** 2:
-                continue
-            if beam_matches(
-                int(sensed_beam),
-                int(beams[node, target]),
-                self.cfg.azimuth_cells,
-                self.cfg.alignment_tolerance_cells,
-            ):
-                count += 1
-        return count
 
     def update_wang2025_flag_after_counts(self, node: int, beam: int) -> None:
         node_num = float(self.wang_node_num[node, beam])
-        if node_num <= 0.0:
+        if node_num < 0.0:
+            self.wang_sensing_flag[node, beam] = 1.0
+            return
+        if node_num == 0.0:
             self.wang_sensing_flag[node, beam] = 0.0
             return
         self.wang_sensing_flag[node, beam] = 1.0 if self.wang_dis_num[node, beam] < node_num else 0.0
@@ -1143,9 +1117,7 @@ class NeighborDiscoverySimulator:
         node = int(node)
         beam = int(beam)
         self.wang_dis_num[node, beam] += 1.0
-        if self.wang_node_num[node, beam] < 0.0:
-            self.wang_node_num[node, beam] = self.wang_dis_num[node, beam]
-        else:
+        if self.wang_node_num[node, beam] >= 0.0:
             self.wang_node_num[node, beam] = max(self.wang_node_num[node, beam], self.wang_dis_num[node, beam])
         self.wang_snr_db[node, beam] = max(self.wang_snr_db[node, beam], -300.0)
         self.success_count[node, beam] += 0.25
@@ -1217,116 +1189,215 @@ class NeighborDiscoverySimulator:
         piggyback: bool,
         slot: int | None = None,
     ) -> float:
-        true_sector_candidates: list[tuple[float, float]] = []
-        profile = self.sensing_profile(radius, piggyback)
-        for true_beam in self.matching_true_beams(int(sensed_beam)):
-            true_sector_candidates.extend(profile[node][int(true_beam)])
+        return self.sample_sensing_measurement(
+            node=node,
+            sensed_beam=sensed_beam,
+            radius=radius,
+            piggyback=piggyback,
+            slot=slot,
+        ).occupancy_value
 
-        has_target_in_sector = bool(true_sector_candidates)
-        detected = False
-        max_pd = max((pd for pd, _snr_db in true_sector_candidates), default=0.0)
-        max_snr_db = max((snr_db for _pd, snr_db in true_sector_candidates), default=-300.0)
-        for true_beam, angular_match_probability in self.observable_true_beams(int(sensed_beam)):
-            for candidate_index, (pd, _snr_db) in enumerate(profile[node][int(true_beam)]):
-                event_rng = self._sensing_event_rng(
-                    slot,
-                    node,
-                    sensed_beam,
-                    1,
-                    int(true_beam),
-                    int(candidate_index),
-                    int(bool(piggyback)),
-                )
-                if event_rng.random() < pd * angular_match_probability:
-                    detected = True
-                    break
-            if detected:
-                break
-
-        self.sensing_observations += 1
-        if has_target_in_sector:
-            self.sensing_target_observations += 1
-            self.sensing_pd_sum += max_pd
-            if max_snr_db > -300.0:
-                self.sensing_snr_db_sum += max_snr_db
-                self.sensing_snr_sample_count += 1
-            if detected:
-                self.sensing_detection_count += 1
-                return 1.0
-            self.sensing_miss_count += 1
-        false_alarm_rng = self._sensing_event_rng(
-            slot,
-            node,
-            sensed_beam,
-            2,
-            int(bool(piggyback)),
-        )
-        if false_alarm_rng.random() < self.cfg.false_alarm_rate:
-            self.sensing_false_alarm_count += 1
-            return 1.0
-        return 0.0
-
-    def record_ideal_sensing_observation(
+    def sample_sensing_measurement(
         self,
         node: int,
         sensed_beam: int,
         radius: float,
         *,
         piggyback: bool,
-        observed_value: float,
-    ) -> None:
-        """Record sensing statistics for deterministic/ideal observations."""
+        slot: int | None = None,
+    ) -> BeamSensingMeasurement:
+        """Generate one anonymous per-target measurement shared by all protocols."""
 
-        self.sensing_observations += 1
-        has_target = self.beam_has_sensing_target(node, sensed_beam, radius)
-        if has_target:
-            self.sensing_target_observations += 1
-            self.sensing_pd_sum += 1.0
-            max_snr_db = self.max_sensing_snr_db(node, sensed_beam, radius, piggyback)
-            if max_snr_db > -300.0:
-                self.sensing_snr_db_sum += max_snr_db
-                self.sensing_snr_sample_count += 1
-            if observed_value > 0.0:
-                self.sensing_detection_count += 1
-            else:
-                self.sensing_miss_count += 1
-        elif observed_value > 0.0:
-            self.sensing_false_alarm_count += 1
-
-    def record_sensing_position_estimate(self, node: int, sensed_beam: int, radius: float, slot: int) -> None:
-        """Store an anonymous noisy position estimate produced by the sensing front end."""
-
+        node = int(node)
+        sensed_beam = int(sensed_beam)
+        slot_value = -1 if slot is None else int(slot)
+        mode = str(self.cfg.sensing_measurement_mode)
+        measurement_id = self.sensing_event_id(slot, node, sensed_beam, int(bool(piggyback)))
         beams = self.beam_matrix()
         dist2 = self.distance_matrix()[node]
-        candidates = [
-            target
-            for target in range(self.cfg.n_nodes)
-            if target != node
-            and dist2[target] <= float(radius) ** 2
-            and beam_matches(
-                int(sensed_beam),
-                int(beams[node, target]),
+        radius2 = float(radius) ** 2
+        candidates: list[tuple[int, float, float, float, bool]] = []
+        true_sector_candidates: list[tuple[float, float]] = []
+        for target in range(self.cfg.n_nodes):
+            if target == node or dist2[target] > radius2:
+                continue
+            true_beam = int(beams[node, target])
+            in_true_sector = beam_matches(
+                sensed_beam,
+                true_beam,
                 self.cfg.azimuth_cells,
                 self.cfg.alignment_tolerance_cells,
             )
-        ]
-        if not candidates:
-            # A false alarm can affect the local occupancy belief, but it does
-            # not create an identifiable position report for table exchange.
-            return
-        target = min(candidates, key=lambda item: float(dist2[item]))
-        error_std = max(0.0, float(self.cfg.sensing_position_error_std_m))
-        estimate = self.states[target].position.copy()
-        if error_std > 0.0:
-            position_rng = self._sensing_event_rng(slot, node, sensed_beam, 3, int(target))
-            estimate += position_rng.normal(0.0, error_std, size=3)
-        estimate = np.clip(estimate, np.zeros(3), np.asarray(self.cfg.area_size_m, dtype=float))
-        self.sensing_report_position[node, sensed_beam] = estimate
-        self.sensing_report_confidence[node, sensed_beam] = max(
-            0.55,
-            float(self.belief[node, sensed_beam]),
+            distance = float(np.sqrt(dist2[target]))
+            pd = 1.0 if mode == "ideal_count" else detection_probability(distance, self.cfg, piggyback=piggyback)
+            snr_db = radar_snr_db(distance, self.cfg, piggyback=piggyback) if self.cfg.isac_sensing_model == "radar_snr" else 0.0
+            angular_probability = (
+                1.0 if mode == "ideal_count" and in_true_sector else self.angular_observation_match_probability(true_beam, sensed_beam)
+            )
+            if angular_probability <= 1e-9:
+                continue
+            q = float(np.clip(pd * angular_probability, 0.0, 1.0))
+            candidates.append((target, q, pd, snr_db, in_true_sector))
+            if in_true_sector:
+                true_sector_candidates.append((pd, snr_db))
+
+        detections: list[AnonymousSensingDetection] = []
+        detection_probabilities: list[float] = []
+        true_sector_detection_count = 0
+        position_squared_errors: list[float] = []
+        for target, q, pd, snr_db, in_true_sector in candidates:
+            detected = bool(mode == "ideal_count" and in_true_sector)
+            if mode != "ideal_count":
+                event_rng = self._sensing_event_rng(
+                    slot,
+                    node,
+                    sensed_beam,
+                    1,
+                    int(target),
+                    int(bool(piggyback)),
+                )
+                detected = bool(event_rng.random() < q)
+            detection_probabilities.append(q)
+            if not detected:
+                continue
+            estimate = self.states[target].position.copy()
+            error_std = 0.0 if mode == "ideal_count" else max(0.0, float(self.cfg.sensing_position_error_std_m))
+            if error_std > 0.0:
+                position_rng = self._sensing_event_rng(slot, node, sensed_beam, 3, int(target))
+                estimate += position_rng.normal(0.0, error_std, size=3)
+            estimate = np.clip(estimate, np.zeros(3), np.asarray(self.cfg.area_size_m, dtype=float))
+            if in_true_sector:
+                true_sector_detection_count += 1
+                position_squared_errors.append(
+                    float(np.sum((estimate - self.states[target].position) ** 2))
+                )
+            detections.append(
+                AnonymousSensingDetection(
+                    detection_id=self.sensing_event_id(slot, node, sensed_beam, int(bool(piggyback)), target),
+                    position_m=tuple(float(value) for value in estimate),
+                    snr_db=float(snr_db),
+                    detection_probability=float(pd),
+                    confidence=float(q),
+                )
+            )
+
+        false_alarm_count = 0
+        if mode != "ideal_count" and not detections:
+            false_alarm_rng = self._sensing_event_rng(
+                slot,
+                node,
+                sensed_beam,
+                2,
+                int(bool(piggyback)),
+            )
+            false_alarm_count = int(false_alarm_rng.random() < self.cfg.false_alarm_rate)
+
+        if mode == "binary_occupancy":
+            detections = detections[:1]
+            estimated_target_count = int(bool(detections) or false_alarm_count > 0)
+            q_occupied = 1.0 - (1.0 - float(self.cfg.false_alarm_rate)) * prod(
+                1.0 - value for value in detection_probabilities
+            )
+            count_variance = float(q_occupied * (1.0 - q_occupied))
+        else:
+            estimated_target_count = len(detections) + false_alarm_count
+            count_variance = 0.0 if mode == "ideal_count" else float(
+                sum(value * (1.0 - value) for value in detection_probabilities)
+                + self.cfg.false_alarm_rate * (1.0 - self.cfg.false_alarm_rate)
+            )
+
+        occupancy = float(estimated_target_count > 0)
+        if detections:
+            confidence = max(float(item.confidence) for item in detections)
+        elif false_alarm_count:
+            confidence = float(self.cfg.false_alarm_rate)
+        else:
+            confidence = float(np.clip(prod(1.0 - value for value in detection_probabilities), 0.0, 1.0))
+        max_snr_db = max((snr for _pd, snr in true_sector_candidates), default=-300.0)
+        self.record_sensing_measurement_statistics(
+            true_sector_candidates=true_sector_candidates,
+            real_detection_count=len(detections),
+            true_sector_detection_count=true_sector_detection_count,
+            false_alarm_count=false_alarm_count,
+            estimated_target_count=estimated_target_count,
+            position_squared_errors=position_squared_errors,
         )
-        self.sensing_report_slot[node, sensed_beam] = int(slot)
+        return BeamSensingMeasurement(
+            measurement_id=measurement_id,
+            node=node,
+            beam=sensed_beam,
+            slot=slot_value,
+            mode=mode,
+            occupancy_value=occupancy,
+            estimated_target_count=int(estimated_target_count),
+            count_variance=float(count_variance),
+            confidence=float(confidence),
+            max_snr_db=float(max_snr_db),
+            detections=tuple(detections),
+            false_alarm_count=int(false_alarm_count),
+        )
+
+    def sensing_event_id(self, slot: int | None, node: int, beam: int, *parts: int) -> str:
+        payload = ":".join(
+            str(value)
+            for value in (self.scenario_seed, -1 if slot is None else int(slot), int(node), int(beam), *parts)
+        )
+        return hashlib.blake2b(payload.encode("ascii"), digest_size=12).hexdigest()
+
+    def record_sensing_measurement_statistics(
+        self,
+        *,
+        true_sector_candidates: list[tuple[float, float]],
+        real_detection_count: int,
+        true_sector_detection_count: int,
+        false_alarm_count: int,
+        estimated_target_count: int,
+        position_squared_errors: list[float],
+    ) -> None:
+        self.sensing_observations += 1
+        self.sensing_target_opportunity_count += len(true_sector_candidates)
+        self.sensing_target_detection_count += int(true_sector_detection_count)
+        self.sensing_count_abs_error_sum += abs(int(estimated_target_count) - len(true_sector_candidates))
+        self.sensing_count_sample_count += 1
+        self.sensing_position_squared_error_sum += sum(position_squared_errors)
+        self.sensing_position_sample_count += len(position_squared_errors)
+        if true_sector_candidates:
+            self.sensing_target_observations += 1
+            self.sensing_pd_sum += max(pd for pd, _snr_db in true_sector_candidates)
+            max_snr_db = max(snr_db for _pd, snr_db in true_sector_candidates)
+            if max_snr_db > -300.0:
+                self.sensing_snr_db_sum += max_snr_db
+                self.sensing_snr_sample_count += 1
+            if real_detection_count > 0:
+                self.sensing_detection_count += 1
+            else:
+                self.sensing_miss_count += 1
+        if false_alarm_count > 0:
+            self.sensing_false_alarm_count += int(false_alarm_count)
+
+    def record_sensing_measurement_reports(self, measurement: BeamSensingMeasurement) -> None:
+        node = int(measurement.node)
+        beam = int(measurement.beam)
+        slot = int(measurement.slot)
+        reports = [
+            SharedSensingReport(
+                detection_id=item.detection_id,
+                position_m=item.position_m,
+                confidence=float(item.confidence),
+                snr_db=float(item.snr_db),
+                origin_node=node,
+                origin_slot=slot,
+            )
+            for item in measurement.detections
+        ]
+        self.sensing_report_detections[node][beam] = reports
+        self.sensing_report_ids[node].update(report.detection_id for report in reports)
+        self.sensing_report_position[node, beam] = np.nan
+        self.sensing_report_confidence[node, beam] = 0.0
+        if reports:
+            best = max(reports, key=lambda item: item.confidence)
+            self.sensing_report_position[node, beam] = np.asarray(best.position_m, dtype=float)
+            self.sensing_report_confidence[node, beam] = best.confidence
 
     def max_sensing_snr_db(self, node: int, sensed_beam: int, radius: float, piggyback: bool) -> float:
         profile = self.sensing_profile(radius, piggyback)
@@ -1629,11 +1700,20 @@ class NeighborDiscoverySimulator:
                 new_edges.append(edge)
             self.success_count[tx_node, int(beams[tx_node, rx_node])] += 1.0
             self.success_count[rx_node, int(beams[rx_node, tx_node])] += 1.0
+            self.beam_interaction_count[tx_node, int(beams[tx_node, rx_node])] += 1.0
+            self.beam_interaction_count[rx_node, int(beams[rx_node, tx_node])] += 1.0
             self.mark_wang2025_interaction(tx_node, int(beams[tx_node, rx_node]), slot)
             self.mark_wang2025_interaction(rx_node, int(beams[rx_node, tx_node]), slot)
             if self.protocol in COMM_TABLE_PROTOCOLS:
                 self.exchange_neighbor_and_sensing_tables(tx_node, rx_node, slot)
+            self.update_knowledge_completion(slot)
         return new_edges
+
+    def update_knowledge_completion(self, slot: int) -> None:
+        if self.knowledge_completion_slot is not None:
+            return
+        if all(len(records) >= self.cfg.n_nodes - 1 for records in self.neighbor_records):
+            self.knowledge_completion_slot = int(slot) + 1
 
     def _record_failed_handshakes(
         self,
@@ -1654,39 +1734,75 @@ class NeighborDiscoverySimulator:
 
     def exchange_neighbor_and_sensing_tables(self, node_a: int, node_b: int, slot: int) -> None:
         include_sensing = self.protocol in SENSING_TABLE_PROTOCOLS
-        self.merge_peer_tables(dst=node_a, src=node_b, slot=slot, include_sensing=include_sensing)
-        self.merge_peer_tables(dst=node_b, src=node_a, slot=slot, include_sensing=include_sensing)
+        snapshot_a = self.peer_table_snapshot(node_a, slot, include_sensing=include_sensing)
+        snapshot_b = self.peer_table_snapshot(node_b, slot, include_sensing=include_sensing)
+        self.merge_peer_tables(dst=node_a, src=node_b, slot=slot, include_sensing=include_sensing, snapshot=snapshot_b)
+        self.merge_peer_tables(dst=node_b, src=node_a, slot=slot, include_sensing=include_sensing, snapshot=snapshot_a)
 
-    def merge_peer_tables(self, dst: int, src: int, slot: int, *, include_sensing: bool) -> None:
+    def peer_table_snapshot(self, node: int, slot: int, *, include_sensing: bool) -> dict[str, list]:
         report_ttl = max(1, int(self.cfg.sensing_report_ttl_slots))
-        shared_reports: list[tuple[np.ndarray, str]] = []
-        for target, (position, report_slot) in self.neighbor_records[src].items():
-            if target != dst and slot - int(report_slot) <= report_ttl:
-                shared_reports.append((position.copy(), "comm"))
+        neighbors = [
+            (int(target), position.copy(), int(report_slot))
+            for target, (position, report_slot) in self.neighbor_records[node].items()
+            if slot - int(report_slot) <= report_ttl
+        ]
+        sensing: list[SharedSensingReport] = []
+        if include_sensing:
+            for beam_reports in self.sensing_report_detections[node]:
+                for report in beam_reports:
+                    if slot - int(report.origin_slot) <= report_ttl:
+                        sensing.append(report)
+        return {"neighbors": neighbors, "sensing": sensing}
+
+    def merge_peer_tables(
+        self,
+        dst: int,
+        src: int,
+        slot: int,
+        *,
+        include_sensing: bool,
+        snapshot: dict[str, list] | None = None,
+    ) -> None:
+        peer = snapshot or self.peer_table_snapshot(src, slot, include_sensing=include_sensing)
+        shared_reports: list[tuple[np.ndarray, str, float, SharedSensingReport | None]] = []
+        for target, position, report_slot in peer["neighbors"]:
+            if target == dst:
+                continue
+            existing = self.neighbor_records[dst].get(int(target))
+            changed = existing is None or int(report_slot) > int(existing[1])
+            if changed:
+                self.neighbor_records[dst][int(target)] = (position.copy(), int(report_slot))
+                shared_reports.append((position.copy(), "comm", 1.0, None))
 
         if include_sensing:
-            recent = (slot - self.sensing_report_slot[src]) <= report_ttl
-            valid = recent & (self.sensing_report_confidence[src] > 0.0)
-            for source_beam in np.flatnonzero(valid)[: max(1, 2 * self.cfg.target_degree)]:
-                position = self.sensing_report_position[src, int(source_beam)]
-                if np.isfinite(position).all():
-                    shared_reports.append((position.copy(), "sense"))
+            for report in peer["sensing"][: max(1, 4 * self.cfg.target_degree)]:
+                if report.detection_id in self.sensing_report_ids[dst]:
+                    continue
+                shared_reports.append(
+                    (np.asarray(report.position_m, dtype=float), "sense", float(report.confidence), report)
+                )
 
-        seen_beams: set[tuple[int, str]] = set()
-        for position, support in shared_reports:
+        grouped: dict[tuple[int, str], list[tuple[np.ndarray, float, SharedSensingReport | None]]] = {}
+        for position, support, confidence, report in shared_reports:
             beam = beam_for_target(
                 self.states[dst], position, self.cfg.azimuth_cells, self.cfg.elevation_cells
             )
-            report_key = (int(beam), support)
-            if report_key in seen_beams:
-                continue
-            seen_beams.add(report_key)
+            grouped.setdefault((int(beam), support), []).append(
+                (position.copy(), float(confidence), report)
+            )
+
+        for (beam, support), reports in grouped.items():
+            report_confidence = max(confidence for _position, confidence, _report in reports)
             trust_weight = 1.0
             if self.protocol in TRUST_GATED_TABLE_PROTOCOLS:
                 trust_weight = self.shared_table_trust_weight(dst, beam, support, slot)
                 if trust_weight <= 0.0:
                     continue
-            self.boost_shared_beam(dst, beam, slot, strength=trust_weight)
+            strength = float(np.clip(trust_weight * report_confidence, 0.0, 1.0))
+            self.boost_shared_beam(dst, beam, slot, strength=strength, target_count=len(reports))
+            if support == "sense":
+                sensing_reports = [report for _position, _confidence, report in reports if report is not None]
+                self.store_shared_sensing_reports(dst, beam, sensing_reports, strength)
 
     def shared_table_trust_weight(self, dst: int, beam: int, support: str, slot: int) -> float:
         """Local confidence gate for peer-provided neighbor/sensing table hints."""
@@ -1709,7 +1825,15 @@ class NeighborDiscoverySimulator:
             return float(np.clip(trust, 0.20, 0.75))
         return 0.0
 
-    def boost_shared_beam(self, node: int, beam: int, slot: int, *, strength: float = 1.0) -> None:
+    def boost_shared_beam(
+        self,
+        node: int,
+        beam: int,
+        slot: int,
+        *,
+        strength: float = 1.0,
+        target_count: int = 1,
+    ) -> None:
         strength = float(np.clip(strength, 0.0, 1.0))
         if strength <= 0.0:
             return
@@ -1720,7 +1844,44 @@ class NeighborDiscoverySimulator:
         self.empty_beam_count[node, beam] = 0.0
         self.age[node, beam] = 0.0
         self.last_positive_slot[node, beam] = slot
-        self.boost_wang2025_candidate(node, beam, slot)
+        self.sensing_target_count_estimate[node, beam] = max(
+            self.sensing_target_count_estimate[node, beam], float(max(1, int(target_count)))
+        )
+        self.sensing_measurement_confidence[node, beam] = max(
+            self.sensing_measurement_confidence[node, beam], strength
+        )
+        self.sensing_report_slot[node, beam] = slot
+        self.boost_wang2025_candidate(node, beam, slot, target_count=target_count)
+
+    def store_shared_sensing_reports(
+        self,
+        node: int,
+        beam: int,
+        reports: list[SharedSensingReport],
+        strength: float,
+    ) -> None:
+        stored = [
+            SharedSensingReport(
+                detection_id=report.detection_id,
+                position_m=report.position_m,
+                confidence=float(np.clip(report.confidence * strength, 0.0, 1.0)),
+                snr_db=report.snr_db,
+                origin_node=report.origin_node,
+                origin_slot=report.origin_slot,
+            )
+            for report in reports
+            if report.detection_id not in self.sensing_report_ids[node]
+        ]
+        if not stored:
+            return
+        self.sensing_report_detections[node][beam].extend(stored)
+        self.sensing_report_ids[node].update(report.detection_id for report in stored)
+        best = max(self.sensing_report_detections[node][beam], key=lambda item: item.confidence)
+        self.sensing_report_position[node, beam] = np.asarray(best.position_m, dtype=float)
+        self.sensing_report_confidence[node, beam] = best.confidence
+        self.sensing_report_slot[node, beam] = max(
+            report.origin_slot for report in self.sensing_report_detections[node][beam]
+        )
 
     def summarize(self, episode: int) -> EpisodeResult:
         delays = []
@@ -1739,6 +1900,13 @@ class NeighborDiscoverySimulator:
         isolated = sum(1 for c in components if len(c) == 1)
         discovered_count = len(self.discovered_edges)
         discovery_rate = discovered_count / max(1, len(self.first_true_slot))
+        knowledge_pairs = sum(len(records) for records in self.neighbor_records)
+        possible_knowledge_pairs = self.cfg.n_nodes * max(0, self.cfg.n_nodes - 1)
+        direct_knowledge_pairs = 2 * discovered_count
+        indirect_knowledge_pairs = max(0, knowledge_pairs - direct_knowledge_pairs)
+        knowledge_complete_nodes = sum(
+            len(records) >= self.cfg.n_nodes - 1 for records in self.neighbor_records
+        )
         discovery_per_scan_action = discovered_count / max(1, self.scan_actions)
         discoveries_per_1000_scan_actions = 1000.0 * discovery_per_scan_action
         scan_actions_per_discovery = self.scan_actions / max(1, discovered_count)
@@ -1747,8 +1915,13 @@ class NeighborDiscoverySimulator:
         collision_penalized_discovery_rate = discovered_count / max(1, len(self.first_true_slot) + self.collision_count)
         energy_j = self.radio_energy_j()
         sensing_detection_rate = self.sensing_detection_count / max(1, self.sensing_target_observations)
+        per_target_sensing_recall = self.sensing_target_detection_count / max(1, self.sensing_target_opportunity_count)
         sensing_false_alarm_ratio = self.sensing_false_alarm_count / max(1, self.sensing_observations)
         sensing_miss_ratio = self.sensing_miss_count / max(1, self.sensing_target_observations)
+        sensing_count_mae = self.sensing_count_abs_error_sum / max(1, self.sensing_count_sample_count)
+        sensing_position_rmse_m = sqrt(
+            self.sensing_position_squared_error_sum / max(1, self.sensing_position_sample_count)
+        )
         mean_sensing_pd = self.sensing_pd_sum / max(1, self.sensing_target_observations)
         mean_sensing_snr_db = self.sensing_snr_db_sum / max(1, self.sensing_snr_sample_count)
         mean_handshake_sinr_db = (
@@ -1772,6 +1945,16 @@ class NeighborDiscoverySimulator:
             true_edges_seen=len(self.first_true_slot),
             discovered_edges=discovered_count,
             discovery_rate=discovery_rate,
+            neighbor_knowledge_pairs=knowledge_pairs,
+            neighbor_knowledge_recall=knowledge_pairs / max(1, possible_knowledge_pairs),
+            indirect_knowledge_pairs=indirect_knowledge_pairs,
+            indirect_knowledge_rate=indirect_knowledge_pairs / max(1, possible_knowledge_pairs),
+            knowledge_complete_nodes=knowledge_complete_nodes,
+            networking_completion_slot_censored=(
+                self.knowledge_completion_slot
+                if self.knowledge_completion_slot is not None
+                else self.cfg.slots_per_episode
+            ),
             mean_delay_censored=float(np.mean(delays)),
             p90_delay_censored=float(np.percentile(delays, 90)),
             p95_delay_censored=float(np.percentile(delays, 95)),
@@ -1792,6 +1975,7 @@ class NeighborDiscoverySimulator:
             collision_count=self.collision_count,
             empty_scan_count=self.empty_scans,
             scan_actions=self.scan_actions,
+            target_status_diagnostics_collected=self.collect_target_status_metrics,
             undiscovered_target_beam_actions=self.undiscovered_target_beam_actions,
             known_only_beam_actions=self.known_only_beam_actions,
             empty_target_beam_actions=self.empty_target_beam_actions,
@@ -1804,11 +1988,15 @@ class NeighborDiscoverySimulator:
             piggyback_sense_actions=self.piggyback_sense_actions,
             rendezvous_guided_actions=self.rendezvous_guided_actions,
             rendezvous_fallback_actions=self.rendezvous_fallback_actions,
+            sensing_measurement_mode=self.cfg.sensing_measurement_mode,
             sensing_observations=self.sensing_observations,
             sensing_target_observations=self.sensing_target_observations,
             sensing_detection_rate=sensing_detection_rate,
+            per_target_sensing_recall=per_target_sensing_recall,
             sensing_false_alarm_ratio=sensing_false_alarm_ratio,
             sensing_miss_ratio=sensing_miss_ratio,
+            sensing_count_mae=sensing_count_mae,
+            sensing_position_rmse_m=sensing_position_rmse_m,
             mean_sensing_pd=mean_sensing_pd,
             mean_sensing_snr_db=mean_sensing_snr_db,
             discovery_per_scan_action=discovery_per_scan_action,

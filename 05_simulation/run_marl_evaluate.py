@@ -30,6 +30,7 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
+from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_RX, MODE_SENSE, MODE_TX  # noqa: E402
 
 
@@ -50,6 +51,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--miss-detection-rate", type=float, default=None)
     parser.add_argument("--angular-cell-offset-std", type=float, default=None)
     parser.add_argument("--sensing-period-slots", type=int, default=None)
+    parser.add_argument("--sensing-measurement-mode", choices=SENSING_MEASUREMENT_MODES, default=None)
     parser.add_argument("--mobility-model", default=None)
     parser.add_argument("--env-protocol", default=None)
     parser.add_argument(
@@ -224,6 +226,9 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         rule_residual_scale=rule_residual_scale,
         use_contention_mode_prior=use_contention_mode_prior,
         use_rendezvous_adapter=checkpoint_rendezvous_adapter,
+        use_residual_measurement_features=bool(train_args.get("residual_measurement_features", False)),
+        role_probability_floor=float(train_args.get("role_probability_floor", 0.0)),
+        beam_uniform_mixture=float(train_args.get("beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_flags(forbid_sense, forbid_idle),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
@@ -282,6 +287,11 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "elevation_cells": int(cfg.elevation_cells),
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
+        "sensing_measurement": {
+            "mode": cfg.sensing_measurement_mode,
+            "identity_exposed_before_handshake": False,
+            "common_protocol_interface": True,
+        },
         "communication_phy": {
             "model": cfg.communication_phy_model,
             "carrier_frequency_hz": cfg.communication_carrier_frequency_hz,
@@ -314,6 +324,11 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "checkpoint_contention_mode_prior": checkpoint_contention_mode_prior,
         "contention_mode_prior": use_contention_mode_prior,
         "checkpoint_rendezvous_adapter": checkpoint_rendezvous_adapter,
+        "residual_measurement_features": bool(train_args.get("residual_measurement_features", False)),
+        "stochastic_support": {
+            "role_probability_floor": float(train_args.get("role_probability_floor", 0.0)),
+            "beam_uniform_mixture": float(train_args.get("beam_uniform_mixture", 0.0)),
+        },
         "rendezvous_adapter_disabled": bool(args.disable_rendezvous_adapter),
         "training_contract_version": str(checkpoint.get("training_contract_version", "legacy")),
         "evaluation_fingerprint": str(args._evaluation_fingerprint),
@@ -452,12 +467,18 @@ def build_policy(
 ):
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
     use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
+    use_residual_measurement_features = bool(kwargs.pop("use_residual_measurement_features", False))
+    role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
+    beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     kwargs["use_contention_mode_prior"] = use_contention_mode_prior
     kwargs["use_rendezvous_adapter"] = use_rendezvous_adapter
+    kwargs["use_residual_measurement_features"] = use_residual_measurement_features
+    kwargs["role_probability_floor"] = role_probability_floor
+    kwargs["beam_uniform_mixture"] = beam_uniform_mixture
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
@@ -487,9 +508,10 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
         "miss_detection_rate": "miss_detection_rate",
         "angular_cell_offset_std": "angular_cell_offset_std",
         "sensing_period_slots": "sensing_period_slots",
+        "sensing_measurement_mode": "sensing_measurement_mode",
     }
     for arg_name, field_name in optional_fields.items():
-        value = getattr(args, arg_name)
+        value = getattr(args, arg_name, None)
         if value is not None:
             replacements[field_name] = value
     rendezvous_observation = getattr(args, "rendezvous_observation", None)

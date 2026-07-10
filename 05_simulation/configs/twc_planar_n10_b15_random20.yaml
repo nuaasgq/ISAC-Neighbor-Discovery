@@ -54,6 +54,7 @@ isac_error:
 phy_sensing:
   model: "radar_snr"
   waveform: "mimo_otfs"
+  measurement_mode: "noisy_count"
   carrier_frequency_hz: 30000000000
   bandwidth_hz: 64000000
   radar_cross_section_m2: 1.0

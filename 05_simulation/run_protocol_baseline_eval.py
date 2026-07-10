@@ -18,6 +18,7 @@ if str(SRC) not in sys.path:
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.runner import stable_protocol_offset, with_metric_aliases  # noqa: E402
+from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.simulator import NeighborDiscoverySimulator  # noqa: E402
 
 
@@ -55,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--miss-detection-rate", type=float, default=None)
     parser.add_argument("--angular-cell-offset-std", type=float, default=None)
     parser.add_argument("--sensing-period-slots", type=int, default=None)
+    parser.add_argument("--sensing-measurement-mode", choices=SENSING_MEASUREMENT_MODES, default=None)
     parser.add_argument("--slot-metric-period", type=int, default=0)
     parser.add_argument(
         "--target-status-diagnostics",
@@ -126,9 +128,10 @@ def override_config(config: SimulationConfig, args: argparse.Namespace) -> Simul
         "miss_detection_rate": "miss_detection_rate",
         "angular_cell_offset_std": "angular_cell_offset_std",
         "sensing_period_slots": "sensing_period_slots",
+        "sensing_measurement_mode": "sensing_measurement_mode",
     }
     for arg_name, field_name in optional_fields.items():
-        value = getattr(args, arg_name)
+        value = getattr(args, arg_name, None)
         if value is not None:
             replacements[field_name] = value
     mobility = dict(config.mobility)
@@ -209,6 +212,11 @@ def build_manifest(
         "elevation_cells": int(cfg.elevation_cells),
         "communication_range_m": float(cfg.communication_range_m),
         "sensing_range_m": float(cfg.sensing_range_m),
+        "sensing_measurement": {
+            "mode": cfg.sensing_measurement_mode,
+            "identity_exposed_before_handshake": False,
+            "common_protocol_interface": True,
+        },
         "communication_phy": {
             "model": cfg.communication_phy_model,
             "carrier_frequency_hz": cfg.communication_carrier_frequency_hz,

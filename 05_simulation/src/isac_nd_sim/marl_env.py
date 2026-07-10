@@ -28,7 +28,7 @@ MODE_TO_INDEX = {name: idx for idx, name in enumerate(MODE_NAMES)}
 ACCESS_GATE_NAMES = (ACCESS_BACKOFF, ACCESS_NORMAL, ACCESS_AGGRESSIVE)
 ACCESS_GATE_TO_INDEX = {name: idx for idx, name in enumerate(ACCESS_GATE_NAMES)}
 REWARD_VERSIONS = ("legacy", "collision_topology", "discovery_first", "discovery_access_stable")
-CANDIDATE_SOURCES = ("default", "wang_table")
+CANDIDATE_SOURCES = ("default", "residual_table", "wang_table")
 
 
 @dataclass(frozen=True)
@@ -248,6 +248,24 @@ class MarlNeighborDiscoveryEnv:
             "beam_success": self._sim.success_count[node].astype(np.float32).copy(),
             "beam_fail": self._sim.fail_count[node].astype(np.float32).copy(),
             "beam_collision": self._sim.collision_fail_count[node].astype(np.float32).copy(),
+            "beam_target_count": (
+                np.maximum(self._sim.sensing_target_count_estimate[node], 0.0)
+                / max(1.0, float(self.cfg.target_degree))
+            ).astype(np.float32),
+            "beam_target_count_variance": (
+                self._sim.sensing_target_count_variance[node] / max(1.0, float(self.cfg.target_degree) ** 2)
+            ).astype(np.float32),
+            "beam_measurement_confidence": self._sim.sensing_measurement_confidence[node].astype(np.float32).copy(),
+            "beam_interaction_count": (
+                self._sim.beam_interaction_count[node] / max(1.0, float(self.cfg.target_degree))
+            ).astype(np.float32),
+            "beam_residual_target_count": (
+                np.maximum(
+                    0.0,
+                    self._sim.sensing_target_count_estimate[node] - self._sim.beam_interaction_count[node],
+                )
+                / max(1.0, float(self.cfg.target_degree))
+            ).astype(np.float32),
             "candidate_mask": candidate["mask"],
             "candidate_score": candidate["score"],
             "rendezvous_beam_score": rendezvous["beam_score"],
@@ -328,6 +346,8 @@ class MarlNeighborDiscoveryEnv:
 
         if self.candidate_source == "wang_table":
             return self._wang_table_candidate_features_for(node)
+        if self.candidate_source == "residual_table":
+            return self._residual_table_candidate_features_for(node)
 
         belief = self._sim.belief[node]
         success = np.log1p(self._sim.success_count[node])
@@ -362,6 +382,67 @@ class MarlNeighborDiscoveryEnv:
             "mask": mask.astype(np.float32, copy=False),
             "score": score.astype(np.float32, copy=False),
         }
+
+    def _residual_table_candidate_features_for(self, node: int) -> dict[str, np.ndarray]:
+        """Build candidates from local count uncertainty and motion-aged residual opportunity."""
+
+        count = self._sim.sensing_target_count_estimate[node]
+        interactions = self._sim.beam_interaction_count[node]
+        residual = np.maximum(0.0, count - interactions)
+        variance = np.maximum(0.0, self._sim.sensing_target_count_variance[node])
+        confidence = np.clip(self._sim.sensing_measurement_confidence[node], 0.0, 1.0)
+        known = count >= 0.0
+        freshness = self._motion_aged_measurement_freshness(node)
+        effective_confidence = confidence * freshness
+        residual_norm = np.clip(residual / max(1.0, float(self.cfg.target_degree)), 0.0, 1.0)
+        uncertainty_norm = np.clip(
+            np.sqrt(variance) / max(1.0, float(self.cfg.target_degree)),
+            0.0,
+            1.0,
+        )
+
+        positive = known & (residual > 0.0) & (effective_confidence >= 0.20)
+        confidently_empty = known & (count <= 0.0) & (effective_confidence >= 0.80)
+        confidently_exhausted = known & (count > 0.0) & (residual <= 0.0) & (effective_confidence >= 0.50)
+        mask = (~confidently_empty & ~confidently_exhausted).astype(np.float32)
+
+        score = np.full(self.n_beams, 0.25, dtype=float)
+        score[known] = (
+            0.10
+            + 0.55 * residual_norm[known]
+            + 0.20 * effective_confidence[known]
+            + 0.15 * uncertainty_norm[known]
+        )
+        score[confidently_empty | confidently_exhausted] = 0.0
+        score[positive] = np.maximum(score[positive], 0.35 + 0.50 * residual_norm[positive])
+
+        if not np.any(mask > 0.5):
+            reopen_count = min(self.n_beams, max(2, int(np.ceil(np.sqrt(max(1, self.n_beams))))))
+            reopen = np.argpartition(freshness, reopen_count - 1)[:reopen_count]
+            mask[reopen] = 1.0
+            score[reopen] = np.maximum(score[reopen], 0.05)
+        return {
+            "mask": mask.astype(np.float32, copy=False),
+            "score": np.clip(score, 0.0, 1.0).astype(np.float32, copy=False),
+        }
+
+    def _motion_aged_measurement_freshness(self, node: int) -> np.ndarray:
+        report_age_slots = np.maximum(0.0, self._slot - self._sim.sensing_report_slot[node]).astype(float)
+        report_age_s = report_age_slots * max(float(self.cfg.slot_duration_s), 1e-9)
+        own_speed = float(np.linalg.norm(self._sim.states[node].velocity))
+        mobility = self.cfg.mobility
+        configured_max = float(
+            mobility.get(
+                "max_speed_mps",
+                mobility.get("speed_max_mps", mobility.get("speed_mean_mps", 15.0)),
+            )
+        )
+        relative_speed_bound = max(1e-6, own_speed + max(0.0, configured_max))
+        area_diagonal = float(np.linalg.norm(np.asarray(self.cfg.area_size_m, dtype=float)))
+        reference_range = max(100.0, min(float(self.cfg.sensing_range_m), 0.25 * area_diagonal))
+        beamwidth_rad = 2.0 * np.pi / max(1.0, float(self.cfg.azimuth_cells))
+        angular_cell_drift = relative_speed_bound * report_age_s / max(1e-6, reference_range * beamwidth_rad)
+        return np.exp(-angular_cell_drift)
 
     def _rendezvous_features_for(self, node: int) -> dict[str, np.ndarray | float]:
         beam_score = np.zeros(self.n_beams, dtype=np.float32)
