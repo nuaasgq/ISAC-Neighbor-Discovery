@@ -59,9 +59,25 @@ The apparent single-seed interaction did not replicate. `D-B` was positive in on
 
 The actor receives only local observations, joint recurrent replay error is zero, role/beam gradients are structurally isolated, and no global action teacher is enabled. The remaining uncertainty is optimization duration: 6k steps provide only 20 policy updates. The next and final architecture check is a fresh `30,000`-step three-seed run with no model or reward changes. Failure at 30k terminates this joint architecture; success is required before any 100k run.
 
+## 30k Architecture Check
+
+The unchanged `v4` configuration was trained from scratch for `100 x 300 = 30,000` steps with three seeds. Each run completed with zero recurrent replay error and approximately `0.5 GB` peak RSS.
+
+| Training seed | A | B | C | D | D-B | Interaction | D TX ratio |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 29260711 | 52.11% | 52.44% | 52.78% | 55.33% | +2.89 pp | +2.22 pp | 56.81% |
+| 29261711 | 52.11% | 53.22% | 48.67% | 49.11% | -4.11 pp | -0.67 pp | 76.17% |
+| 29262711 | 52.11% | 48.56% | 53.44% | 53.89% | +5.33 pp | +4.00 pp | 65.89% |
+| Mean | 52.11% | 51.41% | 51.63% | 52.78% | +1.37 pp | +1.85 pp | 66.29% |
+
+Longer training did not remove seed variance. The second seed collapsed toward TX and erased the gains observed in the other seeds. The main method improved over A by only `+0.67 pp` on average and did not pass the gate. A 100k run is therefore not justified for this unconstrained role learner.
+
+The next experiment is a new stabilization ablation, not a continuation of the failed architecture: a training-only soft penalty on the per-slot mean TX probability. It does not expose global state or actions at execution and still permits heterogeneous local role probabilities, but it must be reported as a rule-informed regularizer.
+
 ## Result Locations
 
 - Corrected reward screen: `05_simulation/results_raw/handshake_reward_v2_screen_seed29260711_20260711`
 - Shared factorized screen: `05_simulation/results_raw/factorized_isac_credit_screen_seed29260711_20260711`
 - Decoupled screen: `05_simulation/results_raw/decoupled_factorized_screen_seed29260711_20260711`
 - Decoupled three-seed gate: `05_simulation/results_raw/decoupled_joint_6k_three_seed_gate_20260711`
+- Decoupled 30k gate: `05_simulation/results_raw/decoupled_joint_30k_three_seed_gate_20260711`
