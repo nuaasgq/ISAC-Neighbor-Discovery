@@ -71,6 +71,28 @@ Using the otherwise unchanged unbounded score-residual actor, the corrected thre
 
 The correction improves the mean relative to the dynamic-advantage run, but it still fails the `+3 pp` gate and is not a sufficient paper-level RL contribution.
 
+## GAE and Local Potential Shaping Screens
+
+Fixed-rollout finite-horizon GAE was implemented and verified against Monte Carlo returns at `lambda=1`. On training seed `29260711`, the 20-scenario results were:
+
+| Advantage estimator | Learned policy | Score proportional | Learned minus rule |
+|---|---:|---:|---:|
+| Frozen MC | 55.11% | 53.00% | +2.11 pp |
+| GAE, lambda=0.95 | 53.33% | 53.00% | +0.33 pp |
+| GAE, lambda=0.99 | 52.44% | 53.00% | -0.56 pp |
+
+GAE did not improve the short gate and was not expanded to three seeds.
+
+A potential-based ISAC shaping term was then tested. Its potential uses only the decentralized actor's candidate-mask size and candidate-score entropy. The terminal potential is zero, and a unit test verifies that the discounted shaping return telescopes to an action-independent initial-potential constant.
+
+| Shaping coefficient | Learned policy | Score proportional | Learned minus rule |
+|---:|---:|---:|---:|
+| 0.05 | 53.78% | 53.00% | +0.78 pp |
+| 0.10 | 48.11% | 53.00% | -4.89 pp |
+| 0.20 | 50.33% | 53.00% | -2.67 pp |
+
+No shaping coefficient improved on the unshaped frozen-MC run for the same seed. The shaping hypothesis was therefore rejected without a multi-seed expansion.
+
 ## Current Conclusion
 
 1. Recurrent replay is numerically consistent (`max absolute log-probability replay error = 0`).
@@ -86,3 +108,5 @@ The correction improves the mean relative to the dynamic-advantage run, but it s
 - Local diagnostic: `05_simulation/results_raw/local_memory_diagnostics_dev20_20260711`
 - Bounded score residual 6k: `05_simulation/results_raw/bounded_score_residual_6k_three_seed_gate_20260711`
 - Frozen-advantage score residual 6k: `05_simulation/results_raw/frozen_advantage_v2_6k_three_seed_gate_20260711`
+- GAE screen: `05_simulation/results_raw/gae_lambda_screen_seed29260711_20260711`
+- Local potential screen: `05_simulation/results_raw/local_potential_coef_screen_seed29260711_20260711`
