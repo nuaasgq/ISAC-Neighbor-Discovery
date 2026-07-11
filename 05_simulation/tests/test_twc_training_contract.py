@@ -274,6 +274,32 @@ def test_recurrent_candidate_score_prior_initializes_to_local_proportional_polic
     assert torch.allclose(probabilities[1], expected, atol=1e-6, rtol=1e-6)
 
 
+def test_local_sticky_score_diagnostic_uses_only_valid_previous_beams() -> None:
+    module = load_beam_checkpoint_evaluation_module()
+    observations = [
+        {
+            "candidate_mask": np.asarray([0.0, 1.0, 1.0, 0.0], dtype=np.float32),
+            "candidate_score": np.asarray([50.0, 1.0, 2.0, 50.0], dtype=np.float32),
+        },
+        {
+            "candidate_mask": np.asarray([1.0, 0.0, 1.0, 0.0], dtype=np.float32),
+            "candidate_score": np.asarray([1.0, 50.0, 2.0, 50.0], dtype=np.float32),
+        },
+    ]
+    actions, indices = module.select_tempered_sticky_candidate_score_actions(
+        observations,
+        np.random.default_rng(7),
+        np.random.default_rng(8),
+        previous_beams=np.asarray([1, 1]),
+        score_power=1.0,
+        stay_probability=1.0,
+    )
+
+    assert indices[0] == 1
+    assert indices[1] in {0, 2}
+    assert all(action.mode in {"tx", "rx"} for action in actions)
+
+
 def test_per_agent_return_scope_requires_mpnn_critic() -> None:
     module = load_training_module()
     args = Namespace(

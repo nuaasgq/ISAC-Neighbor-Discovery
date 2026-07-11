@@ -68,6 +68,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Also evaluate direct sampling from MAPPO beam probabilities without an external random mixture.",
     )
+    parser.add_argument(
+        "--include-local-memory-diagnostics",
+        action="store_true",
+        help="Evaluate local score-temperature and one-step beam-persistence diagnostics.",
+    )
     return parser.parse_args()
 
 
@@ -206,18 +211,28 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
         rendezvous_observation_enabled=False,
     )
     variants = {
-        "pure_learned_beam": ("learned_mix", 0.0),
-        "learned_beam_random_mix_0.2": ("learned_mix", 0.2),
-        "learned_beam_random_mix_0.5": ("learned_mix", 0.5),
-        "learned_beam_random_mix_0.8": ("learned_mix", 0.8),
-        "random_candidate_beam": ("learned_mix", 1.0),
-        "candidate_score_argmax": ("score_argmax", 0.0),
-        "candidate_score_proportional": ("score_proportional", 0.0),
+        "pure_learned_beam": ("learned_mix", 0.0, 1.0, 0.0),
+        "learned_beam_random_mix_0.2": ("learned_mix", 0.2, 1.0, 0.0),
+        "learned_beam_random_mix_0.5": ("learned_mix", 0.5, 1.0, 0.0),
+        "learned_beam_random_mix_0.8": ("learned_mix", 0.8, 1.0, 0.0),
+        "random_candidate_beam": ("learned_mix", 1.0, 1.0, 0.0),
+        "candidate_score_argmax": ("score_argmax", 0.0, 1.0, 0.0),
+        "candidate_score_proportional": ("score_proportional", 0.0, 1.0, 0.0),
     }
     if bool(getattr(args, "include_stochastic_policy", False)):
-        variants["pure_learned_stochastic"] = ("learned_stochastic", 0.0)
+        variants["pure_learned_stochastic"] = ("learned_stochastic", 0.0, 1.0, 0.0)
+    if bool(getattr(args, "include_local_memory_diagnostics", False)):
+        variants.update(
+            {
+                "candidate_score_power_0.5": ("score_tempered_sticky", 0.0, 0.5, 0.0),
+                "candidate_score_power_2.0": ("score_tempered_sticky", 0.0, 2.0, 0.0),
+                "candidate_score_sticky_0.25": ("score_tempered_sticky", 0.0, 1.0, 0.25),
+                "candidate_score_sticky_0.5": ("score_tempered_sticky", 0.0, 1.0, 0.5),
+                "candidate_score_sticky_0.75": ("score_tempered_sticky", 0.0, 1.0, 0.75),
+            }
+        )
     rows: list[dict[str, Any]] = []
-    for variant, (policy_kind, beam_mixture) in variants.items():
+    for variant, (policy_kind, beam_mixture, score_power, stay_probability) in variants.items():
         for eval_episode in range(int(args.eval_episodes)):
             scenario_seed = int(args.seed) + 2_000_000 + eval_episode
             env = MarlNeighborDiscoveryEnv(
@@ -239,6 +254,7 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
             beam_trace = hashlib.blake2b(digest_size=12)
             candidate_trace = hashlib.blake2b(digest_size=12)
             rewards_by_step: list[np.ndarray] = []
+            previous_beams = np.full(env.n_agents, -1, dtype=np.int64)
             truncated = False
             while not truncated:
                 for observation in observations:
@@ -264,6 +280,15 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
                         role_rng,
                         choice_rng,
                     )
+                elif policy_kind == "score_tempered_sticky":
+                    actions, _indices = select_tempered_sticky_candidate_score_actions(
+                        observations,
+                        role_rng,
+                        choice_rng,
+                        previous_beams=previous_beams,
+                        score_power=score_power,
+                        stay_probability=stay_probability,
+                    )
                 else:
                     actions, _indices = select_candidate_score_actions(
                         observations,
@@ -271,6 +296,7 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
                         choice_rng,
                         selection="argmax" if policy_kind == "score_argmax" else "proportional",
                     )
+                previous_beams = np.asarray(_indices, dtype=np.int64)
                 role_trace.update(bytes(1 if action.mode == "tx" else 0 for action in actions))
                 beam_trace.update(
                     np.asarray([action.beam for action in actions], dtype=np.uint16).tobytes()
@@ -290,6 +316,8 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
                 "role_policy": "fixed_iid_bernoulli_0.5_not_learned",
                 "fixed_tx_probability": 0.5,
                 "beam_uniform_mixture": beam_mixture,
+                "candidate_score_power": score_power,
+                "beam_stay_probability": stay_probability,
                 "candidate_source": str(args.candidate_source),
                 "role_sequence_hash": role_trace.hexdigest(),
                 "beam_sequence_hash": beam_trace.hexdigest(),
@@ -301,6 +329,60 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
             }
             rows.append(row)
     return rows
+
+
+def select_tempered_sticky_candidate_score_actions(
+    observations: Sequence[dict[str, Any]],
+    role_rng: np.random.Generator,
+    choice_rng: np.random.Generator,
+    *,
+    previous_beams: np.ndarray,
+    score_power: float,
+    stay_probability: float,
+) -> tuple[list[Any], np.ndarray]:
+    """Local diagnostic policy using only exposed scores and the previous beam."""
+
+    from isac_nd_sim.simulator import Action
+
+    if float(score_power) <= 0.0:
+        raise ValueError("score_power must be positive.")
+    if not 0.0 <= float(stay_probability) <= 1.0:
+        raise ValueError("stay_probability must be in [0, 1].")
+    if np.asarray(previous_beams).shape != (len(observations),):
+        raise ValueError("previous_beams must have shape [agents].")
+
+    actions = []
+    indices = np.zeros(len(observations), dtype=np.int64)
+    for node, observation in enumerate(observations):
+        candidate_mask = np.asarray(observation["candidate_mask"], dtype=float)
+        candidate = np.flatnonzero(candidate_mask > 0.5)
+        if candidate.size == 0:
+            candidate = np.arange(candidate_mask.size, dtype=int)
+        previous = int(previous_beams[node])
+        stay_draw = float(choice_rng.random())
+        choice_draw = float(choice_rng.random())
+        if previous in candidate and stay_draw < float(stay_probability):
+            beam = previous
+        else:
+            scores = np.maximum(
+                0.0,
+                np.asarray(
+                    observation.get("candidate_score", np.zeros(candidate_mask.size)),
+                    dtype=float,
+                )[candidate],
+            )
+            weights = np.power(scores, float(score_power))
+            if float(weights.sum()) <= 0.0:
+                beam = int(candidate[min(int(choice_draw * candidate.size), candidate.size - 1)])
+            else:
+                cumulative = np.cumsum(weights / weights.sum())
+                beam = int(
+                    candidate[min(int(np.searchsorted(cumulative, choice_draw)), candidate.size - 1)]
+                )
+        mode = "tx" if role_rng.random() < 0.5 else "rx"
+        actions.append(Action(mode, beam))
+        indices[node] = beam
+    return actions, indices
 
 
 def select_stochastic_policy_actions(
