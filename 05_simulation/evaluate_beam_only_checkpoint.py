@@ -379,7 +379,7 @@ def select_tempered_sticky_candidate_score_actions(
         if candidate.size == 0:
             candidate = np.arange(candidate_mask.size, dtype=int)
         previous = int(previous_beams[node])
-        stay_draw = float(choice_rng.random())
+        stay_draw = float(choice_rng.random()) if float(stay_probability) > 0.0 else 1.0
         choice_draw = float(choice_rng.random())
         if previous in candidate and stay_draw < float(stay_probability):
             beam = previous

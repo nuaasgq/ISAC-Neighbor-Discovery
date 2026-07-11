@@ -332,6 +332,35 @@ def test_local_sticky_score_diagnostic_uses_only_valid_previous_beams() -> None:
     assert all(action.mode in {"tx", "rx"} for action in actions)
 
 
+def test_tempered_score_and_identical_stochastic_logits_share_action_randomness() -> None:
+    module = load_beam_checkpoint_evaluation_module()
+    observations = [
+        {
+            "candidate_mask": np.asarray([0.0, 1.0, 1.0, 1.0], dtype=np.float32),
+            "candidate_score": np.asarray([100.0, 1.0, 4.0, 9.0], dtype=np.float32),
+        }
+        for _ in range(4)
+    ]
+    logits = np.log(np.asarray([[1.0, 1.0, 2.0, 3.0]] * 4, dtype=np.float64))
+    stochastic_actions, stochastic_indices = module.select_stochastic_policy_actions(
+        logits,
+        observations,
+        np.random.default_rng(31),
+        np.random.default_rng(32),
+    )
+    score_actions, score_indices = module.select_tempered_sticky_candidate_score_actions(
+        observations,
+        np.random.default_rng(31),
+        np.random.default_rng(32),
+        previous_beams=np.full(4, -1, dtype=np.int64),
+        score_power=0.5,
+        stay_probability=0.0,
+    )
+
+    assert np.array_equal(stochastic_indices, score_indices)
+    assert [action.mode for action in stochastic_actions] == [action.mode for action in score_actions]
+
+
 def test_per_agent_return_scope_requires_mpnn_critic() -> None:
     module = load_training_module()
     args = Namespace(
