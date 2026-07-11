@@ -170,6 +170,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--candidate-mask", action="store_true", help="Use local ISAC candidate masks in beam sampling.")
     parser.add_argument(
+        "--candidate-score-prior",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Initialize a recurrent residual policy from the local candidate-score distribution.",
+    )
+    parser.add_argument(
         "--candidate-score",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -297,6 +303,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         action_contract=str(getattr(args, "action_contract", "joint_role_beam")),
         azimuth_cells=int(cfg.azimuth_cells),
         elevation_cells=int(cfg.elevation_cells),
+        use_candidate_score_prior=bool(getattr(args, "candidate_score_prior", False)),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
@@ -429,6 +436,11 @@ def validate_args(args: argparse.Namespace) -> None:
         getattr(args, "critic_network", "pooled")
     ) != "mpnn":
         raise ValueError("--return-scope per_agent requires --critic-network mpnn.")
+    if bool(getattr(args, "candidate_score_prior", False)):
+        if str(getattr(args, "network", "")) != "recurrent_contention_shared":
+            raise ValueError("--candidate-score-prior requires --network recurrent_contention_shared.")
+        if getattr(args, "candidate_score", None) is False:
+            raise ValueError("--candidate-score-prior requires candidate-score observations.")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
     if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
@@ -659,6 +671,7 @@ def build_policy(
     action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
     azimuth_cells = int(kwargs.pop("azimuth_cells", int(args[0]) if args else 1))
     elevation_cells = int(kwargs.pop("elevation_cells", 1))
+    use_candidate_score_prior = bool(kwargs.pop("use_candidate_score_prior", False))
     if str(network) == "shared":
         if action_contract != "joint_role_beam":
             raise ValueError("beam_only_fixed_role requires a contention network.")
@@ -678,6 +691,7 @@ def build_policy(
     if str(network) == "recurrent_contention_shared":
         kwargs["azimuth_cells"] = azimuth_cells
         kwargs["elevation_cells"] = elevation_cells
+        kwargs["use_candidate_score_prior"] = use_candidate_score_prior
         return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
@@ -2159,6 +2173,12 @@ def training_contract_version(args: argparse.Namespace) -> str:
 def architecture_version(args: argparse.Namespace) -> str:
     actor = str(getattr(args, "network", "shared"))
     critic = str(getattr(args, "critic_network", "pooled"))
+    if (
+        actor == "recurrent_contention_shared"
+        and critic == "mpnn"
+        and bool(getattr(args, "candidate_score_prior", False))
+    ):
+        return "beam_only_recurrent_mpnn_score_residual_v2"
     if actor == "recurrent_contention_shared" and critic == "mpnn":
         return "beam_only_recurrent_mpnn_v1"
     return f"{actor}_{critic}_v1"
@@ -2367,6 +2387,7 @@ def build_manifest(
             else "stateless"
         ),
         "actor_global_state_access": False,
+        "candidate_score_prior": bool(getattr(args, "candidate_score_prior", False)),
         "critic_network": str(getattr(args, "critic_network", "pooled")),
         "critic_hidden_dim": int(getattr(args, "critic_hidden_dim", None) or args.hidden_dim),
         "critic_message_passes": (

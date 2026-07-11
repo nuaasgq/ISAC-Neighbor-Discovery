@@ -239,6 +239,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         action_contract=action_contract,
         azimuth_cells=int(cfg.azimuth_cells),
         elevation_cells=int(cfg.elevation_cells),
+        use_candidate_score_prior=bool(train_args.get("candidate_score_prior", False)),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
     if checkpoint_loaded:
@@ -483,6 +484,7 @@ def build_policy(
     action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
     azimuth_cells = int(kwargs.pop("azimuth_cells", int(args[0]) if args else 1))
     elevation_cells = int(kwargs.pop("elevation_cells", 1))
+    use_candidate_score_prior = bool(kwargs.pop("use_candidate_score_prior", False))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
@@ -498,6 +500,7 @@ def build_policy(
     if str(network) == "recurrent_contention_shared":
         kwargs["azimuth_cells"] = azimuth_cells
         kwargs["elevation_cells"] = elevation_cells
+        kwargs["use_candidate_score_prior"] = use_candidate_score_prior
         return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)

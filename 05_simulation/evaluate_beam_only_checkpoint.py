@@ -150,6 +150,7 @@ def load_mappo_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
         action_contract=action_contract,
         azimuth_cells=int(checkpoint["config"]["azimuth_cells"]),
         elevation_cells=int(checkpoint["config"]["elevation_cells"]),
+        use_candidate_score_prior=bool(getattr(checkpoint_args, "candidate_score_prior", False)),
     )
     policy.model.load_state_dict(checkpoint["policy_state_dict"])
     policy.eval()

@@ -39,6 +39,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         action_contract: str = "beam_only_fixed_role",
         azimuth_cells: int | None = None,
         elevation_cells: int = 1,
+        use_candidate_score_prior: bool = False,
     ):
         try:
             import torch
@@ -74,6 +75,9 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.device = torch.device(device)
         self.use_candidate_mask = bool(use_candidate_mask)
         self.use_candidate_score = bool(use_candidate_score)
+        self.use_candidate_score_prior = bool(use_candidate_score_prior)
+        if self.use_candidate_score_prior and not self.use_candidate_score:
+            raise ValueError("candidate-score prior requires use_candidate_score=True.")
         self.use_topology_deficit = bool(use_topology_deficit)
         self.use_rule_residual = False
         self.rule_residual_scale = float(rule_residual_scale)
@@ -95,6 +99,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             self.use_residual_measurement_features,
             self.azimuth_cells,
             self.elevation_cells,
+            self.use_candidate_score_prior,
         ).to(self.device)
         self._recurrent_state = None
 
@@ -337,6 +342,7 @@ class _RecurrentContentionGraphActorCriticModule:
         use_residual_measurement_features: bool,
         azimuth_cells: int,
         elevation_cells: int,
+        use_candidate_score_prior: bool,
     ):
         import torch
         import torch.nn as nn
@@ -404,6 +410,15 @@ class _RecurrentContentionGraphActorCriticModule:
                 self.beam_query = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
                 self.value_head = nn.Linear(hidden_dim, 1)
+                self.use_candidate_score_prior = bool(use_candidate_score_prior)
+                if self.use_candidate_score_prior:
+                    self.candidate_prior_raw_strength = nn.Parameter(
+                        torch.tensor(float(np.log(np.expm1(1.0))), dtype=torch.float32)
+                    )
+                    nn.init.zeros_(self.beam_query.weight)
+                    nn.init.zeros_(self.beam_query.bias)
+                    nn.init.zeros_(self.beam_bias.weight)
+                    nn.init.zeros_(self.beam_bias.bias)
 
             def forward(self, tensors: dict[str, torch.Tensor], recurrent_state: torch.Tensor):
                 beam_tokens = functional.silu(self.beam_linear_norm(self.beam_linear(tensors["beam_features"])))
@@ -433,7 +448,21 @@ class _RecurrentContentionGraphActorCriticModule:
                 query = self.beam_query(next_state)
                 beam_logits = (beam_tokens * query.unsqueeze(1)).sum(dim=-1) / np.sqrt(float(self.hidden_dim))
                 beam_logits = beam_logits + self.beam_bias(beam_tokens).squeeze(-1)
+                if self.use_candidate_score_prior:
+                    beam_logits = beam_logits + self._candidate_prior_logits(tensors)
                 value = self.value_head(next_state)
                 return beam_logits, value, next_state
+
+            def _candidate_prior_logits(self, tensors: dict[str, torch.Tensor]) -> torch.Tensor:
+                scores = torch.clamp(tensors["candidate_score"], min=0.0)
+                candidate_mask = tensors.get("candidate_mask", torch.ones_like(scores)) > 0.5
+                has_candidate = candidate_mask.any(dim=-1, keepdim=True)
+                candidate_mask = torch.where(has_candidate, candidate_mask, torch.ones_like(candidate_mask))
+                scores = scores * candidate_mask.to(scores.dtype)
+                score_sum = scores.sum(dim=-1, keepdim=True)
+                uniform = candidate_mask.to(scores.dtype) / candidate_mask.sum(dim=-1, keepdim=True).clamp_min(1)
+                probabilities = torch.where(score_sum > 0.0, scores / score_sum.clamp_min(1.0e-12), uniform)
+                strength = functional.softplus(self.candidate_prior_raw_strength)
+                return strength * torch.log(probabilities.clamp_min(1.0e-12))
 
         return Module(n_beams, hidden_dim)
