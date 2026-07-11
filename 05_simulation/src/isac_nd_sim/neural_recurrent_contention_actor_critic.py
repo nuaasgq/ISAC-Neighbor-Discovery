@@ -50,8 +50,8 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         except ImportError as exc:  # pragma: no cover - depends on optional torch
             raise RuntimeError("PyTorch is required for RecurrentContentionGraphActorCritic.") from exc
 
-        if str(action_contract) != "beam_only_fixed_role":
-            raise ValueError("RecurrentContentionGraphActorCritic requires beam_only_fixed_role.")
+        if str(action_contract) not in ("beam_only_fixed_role", "joint_role_beam"):
+            raise ValueError("Unsupported recurrent action contract.")
         if use_rule_residual:
             raise ValueError("The recurrent fixed-role actor does not support rule residuals.")
         if use_contention_mode_prior:
@@ -60,8 +60,10 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             raise ValueError("The recurrent fixed-role actor does not support rendezvous adapters.")
         if use_access_gate:
             raise ValueError("beam_only_fixed_role does not support a learned access gate.")
-        if float(role_probability_floor) != 0.0:
+        if str(action_contract) == "beam_only_fixed_role" and float(role_probability_floor) != 0.0:
             raise ValueError("beam_only_fixed_role uses fixed Bernoulli(0.5) roles, not a role floor.")
+        if not 0.0 <= float(role_probability_floor) < 0.5:
+            raise ValueError("role_probability_floor must be in [0, 0.5).")
         if not 0.0 <= float(beam_uniform_mixture) <= 1.0:
             raise ValueError("beam_uniform_mixture must be in [0, 1].")
 
@@ -96,12 +98,13 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.use_contention_mode_prior = False
         self.use_rendezvous_adapter = False
         self.use_residual_measurement_features = bool(use_residual_measurement_features)
-        self.role_probability_floor = 0.0
+        self.role_probability_floor = float(role_probability_floor)
         self.beam_uniform_mixture = float(beam_uniform_mixture)
         self.use_access_gate = False
         self.access_gate_variant = str(access_gate_variant)
         self.supports_access_gate_action = False
-        self.action_contract = "beam_only_fixed_role"
+        self.action_contract = str(action_contract)
+        self.learned_mode_head_present = self.action_contract == "joint_role_beam"
         self.disabled_mode_indices = tuple(
             MODE_NAMES.index(mode) for mode in (disabled_modes or ()) if mode in MODE_NAMES
         )
@@ -115,6 +118,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             self.candidate_score_prior_power,
             self.use_bounded_score_residual,
             self.score_residual_max_logit,
+            self.learned_mode_head_present,
         ).to(self.device)
         self._recurrent_state = None
 
@@ -180,59 +184,77 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         gate_temperature: float = 1.0,
         role_rng: np.random.Generator | None = None,
     ) -> PolicyStep:
-        del mode_temperature, gate_temperature
+        del gate_temperature
         torch = self.torch
         from torch.distributions import Categorical
 
         if not observations:
             empty = torch.empty(0, device=self.device)
             return PolicyStep(actions=[], log_probs=empty, values=empty, entropies=empty)
-        if role_rng is None:
+        if self.action_contract == "beam_only_fixed_role" and role_rng is None:
             raise ValueError("beam_only_fixed_role requires an explicit role_rng.")
         if self._recurrent_state is None:
             self.reset_recurrent_state(len(observations))
         if self._recurrent_state.shape[0] != len(observations):
             raise ValueError("Agent count changed; call reset_recurrent_state before the next episode.")
 
-        _mode_logits, beam_logits, value, next_state = self._step_from_state(
+        mode_logits, beam_logits, value, next_state = self._step_from_state(
             observations,
             self._recurrent_state,
             hard_mask=True,
         )
         self._recurrent_state = next_state.detach()
         sample_beam_logits = _temperature_scaled_logits(beam_logits, beam_temperature)
+        sample_mode_logits = _temperature_scaled_logits(mode_logits, mode_temperature)
         beam_dist = Categorical(logits=sample_beam_logits)
+        mode_dist = Categorical(logits=sample_mode_logits)
         if deterministic:
             beam_idx = torch.argmax(beam_logits, dim=-1)
         else:
             beam_idx = beam_dist.sample()
-        mode_idx = torch.as_tensor(
-            [
-                MODE_NAMES.index("tx") if role_rng.random() < 0.5 else MODE_NAMES.index("rx")
-                for _ in observations
-            ],
-            dtype=torch.long,
-            device=self.device,
-        )
+        if self.action_contract == "beam_only_fixed_role":
+            mode_idx = torch.as_tensor(
+                [
+                    MODE_NAMES.index("tx") if role_rng.random() < 0.5 else MODE_NAMES.index("rx")
+                    for _ in observations
+                ],
+                dtype=torch.long,
+                device=self.device,
+            )
+        elif deterministic:
+            mode_idx = torch.argmax(mode_logits, dim=-1)
+        else:
+            mode_idx = mode_dist.sample()
+        active_beam_mask = mode_idx != MODE_NAMES.index("idle")
+        beam_idx = torch.where(active_beam_mask, beam_idx, torch.zeros_like(beam_idx))
         actions = [
             Action(MODE_NAMES[int(mode.item())], int(beam.item()))
             for mode, beam in zip(mode_idx, beam_idx, strict=True)
         ]
-        beam_log_prob = beam_dist.log_prob(beam_idx)
+        raw_beam_log_prob = beam_dist.log_prob(beam_idx)
+        beam_log_prob = torch.where(
+            active_beam_mask,
+            raw_beam_log_prob,
+            torch.zeros_like(raw_beam_log_prob),
+        )
         beam_entropy = beam_dist.entropy()
-        zeros = torch.zeros_like(beam_log_prob)
-        active_beam_mask = torch.ones_like(beam_log_prob, dtype=torch.bool)
+        if self.action_contract == "beam_only_fixed_role":
+            mode_log_prob = torch.zeros_like(beam_log_prob)
+            mode_entropy = torch.zeros_like(beam_entropy)
+        else:
+            mode_log_prob = mode_dist.log_prob(mode_idx)
+            mode_entropy = mode_dist.entropy()
         return PolicyStep(
             actions=actions,
-            log_probs=beam_log_prob,
+            log_probs=mode_log_prob + beam_log_prob,
             values=value.squeeze(-1),
-            entropies=beam_entropy,
-            mode_log_probs=zeros,
+            entropies=mode_entropy + beam_entropy,
+            mode_log_probs=mode_log_prob,
             beam_log_probs=beam_log_prob,
-            gate_log_probs=zeros,
-            mode_entropies=zeros,
+            gate_log_probs=torch.zeros_like(beam_log_prob),
+            mode_entropies=mode_entropy,
             beam_entropies=beam_entropy,
-            gate_entropies=zeros,
+            gate_entropies=torch.zeros_like(beam_entropy),
             active_beam_mask=active_beam_mask,
         )
 
@@ -280,12 +302,13 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         for observations, actions in zip(observations_by_step, actions_by_step, strict=True):
             if len(observations) != n_agents or len(actions) != n_agents:
                 raise ValueError("Every sequence step must contain the same number of agents and actions.")
-            _mode_logits, beam_logits, values, recurrent_state = self._step_from_state(
+            mode_logits, beam_logits, values, recurrent_state = self._step_from_state(
                 observations,
                 recurrent_state,
                 hard_mask=True,
             )
             beam_dist = Categorical(logits=beam_logits)
+            mode_dist = Categorical(logits=mode_logits)
             action_beams = torch.as_tensor(
                 [int(action.beam) for action in actions],
                 dtype=torch.long,
@@ -299,16 +322,26 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             raw_beam_log_prob = beam_dist.log_prob(action_beams)
             beam_log_prob = torch.where(active_beam_mask, raw_beam_log_prob, torch.zeros_like(raw_beam_log_prob))
             beam_entropy = beam_dist.entropy()
-            zeros = torch.zeros_like(beam_log_prob)
-            rows["log_probs"].append(beam_log_prob)
-            rows["mode_log_probs"].append(zeros)
+            if self.action_contract == "beam_only_fixed_role":
+                mode_log_prob = torch.zeros_like(beam_log_prob)
+                mode_entropy = torch.zeros_like(beam_entropy)
+            else:
+                action_modes = torch.as_tensor(
+                    [MODE_NAMES.index(action.mode) for action in actions],
+                    dtype=torch.long,
+                    device=self.device,
+                )
+                mode_log_prob = mode_dist.log_prob(action_modes)
+                mode_entropy = mode_dist.entropy()
+            rows["log_probs"].append(mode_log_prob + beam_log_prob)
+            rows["mode_log_probs"].append(mode_log_prob)
             rows["beam_log_probs"].append(beam_log_prob)
-            rows["gate_log_probs"].append(zeros)
+            rows["gate_log_probs"].append(torch.zeros_like(beam_log_prob))
             rows["values"].append(values.squeeze(-1))
-            rows["entropies"].append(beam_entropy)
-            rows["mode_entropies"].append(zeros)
+            rows["entropies"].append(mode_entropy + beam_entropy)
+            rows["mode_entropies"].append(mode_entropy)
             rows["beam_entropies"].append(beam_entropy)
-            rows["gate_entropies"].append(zeros)
+            rows["gate_entropies"].append(torch.zeros_like(beam_entropy))
             rows["active_beam_mask"].append(active_beam_mask)
         return {key: torch.stack(value) for key, value in rows.items()}
 
@@ -323,7 +356,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             use_residual_measurement_features=self.use_residual_measurement_features,
         )
         tensors = self._prepare_tensors(tensors)
-        beam_logits, value, next_state = self.model(tensors, recurrent_state)
+        mode_logits, beam_logits, value, next_state = self.model(tensors, recurrent_state)
         if hard_mask and self.use_candidate_mask and "candidate_mask" in tensors:
             mask = tensors["candidate_mask"] > 0.5
             has_candidate = mask.any(dim=-1, keepdim=True)
@@ -332,11 +365,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
                 beam_logits.masked_fill(~mask, -1.0e9),
                 beam_logits,
             )
-        mode_logits = self.torch.zeros(
-            (len(observations), len(MODE_NAMES)),
-            dtype=beam_logits.dtype,
-            device=beam_logits.device,
-        )
+        mode_logits = self._mask_disabled_modes(mode_logits)
         mode_logits, beam_logits = self._regularize_stochastic_support(mode_logits, beam_logits, tensors)
         return mode_logits, beam_logits, value, next_state
 
@@ -361,6 +390,7 @@ class _RecurrentContentionGraphActorCriticModule:
         candidate_score_prior_power: float,
         use_bounded_score_residual: bool,
         score_residual_max_logit: float,
+        use_learned_mode_head: bool,
     ):
         import torch
         import torch.nn as nn
@@ -428,6 +458,10 @@ class _RecurrentContentionGraphActorCriticModule:
                 self.beam_query = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
                 self.value_head = nn.Linear(hidden_dim, 1)
+                self.mode_head = nn.Linear(hidden_dim, len(MODE_NAMES)) if use_learned_mode_head else None
+                if self.mode_head is not None:
+                    nn.init.zeros_(self.mode_head.weight)
+                    nn.init.zeros_(self.mode_head.bias)
                 self.use_candidate_score_prior = bool(use_candidate_score_prior)
                 self.use_bounded_score_residual = bool(use_bounded_score_residual)
                 self.score_residual_max_logit = float(score_residual_max_logit)
@@ -488,7 +522,16 @@ class _RecurrentContentionGraphActorCriticModule:
                 if self.use_candidate_score_prior:
                     beam_logits = beam_logits + self._candidate_prior_logits(tensors)
                 value = self.value_head(next_state)
-                return beam_logits, value, next_state
+                mode_logits = (
+                    self.mode_head(next_state)
+                    if self.mode_head is not None
+                    else torch.zeros(
+                        (next_state.shape[0], len(MODE_NAMES)),
+                        dtype=next_state.dtype,
+                        device=next_state.device,
+                    )
+                )
+                return mode_logits, beam_logits, value, next_state
 
             def _candidate_prior_logits(self, tensors: dict[str, torch.Tensor]) -> torch.Tensor:
                 scores = torch.clamp(tensors["candidate_score"], min=0.0)

@@ -2345,6 +2345,11 @@ def should_checkpoint(index: int, interval: int) -> bool:
 
 
 def training_contract_version(args: argparse.Namespace) -> str:
+    if (
+        str(getattr(args, "action_contract", "joint_role_beam")) == "joint_role_beam"
+        and str(getattr(args, "network", "")) == "recurrent_contention_shared"
+    ):
+        return "joint_role_beam_recurrent_local_v2"
     if str(getattr(args, "action_contract", "joint_role_beam")) == "beam_only_fixed_role":
         if str(getattr(args, "network", "")) == "recurrent_contention_shared":
             return "beam_only_recurrent_local_v1"
@@ -2359,16 +2364,19 @@ def training_contract_version(args: argparse.Namespace) -> str:
 def architecture_version(args: argparse.Namespace) -> str:
     actor = str(getattr(args, "network", "shared"))
     critic = str(getattr(args, "critic_network", "pooled"))
+    contract = str(getattr(args, "action_contract", "joint_role_beam"))
     if (
         actor == "recurrent_contention_shared"
         and critic == "mpnn"
         and bool(getattr(args, "candidate_score_prior", False))
     ):
+        prefix = "joint" if contract == "joint_role_beam" else "beam_only"
         if bool(getattr(args, "bounded_score_residual", False)):
-            return "beam_only_recurrent_mpnn_bounded_score_residual_v3"
-        return "beam_only_recurrent_mpnn_score_residual_v2"
+            return f"{prefix}_recurrent_mpnn_bounded_score_residual_v3"
+        return f"{prefix}_recurrent_mpnn_score_residual_v2"
     if actor == "recurrent_contention_shared" and critic == "mpnn":
-        return "beam_only_recurrent_mpnn_v1"
+        prefix = "joint" if contract == "joint_role_beam" else "beam_only"
+        return f"{prefix}_recurrent_mpnn_v1"
     return f"{actor}_{critic}_v1"
 
 

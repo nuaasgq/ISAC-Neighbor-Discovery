@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from isac_nd_sim.config import load_config, with_communication_tx_power
-from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
+from isac_nd_sim.marl_env import MODE_NAMES, MarlNeighborDiscoveryEnv
 from isac_nd_sim.mobility import NodeState
 from isac_nd_sim.centralized_graph_critic import CentralizedGraphCritic
 from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic
@@ -108,6 +108,43 @@ def test_beam_only_mappo_role_sequence_is_independent_of_beam_sampling() -> None
 
     assert first_roles == second_roles
     assert first_roles.count("tx") / len(first_roles) == pytest.approx(0.5, abs=0.1)
+
+
+def test_recurrent_joint_actor_starts_at_half_roles_and_replays_joint_log_prob() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260826)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        disabled_modes=("sense", "idle"),
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_candidate_score_prior=True,
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+    )
+    with torch.no_grad():
+        mode_logits, _beam_logits, _values = policy.batched_logits_value(
+            observations,
+            hard_mask=True,
+        )
+        mode_probabilities = torch.softmax(mode_logits, dim=-1)
+    tx_index = MODE_NAMES.index("tx")
+    rx_index = MODE_NAMES.index("rx")
+    assert torch.allclose(mode_probabilities[:, tx_index], torch.full((4,), 0.5))
+    assert torch.allclose(mode_probabilities[:, rx_index], torch.full((4,), 0.5))
+
+    policy.reset_recurrent_state(cfg.n_nodes)
+    step = policy.act(observations, deterministic=False)
+    replay = policy.evaluate_action_sequence([observations], [step.actions])
+
+    assert all(action.mode in {"tx", "rx"} for action in step.actions)
+    assert torch.count_nonzero(step.mode_log_probs) == cfg.n_nodes
+    assert torch.allclose(step.log_probs, step.mode_log_probs + step.beam_log_probs)
+    assert torch.allclose(replay["log_probs"][0], step.log_probs, atol=1e-6, rtol=1e-6)
 
 
 def test_beam_only_mappo_ppo_recompute_uses_only_beam_probability() -> None:
