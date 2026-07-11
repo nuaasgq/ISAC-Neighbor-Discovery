@@ -63,6 +63,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-source", default="residual_table")
     parser.add_argument("--reward-version", default="discovery_first")
     parser.add_argument("--torch-threads", type=int, default=1)
+    parser.add_argument(
+        "--include-stochastic-policy",
+        action="store_true",
+        help="Also evaluate direct sampling from MAPPO beam probabilities without an external random mixture.",
+    )
     return parser.parse_args()
 
 
@@ -208,6 +213,8 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
         "candidate_score_argmax": ("score_argmax", 0.0),
         "candidate_score_proportional": ("score_proportional", 0.0),
     }
+    if bool(getattr(args, "include_stochastic_policy", False)):
+        variants["pure_learned_stochastic"] = ("learned_stochastic", 0.0)
     rows: list[dict[str, Any]] = []
     for variant, (policy_kind, beam_mixture) in variants.items():
         for eval_episode in range(int(args.eval_episodes)):
@@ -249,6 +256,13 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
                         choice_rng,
                         beam_uniform_mixture=beam_mixture,
                     )
+                elif policy_kind == "learned_stochastic":
+                    actions, _indices = select_stochastic_policy_actions(
+                        scorer(observations),
+                        observations,
+                        role_rng,
+                        choice_rng,
+                    )
                 else:
                     actions, _indices = select_candidate_score_actions(
                         observations,
@@ -286,6 +300,32 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
             }
             rows.append(row)
     return rows
+
+
+def select_stochastic_policy_actions(
+    beam_logits: np.ndarray,
+    observations: Sequence[dict[str, Any]],
+    role_rng: np.random.Generator,
+    choice_rng: np.random.Generator,
+) -> tuple[list[Any], np.ndarray]:
+    from isac_nd_sim.simulator import Action
+
+    if beam_logits.ndim != 2 or beam_logits.shape[0] != len(observations):
+        raise ValueError("beam_logits must have shape [agents, beams].")
+    actions = []
+    indices = np.zeros(len(observations), dtype=np.int64)
+    for node, observation in enumerate(observations):
+        candidate = np.flatnonzero(np.asarray(observation["candidate_mask"], dtype=float) > 0.5)
+        if candidate.size == 0:
+            candidate = np.arange(beam_logits.shape[1], dtype=int)
+        candidate_logits = np.asarray(beam_logits[node, candidate], dtype=float)
+        probabilities = np.exp(candidate_logits - np.max(candidate_logits))
+        probabilities = probabilities / probabilities.sum()
+        beam = int(choice_rng.choice(candidate, p=probabilities))
+        mode = "tx" if role_rng.random() < 0.5 else "rx"
+        actions.append(Action(mode, beam))
+        indices[node] = beam
+    return actions, indices
 
 
 def git_revision() -> str:

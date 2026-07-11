@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from argparse import Namespace
 from dataclasses import replace
 from pathlib import Path
@@ -22,6 +23,7 @@ from isac_nd_sim.simulator import Action
 ROOT = Path(__file__).resolve().parents[2]
 TRAINING_SCRIPT = ROOT / "05_simulation" / "run_marl_training.py"
 EVALUATION_SCRIPT = ROOT / "05_simulation" / "run_marl_evaluate.py"
+BEAM_CHECKPOINT_EVALUATION_SCRIPT = ROOT / "05_simulation" / "evaluate_beam_only_checkpoint.py"
 
 
 def load_training_module():
@@ -34,6 +36,19 @@ def load_training_module():
 
 def load_evaluation_module():
     spec = importlib.util.spec_from_file_location("twc_evaluation_contract", EVALUATION_SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_beam_checkpoint_evaluation_module():
+    simulation_dir = str(BEAM_CHECKPOINT_EVALUATION_SCRIPT.parent)
+    if simulation_dir not in sys.path:
+        sys.path.insert(0, simulation_dir)
+    spec = importlib.util.spec_from_file_location(
+        "beam_checkpoint_evaluation_contract", BEAM_CHECKPOINT_EVALUATION_SCRIPT
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -565,6 +580,29 @@ def test_evaluation_uniform_mode_executor_has_no_hidden_state_dependency() -> No
 
     assert set(sampled) == {"tx", "rx"}
     assert set(sampled).issubset({"tx", "rx"})
+
+
+def test_stochastic_mappo_executor_samples_learned_probabilities_within_local_mask() -> None:
+    module = load_beam_checkpoint_evaluation_module()
+    observations = [
+        {
+            "candidate_mask": np.asarray([0.0, 1.0, 1.0, 0.0], dtype=np.float32),
+        }
+    ]
+    logits = np.asarray([[-20.0, -4.0, 4.0, 20.0]], dtype=np.float32)
+    actions = []
+    for seed in range(30):
+        selected, _indices = module.select_stochastic_policy_actions(
+            logits,
+            observations,
+            np.random.default_rng(seed),
+            np.random.default_rng(seed + 100),
+        )
+        actions.append(selected[0])
+
+    assert {action.beam for action in actions}.issubset({1, 2})
+    assert sum(action.beam == 2 for action in actions) >= 28
+    assert {action.mode for action in actions} == {"tx", "rx"}
 
 
 def test_selected_beam_target_status_diagnostics_separate_remaining_known_and_empty() -> None:
