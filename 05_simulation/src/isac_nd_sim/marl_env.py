@@ -129,8 +129,8 @@ class MarlNeighborDiscoveryEnv:
             if action.mode in (MODE_TX, MODE_RX):
                 empty_by_node[node] = not self._sim.beam_has_comm_neighbor(node, action.beam, true_comm_edges)
 
-        fail_before = self._sim.fail_count.sum(axis=1).copy()
-        success_before = self._sim.success_count.sum(axis=1).copy()
+        fail_before = self._sim.node_handshake_fail_count.copy()
+        success_before = self._sim.node_handshake_success_count.copy()
         collision_fail_before = self._sim.collision_fail_count.sum(axis=1).copy()
         topology_before = (
             self._topology_reward_snapshot()
@@ -642,8 +642,8 @@ class MarlNeighborDiscoveryEnv:
             if sampled_actions[node].access_gate == ACCESS_AGGRESSIVE:
                 rewards[node] -= 0.003
 
-        fail_delta = self._sim.fail_count.sum(axis=1) - fail_before
-        success_delta = self._sim.success_count.sum(axis=1) - success_before
+        fail_delta = self._sim.node_handshake_fail_count - fail_before
+        success_delta = self._sim.node_handshake_success_count - success_before
         rewards -= (fail_delta > 0.0).astype(np.float32) * 0.05
         rewards += (success_delta > 0.0).astype(np.float32) * 0.02
         for i, j in new_edges:
@@ -746,8 +746,8 @@ class MarlNeighborDiscoveryEnv:
             if sampled_actions[node].access_gate == ACCESS_AGGRESSIVE:
                 rewards[node] -= 0.001
 
-        fail_delta = np.maximum(0.0, self._sim.fail_count.sum(axis=1) - fail_before)
-        success_delta = np.maximum(0.0, self._sim.success_count.sum(axis=1) - success_before)
+        fail_delta = np.maximum(0.0, self._sim.node_handshake_fail_count - fail_before)
+        success_delta = np.maximum(0.0, self._sim.node_handshake_success_count - success_before)
         collision_delta = np.maximum(0.0, self._sim.collision_fail_count.sum(axis=1) - collision_fail_before)
         rewards -= np.minimum(fail_delta, 2.0).astype(np.float32) * 0.010
         rewards -= np.minimum(collision_delta, 2.0).astype(np.float32) * 0.015

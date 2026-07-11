@@ -241,6 +241,8 @@ class NeighborDiscoverySimulator:
         self.node_empty_scans = np.zeros(self.cfg.n_nodes, dtype=int)
         self.node_scan_actions = np.zeros(self.cfg.n_nodes, dtype=int)
         self.node_collision_count = np.zeros(self.cfg.n_nodes, dtype=int)
+        self.node_handshake_success_count = np.zeros(self.cfg.n_nodes, dtype=int)
+        self.node_handshake_fail_count = np.zeros(self.cfg.n_nodes, dtype=int)
         self.undiscovered_target_beam_actions = 0
         self.known_only_beam_actions = 0
         self.empty_target_beam_actions = 0
@@ -325,6 +327,8 @@ class NeighborDiscoverySimulator:
         self.node_empty_scans.fill(0)
         self.node_scan_actions.fill(0)
         self.node_collision_count.fill(0)
+        self.node_handshake_success_count.fill(0)
+        self.node_handshake_fail_count.fill(0)
         self.undiscovered_target_beam_actions = 0
         self.known_only_beam_actions = 0
         self.empty_target_beam_actions = 0
@@ -1675,6 +1679,8 @@ class NeighborDiscoverySimulator:
 
         self.handshake_successes += int(success_matrix.sum())
         for tx_node, rx_node in np.argwhere(success_matrix).astype(int).tolist():
+            self.node_handshake_success_count[tx_node] += 1
+            self.node_handshake_success_count[rx_node] += 1
             edge = canonical_edge(tx_node, rx_node)
             is_new = edge not in self.discovered_edges
             if not is_new:
@@ -1728,6 +1734,7 @@ class NeighborDiscoverySimulator:
             for node in (tx_node, rx_node):
                 beam = int(actions[node].beam)
                 self.fail_count[node, beam] += 1.0
+                self.node_handshake_fail_count[node] += 1
                 if is_interference:
                     self.collision_fail_count[node, beam] += 1.0
                     self.node_collision_count[node] += 1

@@ -1189,3 +1189,37 @@ def test_local_potential_shaping_telescopes_at_finite_horizon() -> None:
     initial_potential = module.local_candidate_information_potential(sequence[0])[0]
     assert discounted_shaping == pytest.approx(-coefficient * initial_potential, abs=1e-6)
     assert -1.0 <= initial_potential <= 0.0
+
+
+def test_isac_sensing_evidence_does_not_masquerade_as_handshake_reward() -> None:
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=1,
+        sensing_measurement_mode="ideal_count",
+        slots_per_episode=1,
+    )
+    env = MarlNeighborDiscoveryEnv(
+        cfg,
+        protocol="improved_rl_isac_tables",
+        reward_version="discovery_first",
+        candidate_source="residual_table",
+    )
+    env.reset(seed=20260827)
+    env._sim.states = [
+        NodeState(np.asarray([0.0, 0.0, 0.0]), np.zeros(3)),
+        NodeState(np.asarray([100.0, 0.0, 0.0]), np.zeros(3)),
+    ]
+    env._sim.invalidate_geometry_cache()
+    actions = [
+        Action("tx", env._sim.beam_from_to(0, 1)),
+        Action("tx", env._sim.beam_from_to(1, 0)),
+    ]
+
+    _observations, rewards, _terminated, _truncated, info = env.step(actions)
+
+    assert env._sim.success_count.sum() > 0.0
+    assert env._sim.node_handshake_success_count.sum() == 0
+    assert info["handshake_successes"] == 0
+    assert np.allclose(rewards, np.asarray([-0.002, -0.002], dtype=np.float32))

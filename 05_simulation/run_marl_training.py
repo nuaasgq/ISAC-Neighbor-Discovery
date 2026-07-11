@@ -2598,6 +2598,7 @@ def build_manifest(
             else "central_pooled_truth_training_only_v1"
         ),
         "reward_version": str(getattr(args, "reward_version", "legacy")),
+        "reward_event_source": "dedicated_per_node_handshake_counters_v2",
         "local_potential_shaping": {
             "coefficient": float(getattr(args, "local_potential_shaping_coef", 0.0)),
             "potential": "negative_candidate_count_and_score_entropy_v1",
