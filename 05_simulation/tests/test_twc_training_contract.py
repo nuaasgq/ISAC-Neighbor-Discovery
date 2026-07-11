@@ -1116,3 +1116,39 @@ def test_finite_horizon_gae_lambda_one_matches_monte_carlo_returns() -> None:
 
     assert torch.allclose(gae_returns, mc_returns, atol=1e-6, rtol=1e-6)
     assert torch.allclose(raw_advantages, mc_returns - rollout_values, atol=1e-6, rtol=1e-6)
+
+
+def test_local_potential_shaping_telescopes_at_finite_horizon() -> None:
+    module = load_training_module()
+    sequence = [
+        [
+            {
+                "candidate_mask": np.asarray(mask, dtype=np.float32),
+                "candidate_score": np.asarray(score, dtype=np.float32),
+            }
+        ]
+        for mask, score in (
+            ([1, 1, 1, 1], [1, 1, 1, 1]),
+            ([0, 1, 1, 1], [0, 1, 2, 3]),
+            ([0, 0, 1, 1], [0, 0, 1, 4]),
+            ([0, 0, 0, 1], [0, 0, 0, 1]),
+        )
+    ]
+    gamma = 0.99
+    coefficient = 0.2
+    shaping = []
+    for step in range(len(sequence) - 1):
+        shaping.append(
+            module.local_potential_shaping_reward(
+                sequence[step],
+                sequence[step + 1],
+                gamma=gamma,
+                terminal=step == len(sequence) - 2,
+                coefficient=coefficient,
+            )[0]
+        )
+
+    discounted_shaping = sum((gamma**step) * value for step, value in enumerate(shaping))
+    initial_potential = module.local_candidate_information_potential(sequence[0])[0]
+    assert discounted_shaping == pytest.approx(-coefficient * initial_potential, abs=1e-6)
+    assert -1.0 <= initial_potential <= 0.0

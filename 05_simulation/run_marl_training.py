@@ -86,6 +86,12 @@ def parse_args() -> argparse.Namespace:
         default="contention_shared",
     )
     parser.add_argument("--reward-version", choices=REWARD_VERSIONS, default="discovery_first")
+    parser.add_argument(
+        "--local-potential-shaping-coef",
+        type=float,
+        default=0.0,
+        help="Potential-based shaping from local candidate count and score entropy.",
+    )
     parser.add_argument("--episodes", type=int, default=200)
     parser.add_argument("--slots", type=int, default=300)
     parser.add_argument("--eval-episodes", type=int, default=5)
@@ -469,6 +475,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--score-residual-max-logit must be positive.")
     if not 0.0 <= float(getattr(args, "gae_lambda", 0.95)) <= 1.0:
         raise ValueError("--gae-lambda must be in [0, 1].")
+    if float(getattr(args, "local_potential_shaping_coef", 0.0)) < 0.0:
+        raise ValueError("--local-potential-shaping-coef must be nonnegative.")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
     if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
@@ -775,6 +783,7 @@ def collect_trajectory(
     old_gate_log_probs = []
     active_beam_masks = []
     rewards = []
+    potential_shaping_rewards = []
     observations_by_step = []
     actions_by_step = []
     expert_actions_by_step = []
@@ -814,14 +823,25 @@ def collect_trajectory(
         role_trace.update(bytes(1 if action.mode == MODE_TX else 0 for action in step.actions))
         action_diagnostics.update(rendezvous_pair_diagnostics(env, observations_by_step[-1], step.actions))
         accumulate_rendezvous_action_diagnostics(rendezvous_totals, action_diagnostics)
-        observations, reward, _terminated, truncated, info = env.step(step.actions)
+        next_observations, reward, _terminated, truncated, info = env.step(step.actions)
+        shaping = local_potential_shaping_reward(
+            observations,
+            next_observations,
+            gamma=float(args.gamma),
+            terminal=bool(truncated),
+            coefficient=float(getattr(args, "local_potential_shaping_coef", 0.0)),
+        )
+        reward = np.asarray(reward, dtype=np.float32) + shaping
+        observations = next_observations
         old_log_probs.append(step.log_probs.detach().cpu())
         old_mode_log_probs.append(component_or_zeros(step.mode_log_probs, step.log_probs).detach().cpu())
         old_beam_log_probs.append(component_or_zeros(step.beam_log_probs, step.log_probs).detach().cpu())
         old_gate_log_probs.append(component_or_zeros(step.gate_log_probs, step.log_probs).detach().cpu())
         active_beam_masks.append(active_mask_tensor(step, step.actions, torch_module).detach().cpu())
         reward_tensor = torch_module.as_tensor(reward, dtype=torch_module.float32)
+        shaping_tensor = torch_module.as_tensor(shaping, dtype=torch_module.float32)
         rewards.append(reward_tensor)
+        potential_shaping_rewards.append(shaping_tensor)
         actions_by_step.append(step.actions)
         cumulative_reward += float(reward_tensor.sum().item())
         global_step = global_step_start + slot + 1
@@ -837,6 +857,7 @@ def collect_trajectory(
                 "env_protocol": env_protocol,
                 "reward_sum": float(reward_tensor.sum().item()),
                 "reward_mean": float(reward_tensor.mean().item()),
+                "potential_shaping_reward_mean": float(shaping_tensor.mean().item()),
                 "reward_std_across_agents": float(reward_tensor.std(unbiased=False).item()),
                 "reward_min_agent": float(reward_tensor.min().item()),
                 "reward_max_agent": float(reward_tensor.max().item()),
@@ -906,6 +927,7 @@ def collect_trajectory(
         "old_gate_log_probs": torch_module.stack([row.to(policy.device) for row in old_gate_log_probs]),
         "active_beam_mask": torch_module.stack([row.to(policy.device) for row in active_beam_masks]),
         "rewards": torch_module.stack(rewards).to(policy.device),
+        "potential_shaping_rewards": torch_module.stack(potential_shaping_rewards).to(policy.device),
         "central_features": torch_module.as_tensor(
             np.stack(central_features), dtype=torch_module.float32, device=policy.device
         ),
@@ -2101,6 +2123,50 @@ def copy_observations(observations: Sequence[dict[str, Any]]) -> list[dict[str, 
     return copied
 
 
+def local_candidate_information_potential(
+    observations: Sequence[dict[str, Any]],
+) -> np.ndarray:
+    """Bounded local belief potential; higher means a smaller, sharper candidate set."""
+
+    potentials = np.zeros(len(observations), dtype=np.float32)
+    for node, observation in enumerate(observations):
+        mask = np.asarray(observation["candidate_mask"], dtype=float) > 0.5
+        n_beams = max(1, int(mask.size))
+        count = max(1, int(mask.sum()))
+        count_term = np.log1p(float(count)) / np.log1p(float(n_beams))
+        scores = np.maximum(
+            0.0,
+            np.asarray(observation.get("candidate_score", np.zeros(n_beams)), dtype=float)[mask],
+        )
+        if count <= 1 or float(scores.sum()) <= 0.0:
+            entropy_term = 0.0 if count <= 1 else 1.0
+        else:
+            probabilities = scores / scores.sum()
+            entropy = -float(np.sum(probabilities * np.log(np.maximum(probabilities, 1.0e-12))))
+            entropy_term = entropy / np.log(float(count))
+        potentials[node] = -0.5 * float(count_term + entropy_term)
+    return potentials
+
+
+def local_potential_shaping_reward(
+    observations: Sequence[dict[str, Any]],
+    next_observations: Sequence[dict[str, Any]],
+    *,
+    gamma: float,
+    terminal: bool,
+    coefficient: float,
+) -> np.ndarray:
+    if float(coefficient) <= 0.0:
+        return np.zeros(len(observations), dtype=np.float32)
+    current = local_candidate_information_potential(observations)
+    following = (
+        np.zeros_like(current)
+        if terminal
+        else local_candidate_information_potential(next_observations)
+    )
+    return (float(coefficient) * (float(gamma) * following - current)).astype(np.float32)
+
+
 def build_episode_row(
     trajectory: dict[str, Any],
     losses: dict[str, float],
@@ -2110,6 +2176,7 @@ def build_episode_row(
     cfg: SimulationConfig,
 ) -> dict[str, Any]:
     rewards = trajectory["rewards"]
+    shaping_rewards = trajectory.get("potential_shaping_rewards", rewards * 0.0)
     summary = trajectory["summary"]
     row = {
         "episode": episode,
@@ -2123,6 +2190,12 @@ def build_episode_row(
         "episode_return_mean_per_agent": float(rewards.sum(dim=0).mean().item()),
         "step_reward_mean": float(rewards.mean().item()),
         "step_reward_sum_mean": float(rewards.sum(dim=1).mean().item()),
+        "potential_shaping_return_mean_per_agent": float(
+            shaping_rewards.sum(dim=0).mean().item()
+        ),
+        "raw_episode_return_mean_per_agent": float(
+            (rewards - shaping_rewards).sum(dim=0).mean().item()
+        ),
         "rollout_replay_logprob_max_abs_error": float(
             trajectory.get("rollout_replay_logprob_max_abs_error", 0.0)
         ),
@@ -2517,6 +2590,13 @@ def build_manifest(
             else "central_pooled_truth_training_only_v1"
         ),
         "reward_version": str(getattr(args, "reward_version", "legacy")),
+        "local_potential_shaping": {
+            "coefficient": float(getattr(args, "local_potential_shaping_coef", 0.0)),
+            "potential": "negative_candidate_count_and_score_entropy_v1",
+            "information_source": "decentralized_actor_observation_only",
+            "terminal_potential": 0.0,
+            "global_truth_used": False,
+        },
         "scope": "real_marl_training",
         "config": str(args.config),
         "output": str(args.output),
