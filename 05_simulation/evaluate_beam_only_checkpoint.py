@@ -69,6 +69,7 @@ def load_value_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
         state["n_beams"],
         state["state_dim"],
         hidden_dim=state["hidden_dim"],
+        mixer_dim=int(state.get("mixer_dim", checkpoint.get("args", {}).get("mixer_dim", 32))),
         reward_scope=state["reward_scope"],
         action_contract=state["action_contract"],
     )
@@ -83,6 +84,8 @@ def load_value_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
     return scorer, {
         "checkpoint_algorithm": state["algorithm"],
         "action_contract": state["action_contract"],
+        "n_agents": int(state["n_agents"]),
+        "n_beams": int(state["n_beams"]),
         "training_exploration": {
             "type": "epsilon_greedy_candidate_uniform",
             "epsilon_start": training_args.get("epsilon_start"),
@@ -138,6 +141,8 @@ def load_mappo_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
     return scorer, {
         "checkpoint_algorithm": checkpoint["algorithm"],
         "action_contract": action_contract,
+        "n_agents": int(checkpoint["config"]["n_nodes"]),
+        "n_beams": n_beams,
         "training_exploration": {
             "type": "categorical_policy_sampling_plus_entropy",
             "entropy_coef": float(checkpoint_args.entropy_coef),
@@ -271,6 +276,26 @@ def main() -> None:
 
         torch.set_num_threads(int(args.torch_threads))
     scorer, checkpoint_metadata = load_scorer(args)
+    cfg = load_config(args.config)
+    if int(cfg.n_nodes) != int(checkpoint_metadata["n_agents"]):
+        raise ValueError(
+            f"Evaluation n_nodes={cfg.n_nodes} does not match checkpoint "
+            f"n_agents={checkpoint_metadata['n_agents']}."
+        )
+    if int(cfg.n_beams) != int(checkpoint_metadata["n_beams"]):
+        raise ValueError(
+            f"Evaluation n_beams={cfg.n_beams} does not match checkpoint "
+            f"n_beams={checkpoint_metadata['n_beams']}."
+        )
+    expected_label = str(checkpoint_metadata["checkpoint_algorithm"])
+    allowed_labels = {expected_label}
+    if args.checkpoint_kind == "mappo":
+        allowed_labels.update({"mappo", "beam_only_mappo"})
+    if str(args.algorithm_label) not in allowed_labels:
+        raise ValueError(
+            f"algorithm-label={args.algorithm_label!r} is incompatible with "
+            f"checkpoint algorithm={expected_label!r}."
+        )
     rows = evaluate(args, scorer)
     args.output.mkdir(parents=True, exist_ok=True)
     write_rows(args.output / "eval_episode_metrics.csv", rows)

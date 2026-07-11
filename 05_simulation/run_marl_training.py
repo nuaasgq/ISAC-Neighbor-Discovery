@@ -453,6 +453,16 @@ def validate_args(args: argparse.Namespace) -> None:
             enabled.append("separate role/beam loss")
         if enabled:
             raise ValueError("beam_only_fixed_role forbids: " + ", ".join(enabled))
+        forbidden_flags = {
+            "rule_residual": "rule residual",
+            "contention_mode_prior": "contention mode prior",
+            "rendezvous_adapter": "rendezvous adapter",
+        }
+        enabled_flags = [
+            label for field, label in forbidden_flags.items() if bool(getattr(args, field, False))
+        ]
+        if enabled_flags:
+            raise ValueError("beam_only_fixed_role forbids: " + ", ".join(enabled_flags))
     if bool(getattr(args, "separate_action_loss", False)) and str(getattr(args, "network", "")) == "scalegraph_beam":
         raise ValueError("--separate-action-loss is not implemented for scalegraph_beam.")
     violations = clean_ctde_violations(args)

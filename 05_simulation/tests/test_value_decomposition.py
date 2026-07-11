@@ -317,6 +317,35 @@ def test_beam_only_target_mask_falls_back_to_all_beams_when_candidate_mask_is_em
     assert torch.equal(masked, q_values)
 
 
+def test_qmix_checkpoint_round_trip_preserves_nondefault_mixer_dimension() -> None:
+    pytest.importorskip("torch")
+    env = small_env()
+    first = ValueDecompositionLearner(
+        "qmix",
+        env.n_agents,
+        env.n_beams,
+        state_dim=23,
+        hidden_dim=16,
+        mixer_dim=7,
+        action_contract="beam_only_fixed_role",
+    )
+    state = first.checkpoint_state()
+    second = ValueDecompositionLearner(
+        "qmix",
+        env.n_agents,
+        env.n_beams,
+        state_dim=23,
+        hidden_dim=16,
+        mixer_dim=state["mixer_dim"],
+        action_contract="beam_only_fixed_role",
+    )
+
+    second.load_checkpoint_state(state)
+
+    assert state["mixer_dim"] == 7
+    assert second.mixer_dim == 7
+
+
 @pytest.mark.parametrize("algorithm", ["idqn", "shared_idqn", "vdn", "qmix"])
 def test_value_based_update_is_finite_for_every_algorithm(algorithm: str) -> None:
     torch = pytest.importorskip("torch")

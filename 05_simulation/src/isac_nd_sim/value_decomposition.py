@@ -279,6 +279,7 @@ class ValueDecompositionLearner:
         )
         self.state_dim = int(state_dim)
         self.hidden_dim = int(hidden_dim)
+        self.mixer_dim = int(mixer_dim)
         self.gamma = float(gamma)
         self.gradient_clip = float(gradient_clip)
         self.reward_scope = str(reward_scope)
@@ -312,8 +313,8 @@ class ValueDecompositionLearner:
         self.mixer = None
         self.target_mixer = None
         if self.algorithm == "qmix":
-            self.mixer = MonotonicQMix(self.n_agents, self.state_dim, int(mixer_dim)).to(self.device)
-            self.target_mixer = MonotonicQMix(self.n_agents, self.state_dim, int(mixer_dim)).to(self.device)
+            self.mixer = MonotonicQMix(self.n_agents, self.state_dim, self.mixer_dim).to(self.device)
+            self.target_mixer = MonotonicQMix(self.n_agents, self.state_dim, self.mixer_dim).to(self.device)
 
         if self.independent_parameters:
             self.optimizers = [
@@ -520,6 +521,7 @@ class ValueDecompositionLearner:
             "n_beams": self.n_beams,
             "state_dim": self.state_dim,
             "hidden_dim": self.hidden_dim,
+            "mixer_dim": self.mixer_dim,
             "reward_scope": self.reward_scope,
             "action_contract": self.action_contract,
             "q_networks": self.q_networks.state_dict(),
