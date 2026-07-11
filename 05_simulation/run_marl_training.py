@@ -137,6 +137,12 @@ def parse_args() -> argparse.Namespace:
         help="Train mode, beam, and gate action factors with separate PPO losses.",
     )
     parser.add_argument("--beam-loss-coef", type=float, default=1.0)
+    parser.add_argument(
+        "--beam-isac-feedback-coef",
+        type=float,
+        default=0.0,
+        help="Add local post-action ISAC occupancy feedback to beam-only PPO credit.",
+    )
     parser.add_argument("--gate-loss-coef", type=float, default=0.25)
     parser.add_argument(
         "--beam-rank-aux-coef",
@@ -481,6 +487,12 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--expert-bc-weight must be nonnegative.")
     if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
         raise ValueError("--beam-loss-coef must be nonnegative.")
+    if float(getattr(args, "beam_isac_feedback_coef", 0.0)) < 0.0:
+        raise ValueError("--beam-isac-feedback-coef must be nonnegative.")
+    if float(getattr(args, "beam_isac_feedback_coef", 0.0)) > 0.0 and not bool(
+        getattr(args, "separate_action_loss", False)
+    ):
+        raise ValueError("--beam-isac-feedback-coef requires --separate-action-loss.")
     if float(getattr(args, "gate_loss_coef", 0.25)) < 0.0:
         raise ValueError("--gate-loss-coef must be nonnegative.")
     if float(getattr(args, "beam_rank_aux_coef", 0.0)) < 0.0:
@@ -784,6 +796,7 @@ def collect_trajectory(
     active_beam_masks = []
     rewards = []
     potential_shaping_rewards = []
+    beam_isac_feedback_rows = []
     observations_by_step = []
     actions_by_step = []
     expert_actions_by_step = []
@@ -832,6 +845,7 @@ def collect_trajectory(
             coefficient=float(getattr(args, "local_potential_shaping_coef", 0.0)),
         )
         reward = np.asarray(reward, dtype=np.float32) + shaping
+        beam_isac_feedback = local_beam_isac_feedback(step.actions, next_observations)
         observations = next_observations
         old_log_probs.append(step.log_probs.detach().cpu())
         old_mode_log_probs.append(component_or_zeros(step.mode_log_probs, step.log_probs).detach().cpu())
@@ -842,6 +856,9 @@ def collect_trajectory(
         shaping_tensor = torch_module.as_tensor(shaping, dtype=torch_module.float32)
         rewards.append(reward_tensor)
         potential_shaping_rewards.append(shaping_tensor)
+        beam_isac_feedback_rows.append(
+            torch_module.as_tensor(beam_isac_feedback, dtype=torch_module.float32)
+        )
         actions_by_step.append(step.actions)
         cumulative_reward += float(reward_tensor.sum().item())
         global_step = global_step_start + slot + 1
@@ -858,6 +875,7 @@ def collect_trajectory(
                 "reward_sum": float(reward_tensor.sum().item()),
                 "reward_mean": float(reward_tensor.mean().item()),
                 "potential_shaping_reward_mean": float(shaping_tensor.mean().item()),
+                "beam_isac_feedback_mean": float(np.mean(beam_isac_feedback)),
                 "reward_std_across_agents": float(reward_tensor.std(unbiased=False).item()),
                 "reward_min_agent": float(reward_tensor.min().item()),
                 "reward_max_agent": float(reward_tensor.max().item()),
@@ -928,6 +946,7 @@ def collect_trajectory(
         "active_beam_mask": torch_module.stack([row.to(policy.device) for row in active_beam_masks]),
         "rewards": torch_module.stack(rewards).to(policy.device),
         "potential_shaping_rewards": torch_module.stack(potential_shaping_rewards).to(policy.device),
+        "beam_isac_feedback": torch_module.stack(beam_isac_feedback_rows).to(policy.device),
         "central_features": torch_module.as_tensor(
             np.stack(central_features), dtype=torch_module.float32, device=policy.device
         ),
@@ -1648,10 +1667,17 @@ def separated_action_policy_loss(
         torch_module,
     )
     active_mask = trajectory["active_beam_mask"].bool()
+    beam_advantages = advantages
+    feedback_coefficient = float(getattr(args, "beam_isac_feedback_coef", 0.0))
+    if feedback_coefficient > 0.0:
+        feedback = trajectory["beam_isac_feedback"]
+        while beam_advantages.dim() < feedback.dim():
+            beam_advantages = beam_advantages.unsqueeze(-1)
+        beam_advantages = beam_advantages + feedback_coefficient * feedback
     beam_loss, beam_clip = ppo_component_loss(
         action_eval["beam_log_probs"],
         trajectory["old_beam_log_probs"],
-        advantages,
+        beam_advantages,
         clip_epsilon,
         torch_module,
         mask=active_mask,
@@ -2167,6 +2193,31 @@ def local_potential_shaping_reward(
     return (float(coefficient) * (float(gamma) * following - current)).astype(np.float32)
 
 
+def local_beam_isac_feedback(
+    actions: Sequence[Action],
+    next_observations: Sequence[dict[str, Any]],
+) -> np.ndarray:
+    """Signed occupancy feedback available only after a local TX piggyback measurement."""
+
+    if len(actions) != len(next_observations):
+        raise ValueError("actions and next_observations must have identical lengths.")
+    feedback = np.zeros(len(actions), dtype=np.float32)
+    for node, (action, observation) in enumerate(zip(actions, next_observations, strict=True)):
+        if action.mode != MODE_TX:
+            continue
+        beam = int(action.beam)
+        target_count = float(np.asarray(observation["beam_target_count"], dtype=float)[beam])
+        confidence = float(
+            np.clip(
+                np.asarray(observation["beam_measurement_confidence"], dtype=float)[beam],
+                0.0,
+                1.0,
+            )
+        )
+        feedback[node] = confidence if target_count > 0.0 else -confidence
+    return feedback
+
+
 def build_episode_row(
     trajectory: dict[str, Any],
     losses: dict[str, float],
@@ -2177,6 +2228,7 @@ def build_episode_row(
 ) -> dict[str, Any]:
     rewards = trajectory["rewards"]
     shaping_rewards = trajectory.get("potential_shaping_rewards", rewards * 0.0)
+    beam_isac_feedback = trajectory.get("beam_isac_feedback", rewards * 0.0)
     summary = trajectory["summary"]
     row = {
         "episode": episode,
@@ -2195,6 +2247,10 @@ def build_episode_row(
         ),
         "raw_episode_return_mean_per_agent": float(
             (rewards - shaping_rewards).sum(dim=0).mean().item()
+        ),
+        "beam_isac_feedback_mean": float(beam_isac_feedback.mean().item()),
+        "beam_isac_feedback_nonzero_fraction": float(
+            (beam_isac_feedback != 0.0).float().mean().item()
         ),
         "rollout_replay_logprob_max_abs_error": float(
             trajectory.get("rollout_replay_logprob_max_abs_error", 0.0)
@@ -2629,6 +2685,8 @@ def build_manifest(
         "expert_gate_imitation": bool(float(getattr(args, "expert_bc_weight", 0.0)) > 0.0),
         "separate_action_loss": bool(getattr(args, "separate_action_loss", False)),
         "beam_loss_coef": float(getattr(args, "beam_loss_coef", 1.0)),
+        "beam_isac_feedback_coef": float(getattr(args, "beam_isac_feedback_coef", 0.0)),
+        "beam_isac_feedback_contract": "local_post_tx_anonymous_occupancy_v1",
         "gate_loss_coef": float(getattr(args, "gate_loss_coef", 0.25)),
         "beam_rank_aux_coef": float(getattr(args, "beam_rank_aux_coef", 0.0)),
         "beam_rank_temperature": float(getattr(args, "beam_rank_temperature", 4.0)),

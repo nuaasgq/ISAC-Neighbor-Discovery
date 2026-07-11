@@ -1245,3 +1245,24 @@ def test_isac_sensing_evidence_does_not_masquerade_as_handshake_reward() -> None
     assert env._sim.node_handshake_success_count.sum() == 0
     assert info["handshake_successes"] == 0
     assert np.allclose(rewards, np.asarray([-0.002, -0.002], dtype=np.float32))
+
+
+def test_local_isac_feedback_is_signed_for_tx_and_zero_for_rx() -> None:
+    module = load_training_module()
+    actions = [Action("tx", 1), Action("tx", 2), Action("rx", 1)]
+    observations = []
+    for _ in actions:
+        observations.append(
+            {
+                "beam_target_count": np.asarray([0.0, 1.0, 0.0], dtype=np.float32),
+                "beam_measurement_confidence": np.asarray(
+                    [0.0, 0.8, 0.6], dtype=np.float32
+                ),
+            }
+        )
+
+    feedback = module.local_beam_isac_feedback(actions, observations)
+
+    assert feedback[0] == pytest.approx(0.8)
+    assert feedback[1] == pytest.approx(-0.6)
+    assert feedback[2] == 0.0
