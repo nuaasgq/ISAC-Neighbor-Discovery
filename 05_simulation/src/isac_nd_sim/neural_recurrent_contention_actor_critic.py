@@ -288,6 +288,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
                 "beam_entropies": empty,
                 "gate_entropies": empty,
                 "active_beam_mask": empty.bool(),
+                "mode_tx_probabilities": empty,
             }
 
         n_agents = len(observations_by_step[0])
@@ -303,6 +304,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             "beam_entropies": [],
             "gate_entropies": [],
             "active_beam_mask": [],
+            "mode_tx_probabilities": [],
         }
         for observations, actions in zip(observations_by_step, actions_by_step, strict=True):
             if len(observations) != n_agents or len(actions) != n_agents:
@@ -348,6 +350,9 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             rows["beam_entropies"].append(beam_entropy)
             rows["gate_entropies"].append(torch.zeros_like(beam_entropy))
             rows["active_beam_mask"].append(active_beam_mask)
+            rows["mode_tx_probabilities"].append(
+                torch.softmax(mode_logits, dim=-1)[:, MODE_NAMES.index("tx")]
+            )
         return {key: torch.stack(value) for key, value in rows.items()}
 
     def _step_from_state(self, observations: Sequence[dict], recurrent_state, *, hard_mask: bool):

@@ -1297,3 +1297,20 @@ def test_local_isac_feedback_is_signed_for_tx_and_zero_for_rx() -> None:
     assert feedback[0] == pytest.approx(0.8)
     assert feedback[1] == pytest.approx(-0.6)
     assert feedback[2] == 0.0
+
+
+def test_role_balance_regularizer_allows_heterogeneous_local_probabilities() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    balanced = torch.tensor([[0.2, 0.8], [0.9, 0.1]], requires_grad=True)
+    collapsed = torch.tensor([[0.9, 0.9], [0.8, 0.8]])
+
+    balanced_loss, balanced_mean = module.role_balance_regularizer(balanced, torch)
+    collapsed_loss, collapsed_mean = module.role_balance_regularizer(collapsed, torch)
+    balanced_loss.backward()
+
+    assert float(balanced_loss.detach()) == pytest.approx(0.0, abs=1e-8)
+    assert balanced_mean == pytest.approx(0.5)
+    assert float(collapsed_loss) > 0.0
+    assert collapsed_mean == pytest.approx(0.85)
+    assert balanced.grad is not None

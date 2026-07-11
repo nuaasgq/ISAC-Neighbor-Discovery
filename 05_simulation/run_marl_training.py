@@ -145,6 +145,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--gate-loss-coef", type=float, default=0.25)
     parser.add_argument(
+        "--role-balance-coef",
+        type=float,
+        default=0.0,
+        help="Training-only penalty on each slot's mean learned TX probability.",
+    )
+    parser.add_argument(
         "--beam-rank-aux-coef",
         type=float,
         default=0.0,
@@ -506,6 +512,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--beam-isac-feedback-coef requires --separate-action-loss.")
     if float(getattr(args, "gate_loss_coef", 0.25)) < 0.0:
         raise ValueError("--gate-loss-coef must be nonnegative.")
+    if float(getattr(args, "role_balance_coef", 0.0)) < 0.0:
+        raise ValueError("--role-balance-coef must be nonnegative.")
     if float(getattr(args, "beam_rank_aux_coef", 0.0)) < 0.0:
         raise ValueError("--beam-rank-aux-coef must be nonnegative.")
     if float(getattr(args, "beam_rank_temperature", 4.0)) <= 0.0:
@@ -1212,6 +1220,8 @@ def update_policy(
     explained_variances = []
     normalized_candidate_entropies = []
     sample_log_ratio_means = []
+    role_balance_losses = []
+    mean_policy_tx_probabilities = []
     separate_action_loss = bool(getattr(args, "separate_action_loss", False))
     beam_rank_aux_coef = float(getattr(args, "beam_rank_aux_coef", 0.0))
     rendezvous_beam_aux_coef = float(getattr(args, "rendezvous_beam_aux_coef", 0.0))
@@ -1248,6 +1258,10 @@ def update_policy(
             log_probs = action_eval["log_probs"]
             entropies = action_eval["entropies"]
             values = critic(critic_inputs)
+            role_balance_loss, mean_policy_tx_probability = role_balance_regularizer(
+                action_eval["mode_tx_probabilities"],
+                torch_module,
+            )
             if separate_action_loss:
                 policy_loss, component = separated_action_policy_loss(
                     action_eval,
@@ -1300,6 +1314,7 @@ def update_policy(
                 + beam_rank_aux_coef * beam_rank_aux_loss
                 + rendezvous_beam_aux_coef * rendezvous_beam_aux_loss
                 + rendezvous_role_aux_coef * rendezvous_role_aux_loss
+                + float(getattr(args, "role_balance_coef", 0.0)) * role_balance_loss
             )
             optimizer.zero_grad()
             loss.backward()
@@ -1329,6 +1344,8 @@ def update_policy(
                     action_eval["beam_entropies"], trajectory["observations"], torch_module
                 )
             )
+            role_balance_losses.append(float(role_balance_loss.detach().item()))
+            mean_policy_tx_probabilities.append(mean_policy_tx_probability)
         return loss_summary(
             policy_losses,
             value_losses,
@@ -1348,6 +1365,8 @@ def update_policy(
             explained_variances,
             normalized_candidate_entropies,
             sample_log_ratio_means,
+            role_balance_losses,
+            mean_policy_tx_probabilities,
         )
 
     with torch_module.no_grad():
@@ -1367,6 +1386,10 @@ def update_policy(
         log_probs = action_eval["log_probs"]
         local_values = action_eval["values"]
         entropies = action_eval["entropies"]
+        role_balance_loss, mean_policy_tx_probability = role_balance_regularizer(
+            action_eval["mode_tx_probabilities"],
+            torch_module,
+        )
         if separate_action_loss:
             policy_loss, component = separated_action_policy_loss(
                 action_eval,
@@ -1419,6 +1442,7 @@ def update_policy(
             + beam_rank_aux_coef * beam_rank_aux_loss
             + rendezvous_beam_aux_coef * rendezvous_beam_aux_loss
             + rendezvous_role_aux_coef * rendezvous_role_aux_loss
+            + float(getattr(args, "role_balance_coef", 0.0)) * role_balance_loss
         )
         optimizer.zero_grad()
         loss.backward()
@@ -1445,6 +1469,8 @@ def update_policy(
                 action_eval["beam_entropies"], trajectory["observations"], torch_module
             )
         )
+        role_balance_losses.append(float(role_balance_loss.detach().item()))
+        mean_policy_tx_probabilities.append(mean_policy_tx_probability)
     return loss_summary(
         policy_losses,
         value_losses,
@@ -1464,6 +1490,8 @@ def update_policy(
         explained_variances,
         normalized_candidate_entropies,
         sample_log_ratio_means,
+        role_balance_losses,
+        mean_policy_tx_probabilities,
     )
 
 
@@ -1558,6 +1586,7 @@ def evaluate_action_components(
     beam_entropy_rows = []
     gate_entropy_rows = []
     active_mask_rows = []
+    mode_tx_probability_rows = []
     for observations, actions in zip(observations_by_step, actions_by_step, strict=True):
         step_log_probs = []
         step_mode_log_probs = []
@@ -1569,6 +1598,7 @@ def evaluate_action_components(
         step_beam_entropies = []
         step_gate_entropies = []
         step_active_masks = []
+        step_mode_tx_probabilities = []
         for observation, action in zip(observations, actions, strict=True):
             if getattr(policy, "supports_access_gate_action", False) and hasattr(policy, "action_logits_value"):
                 mode_logits, beam_logits, gate_logits, value = policy.action_logits_value(observation, hard_mask=True)
@@ -1592,6 +1622,7 @@ def evaluate_action_components(
                 mode_log_prob = mode_dist.log_prob(mode_tensor)
                 mode_entropy = mode_dist.entropy()
                 log_prob = mode_log_prob + beam_log_prob
+            mode_tx_probability = torch.softmax(mode_logits, dim=-1)[MODE_TO_INDEX[MODE_TX]]
             active_beam = action.mode != "idle"
             gate_log_prob = torch.zeros((), dtype=mode_log_prob.dtype, device=policy.device)
             gate_entropy = torch.zeros((), dtype=mode_entropy.dtype, device=policy.device)
@@ -1614,6 +1645,7 @@ def evaluate_action_components(
             step_beam_entropies.append(beam_entropy)
             step_gate_entropies.append(gate_entropy)
             step_active_masks.append(torch.as_tensor(active_beam, dtype=torch.bool, device=policy.device))
+            step_mode_tx_probabilities.append(mode_tx_probability)
         log_prob_rows.append(torch.stack(step_log_probs))
         mode_log_prob_rows.append(torch.stack(step_mode_log_probs))
         beam_log_prob_rows.append(torch.stack(step_beam_log_probs))
@@ -1624,6 +1656,7 @@ def evaluate_action_components(
         beam_entropy_rows.append(torch.stack(step_beam_entropies))
         gate_entropy_rows.append(torch.stack(step_gate_entropies))
         active_mask_rows.append(torch.stack(step_active_masks))
+        mode_tx_probability_rows.append(torch.stack(step_mode_tx_probabilities))
     return {
         "log_probs": torch.stack(log_prob_rows),
         "mode_log_probs": torch.stack(mode_log_prob_rows),
@@ -1635,6 +1668,7 @@ def evaluate_action_components(
         "beam_entropies": torch.stack(beam_entropy_rows),
         "gate_entropies": torch.stack(gate_entropy_rows),
         "active_beam_mask": torch.stack(active_mask_rows),
+        "mode_tx_probabilities": torch.stack(mode_tx_probability_rows),
     }
 
 
@@ -1662,6 +1696,19 @@ def ppo_component_loss(
             return log_probs.sum() * 0.0, 0.0
         return loss_values[mask].mean(), float(clipped[mask].mean().detach().item())
     return loss_values.mean(), float(clipped.mean().detach().item())
+
+
+def role_balance_regularizer(
+    mode_tx_probabilities: Any,
+    torch_module: Any,
+) -> tuple[Any, float]:
+    """Permit local heterogeneity while centering the per-slot population mean at 0.5."""
+
+    if mode_tx_probabilities.ndim != 2:
+        raise ValueError("mode_tx_probabilities must have shape [time, agents].")
+    per_slot_mean = mode_tx_probabilities.mean(dim=1)
+    loss = torch_module.mean((per_slot_mean - 0.5) ** 2)
+    return loss, float(per_slot_mean.mean().detach().item())
 
 
 def separated_action_policy_loss(
@@ -2380,6 +2427,8 @@ def loss_summary(
     explained_variances: list[float] | None = None,
     normalized_candidate_entropies: list[float] | None = None,
     sample_log_ratio_means: list[float] | None = None,
+    role_balance_losses: list[float] | None = None,
+    mean_policy_tx_probabilities: list[float] | None = None,
 ) -> dict[str, float]:
     return {
         "policy_loss": float(np.mean(policy_losses)),
@@ -2406,6 +2455,12 @@ def loss_summary(
             float(np.mean(normalized_candidate_entropies)) if normalized_candidate_entropies else 0.0
         ),
         "sample_log_ratio_mean": float(np.mean(sample_log_ratio_means)) if sample_log_ratio_means else 0.0,
+        "role_balance_loss": float(np.mean(role_balance_losses)) if role_balance_losses else 0.0,
+        "mean_policy_tx_probability": (
+            float(np.mean(mean_policy_tx_probabilities))
+            if mean_policy_tx_probabilities
+            else 0.5
+        ),
     }
 
 
@@ -2710,6 +2765,12 @@ def build_manifest(
         "beam_loss_coef": float(getattr(args, "beam_loss_coef", 1.0)),
         "beam_isac_feedback_coef": float(getattr(args, "beam_isac_feedback_coef", 0.0)),
         "beam_isac_feedback_contract": "local_post_tx_anonymous_occupancy_v1",
+        "role_balance_regularizer": {
+            "coefficient": float(getattr(args, "role_balance_coef", 0.0)),
+            "target_mean_tx_probability": 0.5,
+            "scope": "training_batch_per_slot_only",
+            "execution_global_information": False,
+        },
         "gate_loss_coef": float(getattr(args, "gate_loss_coef", 0.25)),
         "beam_rank_aux_coef": float(getattr(args, "beam_rank_aux_coef", 0.0)),
         "beam_rank_temperature": float(getattr(args, "beam_rank_temperature", 4.0)),
