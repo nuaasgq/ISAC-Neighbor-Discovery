@@ -56,6 +56,21 @@ The evaluator was then corrected so that the learned stochastic policy and the z
 
 The corrected score-power result also shows that the earlier apparent `54.89%` advantage was a sampling-stream artifact. The bounded method remains below the original score-proportional control (`53.00%`) and does not pass the gate.
 
+## Frozen-Advantage PPO Correction
+
+An implementation audit found that the critic was updated inside each PPO reuse epoch and then used to recompute the advantage for the next epoch. This violates the fixed behavior-rollout surrogate contract. The implementation was corrected to snapshot values and normalized advantages once before the PPO epoch loop.
+
+Using the otherwise unchanged unbounded score-residual actor, the corrected three-seed 6k gate was:
+
+| Training seed | Frozen-advantage learned policy | Score proportional | Learned minus rule |
+|---:|---:|---:|---:|
+| 29260711 | 55.11% | 53.00% | +2.11 pp |
+| 29261711 | 52.89% | 53.00% | -0.11 pp |
+| 29262711 | 53.11% | 53.00% | +0.11 pp |
+| Mean | 53.70% | 53.00% | +0.70 pp |
+
+The correction improves the mean relative to the dynamic-advantage run, but it still fails the `+3 pp` gate and is not a sufficient paper-level RL contribution.
+
 ## Current Conclusion
 
 1. Recurrent replay is numerically consistent (`max absolute log-probability replay error = 0`).
@@ -70,3 +85,4 @@ The corrected score-power result also shows that the earlier apparent `54.89%` a
 - Unbounded score residual 6k: `05_simulation/results_raw/score_residual_6k_three_seed_screen_20260711`
 - Local diagnostic: `05_simulation/results_raw/local_memory_diagnostics_dev20_20260711`
 - Bounded score residual 6k: `05_simulation/results_raw/bounded_score_residual_6k_three_seed_gate_20260711`
+- Frozen-advantage score residual 6k: `05_simulation/results_raw/frozen_advantage_v2_6k_three_seed_gate_20260711`
