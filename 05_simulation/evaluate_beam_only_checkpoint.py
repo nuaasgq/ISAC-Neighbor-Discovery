@@ -50,7 +50,7 @@ class RecurrentPolicyScorer:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Common seven-policy beam-only checkpoint evaluation.")
+    parser = argparse.ArgumentParser(description="Common beam-only checkpoint evaluation.")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--checkpoint-kind", choices=("value", "mappo"), required=True)
     parser.add_argument("--algorithm-label", required=True)
@@ -72,6 +72,11 @@ def parse_args() -> argparse.Namespace:
         "--include-local-memory-diagnostics",
         action="store_true",
         help="Evaluate local score-temperature and one-step beam-persistence diagnostics.",
+    )
+    parser.add_argument(
+        "--policy-variants",
+        nargs="+",
+        help="Optional explicit subset of enabled policy variants to evaluate.",
     )
     return parser.parse_args()
 
@@ -240,6 +245,12 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
                 "candidate_score_sticky_0.75": ("score_tempered_sticky", 0.0, 1.0, 0.75),
             }
         )
+    requested_variants = getattr(args, "policy_variants", None)
+    if requested_variants:
+        unknown = sorted(set(requested_variants) - set(variants))
+        if unknown:
+            raise ValueError(f"Requested policy variants are not enabled: {unknown}")
+        variants = {name: variants[name] for name in requested_variants}
     rows: list[dict[str, Any]] = []
     for variant, (policy_kind, beam_mixture, score_power, stay_probability) in variants.items():
         for eval_episode in range(int(args.eval_episodes)):
