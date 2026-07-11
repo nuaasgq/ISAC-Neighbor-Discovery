@@ -40,6 +40,9 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         azimuth_cells: int | None = None,
         elevation_cells: int = 1,
         use_candidate_score_prior: bool = False,
+        candidate_score_prior_power: float = 1.0,
+        use_bounded_score_residual: bool = False,
+        score_residual_max_logit: float = 2.0,
     ):
         try:
             import torch
@@ -78,6 +81,15 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.use_candidate_score_prior = bool(use_candidate_score_prior)
         if self.use_candidate_score_prior and not self.use_candidate_score:
             raise ValueError("candidate-score prior requires use_candidate_score=True.")
+        self.candidate_score_prior_power = float(candidate_score_prior_power)
+        if self.candidate_score_prior_power <= 0.0:
+            raise ValueError("candidate_score_prior_power must be positive.")
+        self.use_bounded_score_residual = bool(use_bounded_score_residual)
+        if self.use_bounded_score_residual and not self.use_candidate_score_prior:
+            raise ValueError("bounded score residual requires the candidate-score prior.")
+        self.score_residual_max_logit = float(score_residual_max_logit)
+        if self.score_residual_max_logit <= 0.0:
+            raise ValueError("score_residual_max_logit must be positive.")
         self.use_topology_deficit = bool(use_topology_deficit)
         self.use_rule_residual = False
         self.rule_residual_scale = float(rule_residual_scale)
@@ -100,6 +112,9 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             self.azimuth_cells,
             self.elevation_cells,
             self.use_candidate_score_prior,
+            self.candidate_score_prior_power,
+            self.use_bounded_score_residual,
+            self.score_residual_max_logit,
         ).to(self.device)
         self._recurrent_state = None
 
@@ -343,6 +358,9 @@ class _RecurrentContentionGraphActorCriticModule:
         azimuth_cells: int,
         elevation_cells: int,
         use_candidate_score_prior: bool,
+        candidate_score_prior_power: float,
+        use_bounded_score_residual: bool,
+        score_residual_max_logit: float,
     ):
         import torch
         import torch.nn as nn
@@ -411,14 +429,25 @@ class _RecurrentContentionGraphActorCriticModule:
                 self.beam_bias = nn.Linear(hidden_dim, 1)
                 self.value_head = nn.Linear(hidden_dim, 1)
                 self.use_candidate_score_prior = bool(use_candidate_score_prior)
+                self.use_bounded_score_residual = bool(use_bounded_score_residual)
+                self.score_residual_max_logit = float(score_residual_max_logit)
                 if self.use_candidate_score_prior:
                     self.candidate_prior_raw_strength = nn.Parameter(
-                        torch.tensor(float(np.log(np.expm1(1.0))), dtype=torch.float32)
+                        torch.tensor(
+                            float(np.log(np.expm1(float(candidate_score_prior_power)))),
+                            dtype=torch.float32,
+                        )
                     )
                     nn.init.zeros_(self.beam_query.weight)
                     nn.init.zeros_(self.beam_query.bias)
                     nn.init.zeros_(self.beam_bias.weight)
                     nn.init.zeros_(self.beam_bias.bias)
+                if self.use_bounded_score_residual:
+                    initial_fraction = 0.1 / self.score_residual_max_logit
+                    initial_fraction = float(np.clip(initial_fraction, 1.0e-4, 1.0 - 1.0e-4))
+                    self.score_residual_raw_gate = nn.Parameter(
+                        torch.tensor(float(np.log(initial_fraction / (1.0 - initial_fraction))))
+                    )
 
             def forward(self, tensors: dict[str, torch.Tensor], recurrent_state: torch.Tensor):
                 beam_tokens = functional.silu(self.beam_linear_norm(self.beam_linear(tensors["beam_features"])))
@@ -446,8 +475,16 @@ class _RecurrentContentionGraphActorCriticModule:
                 current_context = self.context_encoder(context_input)
                 next_state = self.recurrent_cell(current_context, recurrent_state)
                 query = self.beam_query(next_state)
-                beam_logits = (beam_tokens * query.unsqueeze(1)).sum(dim=-1) / np.sqrt(float(self.hidden_dim))
-                beam_logits = beam_logits + self.beam_bias(beam_tokens).squeeze(-1)
+                residual_logits = (beam_tokens * query.unsqueeze(1)).sum(dim=-1) / np.sqrt(
+                    float(self.hidden_dim)
+                )
+                residual_logits = residual_logits + self.beam_bias(beam_tokens).squeeze(-1)
+                if self.use_bounded_score_residual:
+                    residual_scale = self.score_residual_max_logit * torch.sigmoid(
+                        self.score_residual_raw_gate
+                    )
+                    residual_logits = residual_scale * torch.tanh(residual_logits)
+                beam_logits = residual_logits
                 if self.use_candidate_score_prior:
                     beam_logits = beam_logits + self._candidate_prior_logits(tensors)
                 value = self.value_head(next_state)

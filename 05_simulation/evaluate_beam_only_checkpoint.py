@@ -156,6 +156,15 @@ def load_mappo_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
         azimuth_cells=int(checkpoint["config"]["azimuth_cells"]),
         elevation_cells=int(checkpoint["config"]["elevation_cells"]),
         use_candidate_score_prior=bool(getattr(checkpoint_args, "candidate_score_prior", False)),
+        candidate_score_prior_power=float(
+            getattr(checkpoint_args, "candidate_score_prior_power", 1.0)
+        ),
+        use_bounded_score_residual=bool(
+            getattr(checkpoint_args, "bounded_score_residual", False)
+        ),
+        score_residual_max_logit=float(
+            getattr(checkpoint_args, "score_residual_max_logit", 2.0)
+        ),
     )
     policy.model.load_state_dict(checkpoint["policy_state_dict"])
     policy.eval()

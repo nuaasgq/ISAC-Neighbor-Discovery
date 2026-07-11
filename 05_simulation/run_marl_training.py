@@ -176,6 +176,19 @@ def parse_args() -> argparse.Namespace:
         help="Initialize a recurrent residual policy from the local candidate-score distribution.",
     )
     parser.add_argument(
+        "--candidate-score-prior-power",
+        type=float,
+        default=1.0,
+        help="Initial positive exponent applied to the local candidate-score policy.",
+    )
+    parser.add_argument(
+        "--bounded-score-residual",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Bound recurrent logit corrections around the local candidate-score prior.",
+    )
+    parser.add_argument("--score-residual-max-logit", type=float, default=2.0)
+    parser.add_argument(
         "--candidate-score",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -304,6 +317,9 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         azimuth_cells=int(cfg.azimuth_cells),
         elevation_cells=int(cfg.elevation_cells),
         use_candidate_score_prior=bool(getattr(args, "candidate_score_prior", False)),
+        candidate_score_prior_power=float(getattr(args, "candidate_score_prior_power", 1.0)),
+        use_bounded_score_residual=bool(getattr(args, "bounded_score_residual", False)),
+        score_residual_max_logit=float(getattr(args, "score_residual_max_logit", 2.0)),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
@@ -441,6 +457,14 @@ def validate_args(args: argparse.Namespace) -> None:
             raise ValueError("--candidate-score-prior requires --network recurrent_contention_shared.")
         if getattr(args, "candidate_score", None) is False:
             raise ValueError("--candidate-score-prior requires candidate-score observations.")
+    if float(getattr(args, "candidate_score_prior_power", 1.0)) <= 0.0:
+        raise ValueError("--candidate-score-prior-power must be positive.")
+    if bool(getattr(args, "bounded_score_residual", False)) and not bool(
+        getattr(args, "candidate_score_prior", False)
+    ):
+        raise ValueError("--bounded-score-residual requires --candidate-score-prior.")
+    if float(getattr(args, "score_residual_max_logit", 2.0)) <= 0.0:
+        raise ValueError("--score-residual-max-logit must be positive.")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
     if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
@@ -672,6 +696,9 @@ def build_policy(
     azimuth_cells = int(kwargs.pop("azimuth_cells", int(args[0]) if args else 1))
     elevation_cells = int(kwargs.pop("elevation_cells", 1))
     use_candidate_score_prior = bool(kwargs.pop("use_candidate_score_prior", False))
+    candidate_score_prior_power = float(kwargs.pop("candidate_score_prior_power", 1.0))
+    use_bounded_score_residual = bool(kwargs.pop("use_bounded_score_residual", False))
+    score_residual_max_logit = float(kwargs.pop("score_residual_max_logit", 2.0))
     if str(network) == "shared":
         if action_contract != "joint_role_beam":
             raise ValueError("beam_only_fixed_role requires a contention network.")
@@ -692,6 +719,9 @@ def build_policy(
         kwargs["azimuth_cells"] = azimuth_cells
         kwargs["elevation_cells"] = elevation_cells
         kwargs["use_candidate_score_prior"] = use_candidate_score_prior
+        kwargs["candidate_score_prior_power"] = candidate_score_prior_power
+        kwargs["use_bounded_score_residual"] = use_bounded_score_residual
+        kwargs["score_residual_max_logit"] = score_residual_max_logit
         return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
@@ -2178,6 +2208,8 @@ def architecture_version(args: argparse.Namespace) -> str:
         and critic == "mpnn"
         and bool(getattr(args, "candidate_score_prior", False))
     ):
+        if bool(getattr(args, "bounded_score_residual", False)):
+            return "beam_only_recurrent_mpnn_bounded_score_residual_v3"
         return "beam_only_recurrent_mpnn_score_residual_v2"
     if actor == "recurrent_contention_shared" and critic == "mpnn":
         return "beam_only_recurrent_mpnn_v1"
@@ -2388,6 +2420,9 @@ def build_manifest(
         ),
         "actor_global_state_access": False,
         "candidate_score_prior": bool(getattr(args, "candidate_score_prior", False)),
+        "candidate_score_prior_power": float(getattr(args, "candidate_score_prior_power", 1.0)),
+        "bounded_score_residual": bool(getattr(args, "bounded_score_residual", False)),
+        "score_residual_max_logit": float(getattr(args, "score_residual_max_logit", 2.0)),
         "critic_network": str(getattr(args, "critic_network", "pooled")),
         "critic_hidden_dim": int(getattr(args, "critic_hidden_dim", None) or args.hidden_dim),
         "critic_message_passes": (

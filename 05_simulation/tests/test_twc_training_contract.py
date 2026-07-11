@@ -274,6 +274,38 @@ def test_recurrent_candidate_score_prior_initializes_to_local_proportional_polic
     assert torch.allclose(probabilities[1], expected, atol=1e-6, rtol=1e-6)
 
 
+def test_bounded_score_residual_initializes_to_tempered_local_policy() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=2, azimuth_cells=4, elevation_cells=1)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260825)
+    for observation in observations:
+        observation["candidate_mask"] = np.asarray([0.0, 1.0, 1.0, 1.0], dtype=np.float32)
+        observation["candidate_score"] = np.asarray([100.0, 1.0, 4.0, 9.0], dtype=np.float32)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_candidate_score_prior=True,
+        candidate_score_prior_power=0.5,
+        use_bounded_score_residual=True,
+        score_residual_max_logit=2.0,
+        disabled_modes=("sense", "idle"),
+    )
+    with torch.no_grad():
+        _mode_logits, beam_logits, _values = policy.batched_logits_value(observations, hard_mask=True)
+        probabilities = torch.softmax(beam_logits, dim=-1)
+
+    expected = torch.tensor([0.0, 1.0 / 6.0, 2.0 / 6.0, 3.0 / 6.0])
+    assert torch.allclose(probabilities[0], expected, atol=1e-6, rtol=1e-6)
+    assert torch.allclose(probabilities[1], expected, atol=1e-6, rtol=1e-6)
+    initial_scale = 2.0 * torch.sigmoid(policy.model.score_residual_raw_gate)
+    assert float(initial_scale.detach()) == pytest.approx(0.1, abs=1e-6)
+
+
 def test_local_sticky_score_diagnostic_uses_only_valid_previous_beams() -> None:
     module = load_beam_checkpoint_evaluation_module()
     observations = [
