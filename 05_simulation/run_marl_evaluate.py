@@ -68,7 +68,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-both", action="store_true", help="Run deterministic and stochastic evaluation.")
     parser.add_argument(
         "--beam-executor",
-        choices=["policy", "local_candidate_random", "rule_candidate", "wang_candidate_random"],
+        choices=[
+            "policy",
+            "local_candidate_random",
+            "candidate_score_proportional",
+            "rule_candidate",
+            "wang_candidate_random",
+        ],
         default="policy",
         help=(
             "Beam execution rule. 'policy' uses neural beam actions; "
@@ -777,6 +783,8 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
             beam = 0
         elif beam_executor == "local_candidate_random":
             beam = local_candidate_random_beam(env, node, mode)
+        elif beam_executor == "candidate_score_proportional":
+            beam = local_candidate_score_proportional_beam(env, node, mode)
         elif beam_executor == "rule_candidate":
             beam = rule_candidate_beam(env, node, env._slot, mode)
         elif beam_executor == "wang_candidate_random":
@@ -799,6 +807,25 @@ def local_candidate_random_beam(env: MarlNeighborDiscoveryEnv, node: int, mode: 
     if active.size == 0:
         active = np.arange(env.n_beams, dtype=int)
     return int(env._sim.rng.choice(active))
+
+
+def local_candidate_score_proportional_beam(
+    env: MarlNeighborDiscoveryEnv,
+    node: int,
+    mode: str,
+) -> int:
+    """Sample a beam from actor-visible local candidate scores only."""
+
+    if mode == MODE_IDLE:
+        return 0
+    candidate = env._candidate_features_for(int(node))
+    active = np.flatnonzero(np.asarray(candidate["mask"], dtype=float) > 0.5)
+    if active.size == 0:
+        active = np.arange(env.n_beams, dtype=int)
+    scores = np.maximum(0.0, np.asarray(candidate["score"], dtype=float)[active])
+    if float(scores.sum()) <= 0.0:
+        return int(env._sim.rng.choice(active))
+    return int(env._sim.rng.choice(active, p=scores / scores.sum()))
 
 
 def rule_candidate_beam(env: MarlNeighborDiscoveryEnv, node: int, slot: int, mode: str) -> int:

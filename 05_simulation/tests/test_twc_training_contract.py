@@ -721,6 +721,28 @@ def test_evaluation_local_candidate_random_executor_uses_actor_visible_mask() ->
     assert sampled == [target_beam] * 20
 
 
+def test_evaluation_candidate_score_executor_uses_only_exposed_local_scores() -> None:
+    module = load_evaluation_module()
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=1,
+        azimuth_cells=4,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260828)
+    env._candidate_features_for = lambda _node: {
+        "mask": np.asarray([0.0, 1.0, 1.0, 0.0], dtype=np.float32),
+        "score": np.asarray([100.0, 0.0, 5.0, 100.0], dtype=np.float32),
+    }
+
+    sampled = [
+        module.local_candidate_score_proportional_beam(env, 0, "tx") for _ in range(20)
+    ]
+
+    assert sampled == [2] * 20
+
+
 def test_evaluation_uniform_mode_executor_has_no_hidden_state_dependency() -> None:
     module = load_evaluation_module()
     cfg = replace(load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"), n_nodes=1)
