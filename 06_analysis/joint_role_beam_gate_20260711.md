@@ -87,6 +87,21 @@ A soft population regularizer `0.01 * (mean(P_TX)-0.5)^2` was selected on the kn
 
 The balanced learner removes the catastrophic TX collapse and makes `D-B` positive in all three seeds. It still does not pass the paper-level `+3 pp` performance gate. Because the direction is now consistent and the user explicitly requested a `10^5`-step run, the frozen configuration proceeds to one final `100,200`-step three-seed training-length check. The success criterion remains unchanged; longer training is not itself evidence of an innovation.
 
+## Role-Balanced 100.2k Final Gate
+
+The frozen role-balanced configuration was trained from scratch for `334 x 300 = 100,200` environment steps with the same three seeds. All runs completed with zero recurrent replay error, actor-global-state access disabled, dedicated handshake reward counters, and approximately `0.5 GB` peak RSS. The A/B/C/D evaluation used the same 20 development scenario seeds for every checkpoint and arm.
+
+| Training seed | A | B | C | D | D-B | Interaction | D TX ratio |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 29260711 | 52.11% | 50.78% | 52.56% | 53.44% | +2.67 pp | +2.22 pp | 54.79% |
+| 29261711 | 52.11% | 50.78% | 49.11% | 46.11% | -4.67 pp | -1.67 pp | 36.81% |
+| 29262711 | 52.11% | 52.56% | 51.11% | 50.44% | -2.11 pp | -1.11 pp | 54.95% |
+| Mean | 52.11% | 51.37% | 50.93% | 50.00% | -1.37 pp | -0.19 pp | 48.85% |
+
+The final checkpoint fails the predeclared gate. Learned roles reduce discovery relative to the same learned beam with uniform TX/RX by `1.37 pp` on average and are beneficial in only one of three training seeds. Learned beam selection also fails to improve the matched score-proportional executor (`B-A = -0.74 pp`). The mean TX ratio is acceptable, but one seed remains close to the lower boundary and performance variance increases with joint execution.
+
+This terminates further transfer evaluation for the current joint MAPPO architecture. The untouched final holdout remains unused. Any next method iteration must begin from a new, falsifiable mechanism or optimization hypothesis and pass the N=10 matched A/B/C/D gate before scale or beamwidth transfer is considered.
+
 ## Result Locations
 
 - Corrected reward screen: `05_simulation/results_raw/handshake_reward_v2_screen_seed29260711_20260711`
@@ -96,3 +111,5 @@ The balanced learner removes the catastrophic TX collapse and makes `D-B` positi
 - Decoupled 30k gate: `05_simulation/results_raw/decoupled_joint_30k_three_seed_gate_20260711`
 - Role-balance collapse screen: `05_simulation/results_raw/role_balance_30k_collapse_seed_screen_20260711`
 - Role-balanced 30k gate: `05_simulation/results_raw/role_balance_30k_three_seed_gate_20260711`
+- Role-balanced 100.2k final gate: `05_simulation/results_raw/role_balanced_joint_100200_three_seed_final_20260711`
+- Final tables and figures: `06_analysis/paper_tables/role_balanced_joint_100k_gate_20260712`

@@ -1,0 +1,21 @@
+training_seed,contrast,discovery_rate_delta,sd_across_training_seeds,ci95_half_width,positive_training_seeds
+29260711,"B-A (learned beam effect, random role)",-0.013333333333333308,,,
+29260711,"D-C (learned beam effect, learned role)",0.008888888888889057,,,
+29260711,"C-A (learned role effect, rule beam)",0.004444444444444362,,,
+29260711,"D-B (learned role effect, learned beam)",0.026666666666666727,,,
+29260711,D-B-C+A (interaction),0.022222222222222365,,,
+29261711,"B-A (learned beam effect, random role)",-0.013333333333333308,,,
+29261711,"D-C (learned beam effect, learned role)",-0.030000000000000027,,,
+29261711,"C-A (learned role effect, rule beam)",-0.029999999999999916,,,
+29261711,"D-B (learned role effect, learned beam)",-0.046666666666666634,,,
+29261711,D-B-C+A (interaction),-0.01666666666666672,,,
+29262711,"B-A (learned beam effect, random role)",0.004444444444444362,,,
+29262711,"D-C (learned beam effect, learned role)",-0.00666666666666671,,,
+29262711,"C-A (learned role effect, rule beam)",-0.009999999999999898,,,
+29262711,"D-B (learned role effect, learned beam)",-0.02111111111111097,,,
+29262711,D-B-C+A (interaction),-0.011111111111111072,,,
+mean,"B-A (learned beam effect, random role)",-0.007407407407407418,0.010264004785593285,0.025499259259259107,1
+mean,"D-C (learned beam effect, learned role)",-0.009259259259259226,0.019573644832183514,0.04862755373273676,1
+mean,"C-A (learned role effect, rule beam)",-0.011851851851851817,0.017296732487163798,0.042970933397002045,1
+mean,"D-B (learned role effect, learned beam)",-0.013703703703703626,0.03722360417556218,0.09247602210483921,1
+mean,D-B-C+A (interaction),-0.0018518518518518083,0.02103299387333444,0.05225307031494747,1
