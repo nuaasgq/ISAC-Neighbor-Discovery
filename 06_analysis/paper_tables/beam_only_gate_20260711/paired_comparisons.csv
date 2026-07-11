@@ -1,0 +1,13 @@
+comparison,paired_scenarios,mean_discovery_difference,ci95_low,ci95_high,exact_sign_flip_p,holm_adjusted_p
+standard_epsilon:pure_learned_beam - standard_epsilon:random_candidate_beam,10,-0.0022222222222222088,-0.12198635758218095,0.11754191313773653,1.0,1.0
+standard_epsilon:learned_beam_random_mix_0.2 - standard_epsilon:random_candidate_beam,10,-0.0022222222222222253,-0.08514106351884977,0.08069661907440533,1.0,1.0
+standard_epsilon:learned_beam_random_mix_0.5 - standard_epsilon:random_candidate_beam,10,0.039999999999999994,-0.022603921937649485,0.10260392193764947,0.2109375,1.0
+standard_epsilon:learned_beam_random_mix_0.8 - standard_epsilon:random_candidate_beam,10,0.057777777777777775,-0.023344032901602613,0.13889958845715816,0.16015625,1.0
+standard_epsilon:pure_learned_beam - standard_epsilon:candidate_score_argmax,10,0.04,-0.06296149144698543,0.14296149144698544,0.421875,1.0
+standard_epsilon:pure_learned_beam - standard_epsilon:candidate_score_proportional,10,-0.015555555555555545,-0.0948750176482013,0.06376390653709021,0.7109375,1.0
+persistent_mix_0.8:pure_learned_beam - persistent_mix_0.8:random_candidate_beam,10,0.031111111111111117,-0.06549160551352247,0.1277138277357447,0.5234375,1.0
+persistent_mix_0.8:learned_beam_random_mix_0.2 - persistent_mix_0.8:random_candidate_beam,10,-0.011111111111111117,-0.09889807040588462,0.0766758481836624,0.818359375,1.0
+persistent_mix_0.8:learned_beam_random_mix_0.5 - persistent_mix_0.8:random_candidate_beam,10,0.08666666666666667,0.011939894430145662,0.1613934389031877,0.0390625,0.46875
+persistent_mix_0.8:learned_beam_random_mix_0.8 - persistent_mix_0.8:random_candidate_beam,10,0.0177777777777778,-0.05594666666666666,0.09150222222222225,0.634765625,1.0
+persistent_mix_0.8:pure_learned_beam - persistent_mix_0.8:candidate_score_argmax,10,0.07333333333333333,-0.021465211115564348,0.16813187778223102,0.12890625,1.0
+persistent_mix_0.8:pure_learned_beam - persistent_mix_0.8:candidate_score_proportional,10,0.01777777777777778,-0.027678904953568458,0.06323446050912401,0.455078125,1.0

@@ -27,6 +27,13 @@ Therefore `pure_learned_beam` means **zero evaluation-time random beam mixture i
 | `learned_beam_random_mix_0.8` | 20% | 80% |
 | `random_candidate_beam` | 0% | 100% |
 
+Two non-learning controls are also mandatory because the learner observes the hand-designed `candidate_score`:
+
+- `candidate_score_argmax`: choose the largest score inside the same residual mask.
+- `candidate_score_proportional`: sample in proportion to nonnegative scores inside the same residual mask.
+
+Learning gain must be measured against both candidate-uniform random and the stronger of these score controls. Otherwise a network that only copies the hand-designed ranking could be misreported as an RL contribution.
+
 The `random_candidate_beam` row is the causal control for learned beam selection. Blind all-codebook random remains a separate capability lower bound and must not be used to attribute beam-learning gains.
 
 ## Training regimes

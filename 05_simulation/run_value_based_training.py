@@ -138,6 +138,40 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def capture_launch_provenance() -> dict[str, Any]:
+    try:
+        git_commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        ).stdout.strip()
+        tracked_worktree_dirty: bool | None = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain", "--untracked-files=no"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            ).stdout.strip()
+        )
+    except Exception:
+        git_commit = "unknown"
+        tracked_worktree_dirty = None
+    source_files = {
+        "runner": Path(__file__).resolve(),
+        "value_decomposition": SRC / "isac_nd_sim" / "value_decomposition.py",
+    }
+    return {
+        "git_commit": git_commit,
+        "tracked_worktree_dirty": tracked_worktree_dirty,
+        "source_sha256": {name: file_sha256(path) for name, path in source_files.items()},
+    }
+
+
 def run_training(args: argparse.Namespace) -> dict[str, Any]:
     try:
         import torch
@@ -145,6 +179,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError("PyTorch is required for value-based training.") from exc
 
     validate_args(args)
+    launch_provenance = capture_launch_provenance()
     if int(args.torch_threads) > 0:
         torch.set_num_threads(int(args.torch_threads))
     torch.manual_seed(int(args.seed))
@@ -175,7 +210,15 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
         learner.load_checkpoint_state(checkpoint["learner"])
         eval_rows = evaluate_learner(learner, cfg, args)
-        manifest = build_manifest(args, cfg, learner, [], eval_rows, [])
+        manifest = build_manifest(
+            args,
+            cfg,
+            learner,
+            [],
+            eval_rows,
+            [],
+            launch_provenance,
+        )
         manifest["scope"] = "common_contract_value_based_eval_only"
         manifest["source_checkpoint"] = str(checkpoint_path)
         manifest["source_checkpoint_sha256"] = file_sha256(checkpoint_path)
@@ -337,7 +380,15 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         "training_contract_version": "common_local_residual_value_v1",
     }
     torch.save(checkpoint, output / "final_model.pt")
-    manifest = build_manifest(args, cfg, learner, episode_rows, eval_rows, resource_rows)
+    manifest = build_manifest(
+        args,
+        cfg,
+        learner,
+        episode_rows,
+        eval_rows,
+        resource_rows,
+        launch_provenance,
+    )
     (output / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -501,35 +552,8 @@ def build_manifest(
     episode_rows: list[dict[str, Any]],
     eval_rows: list[dict[str, Any]],
     resource_rows: list[dict[str, Any]],
+    launch_provenance: dict[str, Any],
 ) -> dict[str, Any]:
-    try:
-        git_commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5,
-        ).stdout.strip()
-    except Exception:
-        git_commit = "unknown"
-    try:
-        tracked_worktree_dirty = bool(
-            subprocess.run(
-                ["git", "status", "--porcelain", "--untracked-files=no"],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5,
-            ).stdout.strip()
-        )
-    except Exception:
-        tracked_worktree_dirty = None
-    source_files = {
-        "runner": Path(__file__).resolve(),
-        "value_decomposition": SRC / "isac_nd_sim" / "value_decomposition.py",
-    }
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "scope": "common_contract_value_based_screen",
@@ -597,9 +621,10 @@ def build_manifest(
             "identity_exposed_before_handshake": False,
             "common_protocol_interface": True,
         },
-        "git_commit": git_commit,
-        "tracked_worktree_dirty": tracked_worktree_dirty,
-        "source_sha256": {name: file_sha256(path) for name, path in source_files.items()},
+        "git_commit": launch_provenance["git_commit"],
+        "provenance_capture": "process_launch",
+        "tracked_worktree_dirty": launch_provenance["tracked_worktree_dirty"],
+        "source_sha256": launch_provenance["source_sha256"],
         "command": list(sys.argv),
         "peak_rss_mb": max(
             (float(row["rss_mb"]) for row in resource_rows if isinstance(row.get("rss_mb"), (int, float))),

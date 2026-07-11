@@ -1,0 +1,2 @@
+contrast,standard_checkpoint_discovery_rate,persistent_checkpoint_discovery_rate,descriptive_difference_only,inference_status
+standard_epsilon:pure - persistent_mix_0.8:pure,0.5133333333333333,0.5466666666666666,-0.033333333333333326,not_tested_requires_independent_training_seeds
