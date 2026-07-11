@@ -36,6 +36,98 @@ def load_evaluation_module():
     return module
 
 
+def test_beam_only_mappo_has_no_mode_head_and_uses_fixed_half_roles() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260801)
+    policy = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        action_contract="beam_only_fixed_role",
+        disabled_modes=("sense", "idle"),
+    )
+    role_rng = np.random.default_rng(91)
+
+    step = policy.act(observations, deterministic=False, role_rng=role_rng)
+
+    assert not hasattr(policy.model, "mode_head")
+    assert not hasattr(policy.model, "contention_mode_residual")
+    assert all(action.mode in {"tx", "rx"} for action in step.actions)
+    assert torch.count_nonzero(step.mode_log_probs) == 0
+    assert torch.count_nonzero(step.mode_entropies) == 0
+    assert torch.allclose(step.log_probs, step.beam_log_probs)
+    assert torch.allclose(step.entropies, step.beam_entropies)
+
+
+def test_beam_only_mappo_role_sequence_is_independent_of_beam_sampling() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260802)
+    policy = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        action_contract="beam_only_fixed_role",
+        disabled_modes=("sense", "idle"),
+    )
+    first_roles: list[str] = []
+    second_roles: list[str] = []
+    first_rng = np.random.default_rng(92)
+    second_rng = np.random.default_rng(92)
+    for index in range(50):
+        torch.manual_seed(1000 + index)
+        first_roles.extend(
+            action.mode for action in policy.act(observations, role_rng=first_rng).actions
+        )
+        torch.manual_seed(2000 + index)
+        second_roles.extend(
+            action.mode for action in policy.act(observations, role_rng=second_rng).actions
+        )
+
+    assert first_roles == second_roles
+    assert first_roles.count("tx") / len(first_roles) == pytest.approx(0.5, abs=0.1)
+
+
+def test_beam_only_mappo_ppo_recompute_uses_only_beam_probability() -> None:
+    pytest.importorskip("torch")
+    module = load_training_module()
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260803)
+    policy = ContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        action_contract="beam_only_fixed_role",
+        disabled_modes=("sense", "idle"),
+    )
+    step = policy.act(
+        observations,
+        deterministic=False,
+        role_rng=np.random.default_rng(93),
+    )
+
+    recomputed = module.evaluate_action_components(
+        policy,
+        [observations],
+        [step.actions],
+    )
+
+    assert np.allclose(
+        recomputed["log_probs"].detach().cpu().numpy()[0],
+        step.log_probs.detach().cpu().numpy(),
+    )
+    assert np.allclose(
+        recomputed["beam_log_probs"].detach().cpu().numpy()[0],
+        step.beam_log_probs.detach().cpu().numpy(),
+    )
+    assert np.count_nonzero(recomputed["mode_log_probs"].detach().cpu().numpy()) == 0
+    assert np.count_nonzero(recomputed["mode_entropies"].detach().cpu().numpy()) == 0
+
+
 def test_isac_mappo_defaults_to_soft_isac_observation_without_rule_priors() -> None:
     module = load_training_module()
     args = Namespace(

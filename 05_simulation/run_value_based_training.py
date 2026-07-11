@@ -255,6 +255,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         observations, _ = env.reset(seed=int(args.seed) + episode)
         episode_rewards: list[np.ndarray] = []
         episode_losses: list[dict[str, float]] = []
+        role_trace = hashlib.blake2b(digest_size=12)
         uses_global_training_state = requires_global_training_state(str(args.algorithm))
         truncated = False
         while not truncated:
@@ -289,6 +290,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     beam_uniform_mixture=beam_mixture,
                 )
             next_observations, rewards, _terminated, truncated, info = env.step(actions)
+            role_trace.update(bytes(1 if action.mode == "tx" else 0 for action in actions))
             next_state_features = (
                 central_state_features(env.training_state(), cfg)
                 if uses_global_training_state
@@ -366,6 +368,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             "episode_return_mean_per_agent": float(reward_array.sum(axis=0).mean()),
             "step_reward_mean": float(reward_array.mean()),
             "epsilon": epsilon_at_step(args, global_step),
+            "role_sequence_hash": role_trace.hexdigest(),
             **loss_summary,
             **env._sim.summarize(episode).as_dict(),
         }

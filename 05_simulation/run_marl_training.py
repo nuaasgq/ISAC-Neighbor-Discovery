@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import platform
@@ -21,6 +22,7 @@ if str(SRC) not in sys.path:
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
+    ACTION_CONTRACTS,
     AdaptiveGatedContentionGraphActorCritic,
     BalancedTopologyGatedContentionGraphActorCritic,
     ContentionGraphActorCritic,
@@ -64,6 +66,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", default="05_simulation/configs/twc_canonical_n10_b10.yaml")
     parser.add_argument("--output", default="05_simulation/results_raw/marl_training")
     parser.add_argument("--algorithm", choices=["ippo", "mappo", "isac_mappo"], default="isac_mappo")
+    parser.add_argument("--action-contract", choices=ACTION_CONTRACTS, default="joint_role_beam")
     parser.add_argument(
         "--network",
         choices=[
@@ -283,6 +286,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         role_probability_floor=float(getattr(args, "role_probability_floor", 0.0)),
         beam_uniform_mixture=float(getattr(args, "beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_args(args),
+        action_contract=str(getattr(args, "action_contract", "joint_role_beam")),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
@@ -312,6 +316,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
     eval_rows: list[dict[str, Any]] = []
     resource_rows: list[dict[str, Any]] = []
     global_step = 0
+    fixed_role_rng = np.random.default_rng(int(args.seed) + 19)
 
     for episode in range(int(args.episodes)):
         trajectory = collect_trajectory(
@@ -325,6 +330,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             step_log_period=int(args.step_log_period),
             args=args,
             resource_rows=resource_rows,
+            fixed_role_rng=fixed_role_rng,
         )
         global_step += int(trajectory["slots"])
         losses = update_policy(
@@ -421,6 +427,32 @@ def validate_args(args: argparse.Namespace) -> None:
         "scalegraph_beam",
     }:
         raise ValueError("--rendezvous-adapter requires a contention network.")
+    if str(getattr(args, "action_contract", "joint_role_beam")) == "beam_only_fixed_role":
+        if str(getattr(args, "algorithm", "")) not in {"mappo", "isac_mappo"}:
+            raise ValueError("beam_only_fixed_role MAPPO requires centralized training.")
+        if str(getattr(args, "network", "")) != "contention_shared":
+            raise ValueError("beam_only_fixed_role currently requires --network contention_shared.")
+        if role_floor > 0.0:
+            raise ValueError("beam_only_fixed_role uses fixed Bernoulli(0.5) roles, not a role floor.")
+        if bool(getattr(args, "allow_standalone_sense", False)) or bool(
+            getattr(args, "allow_idle", False)
+        ):
+            raise ValueError("beam_only_fixed_role supports only fixed TX/RX plus beam selection.")
+        forbidden_beam_only = {
+            "expert_bc_weight": "behavior cloning",
+            "beam_rank_aux_coef": "beam-rank auxiliary target",
+            "rendezvous_beam_aux_coef": "rendezvous beam auxiliary target",
+            "rendezvous_role_aux_coef": "rendezvous role auxiliary target",
+        }
+        enabled = [
+            label
+            for field, label in forbidden_beam_only.items()
+            if float(getattr(args, field, 0.0)) > 0.0
+        ]
+        if bool(getattr(args, "separate_action_loss", False)):
+            enabled.append("separate role/beam loss")
+        if enabled:
+            raise ValueError("beam_only_fixed_role forbids: " + ", ".join(enabled))
     if bool(getattr(args, "separate_action_loss", False)) and str(getattr(args, "network", "")) == "scalegraph_beam":
         raise ValueError("--separate-action-loss is not implemented for scalegraph_beam.")
     violations = clean_ctde_violations(args)
@@ -567,15 +599,21 @@ def build_policy(
     use_residual_measurement_features = bool(kwargs.pop("use_residual_measurement_features", False))
     role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
     beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
+    action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
     if str(network) == "shared":
+        if action_contract != "joint_role_beam":
+            raise ValueError("beam_only_fixed_role requires a contention network.")
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
+        if action_contract != "joint_role_beam":
+            raise ValueError("beam_only_fixed_role requires a contention network.")
         return ScaleGraphBeamActorCritic(*args, **kwargs)
     kwargs["use_contention_mode_prior"] = use_contention_mode_prior
     kwargs["use_rendezvous_adapter"] = use_rendezvous_adapter
     kwargs["use_residual_measurement_features"] = use_residual_measurement_features
     kwargs["role_probability_floor"] = role_probability_floor
     kwargs["beam_uniform_mixture"] = beam_uniform_mixture
+    kwargs["action_contract"] = action_contract
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
@@ -608,6 +646,7 @@ def collect_trajectory(
     step_log_period: int,
     args: argparse.Namespace,
     resource_rows: list[dict[str, Any]],
+    fixed_role_rng: np.random.Generator,
 ) -> dict[str, Any]:
     env = MarlNeighborDiscoveryEnv(
         cfg,
@@ -630,6 +669,7 @@ def collect_trajectory(
     step_rows = []
     rendezvous_totals = empty_rendezvous_action_diagnostics()
     cumulative_reward = 0.0
+    role_trace = hashlib.blake2b(digest_size=12)
     truncated = False
     policy.train()
 
@@ -645,8 +685,18 @@ def collect_trajectory(
         else:
             expert_actions_by_step.append([])
         with torch_module.no_grad():
-            step = policy.act(observations, deterministic=False)
+            step = policy.act(
+                observations,
+                deterministic=False,
+                role_rng=(
+                    fixed_role_rng
+                    if str(getattr(args, "action_contract", "joint_role_beam"))
+                    == "beam_only_fixed_role"
+                    else None
+                ),
+            )
         action_diagnostics = beam_selection_diagnostics(observations_by_step[-1], step.actions)
+        role_trace.update(bytes(1 if action.mode == MODE_TX else 0 for action in step.actions))
         action_diagnostics.update(rendezvous_pair_diagnostics(env, observations_by_step[-1], step.actions))
         accumulate_rendezvous_action_diagnostics(rendezvous_totals, action_diagnostics)
         observations, reward, _terminated, truncated, info = env.step(step.actions)
@@ -717,6 +767,7 @@ def collect_trajectory(
     summary = env._sim.summarize(episode).as_dict()
     summary.update(env.access_gate_summary())
     summary.update(summarize_rendezvous_action_diagnostics(rendezvous_totals))
+    summary["role_sequence_hash"] = role_trace.hexdigest()
     return {
         "episode": episode,
         "seed": seed,
@@ -1260,20 +1311,24 @@ def evaluate_action_components(
             else:
                 mode_logits, beam_logits, value = policy.logits_value(observation, hard_mask=True)
                 gate_logits = None
-            mode_dist = Categorical(logits=mode_logits)
             beam_dist = Categorical(logits=beam_logits)
             mode_idx = MODE_TO_INDEX[action.mode]
-            mode_tensor = torch.as_tensor(mode_idx, dtype=torch.long, device=policy.device)
-            mode_log_prob = mode_dist.log_prob(mode_tensor)
-            beam_log_prob = torch.zeros((), dtype=mode_log_prob.dtype, device=policy.device)
-            log_prob = mode_log_prob
-            active_beam = action.mode != "idle"
+            beam_log_prob = torch.zeros((), dtype=beam_logits.dtype, device=policy.device)
             if action.mode != "idle":
                 beam_tensor = torch.as_tensor(int(action.beam), dtype=torch.long, device=policy.device)
                 beam_log_prob = beam_dist.log_prob(beam_tensor)
-                log_prob = log_prob + beam_log_prob
-            mode_entropy = mode_dist.entropy()
             beam_entropy = beam_dist.entropy()
+            if getattr(policy, "action_contract", "joint_role_beam") == "beam_only_fixed_role":
+                mode_log_prob = torch.zeros((), dtype=beam_logits.dtype, device=policy.device)
+                mode_entropy = torch.zeros((), dtype=beam_logits.dtype, device=policy.device)
+                log_prob = beam_log_prob
+            else:
+                mode_dist = Categorical(logits=mode_logits)
+                mode_tensor = torch.as_tensor(mode_idx, dtype=torch.long, device=policy.device)
+                mode_log_prob = mode_dist.log_prob(mode_tensor)
+                mode_entropy = mode_dist.entropy()
+                log_prob = mode_log_prob + beam_log_prob
+            active_beam = action.mode != "idle"
             gate_log_prob = torch.zeros((), dtype=mode_log_prob.dtype, device=policy.device)
             gate_entropy = torch.zeros((), dtype=mode_entropy.dtype, device=policy.device)
             entropy = mode_entropy + beam_entropy
@@ -1721,11 +1776,21 @@ def evaluate_policy(
                         candidate_source=str(getattr(args, "candidate_source", "default")),
                     )
                     observations, _ = env.reset(seed=seed)
+                    role_rng = np.random.default_rng(seed + 777)
                     rewards = []
                     rendezvous_totals = empty_rendezvous_action_diagnostics()
                     truncated = False
                     while not truncated:
-                        step = policy.act(observations, deterministic=not use_stochastic)
+                        step = policy.act(
+                            observations,
+                            deterministic=not use_stochastic,
+                            role_rng=(
+                                role_rng
+                                if str(getattr(args, "action_contract", "joint_role_beam"))
+                                == "beam_only_fixed_role"
+                                else None
+                            ),
+                        )
                         action_diagnostics = beam_selection_diagnostics(observations, step.actions)
                         action_diagnostics.update(rendezvous_pair_diagnostics(env, observations, step.actions))
                         accumulate_rendezvous_action_diagnostics(rendezvous_totals, action_diagnostics)
@@ -1800,6 +1865,8 @@ def should_checkpoint(index: int, interval: int) -> bool:
 
 
 def training_contract_version(args: argparse.Namespace) -> str:
+    if str(getattr(args, "action_contract", "joint_role_beam")) == "beam_only_fixed_role":
+        return "beam_only_fixed_role_v1"
     if not bool(getattr(args, "clean_ctde", False)):
         return "twc_trainable_v1"
     if bool(getattr(args, "residual_measurement_features", False)):
@@ -1820,6 +1887,7 @@ def save_checkpoint(
     checkpoint = {
         "episode": int(episode),
         "algorithm": str(args.algorithm),
+        "action_contract": str(getattr(args, "action_contract", "joint_role_beam")),
         "training_contract_version": training_contract_version(args),
         "feature_flags": resolved_feature_flags(args),
         "env_protocol": resolved_env_protocol(args),
@@ -1991,6 +2059,7 @@ def build_manifest(
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "algorithm": str(args.algorithm),
+        "action_contract": str(getattr(args, "action_contract", "joint_role_beam")),
         "network": str(getattr(args, "network", "shared")),
         "reward_version": str(getattr(args, "reward_version", "legacy")),
         "scope": "real_marl_training",
@@ -2033,6 +2102,28 @@ def build_manifest(
             "beam_uniform_mixture": float(getattr(args, "beam_uniform_mixture", 0.0)),
         },
         "action_teacher_free": bool(getattr(args, "clean_ctde", False)),
+        "role_policy": (
+            "fixed_iid_bernoulli_0.5_not_learned"
+            if str(getattr(args, "action_contract", "joint_role_beam"))
+            == "beam_only_fixed_role"
+            else "learned_mode"
+        ),
+        "fixed_tx_probability": (
+            0.5
+            if str(getattr(args, "action_contract", "joint_role_beam"))
+            == "beam_only_fixed_role"
+            else None
+        ),
+        "role_rng_seed_policy": (
+            "single_training_stream_seed_plus_19"
+            if str(getattr(args, "action_contract", "joint_role_beam"))
+            == "beam_only_fixed_role"
+            else None
+        ),
+        "learned_mode_head_present": str(
+            getattr(args, "action_contract", "joint_role_beam")
+        )
+        != "beam_only_fixed_role",
         "local_candidate_processing_allowed": bool(getattr(args, "clean_ctde", False)),
         "pair_derived_action_guidance_enabled": bool(cfg.rendezvous_observation_enabled),
         "post_handshake_table_exchange_protocol": env_protocol,

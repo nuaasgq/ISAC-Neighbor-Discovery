@@ -10,6 +10,9 @@ from .neural_shared_actor_critic import PolicyStep
 from .simulator import Action
 
 
+ACTION_CONTRACTS = ("joint_role_beam", "beam_only_fixed_role")
+
+
 @dataclass(frozen=True)
 class ContentionFeatures:
     contention_dim: int = 10
@@ -45,6 +48,7 @@ class ContentionGraphActorCritic:
         use_access_gate: bool = False,
         access_gate_variant: str = "legacy",
         disabled_modes: Sequence[str] | None = None,
+        action_contract: str = "joint_role_beam",
     ):
         try:
             import torch
@@ -67,6 +71,11 @@ class ContentionGraphActorCritic:
         self.use_residual_measurement_features = bool(use_residual_measurement_features)
         self.role_probability_floor = float(role_probability_floor)
         self.beam_uniform_mixture = float(beam_uniform_mixture)
+        self.action_contract = str(action_contract)
+        if self.action_contract not in ACTION_CONTRACTS:
+            raise ValueError(f"action_contract must be one of {ACTION_CONTRACTS}.")
+        if self.action_contract == "beam_only_fixed_role" and bool(use_access_gate):
+            raise ValueError("beam_only_fixed_role does not support a learned access gate.")
         disabled_mode_names = {mode for mode in (disabled_modes or ()) if mode in MODE_NAMES}
         if not 0.0 <= self.role_probability_floor < 0.5:
             raise ValueError("role_probability_floor must be in [0, 0.5).")
@@ -85,6 +94,7 @@ class ContentionGraphActorCritic:
             self.access_gate_variant,
             self.use_rendezvous_adapter,
             self.use_residual_measurement_features,
+            self.action_contract,
         ).to(self.device)
 
     def parameters(self):
@@ -255,7 +265,7 @@ class ContentionGraphActorCritic:
         return masked
 
     def _apply_residuals(self, tensors: dict, mode_logits, beam_logits):
-        if self.use_contention_mode_prior:
+        if self.action_contract == "joint_role_beam" and self.use_contention_mode_prior:
             mode_logits = mode_logits + self._contention_mode_prior(tensors)
         if self.use_rule_residual:
             if "rule_mode_logits" in tensors:
@@ -296,6 +306,7 @@ class ContentionGraphActorCritic:
         mode_temperature: float = 1.0,
         beam_temperature: float = 1.0,
         gate_temperature: float = 1.0,
+        role_rng: np.random.Generator | None = None,
     ) -> PolicyStep:
         torch = self.torch
         from torch.distributions import Categorical
@@ -316,13 +327,26 @@ class ContentionGraphActorCritic:
         beam_dist = Categorical(logits=sample_beam_logits)
         gate_dist = Categorical(logits=sample_gate_logits) if sample_gate_logits is not None else None
         if deterministic:
-            mode_idx = torch.argmax(mode_logits, dim=-1)
             sampled_beam_idx = torch.argmax(beam_logits, dim=-1)
             gate_idx = torch.argmax(gate_logits, dim=-1) if gate_logits is not None else None
         else:
-            mode_idx = mode_dist.sample()
             sampled_beam_idx = beam_dist.sample()
             gate_idx = gate_dist.sample() if gate_dist is not None else None
+        if self.action_contract == "beam_only_fixed_role":
+            if role_rng is None:
+                raise ValueError("beam_only_fixed_role requires an explicit role_rng.")
+            mode_idx = torch.as_tensor(
+                [
+                    MODE_NAMES.index("tx") if role_rng.random() < 0.5 else MODE_NAMES.index("rx")
+                    for _ in observations
+                ],
+                dtype=torch.long,
+                device=self.device,
+            )
+        elif deterministic:
+            mode_idx = torch.argmax(mode_logits, dim=-1)
+        else:
+            mode_idx = mode_dist.sample()
         idle_idx = MODE_NAMES.index("idle")
         beam_idx = torch.where(
             mode_idx == idle_idx,
@@ -345,8 +369,12 @@ class ContentionGraphActorCritic:
         active_beam_mask = mode_idx != idle_idx
         raw_beam_log_prob = beam_dist.log_prob(sampled_beam_idx)
         beam_log_prob = torch.where(active_beam_mask, raw_beam_log_prob, torch.zeros_like(value.squeeze(-1)))
-        mode_log_prob = mode_dist.log_prob(mode_idx)
-        mode_entropy = mode_dist.entropy()
+        if self.action_contract == "beam_only_fixed_role":
+            mode_log_prob = torch.zeros_like(raw_beam_log_prob)
+            mode_entropy = torch.zeros_like(raw_beam_log_prob)
+        else:
+            mode_log_prob = mode_dist.log_prob(mode_idx)
+            mode_entropy = mode_dist.entropy()
         beam_entropy = beam_dist.entropy()
         gate_log_prob = torch.zeros_like(mode_log_prob)
         gate_entropy = torch.zeros_like(mode_entropy)
@@ -388,6 +416,7 @@ class _ContentionGraphActorCriticModule:
         access_gate_variant: str = "legacy",
         use_rendezvous_adapter: bool = False,
         use_residual_measurement_features: bool = False,
+        action_contract: str = "joint_role_beam",
     ):
         import torch
         import torch.nn as nn
@@ -408,6 +437,7 @@ class _ContentionGraphActorCriticModule:
                 self.use_access_gate = bool(use_access_gate)
                 self.use_rendezvous_adapter = bool(use_rendezvous_adapter)
                 self.access_gate_variant = gate_variant
+                self.action_contract = str(action_contract)
                 self.beam_encoder = nn.Sequential(
                     nn.Linear(beam_dim, hidden_dim),
                     nn.LayerNorm(hidden_dim),
@@ -430,8 +460,9 @@ class _ContentionGraphActorCriticModule:
                     nn.Linear(hidden_dim, hidden_dim),
                     nn.SiLU(),
                 )
-                self.mode_head = nn.Linear(hidden_dim, len(MODE_NAMES))
-                self.contention_mode_residual = nn.Linear(hidden_dim, len(MODE_NAMES))
+                if self.action_contract == "joint_role_beam":
+                    self.mode_head = nn.Linear(hidden_dim, len(MODE_NAMES))
+                    self.contention_mode_residual = nn.Linear(hidden_dim, len(MODE_NAMES))
                 self.beam_query = nn.Linear(hidden_dim, hidden_dim)
                 self.contention_beam_gate = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
@@ -497,8 +528,16 @@ class _ContentionGraphActorCriticModule:
                     )
                     query = self.beam_query(self.context_encoder(context_input))
                 context = self.context_encoder(context_input)
-                mode_logits = self.mode_head(context) + self.contention_mode_residual(contention)
-                if self.use_rendezvous_adapter:
+                if self.action_contract == "beam_only_fixed_role":
+                    mode_shape = (*context.shape[:-1], len(MODE_NAMES))
+                    mode_logits = torch.zeros(
+                        mode_shape,
+                        dtype=context.dtype,
+                        device=context.device,
+                    )
+                else:
+                    mode_logits = self.mode_head(context) + self.contention_mode_residual(contention)
+                if self.use_rendezvous_adapter and self.action_contract == "joint_role_beam":
                     mode_logits = mode_logits + np.log(2.0) * self.rendezvous_mode_adapter(
                         tensors["rendezvous_role_hint"]
                     )
