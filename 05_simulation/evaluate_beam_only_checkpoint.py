@@ -170,6 +170,9 @@ def load_mappo_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
         score_residual_max_logit=float(
             getattr(checkpoint_args, "score_residual_max_logit", 2.0)
         ),
+        use_decoupled_role_tower=bool(
+            getattr(checkpoint_args, "decoupled_role_tower", False)
+        ),
     )
     policy.model.load_state_dict(checkpoint["policy_state_dict"])
     policy.eval()

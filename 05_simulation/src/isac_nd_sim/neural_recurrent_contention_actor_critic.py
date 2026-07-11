@@ -43,6 +43,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         candidate_score_prior_power: float = 1.0,
         use_bounded_score_residual: bool = False,
         score_residual_max_logit: float = 2.0,
+        use_decoupled_role_tower: bool = False,
     ):
         try:
             import torch
@@ -105,6 +106,9 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.supports_access_gate_action = False
         self.action_contract = str(action_contract)
         self.learned_mode_head_present = self.action_contract == "joint_role_beam"
+        self.use_decoupled_role_tower = bool(use_decoupled_role_tower)
+        if self.use_decoupled_role_tower and not self.learned_mode_head_present:
+            raise ValueError("decoupled role tower requires joint_role_beam.")
         self.disabled_mode_indices = tuple(
             MODE_NAMES.index(mode) for mode in (disabled_modes or ()) if mode in MODE_NAMES
         )
@@ -119,6 +123,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             self.use_bounded_score_residual,
             self.score_residual_max_logit,
             self.learned_mode_head_present,
+            self.use_decoupled_role_tower,
         ).to(self.device)
         self._recurrent_state = None
 
@@ -391,6 +396,7 @@ class _RecurrentContentionGraphActorCriticModule:
         use_bounded_score_residual: bool,
         score_residual_max_logit: float,
         use_learned_mode_head: bool,
+        use_decoupled_role_tower: bool,
     ):
         import torch
         import torch.nn as nn
@@ -458,6 +464,16 @@ class _RecurrentContentionGraphActorCriticModule:
                 self.beam_query = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
                 self.value_head = nn.Linear(hidden_dim, 1)
+                self.role_encoder = None
+                if use_learned_mode_head and use_decoupled_role_tower:
+                    role_input_dim = dims.contention_dim + 4 + 4 + 1 + dims.candidate_stats_dim
+                    self.role_encoder = nn.Sequential(
+                        nn.Linear(role_input_dim, hidden_dim),
+                        nn.LayerNorm(hidden_dim),
+                        nn.SiLU(),
+                        nn.Linear(hidden_dim, hidden_dim),
+                        nn.SiLU(),
+                    )
                 self.mode_head = nn.Linear(hidden_dim, len(MODE_NAMES)) if use_learned_mode_head else None
                 if self.mode_head is not None:
                     nn.init.zeros_(self.mode_head.weight)
@@ -522,15 +538,28 @@ class _RecurrentContentionGraphActorCriticModule:
                 if self.use_candidate_score_prior:
                     beam_logits = beam_logits + self._candidate_prior_logits(tensors)
                 value = self.value_head(next_state)
-                mode_logits = (
-                    self.mode_head(next_state)
-                    if self.mode_head is not None
-                    else torch.zeros(
+                if self.mode_head is not None:
+                    if self.role_encoder is not None:
+                        role_input = torch.cat(
+                            [
+                                tensors["contention_state"],
+                                tensors["local_summary"],
+                                tensors["last_mode"],
+                                tensors["topology_deficit"],
+                                tensors["candidate_stats"],
+                            ],
+                            dim=-1,
+                        )
+                        role_hidden = self.role_encoder(role_input)
+                    else:
+                        role_hidden = next_state
+                    mode_logits = self.mode_head(role_hidden)
+                else:
+                    mode_logits = torch.zeros(
                         (next_state.shape[0], len(MODE_NAMES)),
                         dtype=next_state.dtype,
                         device=next_state.device,
                     )
-                )
                 return mode_logits, beam_logits, value, next_state
 
             def _candidate_prior_logits(self, tensors: dict[str, torch.Tensor]) -> torch.Tensor:

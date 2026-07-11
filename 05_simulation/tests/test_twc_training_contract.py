@@ -147,6 +147,37 @@ def test_recurrent_joint_actor_starts_at_half_roles_and_replays_joint_log_prob()
     assert torch.allclose(replay["log_probs"][0], step.log_probs, atol=1e-6, rtol=1e-6)
 
 
+def test_decoupled_role_and_beam_towers_have_disjoint_gradients() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260829)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        disabled_modes=("sense", "idle"),
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_candidate_score_prior=True,
+        use_decoupled_role_tower=True,
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+    )
+
+    mode_logits, _beam_logits, _values = policy.batched_logits_value(observations, hard_mask=True)
+    mode_logits[:, MODE_NAMES.index("tx")].sum().backward()
+    assert policy.model.mode_head.weight.grad is not None
+    assert policy.model.beam_query.weight.grad is None
+
+    policy.model.zero_grad(set_to_none=True)
+    _mode_logits, beam_logits, _values = policy.batched_logits_value(observations, hard_mask=True)
+    beam_logits[torch.isfinite(beam_logits)].sum().backward()
+    assert policy.model.beam_query.weight.grad is not None
+    assert policy.model.mode_head.weight.grad is None
+    assert all(parameter.grad is None for parameter in policy.model.role_encoder.parameters())
+
+
 def test_beam_only_mappo_ppo_recompute_uses_only_beam_probability() -> None:
     pytest.importorskip("torch")
     module = load_training_module()

@@ -203,6 +203,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--score-residual-max-logit", type=float, default=2.0)
     parser.add_argument(
+        "--decoupled-role-tower",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Use a local role tower with no trainable parameters shared with the recurrent beam tower.",
+    )
+    parser.add_argument(
         "--candidate-score",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -334,6 +340,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         candidate_score_prior_power=float(getattr(args, "candidate_score_prior_power", 1.0)),
         use_bounded_score_residual=bool(getattr(args, "bounded_score_residual", False)),
         score_residual_max_logit=float(getattr(args, "score_residual_max_logit", 2.0)),
+        use_decoupled_role_tower=bool(getattr(args, "decoupled_role_tower", False)),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
@@ -479,6 +486,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--bounded-score-residual requires --candidate-score-prior.")
     if float(getattr(args, "score_residual_max_logit", 2.0)) <= 0.0:
         raise ValueError("--score-residual-max-logit must be positive.")
+    if bool(getattr(args, "decoupled_role_tower", False)) and str(
+        getattr(args, "action_contract", "joint_role_beam")
+    ) != "joint_role_beam":
+        raise ValueError("--decoupled-role-tower requires --action-contract joint_role_beam.")
     if not 0.0 <= float(getattr(args, "gae_lambda", 0.95)) <= 1.0:
         raise ValueError("--gae-lambda must be in [0, 1].")
     if float(getattr(args, "local_potential_shaping_coef", 0.0)) < 0.0:
@@ -723,6 +734,7 @@ def build_policy(
     candidate_score_prior_power = float(kwargs.pop("candidate_score_prior_power", 1.0))
     use_bounded_score_residual = bool(kwargs.pop("use_bounded_score_residual", False))
     score_residual_max_logit = float(kwargs.pop("score_residual_max_logit", 2.0))
+    use_decoupled_role_tower = bool(kwargs.pop("use_decoupled_role_tower", False))
     if str(network) == "shared":
         if action_contract != "joint_role_beam":
             raise ValueError("beam_only_fixed_role requires a contention network.")
@@ -746,6 +758,7 @@ def build_policy(
         kwargs["candidate_score_prior_power"] = candidate_score_prior_power
         kwargs["use_bounded_score_residual"] = use_bounded_score_residual
         kwargs["score_residual_max_logit"] = score_residual_max_logit
+        kwargs["use_decoupled_role_tower"] = use_decoupled_role_tower
         return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
@@ -2427,6 +2440,10 @@ def architecture_version(args: argparse.Namespace) -> str:
         and bool(getattr(args, "candidate_score_prior", False))
     ):
         prefix = "joint" if contract == "joint_role_beam" else "beam_only"
+        if contract == "joint_role_beam" and bool(
+            getattr(args, "decoupled_role_tower", False)
+        ):
+            return "joint_decoupled_role_recurrent_beam_mpnn_score_residual_v4"
         if bool(getattr(args, "bounded_score_residual", False)):
             return f"{prefix}_recurrent_mpnn_bounded_score_residual_v3"
         return f"{prefix}_recurrent_mpnn_score_residual_v2"
@@ -2643,6 +2660,12 @@ def build_manifest(
         "candidate_score_prior_power": float(getattr(args, "candidate_score_prior_power", 1.0)),
         "bounded_score_residual": bool(getattr(args, "bounded_score_residual", False)),
         "score_residual_max_logit": float(getattr(args, "score_residual_max_logit", 2.0)),
+        "decoupled_role_tower": bool(getattr(args, "decoupled_role_tower", False)),
+        "actor_gradient_isolation": (
+            "role_and_beam_towers_disjoint"
+            if bool(getattr(args, "decoupled_role_tower", False))
+            else "shared_actor_trunk"
+        ),
         "critic_network": str(getattr(args, "critic_network", "pooled")),
         "critic_hidden_dim": int(getattr(args, "critic_hidden_dim", None) or args.hidden_dim),
         "critic_message_passes": (
