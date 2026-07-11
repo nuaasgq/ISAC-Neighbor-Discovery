@@ -1178,17 +1178,19 @@ def update_policy(
             else:
                 returns = team_returns
                 critic_inputs = trajectory["central_features"]
+        with torch_module.no_grad():
+            rollout_values = critic(critic_inputs)
+            fixed_advantages = snapshot_normalized_advantages(returns, rollout_values)
         for _ in range(int(args.ppo_epochs)):
             action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
             log_probs = action_eval["log_probs"]
             entropies = action_eval["entropies"]
             values = critic(critic_inputs)
-            advantages = normalize_advantages(returns - values.detach())
             if separate_action_loss:
                 policy_loss, component = separated_action_policy_loss(
                     action_eval,
                     trajectory,
-                    advantages,
+                    fixed_advantages,
                     float(args.clip_epsilon),
                     torch_module,
                     args,
@@ -1201,7 +1203,7 @@ def update_policy(
                 policy_loss, clip_fraction = ppo_component_loss(
                     log_probs,
                     old_log_probs,
-                    advantages,
+                    fixed_advantages,
                     float(args.clip_epsilon),
                     torch_module,
                 )
@@ -1287,17 +1289,26 @@ def update_policy(
         )
 
     returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
+    with torch_module.no_grad():
+        rollout_action_eval = evaluate_action_components(
+            policy,
+            trajectory["observations"],
+            trajectory["actions"],
+        )
+        fixed_advantages = snapshot_normalized_advantages(
+            returns,
+            rollout_action_eval["values"],
+        )
     for _ in range(int(args.ppo_epochs)):
         action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
         log_probs = action_eval["log_probs"]
         local_values = action_eval["values"]
         entropies = action_eval["entropies"]
-        advantages = normalize_advantages(returns - local_values.detach())
         if separate_action_loss:
             policy_loss, component = separated_action_policy_loss(
                 action_eval,
                 trajectory,
-                advantages,
+                fixed_advantages,
                 float(args.clip_epsilon),
                 torch_module,
                 args,
@@ -1310,7 +1321,7 @@ def update_policy(
             policy_loss, clip_fraction = ppo_component_loss(
                 log_probs,
                 old_log_probs,
-                advantages,
+                fixed_advantages,
                 float(args.clip_epsilon),
                 torch_module,
             )
@@ -1841,6 +1852,14 @@ def discounted_returns_1d(rewards: Any, gamma: float, torch_module: Any) -> Any:
 
 def normalize_advantages(advantages: Any) -> Any:
     return (advantages - advantages.mean()) / (advantages.std(unbiased=False) + 1e-8)
+
+
+def snapshot_normalized_advantages(returns: Any, rollout_values: Any) -> Any:
+    """Freeze the behavior-rollout advantage target for all PPO reuse epochs."""
+
+    if returns.shape != rollout_values.shape:
+        raise ValueError("returns and rollout_values must have identical shapes.")
+    return normalize_advantages((returns - rollout_values).detach()).clone()
 
 
 def explained_variance(targets: Any, predictions: Any, torch_module: Any) -> float:
@@ -2520,6 +2539,8 @@ def build_manifest(
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,
         "centralized_critic_uses_training_state_only": bool(centralized),
+        "advantage_snapshot_contract": "fixed_behavior_rollout_mc_v1",
+        "return_boundary_contract": "finite_horizon_terminal_zero_bootstrap",
         "logs_per_step_reward": True,
         "logs_episode_return": True,
         "torch_threads": int(args.torch_threads),

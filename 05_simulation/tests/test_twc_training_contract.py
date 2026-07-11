@@ -1080,3 +1080,20 @@ def test_marl_step_invalidates_geometry_cache_after_mobility() -> None:
 
     assert env._sim._distance_matrix_cache is None
     assert env._sim._beam_matrix_cache is None
+
+
+def test_rollout_advantage_snapshot_is_detached_and_immutable() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    returns = torch.tensor([[3.0, 1.0], [2.0, 4.0]])
+    rollout_values = torch.tensor([[0.5, 0.25], [1.0, 2.0]], requires_grad=True)
+
+    advantages = module.snapshot_normalized_advantages(returns, rollout_values)
+    snapshot = advantages.clone()
+    with torch.no_grad():
+        rollout_values.add_(100.0)
+
+    assert not advantages.requires_grad
+    assert torch.equal(advantages, snapshot)
+    assert float(advantages.mean()) == pytest.approx(0.0, abs=1e-6)
+    assert float(advantages.std(unbiased=False)) == pytest.approx(1.0, abs=1e-6)
