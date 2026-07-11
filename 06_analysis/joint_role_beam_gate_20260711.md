@@ -74,6 +74,19 @@ Longer training did not remove seed variance. The second seed collapsed toward T
 
 The next experiment is a new stabilization ablation, not a continuation of the failed architecture: a training-only soft penalty on the per-slot mean TX probability. It does not expose global state or actions at execution and still permits heterogeneous local role probabilities, but it must be reported as a rule-informed regularizer.
 
+## Role-Balanced 30k Gate
+
+A soft population regularizer `0.01 * (mean(P_TX)-0.5)^2` was selected on the known collapse seed. It is computed only during centralized training from the current policy probabilities; execution remains decentralized, and the loss is zero for heterogeneous local probabilities whose population mean is `0.5`.
+
+| Training seed | A | B | C | D | D-B | Interaction | D TX ratio |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 29260711 | 52.11% | 52.44% | 53.56% | 53.78% | +1.33 pp | -0.11 pp | 65.10% |
+| 29261711 | 52.11% | 52.56% | 51.67% | 54.78% | +2.22 pp | +2.67 pp | 47.15% |
+| 29262711 | 52.11% | 52.00% | 50.22% | 52.11% | +0.11 pp | +2.00 pp | 50.02% |
+| Mean | 52.11% | 52.33% | 51.81% | 53.56% | +1.22 pp | +1.52 pp | 54.09% |
+
+The balanced learner removes the catastrophic TX collapse and makes `D-B` positive in all three seeds. It still does not pass the paper-level `+3 pp` performance gate. Because the direction is now consistent and the user explicitly requested a `10^5`-step run, the frozen configuration proceeds to one final `100,200`-step three-seed training-length check. The success criterion remains unchanged; longer training is not itself evidence of an innovation.
+
 ## Result Locations
 
 - Corrected reward screen: `05_simulation/results_raw/handshake_reward_v2_screen_seed29260711_20260711`
@@ -81,3 +94,5 @@ The next experiment is a new stabilization ablation, not a continuation of the f
 - Decoupled screen: `05_simulation/results_raw/decoupled_factorized_screen_seed29260711_20260711`
 - Decoupled three-seed gate: `05_simulation/results_raw/decoupled_joint_6k_three_seed_gate_20260711`
 - Decoupled 30k gate: `05_simulation/results_raw/decoupled_joint_30k_three_seed_gate_20260711`
+- Role-balance collapse screen: `05_simulation/results_raw/role_balance_30k_collapse_seed_screen_20260711`
+- Role-balanced 30k gate: `05_simulation/results_raw/role_balance_30k_three_seed_gate_20260711`
