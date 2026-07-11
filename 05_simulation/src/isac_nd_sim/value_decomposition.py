@@ -15,6 +15,7 @@ from .simulator import Action, MODE_RX, MODE_TX
 
 VALUE_BASED_ALGORITHMS = ("idqn", "shared_idqn", "vdn", "qmix")
 VALUE_ACTION_MODES = (MODE_TX, MODE_RX)
+VALUE_ACTION_CONTRACTS = ("joint_role_beam", "beam_only_fixed_role")
 
 
 def requires_global_training_state(algorithm: str) -> bool:
@@ -119,11 +120,19 @@ class IndependentReplayBuffer:
         return joint_batch
 
 
-def build_local_q_network(n_beams: int, hidden_dim: int, *, residual_features: bool = True):
+def build_local_q_network(
+    n_beams: int,
+    hidden_dim: int,
+    *,
+    residual_features: bool = True,
+    action_contract: str = "joint_role_beam",
+):
     import torch
     import torch.nn as nn
 
     dims = ContentionFeatures()
+    if str(action_contract) not in VALUE_ACTION_CONTRACTS:
+        raise ValueError(f"action_contract must be one of {VALUE_ACTION_CONTRACTS}.")
     beam_dim = dims.residual_beam_dim if residual_features else dims.beam_dim
     context_dim = 9 + 4 + 4 + 1 + 1 + dims.candidate_stats_dim + 2 * int(hidden_dim)
 
@@ -133,6 +142,7 @@ def build_local_q_network(n_beams: int, hidden_dim: int, *, residual_features: b
             self.n_beams = int(n_beams)
             self.hidden_dim = int(hidden_dim)
             self.residual_features = bool(residual_features)
+            self.action_contract = str(action_contract)
             self.beam_encoder = nn.Sequential(
                 nn.Linear(beam_dim, hidden_dim),
                 nn.LayerNorm(hidden_dim),
@@ -154,14 +164,16 @@ def build_local_q_network(n_beams: int, hidden_dim: int, *, residual_features: b
                 nn.Linear(hidden_dim, hidden_dim),
                 nn.SiLU(),
             )
-            self.role_embedding = nn.Parameter(torch.empty(len(VALUE_ACTION_MODES), hidden_dim))
+            if self.action_contract == "joint_role_beam":
+                self.role_embedding = nn.Parameter(torch.empty(len(VALUE_ACTION_MODES), hidden_dim))
             self.action_advantage = nn.Sequential(
                 nn.Linear(hidden_dim, hidden_dim),
                 nn.SiLU(),
                 nn.Linear(hidden_dim, 1),
             )
             self.state_value = nn.Linear(hidden_dim, 1)
-            nn.init.normal_(self.role_embedding, mean=0.0, std=0.05)
+            if self.action_contract == "joint_role_beam":
+                nn.init.normal_(self.role_embedding, mean=0.0, std=0.05)
 
         def forward(self, tensors: dict[str, torch.Tensor]) -> torch.Tensor:
             beam_tokens = self.beam_encoder(tensors["beam_features"])
@@ -181,6 +193,12 @@ def build_local_q_network(n_beams: int, hidden_dim: int, *, residual_features: b
                 dim=1,
             )
             context = self.context_encoder(context_input)
+            if self.action_contract == "beam_only_fixed_role":
+                action_tokens = torch.tanh(beam_tokens + context[:, None, :])
+                advantage = self.action_advantage(action_tokens).squeeze(-1)
+                value = self.state_value(context)
+                return value + advantage - advantage.mean(dim=1, keepdim=True)
+
             action_tokens = torch.tanh(
                 beam_tokens[:, None, :, :]
                 + context[:, None, None, :]
@@ -241,6 +259,7 @@ class ValueDecompositionLearner:
         gamma: float = 0.99,
         gradient_clip: float = 10.0,
         reward_scope: str = "team",
+        action_contract: str = "joint_role_beam",
         device: str = "cpu",
     ):
         import torch
@@ -250,7 +269,14 @@ class ValueDecompositionLearner:
         self.algorithm = str(algorithm)
         self.n_agents = int(n_agents)
         self.n_beams = int(n_beams)
-        self.n_actions = len(VALUE_ACTION_MODES) * self.n_beams
+        self.action_contract = str(action_contract)
+        if self.action_contract not in VALUE_ACTION_CONTRACTS:
+            raise ValueError(f"action_contract must be one of {VALUE_ACTION_CONTRACTS}.")
+        self.n_actions = (
+            self.n_beams
+            if self.action_contract == "beam_only_fixed_role"
+            else len(VALUE_ACTION_MODES) * self.n_beams
+        )
         self.state_dim = int(state_dim)
         self.hidden_dim = int(hidden_dim)
         self.gamma = float(gamma)
@@ -262,10 +288,26 @@ class ValueDecompositionLearner:
 
         network_count = self.n_agents if self.algorithm == "idqn" else 1
         self.q_networks = torch.nn.ModuleList(
-            [build_local_q_network(self.n_beams, self.hidden_dim, residual_features=True) for _ in range(network_count)]
+            [
+                build_local_q_network(
+                    self.n_beams,
+                    self.hidden_dim,
+                    residual_features=True,
+                    action_contract=self.action_contract,
+                )
+                for _ in range(network_count)
+            ]
         ).to(self.device)
         self.target_q_networks = torch.nn.ModuleList(
-            [build_local_q_network(self.n_beams, self.hidden_dim, residual_features=True) for _ in range(network_count)]
+            [
+                build_local_q_network(
+                    self.n_beams,
+                    self.hidden_dim,
+                    residual_features=True,
+                    action_contract=self.action_contract,
+                )
+                for _ in range(network_count)
+            ]
         ).to(self.device)
         self.mixer = None
         self.target_mixer = None
@@ -479,6 +521,7 @@ class ValueDecompositionLearner:
             "state_dim": self.state_dim,
             "hidden_dim": self.hidden_dim,
             "reward_scope": self.reward_scope,
+            "action_contract": self.action_contract,
             "q_networks": self.q_networks.state_dict(),
             "target_q_networks": self.target_q_networks.state_dict(),
             "mixer": self.mixer.state_dict() if self.mixer is not None else None,
@@ -498,7 +541,9 @@ def mask_invalid_actions(q_values, observations: Sequence[Sequence[dict[str, Any
             for row in observations
         ]
     )
-    action_mask = np.concatenate([masks, masks], axis=-1)
+    empty_rows = ~masks.any(axis=-1)
+    masks[empty_rows] = True
+    action_mask = masks if q_values.shape[-1] == int(n_beams) else np.concatenate([masks, masks], axis=-1)
     valid = torch.as_tensor(action_mask, dtype=torch.bool, device=q_values.device)
     return q_values.masked_fill(~valid, -1.0e9)
 
@@ -544,3 +589,41 @@ def select_local_actions(
         actions.append(Action(VALUE_ACTION_MODES[role], beam))
         indices[node] = role * n_beams + beam
     return actions, indices
+
+
+def select_beam_only_actions(
+    q_values: np.ndarray,
+    observations: Sequence[dict[str, Any]],
+    role_rng: np.random.Generator,
+    beam_gate_rng: np.random.Generator,
+    beam_choice_rng: np.random.Generator,
+    *,
+    beam_uniform_mixture: float,
+) -> tuple[list[Action], np.ndarray]:
+    """Select only beams; TX/RX is an independent Bernoulli(0.5) protocol action."""
+
+    if q_values.ndim != 2:
+        raise ValueError("q_values must have shape [agents, beams].")
+    n_agents, n_beams = q_values.shape
+    if len(observations) != n_agents:
+        raise ValueError("q_values and observation counts are inconsistent.")
+    if not 0.0 <= float(beam_uniform_mixture) <= 1.0:
+        raise ValueError("beam_uniform_mixture must be in [0, 1].")
+
+    actions: list[Action] = []
+    beam_indices = np.zeros(n_agents, dtype=np.int64)
+    for node, observation in enumerate(observations):
+        candidate = np.flatnonzero(np.asarray(observation["candidate_mask"], dtype=float) > 0.5)
+        if candidate.size == 0:
+            candidate = np.arange(n_beams, dtype=int)
+        mode = MODE_TX if role_rng.random() < 0.5 else MODE_RX
+        random_gate = beam_gate_rng.random()
+        random_quantile = beam_choice_rng.random()
+        if random_gate < beam_uniform_mixture:
+            random_index = min(int(random_quantile * candidate.size), candidate.size - 1)
+            beam = int(candidate[random_index])
+        else:
+            beam = int(candidate[int(np.argmax(q_values[node, candidate]))])
+        actions.append(Action(mode, beam))
+        beam_indices[node] = beam
+    return actions, beam_indices

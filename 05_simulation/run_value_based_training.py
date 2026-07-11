@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import replace
 from datetime import datetime
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -20,12 +21,14 @@ from isac_nd_sim.config import load_config  # noqa: E402
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.value_decomposition import (  # noqa: E402
+    VALUE_ACTION_CONTRACTS,
     VALUE_BASED_ALGORITHMS,
     IndependentReplayBuffer,
     JointReplayBuffer,
     JointTransition,
     ValueDecompositionLearner,
     requires_global_training_state,
+    select_beam_only_actions,
     select_local_actions,
 )
 from run_marl_training import (  # noqa: E402
@@ -55,6 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-source", default="residual_table")
     parser.add_argument("--reward-version", default="discovery_first")
     parser.add_argument("--reward-scope", choices=("team", "local"), default="team")
+    parser.add_argument("--action-contract", choices=VALUE_ACTION_CONTRACTS, default="joint_role_beam")
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--mixer-dim", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
@@ -135,7 +139,10 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         torch.set_num_threads(int(args.torch_threads))
     torch.manual_seed(int(args.seed))
     np.random.seed(int(args.seed))
-    rng = np.random.default_rng(int(args.seed) + 17)
+    replay_rng = np.random.default_rng(int(args.seed) + 17)
+    role_rng = np.random.default_rng(int(args.seed) + 19)
+    beam_gate_rng = np.random.default_rng(int(args.seed) + 23)
+    beam_choice_rng = np.random.default_rng(int(args.seed) + 29)
     cfg = resolved_config(args)
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
@@ -151,6 +158,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         gamma=float(args.gamma),
         gradient_clip=float(args.gradient_clip),
         reward_scope=str(args.reward_scope),
+        action_contract=str(args.action_contract),
     )
     replay = (
         IndependentReplayBuffer(
@@ -195,13 +203,24 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             epsilon = epsilon_at_step(args, global_step)
             role_mixture = max(float(args.role_uniform_mixture), epsilon)
             beam_mixture = max(float(args.beam_uniform_mixture), epsilon)
-            actions, action_indices = select_local_actions(
-                q_values,
-                observations,
-                rng,
-                role_uniform_mixture=role_mixture,
-                beam_uniform_mixture=beam_mixture,
-            )
+            if str(args.action_contract) == "beam_only_fixed_role":
+                actions, action_indices = select_beam_only_actions(
+                    q_values,
+                    observations,
+                    role_rng,
+                    beam_gate_rng,
+                    beam_choice_rng,
+                    beam_uniform_mixture=beam_mixture,
+                )
+                role_mixture = 1.0
+            else:
+                actions, action_indices = select_local_actions(
+                    q_values,
+                    observations,
+                    beam_gate_rng,
+                    role_uniform_mixture=role_mixture,
+                    beam_uniform_mixture=beam_mixture,
+                )
             next_observations, rewards, _terminated, truncated, info = env.step(actions)
             next_state_features = (
                 central_state_features(env.training_state(), cfg)
@@ -228,7 +247,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                 and len(replay) >= int(args.batch_size)
                 and global_step % int(args.update_interval) == 0
             ):
-                episode_losses.append(learner.update(replay.sample(int(args.batch_size), rng)))
+                episode_losses.append(learner.update(replay.sample(int(args.batch_size), replay_rng)))
             if global_step % int(args.target_update_interval) == 0:
                 learner.sync_targets()
             step_rows.append(
@@ -244,7 +263,17 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     "new_edges_count": int(info["new_edges_count"]),
                     "discovery_rate": len(env._sim.discovered_edges) / max(1, len(env._sim.first_true_slot)),
                     "epsilon": epsilon,
-                    "role_uniform_mixture": role_mixture,
+                    "role_uniform_mixture": (
+                        "" if str(args.action_contract) == "beam_only_fixed_role" else role_mixture
+                    ),
+                    "fixed_tx_probability": (
+                        0.5 if str(args.action_contract) == "beam_only_fixed_role" else ""
+                    ),
+                    "role_policy": (
+                        "fixed_iid_bernoulli_0.5"
+                        if str(args.action_contract) == "beam_only_fixed_role"
+                        else "learned_with_uniform_mixture"
+                    ),
                     "beam_uniform_mixture": beam_mixture,
                     "replay_size": len(replay),
                 }
@@ -301,13 +330,22 @@ def evaluate_learner(
 
     rows: list[dict[str, Any]] = []
     learner.eval()
-    variants = {
-        "matched_support": (float(args.role_uniform_mixture), float(args.beam_uniform_mixture)),
-        "greedy": (0.0, 0.0),
-        "learned_role_random_beam": (0.0, 1.0),
-        "random_role_learned_beam": (1.0, 0.0),
-        "random_uniform": (1.0, 1.0),
-    }
+    if str(args.action_contract) == "beam_only_fixed_role":
+        variants = {
+            "pure_learned_beam": (1.0, 0.0),
+            "learned_beam_random_mix_0.2": (1.0, 0.2),
+            "learned_beam_random_mix_0.5": (1.0, 0.5),
+            "learned_beam_random_mix_0.8": (1.0, 0.8),
+            "random_candidate_beam": (1.0, 1.0),
+        }
+    else:
+        variants = {
+            "matched_support": (float(args.role_uniform_mixture), float(args.beam_uniform_mixture)),
+            "greedy": (0.0, 0.0),
+            "learned_role_random_beam": (0.0, 1.0),
+            "random_role_learned_beam": (1.0, 0.0),
+            "random_uniform": (1.0, 1.0),
+        }
     for variant, (role_mixture, beam_mixture) in variants.items():
         for eval_episode in range(int(args.eval_episodes)):
             scenario_seed = int(args.seed) + 2_000_000 + eval_episode
@@ -321,19 +359,33 @@ def evaluate_learner(
                 rich_info=False,
             )
             observations, _ = env.reset(seed=scenario_seed)
-            policy_rng = np.random.default_rng(scenario_seed + 777)
+            role_rng = np.random.default_rng(scenario_seed + 777)
+            beam_gate_rng = np.random.default_rng(scenario_seed + 888)
+            beam_choice_rng = np.random.default_rng(scenario_seed + 999)
             rewards_by_step: list[np.ndarray] = []
+            role_trace = hashlib.blake2b(digest_size=12)
             truncated = False
             while not truncated:
                 with torch.no_grad():
                     q_values = learner.q_values(observations).cpu().numpy()
-                actions, _indices = select_local_actions(
-                    q_values,
-                    observations,
-                    policy_rng,
-                    role_uniform_mixture=role_mixture,
-                    beam_uniform_mixture=beam_mixture,
-                )
+                if str(args.action_contract) == "beam_only_fixed_role":
+                    actions, _indices = select_beam_only_actions(
+                        q_values,
+                        observations,
+                        role_rng,
+                        beam_gate_rng,
+                        beam_choice_rng,
+                        beam_uniform_mixture=beam_mixture,
+                    )
+                else:
+                    actions, _indices = select_local_actions(
+                        q_values,
+                        observations,
+                        beam_gate_rng,
+                        role_uniform_mixture=role_mixture,
+                        beam_uniform_mixture=beam_mixture,
+                    )
+                role_trace.update(bytes(1 if action.mode == "tx" else 0 for action in actions))
                 observations, rewards, _terminated, truncated, _info = env.step(actions)
                 rewards_by_step.append(np.asarray(rewards, dtype=np.float32))
             reward_array = np.stack(rewards_by_step)
@@ -347,7 +399,13 @@ def evaluate_learner(
                     "scenario_seed": scenario_seed,
                     "algorithm": str(args.algorithm),
                     "env_protocol": str(args.env_protocol),
-                    "role_uniform_mixture": role_mixture,
+                    "role_uniform_mixture": (
+                        "" if str(args.action_contract) == "beam_only_fixed_role" else role_mixture
+                    ),
+                    "fixed_tx_probability": (
+                        0.5 if str(args.action_contract) == "beam_only_fixed_role" else ""
+                    ),
+                    "role_sequence_hash": role_trace.hexdigest(),
                     "beam_uniform_mixture": beam_mixture,
                     "episode_return_sum": float(reward_array.sum()),
                     "episode_return_mean_per_agent": float(reward_array.sum(axis=0).mean()),
@@ -413,6 +471,7 @@ def build_manifest(
         "candidate_source": str(args.candidate_source),
         "reward_version": str(args.reward_version),
         "reward_scope": str(args.reward_scope),
+        "action_contract": str(args.action_contract),
         "training_contract_version": "common_local_residual_value_v1",
         "decentralized_execution": True,
         "centralized_training": learner.centralized_training,
@@ -422,10 +481,33 @@ def build_manifest(
         "parameter_sharing": not learner.independent_parameters,
         "actor_observation": "local_anonymous_isac_and_table_state_only",
         "joint_action_controller": False,
-        "action_space": "per_agent_tx_rx_times_beam",
+        "action_space": (
+            "per_agent_beam_only"
+            if str(args.action_contract) == "beam_only_fixed_role"
+            else "per_agent_tx_rx_times_beam"
+        ),
+        "role_policy": (
+            "fixed_iid_bernoulli_0.5_not_learned"
+            if str(args.action_contract) == "beam_only_fixed_role"
+            else "learned_tx_rx"
+        ),
         "stochastic_support": {
-            "role_uniform_mixture": float(args.role_uniform_mixture),
+            "role_uniform_mixture": (
+                None
+                if str(args.action_contract) == "beam_only_fixed_role"
+                else float(args.role_uniform_mixture)
+            ),
+            "fixed_tx_probability": (
+                0.5 if str(args.action_contract) == "beam_only_fixed_role" else None
+            ),
+            "role_learned": str(args.action_contract) != "beam_only_fixed_role",
             "beam_uniform_mixture": float(args.beam_uniform_mixture),
+            "beam_randomization_domain": "uniform_within_residual_candidate_mask",
+            "beam_gate_rng_separate_from_choice_rng": True,
+            "fixed_rng_draws_per_agent_slot": True,
+            "training_epsilon_start": float(args.epsilon_start),
+            "training_epsilon_end": float(args.epsilon_end),
+            "training_epsilon_decay_steps": int(args.epsilon_decay_steps),
         },
         "replay": {
             "capacity": int(args.replay_capacity),
