@@ -21,6 +21,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
+from isac_nd_sim.centralized_graph_critic import CentralizedGraphCritic  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     ACTION_CONTRACTS,
     AdaptiveGatedContentionGraphActorCritic,
@@ -38,6 +39,9 @@ from isac_nd_sim.marl_env import (  # noqa: E402
     MarlNeighborDiscoveryEnv,
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
+from isac_nd_sim.neural_recurrent_contention_actor_critic import (  # noqa: E402
+    RecurrentContentionGraphActorCritic,
+)
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.simulator import (  # noqa: E402
@@ -73,6 +77,7 @@ def parse_args() -> argparse.Namespace:
             "shared",
             "scalegraph_beam",
             "contention_shared",
+            "recurrent_contention_shared",
             "gated_contention_shared",
             "adaptive_gated_contention_shared",
             "topology_adaptive_gated_contention_shared",
@@ -109,6 +114,9 @@ def parse_args() -> argparse.Namespace:
         help="Source used to build MARL candidate_mask/candidate_score observations.",
     )
     parser.add_argument("--hidden-dim", type=int, default=128)
+    parser.add_argument("--critic-network", choices=("pooled", "mpnn"), default="pooled")
+    parser.add_argument("--critic-hidden-dim", type=int, default=None)
+    parser.add_argument("--return-scope", choices=("team", "per_agent"), default="team")
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--gamma", type=float, default=0.985)
     parser.add_argument("--ppo-epochs", type=int, default=2)
@@ -287,6 +295,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         beam_uniform_mixture=float(getattr(args, "beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_args(args),
         action_contract=str(getattr(args, "action_contract", "joint_role_beam")),
+        azimuth_cells=int(cfg.azimuth_cells),
+        elevation_cells=int(cfg.elevation_cells),
     )
     setattr(policy, "_expert_bc_weight_cache", float(getattr(args, "expert_bc_weight", 0.0)))
     centralized = str(args.algorithm) in {"mappo", "isac_mappo"}
@@ -299,7 +309,17 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
     adapter_param_ids = {id(parameter) for parameter in adapter_params}
     params = [parameter for parameter in policy.parameters() if id(parameter) not in adapter_param_ids]
     if centralized:
-        critic = CentralizedPooledCritic(central_feature_dim(), int(args.hidden_dim), torch)
+        critic_hidden_dim = int(getattr(args, "critic_hidden_dim", None) or args.hidden_dim)
+        if str(getattr(args, "critic_network", "pooled")) == "mpnn":
+            node_dim, edge_dim, global_dim = central_graph_feature_dims()
+            critic = CentralizedGraphCritic(
+                node_feature_dim=node_dim,
+                edge_feature_dim=edge_dim,
+                global_feature_dim=global_dim,
+                hidden_dim=critic_hidden_dim,
+            )
+        else:
+            critic = CentralizedPooledCritic(central_feature_dim(), critic_hidden_dim, torch)
         params += list(critic.parameters())
     optimizer_groups: list[dict[str, Any]] = [{"params": params, "lr": float(args.learning_rate)}]
     if adapter_params:
@@ -379,6 +399,18 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         )
     save_checkpoint(output / "final_model.pt", policy, critic, optimizer, args, cfg, int(args.episodes), torch)
     manifest = build_manifest(args, cfg, feature_flags, env_protocol, centralized, episode_rows, eval_rows)
+    manifest.update(
+        {
+            "actor_parameter_count": int(sum(parameter.numel() for parameter in policy.parameters())),
+            "critic_parameter_count": int(
+                sum(parameter.numel() for parameter in critic.parameters()) if critic is not None else 0
+            ),
+            "return_scope": str(getattr(args, "return_scope", "team")),
+            "gradient_clipping_scope": "actor_and_critic_separate",
+            "kl_estimator": "mean_exp_logratio_minus_one_minus_logratio_v1",
+            "tracked_worktree_dirty": bool(git_worktree_dirty()),
+        }
+    )
     (output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     flush_outputs(output, step_rows, episode_rows, eval_rows, resource_rows)
     return manifest
@@ -393,6 +425,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--ppo-epochs must be positive.")
     if float(args.max_rss_mb) <= 0.0:
         raise ValueError("--max-rss-mb must be positive.")
+    if str(getattr(args, "return_scope", "team")) == "per_agent" and str(
+        getattr(args, "critic_network", "pooled")
+    ) != "mpnn":
+        raise ValueError("--return-scope per_agent requires --critic-network mpnn.")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
     if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
@@ -430,8 +466,13 @@ def validate_args(args: argparse.Namespace) -> None:
     if str(getattr(args, "action_contract", "joint_role_beam")) == "beam_only_fixed_role":
         if str(getattr(args, "algorithm", "")) not in {"mappo", "isac_mappo"}:
             raise ValueError("beam_only_fixed_role MAPPO requires centralized training.")
-        if str(getattr(args, "network", "")) != "contention_shared":
-            raise ValueError("beam_only_fixed_role currently requires --network contention_shared.")
+        if str(getattr(args, "network", "")) not in {
+            "contention_shared",
+            "recurrent_contention_shared",
+        }:
+            raise ValueError(
+                "beam_only_fixed_role requires --network contention_shared or recurrent_contention_shared."
+            )
         if role_floor > 0.0:
             raise ValueError("beam_only_fixed_role uses fixed Bernoulli(0.5) roles, not a role floor.")
         if bool(getattr(args, "allow_standalone_sense", False)) or bool(
@@ -476,7 +517,12 @@ def clean_ctde_violations(args: argparse.Namespace) -> list[str]:
     violations: list[str] = []
     if str(getattr(args, "algorithm", "")) not in {"mappo", "isac_mappo"}:
         violations.append("non-centralized algorithm")
-    if str(getattr(args, "network", "shared")) not in {"shared", "scalegraph_beam", "contention_shared"}:
+    if str(getattr(args, "network", "shared")) not in {
+        "shared",
+        "scalegraph_beam",
+        "contention_shared",
+        "recurrent_contention_shared",
+    }:
         violations.append("rule-gated network")
     forbidden_flags = {
         "rule_residual": "rule residual",
@@ -603,6 +649,7 @@ def build_policy(
     | GatedContentionGraphActorCritic
     | AdaptiveGatedContentionGraphActorCritic
     | TopologyAdaptiveGatedContentionGraphActorCritic
+    | RecurrentContentionGraphActorCritic
 ):
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", False))
     use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
@@ -610,6 +657,8 @@ def build_policy(
     role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
     beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
     action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
+    azimuth_cells = int(kwargs.pop("azimuth_cells", int(args[0]) if args else 1))
+    elevation_cells = int(kwargs.pop("elevation_cells", 1))
     if str(network) == "shared":
         if action_contract != "joint_role_beam":
             raise ValueError("beam_only_fixed_role requires a contention network.")
@@ -626,6 +675,10 @@ def build_policy(
     kwargs["action_contract"] = action_contract
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "recurrent_contention_shared":
+        kwargs["azimuth_cells"] = azimuth_cells
+        kwargs["elevation_cells"] = elevation_cells
+        return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "adaptive_gated_contention_shared":
@@ -666,6 +719,8 @@ def collect_trajectory(
         candidate_source=str(getattr(args, "candidate_source", "default")),
     )
     observations, _ = env.reset(seed=seed)
+    if hasattr(policy, "reset_recurrent_state"):
+        policy.reset_recurrent_state(env.n_agents)
     old_log_probs = []
     old_mode_log_probs = []
     old_beam_log_probs = []
@@ -676,6 +731,7 @@ def collect_trajectory(
     actions_by_step = []
     expert_actions_by_step = []
     central_features = []
+    central_graph_rows: list[dict[str, np.ndarray]] = []
     step_rows = []
     rendezvous_totals = empty_rendezvous_action_diagnostics()
     cumulative_reward = 0.0
@@ -688,6 +744,7 @@ def collect_trajectory(
         state = env.training_state()
         observations_by_step.append(copy_observations(observations))
         central_features.append(central_state_features(state, cfg))
+        central_graph_rows.append(central_graph_features(state, cfg))
         if float(getattr(args, "expert_bc_weight", 0.0)) > 0.0:
             expert_actions_by_step.append(
                 expert_actions_for_env(env, str(getattr(args, "expert_protocol", "collision_aware_isac")))
@@ -778,6 +835,16 @@ def collect_trajectory(
     summary.update(env.access_gate_summary())
     summary.update(summarize_rendezvous_action_diagnostics(rendezvous_totals))
     summary["role_sequence_hash"] = role_trace.hexdigest()
+    replay_error = 0.0
+    if hasattr(policy, "evaluate_action_sequence"):
+        with torch_module.no_grad():
+            replay = policy.evaluate_action_sequence(observations_by_step, actions_by_step)
+        old = torch_module.stack([row.to(policy.device) for row in old_log_probs])
+        replay_error = float(torch_module.max(torch_module.abs(replay["log_probs"] - old)).item())
+        if replay_error > 1.0e-6:
+            raise RuntimeError(
+                f"Recurrent rollout/replay log-prob mismatch: {replay_error:.3e} exceeds 1e-6."
+            )
     return {
         "episode": episode,
         "seed": seed,
@@ -791,9 +858,20 @@ def collect_trajectory(
         "old_gate_log_probs": torch_module.stack([row.to(policy.device) for row in old_gate_log_probs]),
         "active_beam_mask": torch_module.stack([row.to(policy.device) for row in active_beam_masks]),
         "rewards": torch_module.stack(rewards).to(policy.device),
-        "central_features": torch_module.as_tensor(np.stack(central_features), dtype=torch_module.float32, device=policy.device),
+        "central_features": torch_module.as_tensor(
+            np.stack(central_features), dtype=torch_module.float32, device=policy.device
+        ),
+        "central_graph": {
+            key: torch_module.as_tensor(
+                np.stack([row[key] for row in central_graph_rows]),
+                dtype=(torch_module.bool if key == "edge_mask" else torch_module.float32),
+                device=policy.device,
+            )
+            for key in central_graph_rows[0]
+        },
         "step_rows": step_rows,
         "summary": summary,
+        "rollout_replay_logprob_max_abs_error": replay_error,
     }
 
 
@@ -1027,6 +1105,11 @@ def update_policy(
     rendezvous_beam_aux_losses = []
     rendezvous_role_aux_losses = []
     beam_active_fracs = []
+    actor_grad_norms = []
+    critic_grad_norms = []
+    explained_variances = []
+    normalized_candidate_entropies = []
+    sample_log_ratio_means = []
     separate_action_loss = bool(getattr(args, "separate_action_loss", False))
     beam_rank_aux_coef = float(getattr(args, "beam_rank_aux_coef", 0.0))
     rendezvous_beam_aux_coef = float(getattr(args, "rendezvous_beam_aux_coef", 0.0))
@@ -1035,13 +1118,27 @@ def update_policy(
     if centralized:
         if critic is None:
             raise RuntimeError("Centralized critic is required for MAPPO-style training.")
-        global_rewards = rewards.mean(dim=1)
-        returns = discounted_returns_1d(global_rewards, float(args.gamma), torch_module)
+        per_agent_critic = bool(getattr(critic, "output_per_agent", False))
+        return_scope = str(getattr(args, "return_scope", "team"))
+        if return_scope == "per_agent":
+            if not per_agent_critic:
+                raise RuntimeError("Per-agent returns require a per-agent centralized critic.")
+            returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
+            critic_inputs = trajectory["central_graph"]
+        else:
+            global_rewards = rewards.mean(dim=1)
+            team_returns = discounted_returns_1d(global_rewards, float(args.gamma), torch_module)
+            if per_agent_critic:
+                returns = team_returns.unsqueeze(-1).expand(-1, rewards.shape[1])
+                critic_inputs = trajectory["central_graph"]
+            else:
+                returns = team_returns
+                critic_inputs = trajectory["central_features"]
         for _ in range(int(args.ppo_epochs)):
             action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
             log_probs = action_eval["log_probs"]
             entropies = action_eval["entropies"]
-            values = critic(trajectory["central_features"])
+            values = critic(critic_inputs)
             advantages = normalize_advantages(returns - values.detach())
             if separate_action_loss:
                 policy_loss, component = separated_action_policy_loss(
@@ -1098,7 +1195,12 @@ def update_policy(
             )
             optimizer.zero_grad()
             loss.backward()
-            torch_module.nn.utils.clip_grad_norm_(optimizer_parameters(optimizer), float(args.max_grad_norm))
+            actor_grad_norm = torch_module.nn.utils.clip_grad_norm_(
+                list(policy.parameters()), float(args.max_grad_norm)
+            )
+            critic_grad_norm = torch_module.nn.utils.clip_grad_norm_(
+                list(critic.parameters()), float(args.max_grad_norm)
+            )
             optimizer.step()
             policy_losses.append(float(policy_loss.item()))
             value_losses.append(float(value_loss.item()))
@@ -1108,7 +1210,17 @@ def update_policy(
             rendezvous_beam_aux_losses.append(float(rendezvous_beam_aux_loss.item()))
             rendezvous_role_aux_losses.append(float(rendezvous_role_aux_loss.item()))
             beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
-            approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
+            log_ratio = log_probs - old_log_probs
+            approx_kls.append(float(((torch_module.exp(log_ratio) - 1.0) - log_ratio).mean().detach().item()))
+            sample_log_ratio_means.append(float(log_ratio.mean().detach().item()))
+            actor_grad_norms.append(float(actor_grad_norm.detach().item()))
+            critic_grad_norms.append(float(critic_grad_norm.detach().item()))
+            explained_variances.append(explained_variance(returns, values, torch_module))
+            normalized_candidate_entropies.append(
+                normalized_candidate_entropy(
+                    action_eval["beam_entropies"], trajectory["observations"], torch_module
+                )
+            )
         return loss_summary(
             policy_losses,
             value_losses,
@@ -1123,6 +1235,11 @@ def update_policy(
             rendezvous_beam_aux_losses,
             rendezvous_role_aux_losses,
             beam_active_fracs,
+            actor_grad_norms,
+            critic_grad_norms,
+            explained_variances,
+            normalized_candidate_entropies,
+            sample_log_ratio_means,
         )
 
     returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
@@ -1187,7 +1304,9 @@ def update_policy(
         )
         optimizer.zero_grad()
         loss.backward()
-        torch_module.nn.utils.clip_grad_norm_(policy.parameters(), float(args.max_grad_norm))
+        actor_grad_norm = torch_module.nn.utils.clip_grad_norm_(
+            list(policy.parameters()), float(args.max_grad_norm)
+        )
         optimizer.step()
         policy_losses.append(float(policy_loss.item()))
         value_losses.append(float(value_loss.item()))
@@ -1197,7 +1316,17 @@ def update_policy(
         rendezvous_beam_aux_losses.append(float(rendezvous_beam_aux_loss.item()))
         rendezvous_role_aux_losses.append(float(rendezvous_role_aux_loss.item()))
         beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
-        approx_kls.append(float((old_log_probs - log_probs).mean().detach().item()))
+        log_ratio = log_probs - old_log_probs
+        approx_kls.append(float(((torch_module.exp(log_ratio) - 1.0) - log_ratio).mean().detach().item()))
+        sample_log_ratio_means.append(float(log_ratio.mean().detach().item()))
+        actor_grad_norms.append(float(actor_grad_norm.detach().item()))
+        critic_grad_norms.append(0.0)
+        explained_variances.append(explained_variance(returns, local_values, torch_module))
+        normalized_candidate_entropies.append(
+            normalized_candidate_entropy(
+                action_eval["beam_entropies"], trajectory["observations"], torch_module
+            )
+        )
     return loss_summary(
         policy_losses,
         value_losses,
@@ -1212,6 +1341,11 @@ def update_policy(
         rendezvous_beam_aux_losses,
         rendezvous_role_aux_losses,
         beam_active_fracs,
+        actor_grad_norms,
+        critic_grad_norms,
+        explained_variances,
+        normalized_candidate_entropies,
+        sample_log_ratio_means,
     )
 
 
@@ -1291,6 +1425,8 @@ def evaluate_action_components(
     observations_by_step: Sequence[Sequence[dict[str, Any]]],
     actions_by_step: Sequence[Sequence[Action]],
 ) -> dict[str, Any]:
+    if hasattr(policy, "evaluate_action_sequence"):
+        return policy.evaluate_action_sequence(observations_by_step, actions_by_step)
     torch = policy.torch
     from torch.distributions import Categorical
 
@@ -1663,8 +1799,120 @@ def normalize_advantages(advantages: Any) -> Any:
     return (advantages - advantages.mean()) / (advantages.std(unbiased=False) + 1e-8)
 
 
+def explained_variance(targets: Any, predictions: Any, torch_module: Any) -> float:
+    target_variance = torch_module.var(targets, unbiased=False)
+    if float(target_variance.detach().item()) <= 1.0e-12:
+        return 0.0
+    residual_variance = torch_module.var(targets - predictions.detach(), unbiased=False)
+    return float((1.0 - residual_variance / target_variance).detach().item())
+
+
+def normalized_candidate_entropy(
+    beam_entropies: Any,
+    observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    torch_module: Any,
+) -> float:
+    counts = []
+    for observations in observations_by_step:
+        row = []
+        for observation in observations:
+            n_beams = len(observation["beam_belief"])
+            mask = np.asarray(observation.get("candidate_mask", np.ones(n_beams)), dtype=float) > 0.5
+            count = int(mask.sum())
+            row.append(n_beams if count == 0 else count)
+        counts.append(row)
+    count_tensor = torch_module.as_tensor(
+        counts, dtype=beam_entropies.dtype, device=beam_entropies.device
+    )
+    valid = count_tensor > 1.0
+    if not bool(valid.any().item()):
+        return 0.0
+    normalized = beam_entropies[valid] / torch_module.log(count_tensor[valid])
+    return float(normalized.mean().detach().item())
+
+
 def central_feature_dim() -> int:
     return 23
+
+
+def central_graph_feature_dims() -> tuple[int, int, int]:
+    return 12, 6, 7
+
+
+def central_graph_features(state: dict[str, Any], cfg: SimulationConfig) -> dict[str, np.ndarray]:
+    """Build critic-only graph tensors; none of these fields enter the actor."""
+
+    positions = np.asarray(state["positions"], dtype=np.float32)
+    velocities = np.asarray(state["velocities"], dtype=np.float32)
+    discovered = np.asarray(state["discovered_adjacency"], dtype=np.float32)
+    true_adj = np.asarray(state["true_adjacency"], dtype=np.float32)
+    belief = np.asarray(state["belief"], dtype=np.float32)
+    n_agents = int(positions.shape[0])
+    degree_scale = float(max(1, n_agents - 1))
+    area = np.maximum(np.asarray(cfg.area_size_m, dtype=np.float32), 1.0e-6)
+    position_norm = positions / area
+    velocity_norm = velocities / max(1.0, _speed_scale(cfg))
+    slot_fraction = float(state["slot"]) / max(1.0, float(cfg.slots_per_episode))
+    node_features = np.concatenate(
+        [
+            position_norm,
+            velocity_norm,
+            belief.mean(axis=1, keepdims=True),
+            belief.std(axis=1, keepdims=True),
+            belief.max(axis=1, keepdims=True),
+            discovered.sum(axis=1, keepdims=True) / degree_scale,
+            true_adj.sum(axis=1, keepdims=True) / degree_scale,
+            np.full((n_agents, 1), slot_fraction, dtype=np.float32),
+        ],
+        axis=1,
+    ).astype(np.float32)
+
+    relative = positions[None, :, :] - positions[:, None, :]
+    relative_norm = relative / area.reshape(1, 1, -1)
+    distance_norm = np.linalg.norm(relative, axis=-1, keepdims=True) / max(
+        1.0, float(np.linalg.norm(area))
+    )
+    edge_features = np.concatenate(
+        [
+            relative_norm,
+            distance_norm.astype(np.float32),
+            discovered[..., None],
+            true_adj[..., None],
+        ],
+        axis=-1,
+    ).astype(np.float32)
+    edge_mask = (true_adj > 0.5) | (discovered > 0.5)
+    np.fill_diagonal(edge_mask, False)
+
+    possible_edges = max(1.0, n_agents * (n_agents - 1) / 2.0)
+    upper = np.triu_indices(n_agents, k=1)
+    discovered_edges = float(discovered[upper].sum())
+    true_edges = float(true_adj[upper].sum())
+    global_features = np.asarray(
+        [
+            slot_fraction,
+            n_agents / 100.0,
+            cfg.n_beams / 2000.0,
+            discovered_edges / max(1.0, true_edges),
+            true_edges / possible_edges,
+            float(belief.mean()),
+            float(belief.std()),
+        ],
+        dtype=np.float32,
+    )
+    expected = central_graph_feature_dims()
+    if (
+        node_features.shape[-1] != expected[0]
+        or edge_features.shape[-1] != expected[1]
+        or global_features.shape[-1] != expected[2]
+    ):
+        raise RuntimeError("Central graph feature dimensions do not match the declared contract.")
+    return {
+        "node_features": node_features,
+        "edge_features": edge_features,
+        "global_features": global_features,
+        "edge_mask": edge_mask,
+    }
 
 
 def central_state_features(state: dict[str, Any], cfg: SimulationConfig) -> np.ndarray:
@@ -1748,6 +1996,9 @@ def build_episode_row(
         "episode_return_mean_per_agent": float(rewards.sum(dim=0).mean().item()),
         "step_reward_mean": float(rewards.mean().item()),
         "step_reward_sum_mean": float(rewards.sum(dim=1).mean().item()),
+        "rollout_replay_logprob_max_abs_error": float(
+            trajectory.get("rollout_replay_logprob_max_abs_error", 0.0)
+        ),
     }
     row.update(losses)
     row.update({key: summary[key] for key in summary})
@@ -1768,6 +2019,9 @@ def evaluate_policy(
     torch_rng_state = torch_module.random.get_rng_state()
     numpy_rng_state = np.random.get_state()
     was_training = bool(policy.model.training)
+    recurrent_state = (
+        policy.clone_recurrent_state() if hasattr(policy, "clone_recurrent_state") else None
+    )
     policy.eval()
     try:
         with torch_module.no_grad():
@@ -1786,6 +2040,8 @@ def evaluate_policy(
                         candidate_source=str(getattr(args, "candidate_source", "default")),
                     )
                     observations, _ = env.reset(seed=seed)
+                    if hasattr(policy, "reset_recurrent_state"):
+                        policy.reset_recurrent_state(env.n_agents)
                     role_rng = np.random.default_rng(seed + 777)
                     rewards = []
                     rendezvous_totals = empty_rendezvous_action_diagnostics()
@@ -1827,6 +2083,8 @@ def evaluate_policy(
     finally:
         torch_module.random.set_rng_state(torch_rng_state)
         np.random.set_state(numpy_rng_state)
+        if hasattr(policy, "restore_recurrent_state"):
+            policy.restore_recurrent_state(recurrent_state)
         if was_training:
             policy.train()
         else:
@@ -1848,6 +2106,11 @@ def loss_summary(
     rendezvous_beam_aux_losses: list[float] | None = None,
     rendezvous_role_aux_losses: list[float] | None = None,
     beam_active_fracs: list[float] | None = None,
+    actor_grad_norms: list[float] | None = None,
+    critic_grad_norms: list[float] | None = None,
+    explained_variances: list[float] | None = None,
+    normalized_candidate_entropies: list[float] | None = None,
+    sample_log_ratio_means: list[float] | None = None,
 ) -> dict[str, float]:
     return {
         "policy_loss": float(np.mean(policy_losses)),
@@ -1867,6 +2130,13 @@ def loss_summary(
         if rendezvous_role_aux_losses
         else 0.0,
         "beam_active_fraction": float(np.mean(beam_active_fracs)) if beam_active_fracs else 0.0,
+        "actor_grad_norm": float(np.mean(actor_grad_norms)) if actor_grad_norms else 0.0,
+        "critic_grad_norm": float(np.mean(critic_grad_norms)) if critic_grad_norms else 0.0,
+        "explained_variance": float(np.mean(explained_variances)) if explained_variances else 0.0,
+        "normalized_candidate_entropy": (
+            float(np.mean(normalized_candidate_entropies)) if normalized_candidate_entropies else 0.0
+        ),
+        "sample_log_ratio_mean": float(np.mean(sample_log_ratio_means)) if sample_log_ratio_means else 0.0,
     }
 
 
@@ -1876,12 +2146,22 @@ def should_checkpoint(index: int, interval: int) -> bool:
 
 def training_contract_version(args: argparse.Namespace) -> str:
     if str(getattr(args, "action_contract", "joint_role_beam")) == "beam_only_fixed_role":
+        if str(getattr(args, "network", "")) == "recurrent_contention_shared":
+            return "beam_only_recurrent_local_v1"
         return "beam_only_fixed_role_v1"
     if not bool(getattr(args, "clean_ctde", False)):
         return "twc_trainable_v1"
     if bool(getattr(args, "residual_measurement_features", False)):
         return CLEAN_CTDE_RESIDUAL_CONTRACT_VERSION
     return CLEAN_CTDE_CONTRACT_VERSION
+
+
+def architecture_version(args: argparse.Namespace) -> str:
+    actor = str(getattr(args, "network", "shared"))
+    critic = str(getattr(args, "critic_network", "pooled"))
+    if actor == "recurrent_contention_shared" and critic == "mpnn":
+        return "beam_only_recurrent_mpnn_v1"
+    return f"{actor}_{critic}_v1"
 
 
 def save_checkpoint(
@@ -1899,6 +2179,9 @@ def save_checkpoint(
         "algorithm": str(args.algorithm),
         "action_contract": str(getattr(args, "action_contract", "joint_role_beam")),
         "training_contract_version": training_contract_version(args),
+        "architecture_version": architecture_version(args),
+        "actor_network": str(getattr(args, "network", "shared")),
+        "critic_network": str(getattr(args, "critic_network", "pooled")),
         "feature_flags": resolved_feature_flags(args),
         "env_protocol": resolved_env_protocol(args),
         "policy_state_dict": policy.model.state_dict(),
@@ -2071,6 +2354,29 @@ def build_manifest(
         "algorithm": str(args.algorithm),
         "action_contract": str(getattr(args, "action_contract", "joint_role_beam")),
         "network": str(getattr(args, "network", "shared")),
+        "architecture_version": architecture_version(args),
+        "actor_network": str(getattr(args, "network", "shared")),
+        "actor_recurrent_dim": (
+            int(args.hidden_dim)
+            if str(getattr(args, "network", "")) == "recurrent_contention_shared"
+            else None
+        ),
+        "actor_state_reset": (
+            "zero_each_episode"
+            if str(getattr(args, "network", "")) == "recurrent_contention_shared"
+            else "stateless"
+        ),
+        "actor_global_state_access": False,
+        "critic_network": str(getattr(args, "critic_network", "pooled")),
+        "critic_hidden_dim": int(getattr(args, "critic_hidden_dim", None) or args.hidden_dim),
+        "critic_message_passes": (
+            2 if str(getattr(args, "critic_network", "pooled")) == "mpnn" else 0
+        ),
+        "critic_input_contract": (
+            "central_graph_truth_training_only_v1"
+            if str(getattr(args, "critic_network", "pooled")) == "mpnn"
+            else "central_pooled_truth_training_only_v1"
+        ),
         "reward_version": str(getattr(args, "reward_version", "legacy")),
         "scope": "real_marl_training",
         "config": str(args.config),
@@ -2200,6 +2506,21 @@ def git_revision() -> str:
     except (OSError, subprocess.CalledProcessError):
         return "unavailable"
     return completed.stdout.strip()
+
+
+def git_worktree_dirty() -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return bool(completed.stdout.strip())
 
 
 def communication_phy_manifest(cfg: SimulationConfig) -> dict[str, Any]:

@@ -29,6 +29,9 @@ from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     TopologyAdaptiveGatedContentionGraphActorCritic,
 )
 from isac_nd_sim.neural_scalegraph_beam_actor_critic import ScaleGraphBeamActorCritic  # noqa: E402
+from isac_nd_sim.neural_recurrent_contention_actor_critic import (  # noqa: E402
+    RecurrentContentionGraphActorCritic,
+)
 from isac_nd_sim.neural_shared_actor_critic import SharedBeamActorCritic  # noqa: E402
 from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.simulator import Action, MODE_IDLE, MODE_RX, MODE_SENSE, MODE_TX  # noqa: E402
@@ -214,6 +217,9 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         checkpoint_contention_mode_prior = not bool(train_args.get("disable_contention_mode_prior", False))
     use_contention_mode_prior = checkpoint_contention_mode_prior and not bool(args.disable_contention_mode_prior)
     checkpoint_rendezvous_adapter = bool(train_args.get("rendezvous_adapter", False))
+    action_contract = str(
+        checkpoint.get("action_contract", train_args.get("action_contract", "joint_role_beam"))
+    )
     policy = build_policy(
         train_network,
         cfg.n_beams,
@@ -230,6 +236,9 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         role_probability_floor=float(train_args.get("role_probability_floor", 0.0)),
         beam_uniform_mixture=float(train_args.get("beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_flags(forbid_sense, forbid_idle),
+        action_contract=action_contract,
+        azimuth_cells=int(cfg.azimuth_cells),
+        elevation_cells=int(cfg.elevation_cells),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
     if checkpoint_loaded:
@@ -464,12 +473,16 @@ def build_policy(
     | GatedContentionGraphActorCritic
     | AdaptiveGatedContentionGraphActorCritic
     | TopologyAdaptiveGatedContentionGraphActorCritic
+    | RecurrentContentionGraphActorCritic
 ):
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
     use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
     use_residual_measurement_features = bool(kwargs.pop("use_residual_measurement_features", False))
     role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
     beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
+    action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
+    azimuth_cells = int(kwargs.pop("azimuth_cells", int(args[0]) if args else 1))
+    elevation_cells = int(kwargs.pop("elevation_cells", 1))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
@@ -479,8 +492,13 @@ def build_policy(
     kwargs["use_residual_measurement_features"] = use_residual_measurement_features
     kwargs["role_probability_floor"] = role_probability_floor
     kwargs["beam_uniform_mixture"] = beam_uniform_mixture
+    kwargs["action_contract"] = action_contract
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
+    if str(network) == "recurrent_contention_shared":
+        kwargs["azimuth_cells"] = azimuth_cells
+        kwargs["elevation_cells"] = elevation_cells
+        return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "adaptive_gated_contention_shared":
@@ -633,6 +651,9 @@ def evaluate_policy(
                     collect_target_status_metrics=bool(getattr(args, "target_status_diagnostics", False)),
                 )
                 observations, _ = env.reset(seed=seed)
+                if hasattr(policy, "reset_recurrent_state"):
+                    policy.reset_recurrent_state(env.n_agents)
+                role_rng = np.random.default_rng(seed + 777)
                 rewards = []
                 truncated = False
                 slot = 0
@@ -643,6 +664,7 @@ def evaluate_policy(
                         mode_temperature=float(args.mode_temperature),
                         beam_temperature=float(args.beam_temperature),
                         gate_temperature=float(args.gate_temperature),
+                        role_rng=(role_rng if getattr(policy, "action_contract", "") == "beam_only_fixed_role" else None),
                     )
                     executed_actions = apply_action_executor(step.actions, env, args)
                     observations, reward, _terminated, truncated, _info = env.step(executed_actions)

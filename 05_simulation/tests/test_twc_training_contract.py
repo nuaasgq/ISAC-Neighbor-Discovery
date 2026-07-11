@@ -11,7 +11,11 @@ import pytest
 from isac_nd_sim.config import load_config, with_communication_tx_power
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
 from isac_nd_sim.mobility import NodeState
+from isac_nd_sim.centralized_graph_critic import CentralizedGraphCritic
 from isac_nd_sim.neural_contention_actor_critic import ContentionGraphActorCritic
+from isac_nd_sim.neural_recurrent_contention_actor_critic import (
+    RecurrentContentionGraphActorCritic,
+)
 from isac_nd_sim.simulator import Action
 
 
@@ -126,6 +130,158 @@ def test_beam_only_mappo_ppo_recompute_uses_only_beam_probability() -> None:
     )
     assert np.count_nonzero(recomputed["mode_log_probs"].detach().cpu().numpy()) == 0
     assert np.count_nonzero(recomputed["mode_entropies"].detach().cpu().numpy()) == 0
+
+
+def test_recurrent_beam_actor_replays_rollout_log_probs_from_zero_state() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=4,
+        azimuth_cells=8,
+        elevation_cells=1,
+        slots_per_episode=5,
+    )
+    env = MarlNeighborDiscoveryEnv(
+        cfg,
+        protocol="improved_rl_isac_tables",
+        candidate_source="residual_table",
+    )
+    observations, _ = env.reset(seed=20260820)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        use_candidate_score=True,
+        use_topology_deficit=True,
+        use_residual_measurement_features=True,
+        disabled_modes=("sense", "idle"),
+    )
+    policy.reset_recurrent_state(cfg.n_nodes)
+    role_rng = np.random.default_rng(20260839)
+    observations_by_step = []
+    actions_by_step = []
+    old_log_probs = []
+    for _ in range(cfg.slots_per_episode):
+        observations_by_step.append(module.copy_observations(observations))
+        with torch.no_grad():
+            step = policy.act(observations, role_rng=role_rng)
+        old_log_probs.append(step.log_probs.detach())
+        actions_by_step.append(step.actions)
+        observations, _reward, _terminated, _truncated, _info = env.step(step.actions)
+
+    state_before_replay = policy.clone_recurrent_state()
+    replay = policy.evaluate_action_sequence(observations_by_step, actions_by_step)
+
+    assert torch.allclose(replay["log_probs"], torch.stack(old_log_probs), atol=1e-6, rtol=1e-6)
+    assert torch.count_nonzero(replay["mode_log_probs"]) == 0
+    assert torch.count_nonzero(replay["mode_entropies"]) == 0
+    assert torch.allclose(policy.recurrent_state, state_before_replay)
+
+
+def test_recurrent_beam_actor_reset_prevents_episode_state_leakage() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=3, azimuth_cells=8, elevation_cells=1)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260821)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        disabled_modes=("sense", "idle"),
+    )
+
+    policy.reset_recurrent_state(cfg.n_nodes)
+    with torch.no_grad():
+        first = policy.advance_recurrent_logits(observations)[1].clone()
+        second = policy.advance_recurrent_logits(observations)[1].clone()
+    policy.reset_recurrent_state(cfg.n_nodes)
+    with torch.no_grad():
+        repeated_first = policy.advance_recurrent_logits(observations)[1].clone()
+
+    assert torch.allclose(first, repeated_first)
+    assert not torch.allclose(first, second)
+
+
+def test_recurrent_beam_grid_wraps_azimuth_but_not_elevation() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(
+        load_config("05_simulation/configs/mvp.yaml"),
+        n_nodes=2,
+        azimuth_cells=4,
+        elevation_cells=3,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260823)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+        use_candidate_mask=True,
+        disabled_modes=("sense", "idle"),
+    )
+    block = policy.model.beam_convolution
+    policy.reset_recurrent_state(cfg.n_nodes)
+    with torch.no_grad():
+        logits = policy.advance_recurrent_logits(observations)[1]
+
+    assert block.azimuth_conv.padding_mode == "circular"
+    assert block.elevation_conv.padding_mode == "zeros"
+    assert logits.shape == (cfg.n_nodes, cfg.n_beams)
+    assert torch.isfinite(logits).all()
+
+
+def test_per_agent_return_scope_requires_mpnn_critic() -> None:
+    module = load_training_module()
+    args = Namespace(
+        episodes=1,
+        slots=1,
+        ppo_epochs=1,
+        max_rss_mb=1000.0,
+        max_system_memory_percent=90.0,
+        return_scope="per_agent",
+        critic_network="pooled",
+    )
+
+    with pytest.raises(ValueError, match="requires --critic-network mpnn"):
+        module.validate_args(args)
+
+
+def test_centralized_graph_critic_is_agent_permutation_equivariant_and_actor_isolated() -> None:
+    torch = pytest.importorskip("torch")
+    training = load_training_module()
+    cfg = replace(load_config("05_simulation/configs/mvp.yaml"), n_nodes=4, azimuth_cells=8, elevation_cells=1)
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260822)
+    graph = training.central_graph_features(env.training_state(), cfg)
+    tensors = {
+        key: torch.as_tensor(value).unsqueeze(0)
+        for key, value in graph.items()
+    }
+    critic = CentralizedGraphCritic(*training.central_graph_feature_dims(), hidden_dim=16)
+    actor = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        disabled_modes=("sense", "idle"),
+    )
+    values = critic(tensors)
+    permutation = torch.tensor([2, 0, 3, 1])
+    permuted = {
+        "node_features": tensors["node_features"][:, permutation],
+        "edge_features": tensors["edge_features"][:, permutation][:, :, permutation],
+        "global_features": tensors["global_features"],
+        "edge_mask": tensors["edge_mask"][:, permutation][:, :, permutation],
+    }
+    permuted_values = critic(permuted)
+    values.square().mean().backward()
+
+    assert values.shape == (1, cfg.n_nodes)
+    assert torch.allclose(permuted_values, values[:, permutation], atol=1e-6, rtol=1e-6)
+    assert all(parameter.grad is None for parameter in actor.parameters())
+    assert all(parameter.grad is not None and torch.isfinite(parameter.grad).all() for parameter in critic.parameters())
+    assert len(observations) == cfg.n_nodes
 
 
 def test_isac_mappo_defaults_to_soft_isac_observation_without_rule_priors() -> None:

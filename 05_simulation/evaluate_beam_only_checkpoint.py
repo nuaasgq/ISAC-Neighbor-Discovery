@@ -32,6 +32,23 @@ from run_marl_training import build_policy, write_rows  # noqa: E402
 BeamScorer = Callable[[Sequence[dict[str, Any]]], np.ndarray]
 
 
+class RecurrentPolicyScorer:
+    def __init__(self, policy: Any, torch_module: Any):
+        self.policy = policy
+        self.torch = torch_module
+
+    def reset(self, n_agents: int) -> None:
+        self.policy.reset_recurrent_state(n_agents)
+
+    def __call__(self, observations: Sequence[dict[str, Any]]) -> np.ndarray:
+        with self.torch.no_grad():
+            _mode_logits, beam_logits, _value = self.policy.advance_recurrent_logits(
+                observations,
+                hard_mask=True,
+            )
+            return beam_logits.cpu().numpy()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Common seven-policy beam-only checkpoint evaluation.")
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -126,23 +143,37 @@ def load_mappo_scorer(checkpoint: dict[str, Any]) -> tuple[BeamScorer, dict[str,
         beam_uniform_mixture=0.0,
         disabled_modes=("sense", "idle"),
         action_contract=action_contract,
+        azimuth_cells=int(checkpoint["config"]["azimuth_cells"]),
+        elevation_cells=int(checkpoint["config"]["elevation_cells"]),
     )
     policy.model.load_state_dict(checkpoint["policy_state_dict"])
     policy.eval()
 
-    def scorer(observations: Sequence[dict[str, Any]]) -> np.ndarray:
-        with torch.no_grad():
-            _mode_logits, beam_logits, _value = policy.batched_logits_value(
-                observations,
-                hard_mask=True,
-            )
-            return beam_logits.cpu().numpy()
+    if hasattr(policy, "advance_recurrent_logits"):
+        scorer: BeamScorer = RecurrentPolicyScorer(policy, torch)
+    else:
+        def scorer(observations: Sequence[dict[str, Any]]) -> np.ndarray:
+            with torch.no_grad():
+                _mode_logits, beam_logits, _value = policy.batched_logits_value(
+                    observations,
+                    hard_mask=True,
+                )
+                return beam_logits.cpu().numpy()
 
     return scorer, {
         "checkpoint_algorithm": checkpoint["algorithm"],
         "action_contract": action_contract,
         "n_agents": int(checkpoint["config"]["n_nodes"]),
         "n_beams": n_beams,
+        "architecture_version": checkpoint.get("architecture_version", "legacy_unspecified"),
+        "training_contract_version": checkpoint.get(
+            "training_contract_version", "legacy_unspecified"
+        ),
+        "actor_network": checkpoint.get("actor_network", checkpoint["args"].get("network")),
+        "critic_network": checkpoint.get("critic_network", "pooled"),
+        "actor_state_reset": (
+            "zero_each_episode" if hasattr(policy, "reset_recurrent_state") else "stateless"
+        ),
         "training_exploration": {
             "type": "categorical_policy_sampling_plus_entropy",
             "entropy_coef": float(checkpoint_args.entropy_coef),
@@ -191,6 +222,8 @@ def evaluate(args: argparse.Namespace, scorer: BeamScorer) -> list[dict[str, Any
                 rich_info=False,
             )
             observations, _ = env.reset(seed=scenario_seed)
+            if hasattr(scorer, "reset"):
+                scorer.reset(env.n_agents)
             role_rng = np.random.default_rng(scenario_seed + 777)
             gate_rng = np.random.default_rng(scenario_seed + 888)
             choice_rng = np.random.default_rng(scenario_seed + 999)
