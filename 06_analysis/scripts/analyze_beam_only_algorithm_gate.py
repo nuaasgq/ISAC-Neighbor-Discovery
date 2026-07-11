@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import itertools
+import json
 from pathlib import Path
 
 import matplotlib
@@ -219,8 +220,27 @@ def main() -> None:
     training: dict[str, list[dict[str, str]]] = {}
     summaries: list[dict[str, object]] = []
     training_summary: list[dict[str, object]] = []
+    contracts: list[dict[str, object]] = []
 
     for algorithm in ALGORITHMS:
+        with (RUN_ROOT / algorithm / "eval7" / "manifest.json").open(encoding="utf-8") as handle:
+            evaluation_manifest = json.load(handle)
+        with (RUN_ROOT / algorithm / "train" / "manifest.json").open(encoding="utf-8") as handle:
+            training_manifest = json.load(handle)
+        contracts.append(
+            {
+                "algorithm": algorithm,
+                "training_git_commit": training_manifest["git_commit"],
+                "evaluation_git_commit": evaluation_manifest["git_commit"],
+                "checkpoint_sha256": evaluation_manifest["checkpoint_sha256"],
+                "action_contract": evaluation_manifest["action_contract"],
+                "candidate_source": evaluation_manifest["candidate_source"],
+                "training_exploration": json.dumps(
+                    evaluation_manifest["training_exploration"],
+                    sort_keys=True,
+                ),
+            }
+        )
         evaluation = read_rows(RUN_ROOT / algorithm / "eval7" / "eval_episode_metrics.csv")
         if len(evaluation) != 70:
             raise RuntimeError(f"{algorithm}: expected 70 evaluation rows, found {len(evaluation)}.")
@@ -367,6 +387,7 @@ def main() -> None:
 
     write_rows(OUTPUT / "evaluation_summary.csv", summaries)
     write_rows(OUTPUT / "training_summary.csv", training_summary)
+    write_rows(OUTPUT / "run_contracts.csv", contracts)
     write_rows(OUTPUT / "paired_control_comparisons.csv", comparisons)
     write_rows(OUTPUT / "fixed_checkpoint_algorithm_contrasts.csv", fixed_checkpoint_contrasts)
     write_rows(OUTPUT / "training_role_sequence_audit.csv", training_role_audit)

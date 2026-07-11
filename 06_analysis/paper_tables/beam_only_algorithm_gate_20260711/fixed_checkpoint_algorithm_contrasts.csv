@@ -1,0 +1,7 @@
+contrast,first_discovery_rate,second_discovery_rate,descriptive_difference_only,inference_status
+shared_idqn:pure - vdn:pure,0.5133333333333334,0.5622222222222223,-0.04888888888888887,not_tested_requires_independent_training_seeds
+shared_idqn:pure - qmix:pure,0.5133333333333334,0.5533333333333333,-0.039999999999999925,not_tested_requires_independent_training_seeds
+shared_idqn:pure - mappo:pure,0.5133333333333334,0.48,0.03333333333333344,not_tested_requires_independent_training_seeds
+vdn:pure - qmix:pure,0.5622222222222223,0.5533333333333333,0.008888888888888946,not_tested_requires_independent_training_seeds
+vdn:pure - mappo:pure,0.5622222222222223,0.48,0.08222222222222231,not_tested_requires_independent_training_seeds
+qmix:pure - mappo:pure,0.5533333333333333,0.48,0.07333333333333336,not_tested_requires_independent_training_seeds
