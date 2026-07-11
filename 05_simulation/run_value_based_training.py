@@ -29,6 +29,7 @@ from isac_nd_sim.value_decomposition import (  # noqa: E402
     ValueDecompositionLearner,
     requires_global_training_state,
     select_beam_only_actions,
+    select_candidate_score_actions,
     select_local_actions,
 )
 from run_marl_training import (  # noqa: E402
@@ -78,6 +79,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resource-log-period", type=int, default=100)
     parser.add_argument("--max-rss-mb", type=float, default=4096.0)
     parser.add_argument("--max-system-memory-percent", type=float, default=85.0)
+    parser.add_argument("--eval-only-checkpoint", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -128,6 +130,14 @@ def epsilon_at_step(args: argparse.Namespace, global_step: int) -> float:
     return float(args.epsilon_start) + fraction * (float(args.epsilon_end) - float(args.epsilon_start))
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def run_training(args: argparse.Namespace) -> dict[str, Any]:
     try:
         import torch
@@ -160,6 +170,20 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         reward_scope=str(args.reward_scope),
         action_contract=str(args.action_contract),
     )
+    if args.eval_only_checkpoint is not None:
+        checkpoint_path = Path(args.eval_only_checkpoint)
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        learner.load_checkpoint_state(checkpoint["learner"])
+        eval_rows = evaluate_learner(learner, cfg, args)
+        manifest = build_manifest(args, cfg, learner, [], eval_rows, [])
+        manifest["scope"] = "common_contract_value_based_eval_only"
+        manifest["source_checkpoint"] = str(checkpoint_path)
+        manifest["source_checkpoint_sha256"] = file_sha256(checkpoint_path)
+        (output / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        flush_outputs(output, [], [], eval_rows, [])
+        return manifest
     replay = (
         IndependentReplayBuffer(
             cfg.n_nodes,
@@ -332,21 +356,27 @@ def evaluate_learner(
     learner.eval()
     if str(args.action_contract) == "beam_only_fixed_role":
         variants = {
-            "pure_learned_beam": (1.0, 0.0),
-            "learned_beam_random_mix_0.2": (1.0, 0.2),
-            "learned_beam_random_mix_0.5": (1.0, 0.5),
-            "learned_beam_random_mix_0.8": (1.0, 0.8),
-            "random_candidate_beam": (1.0, 1.0),
+            "pure_learned_beam": ("learned_mix", 1.0, 0.0),
+            "learned_beam_random_mix_0.2": ("learned_mix", 1.0, 0.2),
+            "learned_beam_random_mix_0.5": ("learned_mix", 1.0, 0.5),
+            "learned_beam_random_mix_0.8": ("learned_mix", 1.0, 0.8),
+            "random_candidate_beam": ("learned_mix", 1.0, 1.0),
+            "candidate_score_argmax": ("score_argmax", 1.0, 0.0),
+            "candidate_score_proportional": ("score_proportional", 1.0, 0.0),
         }
     else:
         variants = {
-            "matched_support": (float(args.role_uniform_mixture), float(args.beam_uniform_mixture)),
-            "greedy": (0.0, 0.0),
-            "learned_role_random_beam": (0.0, 1.0),
-            "random_role_learned_beam": (1.0, 0.0),
-            "random_uniform": (1.0, 1.0),
+            "matched_support": (
+                "joint_learned_mix",
+                float(args.role_uniform_mixture),
+                float(args.beam_uniform_mixture),
+            ),
+            "greedy": ("joint_learned_mix", 0.0, 0.0),
+            "learned_role_random_beam": ("joint_learned_mix", 0.0, 1.0),
+            "random_role_learned_beam": ("joint_learned_mix", 1.0, 0.0),
+            "random_uniform": ("joint_learned_mix", 1.0, 1.0),
         }
-    for variant, (role_mixture, beam_mixture) in variants.items():
+    for variant, (policy_kind, role_mixture, beam_mixture) in variants.items():
         for eval_episode in range(int(args.eval_episodes)):
             scenario_seed = int(args.seed) + 2_000_000 + eval_episode
             env = MarlNeighborDiscoveryEnv(
@@ -364,11 +394,20 @@ def evaluate_learner(
             beam_choice_rng = np.random.default_rng(scenario_seed + 999)
             rewards_by_step: list[np.ndarray] = []
             role_trace = hashlib.blake2b(digest_size=12)
+            beam_trace = hashlib.blake2b(digest_size=12)
+            candidate_trace = hashlib.blake2b(digest_size=12)
             truncated = False
             while not truncated:
                 with torch.no_grad():
                     q_values = learner.q_values(observations).cpu().numpy()
-                if str(args.action_contract) == "beam_only_fixed_role":
+                for observation in observations:
+                    candidate_trace.update(
+                        np.packbits(
+                            np.asarray(observation["candidate_mask"], dtype=np.uint8),
+                            bitorder="little",
+                        ).tobytes()
+                    )
+                if policy_kind == "learned_mix":
                     actions, _indices = select_beam_only_actions(
                         q_values,
                         observations,
@@ -376,6 +415,13 @@ def evaluate_learner(
                         beam_gate_rng,
                         beam_choice_rng,
                         beam_uniform_mixture=beam_mixture,
+                    )
+                elif policy_kind in ("score_argmax", "score_proportional"):
+                    actions, _indices = select_candidate_score_actions(
+                        observations,
+                        role_rng,
+                        beam_choice_rng,
+                        selection="argmax" if policy_kind == "score_argmax" else "proportional",
                     )
                 else:
                     actions, _indices = select_local_actions(
@@ -386,6 +432,9 @@ def evaluate_learner(
                         beam_uniform_mixture=beam_mixture,
                     )
                 role_trace.update(bytes(1 if action.mode == "tx" else 0 for action in actions))
+                beam_trace.update(
+                    np.asarray([action.beam for action in actions], dtype=np.uint16).tobytes()
+                )
                 observations, rewards, _terminated, truncated, _info = env.step(actions)
                 rewards_by_step.append(np.asarray(rewards, dtype=np.float32))
             reward_array = np.stack(rewards_by_step)
@@ -393,6 +442,7 @@ def evaluate_learner(
                 {
                     "phase": "eval_value_policy_ablation",
                     "policy_variant": variant,
+                    "execution_policy_kind": policy_kind,
                     "eval_episode": eval_episode,
                     "episode": int(args.episodes) + eval_episode,
                     "seed": scenario_seed,
@@ -406,7 +456,15 @@ def evaluate_learner(
                         0.5 if str(args.action_contract) == "beam_only_fixed_role" else ""
                     ),
                     "role_sequence_hash": role_trace.hexdigest(),
+                    "beam_sequence_hash": beam_trace.hexdigest(),
+                    "candidate_mask_sequence_hash": candidate_trace.hexdigest(),
                     "beam_uniform_mixture": beam_mixture,
+                    "candidate_source": str(args.candidate_source),
+                    "action_contract": str(args.action_contract),
+                    "training_beam_random_floor": float(args.beam_uniform_mixture),
+                    "training_epsilon_start": float(args.epsilon_start),
+                    "training_epsilon_end": float(args.epsilon_end),
+                    "training_epsilon_decay_steps": int(args.epsilon_decay_steps),
                     "episode_return_sum": float(reward_array.sum()),
                     "episode_return_mean_per_agent": float(reward_array.sum(axis=0).mean()),
                     "step_reward_mean": float(reward_array.mean()),
@@ -455,6 +513,23 @@ def build_manifest(
         ).stdout.strip()
     except Exception:
         git_commit = "unknown"
+    try:
+        tracked_worktree_dirty = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain", "--untracked-files=no"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            ).stdout.strip()
+        )
+    except Exception:
+        tracked_worktree_dirty = None
+    source_files = {
+        "runner": Path(__file__).resolve(),
+        "value_decomposition": SRC / "isac_nd_sim" / "value_decomposition.py",
+    }
     return {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "scope": "common_contract_value_based_screen",
@@ -523,6 +598,8 @@ def build_manifest(
             "common_protocol_interface": True,
         },
         "git_commit": git_commit,
+        "tracked_worktree_dirty": tracked_worktree_dirty,
+        "source_sha256": {name: file_sha256(path) for name, path in source_files.items()},
         "command": list(sys.argv),
         "peak_rss_mb": max(
             (float(row["rss_mb"]) for row in resource_rows if isinstance(row.get("rss_mb"), (int, float))),
@@ -530,14 +607,24 @@ def build_manifest(
         ),
         "final_train": episode_rows[-1] if episode_rows else {},
         "final_eval": eval_rows[-1] if eval_rows else {},
-        "files": [
-            "step_rewards.csv",
-            "episode_metrics.csv",
-            "eval_episode_metrics.csv",
-            "resource_log.csv",
-            "final_model.pt",
-            "manifest.json",
-        ],
+        "files": (
+            [
+                "step_rewards.csv",
+                "episode_metrics.csv",
+                "eval_episode_metrics.csv",
+                "resource_log.csv",
+                "manifest.json",
+            ]
+            if args.eval_only_checkpoint is not None
+            else [
+                "step_rewards.csv",
+                "episode_metrics.csv",
+                "eval_episode_metrics.csv",
+                "resource_log.csv",
+                "final_model.pt",
+                "manifest.json",
+            ]
+        ),
     }
 
 

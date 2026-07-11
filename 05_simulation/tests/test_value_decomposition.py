@@ -15,6 +15,7 @@ from isac_nd_sim.value_decomposition import (
     mask_invalid_actions,
     requires_global_training_state,
     select_beam_only_actions,
+    select_candidate_score_actions,
     select_local_actions,
 )
 
@@ -149,6 +150,47 @@ def test_beam_only_roles_are_iid_half_probability_and_not_learned() -> None:
         total += len(actions)
 
     assert tx_count / total == pytest.approx(0.5, abs=0.03)
+
+
+def test_candidate_score_argmax_is_a_nonlearning_same_mask_control() -> None:
+    env = small_env()
+    observations, _ = env.reset(seed=20260730)
+    for observation in observations:
+        observation["candidate_mask"] = np.ones(env.n_beams, dtype=np.float32)
+        observation["candidate_score"] = np.linspace(
+            0.0,
+            1.0,
+            env.n_beams,
+            dtype=np.float32,
+        )
+
+    actions, beams = select_candidate_score_actions(
+        observations,
+        np.random.default_rng(70),
+        np.random.default_rng(71),
+        selection="argmax",
+    )
+
+    assert np.array_equal(beams, np.full(env.n_agents, env.n_beams - 1))
+    assert [action.beam for action in actions] == beams.tolist()
+
+
+def test_candidate_score_proportional_never_selects_a_masked_beam() -> None:
+    env = small_env()
+    observations, _ = env.reset(seed=20260731)
+    for observation in observations:
+        observation["candidate_mask"] = np.zeros(env.n_beams, dtype=np.float32)
+        observation["candidate_mask"][2:4] = 1.0
+        observation["candidate_score"] = np.ones(env.n_beams, dtype=np.float32)
+
+    _actions, beams = select_candidate_score_actions(
+        observations,
+        np.random.default_rng(80),
+        np.random.default_rng(81),
+        selection="proportional",
+    )
+
+    assert set(beams).issubset({2, 3})
 
 
 def test_independent_dqn_owns_one_distinct_network_per_uav() -> None:

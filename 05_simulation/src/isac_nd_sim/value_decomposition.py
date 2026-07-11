@@ -529,6 +529,34 @@ class ValueDecompositionLearner:
             "optimizers": [optimizer.state_dict() for optimizer in self.optimizers],
         }
 
+    def load_checkpoint_state(self, state: dict[str, Any], *, load_optimizers: bool = False) -> None:
+        expected = {
+            "algorithm": self.algorithm,
+            "n_agents": self.n_agents,
+            "n_beams": self.n_beams,
+            "action_contract": self.action_contract,
+        }
+        for key, value in expected.items():
+            if state.get(key) != value:
+                raise ValueError(
+                    f"Checkpoint {key}={state.get(key)!r} does not match learner {value!r}."
+                )
+        self.q_networks.load_state_dict(state["q_networks"])
+        self.target_q_networks.load_state_dict(state["target_q_networks"])
+        if self.mixer is not None:
+            self.mixer.load_state_dict(state["mixer"])
+            self.target_mixer.load_state_dict(state["target_mixer"])
+        if load_optimizers:
+            optimizer_states = state.get("optimizers", [])
+            if len(optimizer_states) != len(self.optimizers):
+                raise ValueError("Checkpoint optimizer count does not match learner.")
+            for optimizer, optimizer_state in zip(
+                self.optimizers,
+                optimizer_states,
+                strict=True,
+            ):
+                optimizer.load_state_dict(optimizer_state)
+
 
 def mask_invalid_actions(q_values, observations: Sequence[Sequence[dict[str, Any]]], n_beams: int):
     import torch
@@ -624,6 +652,44 @@ def select_beam_only_actions(
             beam = int(candidate[random_index])
         else:
             beam = int(candidate[int(np.argmax(q_values[node, candidate]))])
+        actions.append(Action(mode, beam))
+        beam_indices[node] = beam
+    return actions, beam_indices
+
+
+def select_candidate_score_actions(
+    observations: Sequence[dict[str, Any]],
+    role_rng: np.random.Generator,
+    beam_choice_rng: np.random.Generator,
+    *,
+    selection: str,
+) -> tuple[list[Action], np.ndarray]:
+    """Non-learning beam controls driven only by the exposed candidate score."""
+
+    if selection not in ("argmax", "proportional"):
+        raise ValueError("selection must be 'argmax' or 'proportional'.")
+    n_agents = len(observations)
+    n_beams = len(observations[0]["candidate_mask"])
+    actions: list[Action] = []
+    beam_indices = np.zeros(n_agents, dtype=np.int64)
+    for node, observation in enumerate(observations):
+        candidate = np.flatnonzero(np.asarray(observation["candidate_mask"], dtype=float) > 0.5)
+        if candidate.size == 0:
+            candidate = np.arange(n_beams, dtype=int)
+        scores = np.maximum(
+            0.0,
+            np.asarray(observation.get("candidate_score", np.zeros(n_beams)), dtype=float)[candidate],
+        )
+        random_quantile = beam_choice_rng.random()
+        mode = MODE_TX if role_rng.random() < 0.5 else MODE_RX
+        if selection == "argmax":
+            beam = int(candidate[int(np.argmax(scores))])
+        elif float(scores.sum()) <= 0.0:
+            random_index = min(int(random_quantile * candidate.size), candidate.size - 1)
+            beam = int(candidate[random_index])
+        else:
+            cumulative = np.cumsum(scores / scores.sum())
+            beam = int(candidate[min(int(np.searchsorted(cumulative, random_quantile)), candidate.size - 1)])
         actions.append(Action(mode, beam))
         beam_indices[node] = beam
     return actions, beam_indices

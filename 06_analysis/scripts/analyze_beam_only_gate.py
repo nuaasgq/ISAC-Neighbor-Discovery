@@ -234,8 +234,14 @@ def plot_training_curves(training_by_run: dict[str, list[dict[str, str]]]) -> No
 
 def main() -> None:
     paths = {
-        "standard_epsilon": RUN_ROOT / "standard_epsilon",
-        "persistent_mix_0.8": RUN_ROOT / "persistent_mix_0p8",
+        "standard_epsilon": {
+            "training": RUN_ROOT / "standard_epsilon",
+            "evaluation": RUN_ROOT / "standard_epsilon_eval7",
+        },
+        "persistent_mix_0.8": {
+            "training": RUN_ROOT / "persistent_mix_0p8",
+            "evaluation": RUN_ROOT / "persistent_mix_0p8_eval7",
+        },
     }
     grouped: dict[str, dict[str, list[dict[str, str]]]] = {}
     summaries: list[dict[str, object]] = []
@@ -244,8 +250,12 @@ def main() -> None:
     contracts: list[dict[str, object]] = []
     role_audit: list[dict[str, object]] = []
 
-    for run, path in paths.items():
-        evaluation = read_rows(path / "eval_episode_metrics.csv")
+    for run, run_paths in paths.items():
+        evaluation_path = run_paths["evaluation"]
+        training_path = run_paths["training"]
+        with (evaluation_path / "manifest.json").open(encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        evaluation = read_rows(evaluation_path / "eval_episode_metrics.csv")
         variants = sorted({row["policy_variant"] for row in evaluation})
         grouped[run] = {}
         for variant in variants:
@@ -257,11 +267,15 @@ def main() -> None:
         for row in evaluation:
             by_seed.setdefault(int(row["scenario_seed"]), []).append(row)
         for seed, rows in by_seed.items():
-            if len(rows) != 5:
-                raise RuntimeError(f"Scenario {seed} has {len(rows)} variants; expected 5.")
+            if len(rows) != 7:
+                raise RuntimeError(f"Scenario {seed} has {len(rows)} variants; expected 7.")
             tx_values = {int(row["tx_actions"]) for row in rows}
             rx_values = {int(row["rx_actions"]) for row in rows}
-            expected_tx, expected_rx, expected_hash = reconstruct_role_sequence(seed)
+            expected_tx, expected_rx, expected_hash = reconstruct_role_sequence(
+                seed,
+                n_agents=int(manifest["node_count"]),
+                slots=int(manifest["slots_per_episode"]),
+            )
             recorded_hash_values = [row.get("role_sequence_hash", "") for row in rows]
             all_hashes_recorded = all(recorded_hash_values)
             recorded_hashes = set(recorded_hash_values)
@@ -289,7 +303,7 @@ def main() -> None:
                 }
             )
 
-        training = read_rows(path / "episode_metrics.csv")
+        training = read_rows(training_path / "episode_metrics.csv")
         training_by_run[run] = training
         training_summaries.append(
             {
@@ -302,8 +316,6 @@ def main() -> None:
                 "last_10_td_loss": mean(training[-10:], "td_loss"),
             }
         )
-        with (path / "manifest.json").open(encoding="utf-8") as handle:
-            manifest = json.load(handle)
         support = manifest["stochastic_support"]
         contracts.append(
             {
@@ -318,6 +330,13 @@ def main() -> None:
                 "training_epsilon_end": support["training_epsilon_end"],
                 "training_epsilon_decay_steps": support["training_epsilon_decay_steps"],
                 "beam_randomization_domain": support["beam_randomization_domain"],
+                "beam_gate_rng_separate_from_choice_rng": support[
+                    "beam_gate_rng_separate_from_choice_rng"
+                ],
+                "source_checkpoint": manifest["source_checkpoint"],
+                "source_checkpoint_sha256": manifest["source_checkpoint_sha256"],
+                "evaluation_git_commit": manifest["git_commit"],
+                "tracked_worktree_dirty": manifest["tracked_worktree_dirty"],
             }
         )
 
@@ -350,6 +369,14 @@ def main() -> None:
                     random_rows,
                 )
             )
+        for rule_variant in ("candidate_score_argmax", "candidate_score_proportional"):
+            comparisons.append(
+                paired_comparison(
+                    f"{run}:pure_learned_beam - {run}:{rule_variant}",
+                    variants["pure_learned_beam"],
+                    variants[rule_variant],
+                )
+            )
     add_holm_adjustment(comparisons)
     checkpoint_contrast = [
         {
@@ -368,12 +395,53 @@ def main() -> None:
         }
     ]
 
+    control_audit: list[dict[str, object]] = []
+    stable_fields = (
+        "discovery_rate",
+        "neighbor_knowledge_recall",
+        "mean_delay_censored",
+        "empty_scan_ratio",
+        "tx_actions",
+        "rx_actions",
+        "role_sequence_hash",
+        "beam_sequence_hash",
+        "candidate_mask_sequence_hash",
+    )
+    for variant in (
+        "random_candidate_beam",
+        "candidate_score_argmax",
+        "candidate_score_proportional",
+    ):
+        standard = {
+            int(row["scenario_seed"]): row for row in grouped["standard_epsilon"][variant]
+        }
+        persistent = {
+            int(row["scenario_seed"]): row for row in grouped["persistent_mix_0.8"][variant]
+        }
+        if set(standard) != set(persistent):
+            raise RuntimeError(f"{variant}: checkpoint controls have different scenario seeds.")
+        for seed in sorted(standard):
+            matching_fields = all(
+                standard[seed][field] == persistent[seed][field] for field in stable_fields
+            )
+            control_audit.append(
+                {
+                    "policy_variant": variant,
+                    "scenario_seed": seed,
+                    "identical_across_checkpoints": matching_fields,
+                    "fields_checked": "|".join(stable_fields),
+                }
+            )
+    if not all(row["identical_across_checkpoints"] for row in control_audit):
+        raise RuntimeError("A non-learning control changed across checkpoints.")
+
     write_rows(OUTPUT / "evaluation_summary.csv", summaries)
     write_rows(OUTPUT / "paired_comparisons.csv", comparisons)
     write_rows(OUTPUT / "checkpoint_descriptive_contrast.csv", checkpoint_contrast)
     write_rows(OUTPUT / "training_summary.csv", training_summaries)
     write_rows(OUTPUT / "run_contracts.csv", contracts)
     write_rows(OUTPUT / "role_sequence_audit.csv", role_audit)
+    write_rows(OUTPUT / "nonlearning_control_reproducibility.csv", control_audit)
     plot_evaluation_mix(grouped)
     plot_training_curves(training_by_run)
 
