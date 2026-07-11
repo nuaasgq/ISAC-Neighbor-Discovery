@@ -119,6 +119,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--return-scope", choices=("team", "per_agent"), default="team")
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--gamma", type=float, default=0.985)
+    parser.add_argument("--advantage-estimator", choices=("mc", "gae"), default="mc")
+    parser.add_argument("--gae-lambda", type=float, default=0.95)
     parser.add_argument("--ppo-epochs", type=int, default=2)
     parser.add_argument("--clip-epsilon", type=float, default=0.2)
     parser.add_argument("--value-coef", type=float, default=0.5)
@@ -465,6 +467,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--bounded-score-residual requires --candidate-score-prior.")
     if float(getattr(args, "score_residual_max_logit", 2.0)) <= 0.0:
         raise ValueError("--score-residual-max-logit must be positive.")
+    if not 0.0 <= float(getattr(args, "gae_lambda", 0.95)) <= 1.0:
+        raise ValueError("--gae-lambda must be in [0, 1].")
     if float(getattr(args, "expert_bc_weight", 0.0)) < 0.0:
         raise ValueError("--expert-bc-weight must be nonnegative.")
     if float(getattr(args, "beam_loss_coef", 1.0)) < 0.0:
@@ -1167,20 +1171,24 @@ def update_policy(
         if return_scope == "per_agent":
             if not per_agent_critic:
                 raise RuntimeError("Per-agent returns require a per-agent centralized critic.")
-            returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
+            learning_rewards = rewards
             critic_inputs = trajectory["central_graph"]
         else:
             global_rewards = rewards.mean(dim=1)
-            team_returns = discounted_returns_1d(global_rewards, float(args.gamma), torch_module)
             if per_agent_critic:
-                returns = team_returns.unsqueeze(-1).expand(-1, rewards.shape[1])
+                learning_rewards = global_rewards.unsqueeze(-1).expand(-1, rewards.shape[1])
                 critic_inputs = trajectory["central_graph"]
             else:
-                returns = team_returns
+                learning_rewards = global_rewards
                 critic_inputs = trajectory["central_features"]
         with torch_module.no_grad():
             rollout_values = critic(critic_inputs)
-            fixed_advantages = snapshot_normalized_advantages(returns, rollout_values)
+            returns, fixed_advantages = fixed_ppo_targets(
+                learning_rewards,
+                rollout_values,
+                args,
+                torch_module,
+            )
         for _ in range(int(args.ppo_epochs)):
             action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
             log_probs = action_eval["log_probs"]
@@ -1288,16 +1296,17 @@ def update_policy(
             sample_log_ratio_means,
         )
 
-    returns = discounted_returns_2d(rewards, float(args.gamma), torch_module)
     with torch_module.no_grad():
         rollout_action_eval = evaluate_action_components(
             policy,
             trajectory["observations"],
             trajectory["actions"],
         )
-        fixed_advantages = snapshot_normalized_advantages(
-            returns,
+        returns, fixed_advantages = fixed_ppo_targets(
+            rewards,
             rollout_action_eval["values"],
+            args,
+            torch_module,
         )
     for _ in range(int(args.ppo_epochs)):
         action_eval = evaluate_action_components(policy, trajectory["observations"], trajectory["actions"])
@@ -1860,6 +1869,61 @@ def snapshot_normalized_advantages(returns: Any, rollout_values: Any) -> Any:
     if returns.shape != rollout_values.shape:
         raise ValueError("returns and rollout_values must have identical shapes.")
     return normalize_advantages((returns - rollout_values).detach()).clone()
+
+
+def fixed_ppo_targets(
+    rewards: Any,
+    rollout_values: Any,
+    args: argparse.Namespace,
+    torch_module: Any,
+) -> tuple[Any, Any]:
+    """Build fixed finite-horizon critic targets and normalized actor advantages."""
+
+    if rewards.shape != rollout_values.shape:
+        raise ValueError("rewards and rollout_values must have identical shapes.")
+    estimator = str(getattr(args, "advantage_estimator", "mc"))
+    if estimator == "gae":
+        returns, raw_advantages = generalized_advantage_estimate(
+            rewards,
+            rollout_values,
+            gamma=float(args.gamma),
+            gae_lambda=float(getattr(args, "gae_lambda", 0.95)),
+            torch_module=torch_module,
+        )
+        return returns.detach().clone(), normalize_advantages(raw_advantages.detach()).clone()
+    if estimator != "mc":
+        raise ValueError("advantage_estimator must be 'mc' or 'gae'.")
+    returns = (
+        discounted_returns_1d(rewards, float(args.gamma), torch_module)
+        if rewards.ndim == 1
+        else discounted_returns_2d(rewards, float(args.gamma), torch_module)
+    )
+    return returns.detach().clone(), snapshot_normalized_advantages(returns, rollout_values)
+
+
+def generalized_advantage_estimate(
+    rewards: Any,
+    rollout_values: Any,
+    *,
+    gamma: float,
+    gae_lambda: float,
+    torch_module: Any,
+) -> tuple[Any, Any]:
+    """Finite-horizon GAE with a zero value beyond the declared episode boundary."""
+
+    if rewards.shape != rollout_values.shape:
+        raise ValueError("rewards and rollout_values must have identical shapes.")
+    next_value = torch_module.zeros_like(rollout_values[-1])
+    running_advantage = torch_module.zeros_like(rollout_values[-1])
+    advantages = []
+    for reward, value in zip(reversed(rewards), reversed(rollout_values), strict=True):
+        delta = reward + float(gamma) * next_value - value
+        running_advantage = delta + float(gamma) * float(gae_lambda) * running_advantage
+        advantages.append(running_advantage)
+        next_value = value
+    advantages.reverse()
+    advantage_tensor = torch_module.stack(advantages)
+    return advantage_tensor + rollout_values, advantage_tensor
 
 
 def explained_variance(targets: Any, predictions: Any, torch_module: Any) -> float:
@@ -2539,7 +2603,17 @@ def build_manifest(
         "centralized_training_decentralized_execution": bool(centralized),
         "decentralized_actor_observation": True,
         "centralized_critic_uses_training_state_only": bool(centralized),
-        "advantage_snapshot_contract": "fixed_behavior_rollout_mc_v1",
+        "advantage_snapshot_contract": (
+            "fixed_behavior_rollout_gae_v1"
+            if str(getattr(args, "advantage_estimator", "mc")) == "gae"
+            else "fixed_behavior_rollout_mc_v1"
+        ),
+        "advantage_estimator": str(getattr(args, "advantage_estimator", "mc")),
+        "gae_lambda": (
+            float(getattr(args, "gae_lambda", 0.95))
+            if str(getattr(args, "advantage_estimator", "mc")) == "gae"
+            else None
+        ),
         "return_boundary_contract": "finite_horizon_terminal_zero_bootstrap",
         "logs_per_step_reward": True,
         "logs_episode_return": True,

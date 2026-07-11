@@ -1097,3 +1097,22 @@ def test_rollout_advantage_snapshot_is_detached_and_immutable() -> None:
     assert torch.equal(advantages, snapshot)
     assert float(advantages.mean()) == pytest.approx(0.0, abs=1e-6)
     assert float(advantages.std(unbiased=False)) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_finite_horizon_gae_lambda_one_matches_monte_carlo_returns() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    rewards = torch.tensor([[1.0, 0.0], [0.5, 2.0], [3.0, 1.0]])
+    rollout_values = torch.tensor([[0.4, 0.2], [0.3, 0.6], [0.8, 0.1]])
+
+    gae_returns, raw_advantages = module.generalized_advantage_estimate(
+        rewards,
+        rollout_values,
+        gamma=0.99,
+        gae_lambda=1.0,
+        torch_module=torch,
+    )
+    mc_returns = module.discounted_returns_2d(rewards, 0.99, torch)
+
+    assert torch.allclose(gae_returns, mc_returns, atol=1e-6, rtol=1e-6)
+    assert torch.allclose(raw_advantages, mc_returns - rollout_values, atol=1e-6, rtol=1e-6)
