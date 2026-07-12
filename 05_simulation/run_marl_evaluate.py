@@ -70,6 +70,7 @@ def parse_args() -> argparse.Namespace:
         "--beam-executor",
         choices=[
             "policy",
+            "uniform_random",
             "local_candidate_random",
             "candidate_score_proportional",
             "rule_candidate",
@@ -78,6 +79,7 @@ def parse_args() -> argparse.Namespace:
         default="policy",
         help=(
             "Beam execution rule. 'policy' uses neural beam actions; "
+            "'uniform_random' samples uniformly from every beam without using local memory; "
             "'local_candidate_random' samples uniformly from the same local candidate mask seen by the actor; "
             "'rule_candidate' keeps neural mode/gate actions but executes the "
             "beam through the local ISAC candidate/memory rule; "
@@ -846,6 +848,8 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
             mode = env._sim.select_mode(node, env._slot)
         if mode == MODE_IDLE:
             beam = 0
+        elif beam_executor == "uniform_random":
+            beam = uniform_random_beam(env, mode)
         elif beam_executor == "local_candidate_random":
             beam = local_candidate_random_beam(env, node, mode)
         elif beam_executor == "candidate_score_proportional":
@@ -860,6 +864,14 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
 
 def uniform_tx_rx_mode(env: MarlNeighborDiscoveryEnv) -> str:
     return MODE_TX if float(env._sim.rng.random()) < 0.5 else MODE_RX
+
+
+def uniform_random_beam(env: MarlNeighborDiscoveryEnv, mode: str) -> int:
+    """Sample from all beams without consulting observations or protocol memory."""
+
+    if mode == MODE_IDLE:
+        return 0
+    return int(env._sim.rng.integers(0, env.n_beams))
 
 
 def local_candidate_random_beam(env: MarlNeighborDiscoveryEnv, node: int, mode: str) -> int:

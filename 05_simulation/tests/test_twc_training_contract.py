@@ -1007,6 +1007,26 @@ def test_evaluation_uniform_mode_executor_has_no_hidden_state_dependency() -> No
     assert set(sampled).issubset({"tx", "rx"})
 
 
+def test_evaluation_uniform_beam_executor_ignores_candidate_memory() -> None:
+    module = load_evaluation_module()
+    cfg = replace(
+        load_config("05_simulation/configs/twc_planar_n10_b15_random20.yaml"),
+        n_nodes=1,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    env.reset(seed=20260714)
+    env._candidate_features_for = lambda _node: {
+        "mask": np.asarray([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
+        "score": np.asarray([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
+    }
+
+    sampled = [module.uniform_random_beam(env, "tx") for _ in range(200)]
+
+    assert set(sampled) == set(range(8))
+
+
 def test_stochastic_mappo_executor_samples_learned_probabilities_within_local_mask() -> None:
     module = load_beam_checkpoint_evaluation_module()
     observations = [
