@@ -1,0 +1,4 @@
+[submodule "05_simulation/third_party/marlbenchmark_offpolicy"]
+	path = 05_simulation/third_party/marlbenchmark_offpolicy
+	url = https://github.com/marlbenchmark/off-policy.git
+	branch = release

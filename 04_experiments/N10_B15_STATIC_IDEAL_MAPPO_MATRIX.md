@@ -41,12 +41,19 @@ not trained and must use the same configuration and evaluation seed.
 
 ## MATD3 Boundary
 
-The reference implementation is `marlbenchmark/off-policy`. Its MATD3 implementation extends
-MADDPG with twin critics and delayed actor updates. Integration is a separate branch because
-the current joint action is categorical (`TX/RX x beam`) and requires the reference code's
-discrete one-hot/Gumbel action path rather than a continuous-action TD3 interface. MATD3 does
-not block the three-arm MAPPO matrix and must be labeled as an adapted reference implementation
-if any environment or action adapter is added.
+The adapted reference uses the official `marlbenchmark/off-policy` implementation pinned at
+commit `41fd5eb46d12df2847e1c2e29842997ff2c24998`. Its MATD3 policy extends MADDPG with twin
+critics and delayed actor updates. The environment adapter uses the reference implementation's
+discrete one-hot/Gumbel path with two categorical heads (`TX/RX` and 24 beams). The actor sees
+only the clean local direct-ISAC observation, while its centralized training critic receives the
+concatenation of those local observations. Candidate masks, candidate scores, expert actions,
+the antisymmetric role head, and the measurement-prediction auxiliary are disabled.
+
+This arm is an algorithm reference rather than an architecture-controlled MAPPO ablation. The
+adapter and manifest explicitly record one correction to the upstream runner behavior: the
+trainer update counter is incremented so the official delayed-actor schedule actually advances.
+The formal MATD3 profile also uses 1000 episodes per seed, 300 slots per episode, three seeds,
+and 50 held-out evaluation episodes, but runs the seeds sequentially to limit CPU and memory.
 
 ## Commands
 
@@ -75,4 +82,20 @@ python 05_simulation/scripts/monitor_n10_b15_static_ideal_mappo_matrix.py `
   --profile formal `
   --run-root 05_simulation/results_raw/n10_b15_static_ideal_mappo_formal_3seed `
   --watch --interval-seconds 30
+```
+
+MATD3 formal:
+
+```powershell
+python 05_simulation/scripts/run_n10_b15_static_ideal_matd3_reference_matrix.py `
+  --profile formal `
+  --run-root 05_simulation/results_raw/n10_b15_static_ideal_matd3_reference_formal_3seed `
+  --torch-threads 1
+```
+
+MATD3 progress:
+
+```powershell
+python 05_simulation/scripts/monitor_n10_b15_static_ideal_matd3_reference_matrix.py `
+  --run-root 05_simulation/results_raw/n10_b15_static_ideal_matd3_reference_formal_3seed
 ```
