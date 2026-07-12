@@ -261,6 +261,21 @@ def parse_args() -> argparse.Namespace:
         default=False,
         help="Add local target-count, uncertainty, interaction, and residual-opportunity fields to beam tokens.",
     )
+    parser.add_argument(
+        "--measurement-feature-set",
+        choices=("none", "direct", "residual"),
+        default=None,
+        help=(
+            "Per-beam sensing inputs: direct uses anonymous count/variance/confidence only; "
+            "residual additionally uses interaction and residual-count features."
+        ),
+    )
+    parser.add_argument(
+        "--measurement-prediction-aux-coef",
+        type=float,
+        default=0.0,
+        help="Confidence-weighted local occupancy-prediction auxiliary coefficient.",
+    )
     parser.add_argument("--role-probability-floor", type=float, default=0.0)
     parser.add_argument("--beam-uniform-mixture", type=float, default=0.0)
     parser.add_argument("--rule-residual", action="store_true", help="Use local rule logits and beam priors as residual policy logits.")
@@ -366,6 +381,11 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         use_contention_mode_prior=contention_mode_prior_enabled(args),
         use_rendezvous_adapter=bool(getattr(args, "rendezvous_adapter", False)),
         use_residual_measurement_features=bool(getattr(args, "residual_measurement_features", False)),
+        measurement_feature_set=resolved_measurement_feature_set(args),
+        use_measurement_prediction_head=float(
+            getattr(args, "measurement_prediction_aux_coef", 0.0)
+        )
+        > 0.0,
         role_probability_floor=float(getattr(args, "role_probability_floor", 0.0)),
         beam_uniform_mixture=float(getattr(args, "beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_args(args),
@@ -556,6 +576,21 @@ def validate_args(args: argparse.Namespace) -> None:
         getattr(args, "separate_action_loss", False)
     ):
         raise ValueError("--beam-isac-feedback-coef requires --separate-action-loss.")
+    measurement_aux_coef = float(getattr(args, "measurement_prediction_aux_coef", 0.0))
+    if measurement_aux_coef < 0.0:
+        raise ValueError("--measurement-prediction-aux-coef must be nonnegative.")
+    measurement_feature_set = resolved_measurement_feature_set(args)
+    if measurement_feature_set == "direct" and str(getattr(args, "network", "")) != (
+        "recurrent_contention_shared"
+    ):
+        raise ValueError("Direct measurement features require recurrent_contention_shared.")
+    if measurement_aux_coef > 0.0:
+        if str(getattr(args, "network", "")) != "recurrent_contention_shared":
+            raise ValueError("Measurement prediction requires recurrent_contention_shared.")
+        if measurement_feature_set == "none":
+            raise ValueError("Measurement prediction requires direct or residual measurements.")
+        if bool(getattr(args, "disable_isac_features", False)):
+            raise ValueError("Measurement prediction is incompatible with disabled ISAC sensing.")
     if float(getattr(args, "gate_loss_coef", 0.25)) < 0.0:
         raise ValueError("--gate-loss-coef must be nonnegative.")
     if float(getattr(args, "role_balance_coef", 0.0)) < 0.0:
@@ -767,6 +802,19 @@ def resolved_feature_flags(args: argparse.Namespace) -> dict[str, bool]:
     }
 
 
+def resolved_measurement_feature_set(args: argparse.Namespace) -> str:
+    explicit = getattr(args, "measurement_feature_set", None)
+    legacy_residual = bool(getattr(args, "residual_measurement_features", False))
+    if explicit is None:
+        return "residual" if legacy_residual else "none"
+    resolved = str(explicit)
+    if legacy_residual and resolved != "residual":
+        raise ValueError(
+            "--residual-measurement-features conflicts with --measurement-feature-set."
+        )
+    return resolved
+
+
 def build_policy(
     network: str, *args: Any, **kwargs: Any
 ) -> (
@@ -781,6 +829,8 @@ def build_policy(
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", False))
     use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
     use_residual_measurement_features = bool(kwargs.pop("use_residual_measurement_features", False))
+    measurement_feature_set = kwargs.pop("measurement_feature_set", None)
+    use_measurement_prediction_head = bool(kwargs.pop("use_measurement_prediction_head", False))
     role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
     beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
     action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
@@ -817,6 +867,8 @@ def build_policy(
         kwargs["use_bounded_score_residual"] = use_bounded_score_residual
         kwargs["score_residual_max_logit"] = score_residual_max_logit
         kwargs["use_decoupled_role_tower"] = use_decoupled_role_tower
+        kwargs["measurement_feature_set"] = measurement_feature_set
+        kwargs["use_measurement_prediction_head"] = use_measurement_prediction_head
         return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)
@@ -869,6 +921,7 @@ def collect_trajectory(
     potential_shaping_rewards = []
     beam_isac_feedback_rows = []
     observations_by_step = []
+    next_observations_by_step = []
     actions_by_step = []
     expert_actions_by_step = []
     central_features = []
@@ -908,6 +961,7 @@ def collect_trajectory(
         action_diagnostics.update(rendezvous_pair_diagnostics(env, observations_by_step[-1], step.actions))
         accumulate_rendezvous_action_diagnostics(rendezvous_totals, action_diagnostics)
         next_observations, reward, _terminated, truncated, info = env.step(step.actions)
+        next_observations_by_step.append(copy_observations(next_observations))
         if (
             bool(getattr(args, "terminate_on_full_discovery", False))
             and len(env._sim.first_true_slot) > 0
@@ -1014,6 +1068,7 @@ def collect_trajectory(
         "seed": seed,
         "slots": len(rewards),
         "observations": observations_by_step,
+        "next_observations": next_observations_by_step,
         "actions": actions_by_step,
         "expert_actions": expert_actions_by_step,
         "old_log_probs": torch_module.stack([row.to(policy.device) for row in old_log_probs]),
@@ -1270,6 +1325,9 @@ def update_policy(
     beam_rank_aux_losses = []
     rendezvous_beam_aux_losses = []
     rendezvous_role_aux_losses = []
+    measurement_prediction_aux_losses = []
+    measurement_prediction_sample_counts = []
+    measurement_prediction_positive_fractions = []
     beam_active_fracs = []
     actor_grad_norms = []
     critic_grad_norms = []
@@ -1282,6 +1340,9 @@ def update_policy(
     beam_rank_aux_coef = float(getattr(args, "beam_rank_aux_coef", 0.0))
     rendezvous_beam_aux_coef = float(getattr(args, "rendezvous_beam_aux_coef", 0.0))
     rendezvous_role_aux_coef = float(getattr(args, "rendezvous_role_aux_coef", 0.0))
+    measurement_prediction_aux_coef = float(
+        getattr(args, "measurement_prediction_aux_coef", 0.0)
+    )
 
     if centralized:
         if critic is None:
@@ -1362,6 +1423,16 @@ def update_policy(
                 rendezvous_beam_aux_coef,
                 rendezvous_role_aux_coef,
             )
+            measurement_prediction_aux_loss, measurement_sample_count, measurement_positive_fraction = (
+                local_measurement_prediction_loss(
+                    policy,
+                    trajectory["actions"],
+                    trajectory["next_observations"],
+                    torch_module,
+                    log_probs,
+                    measurement_prediction_aux_coef,
+                )
+            )
             loss = (
                 policy_loss
                 + float(args.value_coef) * value_loss
@@ -1370,6 +1441,7 @@ def update_policy(
                 + beam_rank_aux_coef * beam_rank_aux_loss
                 + rendezvous_beam_aux_coef * rendezvous_beam_aux_loss
                 + rendezvous_role_aux_coef * rendezvous_role_aux_loss
+                + measurement_prediction_aux_coef * measurement_prediction_aux_loss
                 + float(getattr(args, "role_balance_coef", 0.0)) * role_balance_loss
             )
             optimizer.zero_grad()
@@ -1388,6 +1460,11 @@ def update_policy(
             beam_rank_aux_losses.append(float(beam_rank_aux_loss.item()))
             rendezvous_beam_aux_losses.append(float(rendezvous_beam_aux_loss.item()))
             rendezvous_role_aux_losses.append(float(rendezvous_role_aux_loss.item()))
+            measurement_prediction_aux_losses.append(
+                float(measurement_prediction_aux_loss.item())
+            )
+            measurement_prediction_sample_counts.append(float(measurement_sample_count))
+            measurement_prediction_positive_fractions.append(measurement_positive_fraction)
             beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
             log_ratio = log_probs - old_log_probs
             approx_kls.append(float(((torch_module.exp(log_ratio) - 1.0) - log_ratio).mean().detach().item()))
@@ -1423,6 +1500,9 @@ def update_policy(
             sample_log_ratio_means,
             role_balance_losses,
             mean_policy_tx_probabilities,
+            measurement_prediction_aux_losses,
+            measurement_prediction_sample_counts,
+            measurement_prediction_positive_fractions,
         )
 
     with torch_module.no_grad():
@@ -1490,6 +1570,16 @@ def update_policy(
             rendezvous_beam_aux_coef,
             rendezvous_role_aux_coef,
         )
+        measurement_prediction_aux_loss, measurement_sample_count, measurement_positive_fraction = (
+            local_measurement_prediction_loss(
+                policy,
+                trajectory["actions"],
+                trajectory["next_observations"],
+                torch_module,
+                log_probs,
+                measurement_prediction_aux_coef,
+            )
+        )
         loss = (
             policy_loss
             + float(args.value_coef) * value_loss
@@ -1498,6 +1588,7 @@ def update_policy(
             + beam_rank_aux_coef * beam_rank_aux_loss
             + rendezvous_beam_aux_coef * rendezvous_beam_aux_loss
             + rendezvous_role_aux_coef * rendezvous_role_aux_loss
+            + measurement_prediction_aux_coef * measurement_prediction_aux_loss
             + float(getattr(args, "role_balance_coef", 0.0)) * role_balance_loss
         )
         optimizer.zero_grad()
@@ -1513,6 +1604,9 @@ def update_policy(
         beam_rank_aux_losses.append(float(beam_rank_aux_loss.item()))
         rendezvous_beam_aux_losses.append(float(rendezvous_beam_aux_loss.item()))
         rendezvous_role_aux_losses.append(float(rendezvous_role_aux_loss.item()))
+        measurement_prediction_aux_losses.append(float(measurement_prediction_aux_loss.item()))
+        measurement_prediction_sample_counts.append(float(measurement_sample_count))
+        measurement_prediction_positive_fractions.append(measurement_positive_fraction)
         beam_active_fracs.append(float(trajectory["active_beam_mask"].float().mean().detach().item()))
         log_ratio = log_probs - old_log_probs
         approx_kls.append(float(((torch_module.exp(log_ratio) - 1.0) - log_ratio).mean().detach().item()))
@@ -1548,6 +1642,9 @@ def update_policy(
         sample_log_ratio_means,
         role_balance_losses,
         mean_policy_tx_probabilities,
+        measurement_prediction_aux_losses,
+        measurement_prediction_sample_counts,
+        measurement_prediction_positive_fractions,
     )
 
 
@@ -1828,6 +1925,74 @@ def optional_beam_ranking_aux_loss(
     if float(coefficient) <= 0.0:
         return zero_like.sum() * 0.0
     return beam_ranking_aux_loss(policy, observations_by_step, torch_module, temperature)
+
+
+def local_measurement_prediction_loss(
+    policy: SharedBeamActorCritic,
+    actions_by_step: Sequence[Sequence[Action]],
+    next_observations_by_step: Sequence[Sequence[dict[str, Any]]],
+    torch_module: Any,
+    zero_like: Any,
+    coefficient: float,
+) -> tuple[Any, int, float]:
+    """Decode fresh anonymous TX measurements without supplying action targets."""
+
+    zero = zero_like.sum() * 0.0
+    if float(coefficient) <= 0.0:
+        return zero, 0, 0.0
+    if not hasattr(policy, "measurement_occupancy_logits"):
+        raise ValueError("Measurement prediction requires a compatible recurrent policy.")
+    observations: list[dict[str, Any]] = []
+    beams: list[int] = []
+    targets: list[float] = []
+    weights: list[float] = []
+    for actions, next_observations in zip(
+        actions_by_step,
+        next_observations_by_step,
+        strict=True,
+    ):
+        for action, observation in zip(actions, next_observations, strict=True):
+            if action.mode != MODE_TX:
+                continue
+            beam = int(action.beam)
+            confidence = float(
+                np.asarray(observation["beam_measurement_confidence"], dtype=float)[beam]
+            )
+            age = float(np.asarray(observation["beam_age"], dtype=float)[beam])
+            target_count = float(np.asarray(observation["beam_target_count"], dtype=float)[beam])
+            if confidence <= 0.0 or age > 1.0e-8 or target_count < 0.0:
+                continue
+            observations.append(observation)
+            beams.append(beam)
+            targets.append(1.0 if target_count > 0.0 else 0.0)
+            weights.append(float(np.clip(confidence, 0.0, 1.0)))
+    if not observations:
+        return zero, 0, 0.0
+    logits = policy.measurement_occupancy_logits(observations)
+    rows = torch_module.arange(len(observations), device=policy.device)
+    beam_indices = torch_module.as_tensor(beams, dtype=torch_module.long, device=policy.device)
+    selected_logits = logits[rows, beam_indices]
+    target_tensor = torch_module.as_tensor(targets, dtype=torch_module.float32, device=policy.device)
+    weight_tensor = torch_module.as_tensor(weights, dtype=torch_module.float32, device=policy.device)
+    per_sample = torch_module.nn.functional.binary_cross_entropy_with_logits(
+        selected_logits,
+        target_tensor,
+        reduction="none",
+    )
+    positive = target_tensor > 0.5
+    negative = ~positive
+
+    def weighted_mean(mask: Any) -> Any:
+        selected_weight = weight_tensor[mask]
+        return (per_sample[mask] * selected_weight).sum() / selected_weight.sum().clamp_min(1.0e-8)
+
+    if bool(positive.any().item()) and bool(negative.any().item()):
+        loss = 0.5 * (weighted_mean(positive) + weighted_mean(negative))
+    elif bool(positive.any().item()):
+        loss = weighted_mean(positive)
+    else:
+        loss = weighted_mean(negative)
+    return loss, len(observations), float(target_tensor.mean().detach().item())
 
 
 def beam_ranking_aux_loss(
@@ -2497,6 +2662,9 @@ def loss_summary(
     sample_log_ratio_means: list[float] | None = None,
     role_balance_losses: list[float] | None = None,
     mean_policy_tx_probabilities: list[float] | None = None,
+    measurement_prediction_aux_losses: list[float] | None = None,
+    measurement_prediction_sample_counts: list[float] | None = None,
+    measurement_prediction_positive_fractions: list[float] | None = None,
 ) -> dict[str, float]:
     return {
         "policy_loss": float(np.mean(policy_losses)),
@@ -2515,6 +2683,21 @@ def loss_summary(
         "rendezvous_role_aux_loss": float(np.mean(rendezvous_role_aux_losses))
         if rendezvous_role_aux_losses
         else 0.0,
+        "measurement_prediction_aux_loss": (
+            float(np.mean(measurement_prediction_aux_losses))
+            if measurement_prediction_aux_losses
+            else 0.0
+        ),
+        "measurement_prediction_sample_count": (
+            float(np.mean(measurement_prediction_sample_counts))
+            if measurement_prediction_sample_counts
+            else 0.0
+        ),
+        "measurement_prediction_positive_fraction": (
+            float(np.mean(measurement_prediction_positive_fractions))
+            if measurement_prediction_positive_fractions
+            else 0.0
+        ),
         "beam_active_fraction": float(np.mean(beam_active_fracs)) if beam_active_fracs else 0.0,
         "actor_grad_norm": float(np.mean(actor_grad_norms)) if actor_grad_norms else 0.0,
         "critic_grad_norm": float(np.mean(critic_grad_norms)) if critic_grad_norms else 0.0,
@@ -2541,6 +2724,14 @@ def training_contract_version(args: argparse.Namespace) -> str:
         str(getattr(args, "action_contract", "joint_role_beam")) == "joint_role_beam"
         and str(getattr(args, "network", "")) == "recurrent_contention_shared"
     ):
+        measurement_feature_set = resolved_measurement_feature_set(args)
+        if float(getattr(args, "measurement_prediction_aux_coef", 0.0)) > 0.0:
+            return (
+                f"joint_role_beam_recurrent_local_{measurement_feature_set}_"
+                "measurement_prediction_v4"
+            )
+        if measurement_feature_set != "none":
+            return f"joint_role_beam_recurrent_local_{measurement_feature_set}_measurement_v3"
         return "joint_role_beam_recurrent_local_v2"
     if is_beam_only_action_contract(
         str(getattr(args, "action_contract", "joint_role_beam"))
@@ -2560,8 +2751,23 @@ def architecture_version(args: argparse.Namespace) -> str:
     critic = str(getattr(args, "critic_network", "pooled"))
     contract = str(getattr(args, "action_contract", "joint_role_beam"))
     role_factorization = str(getattr(args, "role_factorization", "independent"))
+    measurement_feature_set = resolved_measurement_feature_set(args)
+    measurement_feature_suffix = (
+        f"_{measurement_feature_set}_measurement_features_v1"
+        if measurement_feature_set != "none"
+        else ""
+    )
+    measurement_suffix = (
+        "_measurement_prediction_v1"
+        if float(getattr(args, "measurement_prediction_aux_coef", 0.0)) > 0.0
+        else ""
+    )
     if actor == "recurrent_contention_shared" and role_factorization == "beam_conditioned_antisymmetric":
-        return f"joint_antisymmetric_beam_conditioned_role_recurrent_{critic}_direction_v1"
+        return (
+            f"joint_antisymmetric_beam_conditioned_role_recurrent_{critic}_direction_v1"
+            f"{measurement_feature_suffix}"
+            f"{measurement_suffix}"
+        )
     if (
         actor == "recurrent_contention_shared"
         and role_factorization != "independent"
@@ -2865,6 +3071,14 @@ def build_manifest(
         "beam_loss_coef": float(getattr(args, "beam_loss_coef", 1.0)),
         "beam_isac_feedback_coef": float(getattr(args, "beam_isac_feedback_coef", 0.0)),
         "beam_isac_feedback_contract": "local_post_tx_anonymous_occupancy_v1",
+        "measurement_prediction_aux": {
+            "coefficient": float(getattr(args, "measurement_prediction_aux_coef", 0.0)),
+            "target": "fresh_local_post_tx_anonymous_occupancy_v1",
+            "confidence_weighted": True,
+            "positive_negative_balanced_per_episode": True,
+            "changes_environment_reward": False,
+            "role_head_gradient_access": False,
+        },
         "role_balance_regularizer": {
             "coefficient": float(getattr(args, "role_balance_coef", 0.0)),
             "target_mean_tx_probability": 0.5,
@@ -2883,6 +3097,7 @@ def build_manifest(
             training_contract_version(args) if bool(getattr(args, "clean_ctde", False)) else "legacy_local_features"
         ),
         "residual_measurement_features": bool(getattr(args, "residual_measurement_features", False)),
+        "measurement_feature_set": resolved_measurement_feature_set(args),
         "stochastic_support": {
             "role_probability_floor": float(getattr(args, "role_probability_floor", 0.0)),
             "beam_uniform_mixture": float(getattr(args, "beam_uniform_mixture", 0.0)),

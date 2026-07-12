@@ -1520,6 +1520,125 @@ def test_local_isac_feedback_is_signed_for_tx_and_zero_for_rx() -> None:
     assert feedback[2] == 0.0
 
 
+def test_direct_measurement_features_exclude_interaction_and_residual_fields() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(
+        load_config("05_simulation/configs/sanity_planar_n2_b45_ideal.yaml"),
+        n_nodes=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    observations, _ = env.reset(seed=20260901)
+    base = observations[0]
+    changed = {key: value.copy() if hasattr(value, "copy") else value for key, value in base.items()}
+    changed["beam_interaction_count"][:] = 7.0
+    changed["beam_residual_target_count"][:] = 9.0
+    direct = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        measurement_feature_set="direct",
+        disabled_modes=("sense", "idle"),
+        action_contract="joint_role_beam",
+    )
+    residual = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        measurement_feature_set="residual",
+        disabled_modes=("sense", "idle"),
+        action_contract="joint_role_beam",
+    )
+
+    with torch.no_grad():
+        _mode, direct_base, _value = direct.logits_value(base)
+        _mode, direct_changed, _value = direct.logits_value(changed)
+        _mode, residual_base, _value = residual.logits_value(base)
+        _mode, residual_changed, _value = residual.logits_value(changed)
+
+    assert direct.model.beam_linear.in_features == 14
+    assert residual.model.beam_linear.in_features == 16
+    assert torch.allclose(direct_base, direct_changed)
+    assert not torch.allclose(residual_base, residual_changed)
+
+
+def test_local_measurement_prediction_uses_fresh_tx_only_and_isolates_role_gradient() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    cfg = load_config("05_simulation/configs/sanity_planar_n2_b45_ideal.yaml")
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    observations, _ = env.reset(seed=20260902)
+    next_observations = [
+        {key: value.copy() if hasattr(value, "copy") else value for key, value in observation.items()}
+        for observation in observations
+    ]
+    positive_beam = 2
+    negative_beam = 5
+    for node, beam, count in ((0, positive_beam, 1.0), (1, negative_beam, 0.0)):
+        next_observations[node]["beam_target_count"][beam] = count
+        next_observations[node]["beam_target_count_variance"][beam] = 0.0
+        next_observations[node]["beam_measurement_confidence"][beam] = 0.8 + 0.1 * node
+        next_observations[node]["beam_age"][beam] = 0.0
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        measurement_feature_set="direct",
+        use_measurement_prediction_head=True,
+        disabled_modes=("sense", "idle"),
+        action_contract="joint_role_beam",
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+        use_decoupled_role_tower=True,
+        role_factorization="beam_conditioned_antisymmetric",
+    )
+    loss, samples, positive_fraction = module.local_measurement_prediction_loss(
+        policy,
+        [[Action("tx", positive_beam), Action("tx", negative_beam)]],
+        [next_observations],
+        torch,
+        torch.zeros((), dtype=torch.float32),
+        coefficient=0.1,
+    )
+
+    loss.backward()
+
+    assert samples == 2
+    assert positive_fraction == pytest.approx(0.5)
+    assert float(loss.detach()) > 0.0
+    assert policy.model.measurement_occupancy_head.weight.grad is not None
+    assert policy.model.beam_linear.weight.grad is not None
+    assert policy.model.role_direction_axis.grad is None
+
+
+def test_local_measurement_prediction_rejects_stale_and_rx_measurements() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_training_module()
+    cfg = load_config("05_simulation/configs/sanity_planar_n2_b45_ideal.yaml")
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="improved_rl_isac_tables")
+    observations, _ = env.reset(seed=20260903)
+    for observation in observations:
+        observation["beam_target_count"][0] = 1.0
+        observation["beam_measurement_confidence"][0] = 1.0
+    observations[0]["beam_age"][0] = 1.0 / cfg.slots_per_episode
+    observations[1]["beam_age"][0] = 0.0
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        measurement_feature_set="direct",
+        use_measurement_prediction_head=True,
+    )
+
+    loss, samples, positive_fraction = module.local_measurement_prediction_loss(
+        policy,
+        [[Action("tx", 0), Action("rx", 0)]],
+        [observations],
+        torch,
+        torch.zeros((), dtype=torch.float32),
+        coefficient=0.1,
+    )
+
+    assert samples == 0
+    assert positive_fraction == 0.0
+    assert float(loss.detach()) == 0.0
+
+
 def test_role_balance_regularizer_allows_heterogeneous_local_probabilities() -> None:
     torch = pytest.importorskip("torch")
     module = load_training_module()

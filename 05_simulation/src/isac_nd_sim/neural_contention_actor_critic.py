@@ -17,8 +17,28 @@ ACTION_CONTRACTS = ("joint_role_beam", "beam_only_fixed_role")
 class ContentionFeatures:
     contention_dim: int = 10
     beam_dim: int = 8
+    direct_measurement_beam_dim: int = 11
     residual_beam_dim: int = 13
     candidate_stats_dim: int = 4
+
+
+MEASUREMENT_FEATURE_SETS = ("none", "direct", "residual")
+
+
+def resolve_measurement_feature_set(
+    measurement_feature_set: str | None,
+    use_residual_measurement_features: bool,
+) -> str:
+    resolved = (
+        str(measurement_feature_set)
+        if measurement_feature_set is not None
+        else ("residual" if use_residual_measurement_features else "none")
+    )
+    if resolved not in MEASUREMENT_FEATURE_SETS:
+        raise ValueError(f"measurement_feature_set must be one of {MEASUREMENT_FEATURE_SETS}.")
+    if use_residual_measurement_features and resolved != "residual":
+        raise ValueError("Legacy residual measurement features conflict with measurement_feature_set.")
+    return resolved
 
 
 class ContentionGraphActorCritic:
@@ -718,7 +738,12 @@ def observation_to_contention_tensors(
     n_beams: int,
     *,
     use_residual_measurement_features: bool = False,
+    measurement_feature_set: str | None = None,
 ) -> dict:
+    measurement_feature_set = resolve_measurement_feature_set(
+        measurement_feature_set,
+        use_residual_measurement_features,
+    )
     observed_beams = len(observation["beam_belief"])
     candidate_score = np.asarray(observation.get("candidate_score", np.zeros(observed_beams)), dtype=np.float32)
     beam_collision = np.log1p(np.asarray(observation.get("beam_collision", np.zeros(observed_beams)), dtype=np.float32))
@@ -740,7 +765,7 @@ def observation_to_contention_tensors(
         uncertainty.astype(np.float32, copy=False),
         np.asarray(observation.get("candidate_mask", np.zeros(observed_beams)), dtype=np.float32),
     ]
-    if use_residual_measurement_features:
+    if measurement_feature_set in {"direct", "residual"}:
         feature_columns.extend(
             [
                 np.asarray(observation.get("beam_target_count", np.zeros(observed_beams)), dtype=np.float32),
@@ -750,6 +775,11 @@ def observation_to_contention_tensors(
                 np.asarray(
                     observation.get("beam_measurement_confidence", np.zeros(observed_beams)), dtype=np.float32
                 ),
+            ]
+        )
+    if measurement_feature_set == "residual":
+        feature_columns.extend(
+            [
                 np.asarray(observation.get("beam_interaction_count", np.zeros(observed_beams)), dtype=np.float32),
                 np.asarray(
                     observation.get("beam_residual_target_count", np.zeros(observed_beams)), dtype=np.float32
@@ -818,6 +848,7 @@ def observations_to_batched_contention_tensors(
     n_beams: int,
     *,
     use_residual_measurement_features: bool = False,
+    measurement_feature_set: str | None = None,
 ) -> dict:
     tensors = [
         observation_to_contention_tensors(
@@ -826,6 +857,7 @@ def observations_to_batched_contention_tensors(
             torch_module,
             n_beams,
             use_residual_measurement_features=use_residual_measurement_features,
+            measurement_feature_set=measurement_feature_set,
         )
         for observation in observations
     ]

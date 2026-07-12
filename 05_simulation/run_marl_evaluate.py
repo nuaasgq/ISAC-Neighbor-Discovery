@@ -239,6 +239,11 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_contention_mode_prior=use_contention_mode_prior,
         use_rendezvous_adapter=checkpoint_rendezvous_adapter,
         use_residual_measurement_features=bool(train_args.get("residual_measurement_features", False)),
+        measurement_feature_set=train_args.get("measurement_feature_set"),
+        use_measurement_prediction_head=float(
+            train_args.get("measurement_prediction_aux_coef", 0.0)
+        )
+        > 0.0,
         role_probability_floor=float(train_args.get("role_probability_floor", 0.0)),
         beam_uniform_mixture=float(train_args.get("beam_uniform_mixture", 0.0)),
         disabled_modes=disabled_modes_from_flags(forbid_sense, forbid_idle),
@@ -350,6 +355,15 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "contention_mode_prior": use_contention_mode_prior,
         "checkpoint_rendezvous_adapter": checkpoint_rendezvous_adapter,
         "residual_measurement_features": bool(train_args.get("residual_measurement_features", False)),
+        "measurement_feature_set": str(
+            train_args.get(
+                "measurement_feature_set",
+                "residual" if train_args.get("residual_measurement_features", False) else "none",
+            )
+        ),
+        "measurement_prediction_aux_coef": float(
+            train_args.get("measurement_prediction_aux_coef", 0.0)
+        ),
         "stochastic_support": {
             "role_probability_floor": float(train_args.get("role_probability_floor", 0.0)),
             "beam_uniform_mixture": float(train_args.get("beam_uniform_mixture", 0.0)),
@@ -531,6 +545,8 @@ def build_policy(
     use_contention_mode_prior = bool(kwargs.pop("use_contention_mode_prior", True))
     use_rendezvous_adapter = bool(kwargs.pop("use_rendezvous_adapter", False))
     use_residual_measurement_features = bool(kwargs.pop("use_residual_measurement_features", False))
+    measurement_feature_set = kwargs.pop("measurement_feature_set", None)
+    use_measurement_prediction_head = bool(kwargs.pop("use_measurement_prediction_head", False))
     role_probability_floor = float(kwargs.pop("role_probability_floor", 0.0))
     beam_uniform_mixture = float(kwargs.pop("beam_uniform_mixture", 0.0))
     action_contract = str(kwargs.pop("action_contract", "joint_role_beam"))
@@ -563,6 +579,8 @@ def build_policy(
         kwargs["use_bounded_score_residual"] = use_bounded_score_residual
         kwargs["score_residual_max_logit"] = score_residual_max_logit
         kwargs["use_decoupled_role_tower"] = use_decoupled_role_tower
+        kwargs["measurement_feature_set"] = measurement_feature_set
+        kwargs["use_measurement_prediction_head"] = use_measurement_prediction_head
         return RecurrentContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "gated_contention_shared":
         return GatedContentionGraphActorCritic(*args, **kwargs)

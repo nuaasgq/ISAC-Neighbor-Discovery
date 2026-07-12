@@ -11,6 +11,7 @@ from .neural_contention_actor_critic import (
     ContentionGraphActorCritic,
     _temperature_scaled_logits,
     observations_to_batched_contention_tensors,
+    resolve_measurement_feature_set,
 )
 from .neural_shared_actor_critic import PolicyStep
 from .simulator import Action
@@ -32,6 +33,8 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         use_contention_mode_prior: bool = False,
         use_rendezvous_adapter: bool = False,
         use_residual_measurement_features: bool = False,
+        measurement_feature_set: str | None = None,
+        use_measurement_prediction_head: bool = False,
         role_probability_floor: float = 0.0,
         beam_uniform_mixture: float = 0.0,
         use_access_gate: bool = False,
@@ -104,7 +107,14 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.rule_residual_scale = float(rule_residual_scale)
         self.use_contention_mode_prior = False
         self.use_rendezvous_adapter = False
-        self.use_residual_measurement_features = bool(use_residual_measurement_features)
+        self.measurement_feature_set = resolve_measurement_feature_set(
+            measurement_feature_set,
+            bool(use_residual_measurement_features),
+        )
+        self.use_residual_measurement_features = self.measurement_feature_set == "residual"
+        self.use_measurement_prediction_head = bool(use_measurement_prediction_head)
+        if self.use_measurement_prediction_head and self.measurement_feature_set == "none":
+            raise ValueError("The measurement prediction head requires direct or residual measurements.")
         self.role_probability_floor = float(role_probability_floor)
         self.beam_uniform_mixture = float(beam_uniform_mixture)
         self.use_access_gate = False
@@ -132,7 +142,8 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.model = _RecurrentContentionGraphActorCriticModule(
             self.n_beams,
             self.hidden_dim,
-            self.use_residual_measurement_features,
+            self.measurement_feature_set,
+            self.use_measurement_prediction_head,
             self.azimuth_cells,
             self.elevation_cells,
             self.use_candidate_score_prior,
@@ -391,6 +402,20 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             )
         return {key: torch.stack(value) for key, value in rows.items()}
 
+    def measurement_occupancy_logits(self, observations: Sequence[dict]):
+        if not self.use_measurement_prediction_head:
+            raise RuntimeError("The measurement prediction head is disabled.")
+        tensors = observations_to_batched_contention_tensors(
+            observations,
+            self.device,
+            self.torch,
+            self.n_beams,
+            measurement_feature_set=self.measurement_feature_set,
+        )
+        tensors = self._prepare_tensors(tensors)
+        beam_tokens, _beam_inputs = self.model.encode_beam_tokens(tensors)
+        return self.model.measurement_occupancy_head(beam_tokens).squeeze(-1)
+
     def _selected_mode_logits(self, mode_logits, beam_indices):
         if mode_logits.ndim == 2:
             return mode_logits
@@ -442,7 +467,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
             self.device,
             self.torch,
             self.n_beams,
-            use_residual_measurement_features=self.use_residual_measurement_features,
+            measurement_feature_set=self.measurement_feature_set,
         )
         tensors = self._prepare_tensors(tensors)
         mode_logits, beam_logits, value, next_state = self.model(tensors, recurrent_state)
@@ -472,7 +497,8 @@ class _RecurrentContentionGraphActorCriticModule:
         cls,
         n_beams: int,
         hidden_dim: int,
-        use_residual_measurement_features: bool,
+        measurement_feature_set: str,
+        use_measurement_prediction_head: bool,
         azimuth_cells: int,
         elevation_cells: int,
         use_candidate_score_prior: bool,
@@ -488,7 +514,12 @@ class _RecurrentContentionGraphActorCriticModule:
         import torch.nn.functional as functional
 
         dims = ContentionFeatures()
-        beam_dim = (dims.residual_beam_dim if use_residual_measurement_features else dims.beam_dim) + 3
+        measurement_dims = {
+            "none": dims.beam_dim,
+            "direct": dims.direct_measurement_beam_dim,
+            "residual": dims.residual_beam_dim,
+        }
+        beam_dim = measurement_dims[measurement_feature_set] + 3
 
         class BeamGridResidualBlock(nn.Module):
             def __init__(self, channels: int):
@@ -556,6 +587,9 @@ class _RecurrentContentionGraphActorCriticModule:
                 self.recurrent_cell = nn.GRUCell(hidden_dim, hidden_dim)
                 self.beam_query = nn.Linear(hidden_dim, hidden_dim)
                 self.beam_bias = nn.Linear(hidden_dim, 1)
+                self.measurement_occupancy_head = (
+                    nn.Linear(hidden_dim, 1) if use_measurement_prediction_head else None
+                )
                 self.value_head = nn.Linear(hidden_dim, 1)
                 self.role_encoder = None
                 self.role_beam_encoder = None
@@ -615,7 +649,7 @@ class _RecurrentContentionGraphActorCriticModule:
                         torch.tensor(float(np.log(initial_fraction / (1.0 - initial_fraction))))
                     )
 
-            def forward(self, tensors: dict[str, torch.Tensor], recurrent_state: torch.Tensor):
+            def encode_beam_tokens(self, tensors: dict[str, torch.Tensor]):
                 directions = self.beam_center_directions.unsqueeze(0).expand(
                     tensors["beam_features"].shape[0], -1, -1
                 )
@@ -627,6 +661,10 @@ class _RecurrentContentionGraphActorCriticModule:
                 beam_tokens = self.beam_convolution(beam_grid).reshape(
                     beam_tokens.shape[0], self.n_beams, self.hidden_dim
                 )
+                return beam_tokens, beam_inputs
+
+            def forward(self, tensors: dict[str, torch.Tensor], recurrent_state: torch.Tensor):
+                beam_tokens, beam_inputs = self.encode_beam_tokens(tensors)
                 beam_context = beam_tokens.mean(dim=1)
                 contention = self.contention_encoder(tensors["contention_state"])
                 context_input = torch.cat(
