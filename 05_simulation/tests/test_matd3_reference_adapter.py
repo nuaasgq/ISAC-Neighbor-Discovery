@@ -69,3 +69,14 @@ def test_matd3_multidiscrete_decoder_maps_two_action_heads() -> None:
     actions = module.decode_multidiscrete_actions(encoded)
 
     assert [(action.mode, action.beam) for action in actions] == [("tx", 7), ("rx", 19)]
+
+
+def test_metric_writer_accepts_training_fields_that_appear_later(tmp_path: Path) -> None:
+    module = load_adapter()
+    output = tmp_path / "metrics.csv"
+
+    module.write_rows(output, [{"episode": 0}, {"episode": 1, "critic_loss": 0.25}])
+
+    text = output.read_text(encoding="utf-8")
+    assert "critic_loss" in text.splitlines()[0]
+    assert "0.25" in text

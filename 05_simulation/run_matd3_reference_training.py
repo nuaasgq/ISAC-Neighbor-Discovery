@@ -122,8 +122,15 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0])
+    known = set(fieldnames)
+    for row in rows[1:]:
+        for field in row:
+            if field not in known:
+                fieldnames.append(field)
+                known.add(field)
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
