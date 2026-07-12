@@ -1,0 +1,4 @@
+factorization,training_seed_1_discovery_rate,training_seed_2_discovery_rate,training_seed_3_discovery_rate,mean_discovery_rate,t95_low,t95_high,mean_beam_alignment_rate_active,mean_aligned_role_complementarity_rate,mean_handshake_success_conversion_rate,mean_tx_ratio
+independent,0.060,0.095,0.110,0.088333,0.024595,0.152071,0.017055,0.343005,1.0,0.432188
+beam_conditioned,0.000,0.205,0.135,0.113333,-0.145522,0.372189,0.016612,0.487377,1.0,0.326094
+beam_conditioned_antisymmetric,0.190,0.170,0.170,0.176667,0.147982,0.205351,0.015926,0.762456,1.0,0.505938

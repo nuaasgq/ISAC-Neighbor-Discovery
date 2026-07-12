@@ -44,6 +44,7 @@ SEED_METRICS = (
     "handshake_success_conversion_rate_ratio_of_sums",
 )
 T_CRITICAL_95_DF2 = 4.302652729696142
+T_CRITICAL_95 = {1: 12.706204736432095, 2: T_CRITICAL_95_DF2}
 
 
 def parse_args() -> argparse.Namespace:
@@ -214,18 +215,27 @@ def load_matrix(
 
 
 def t_interval(values: Iterable[float]) -> tuple[float, float, float, float]:
-    data = tuple(float(value) for value in values)
-    require(len(data) == 3, "The predeclared t interval requires exactly three training seeds.")
+    data = tuple(float(value) for value in values if math.isfinite(float(value)))
+    if not data:
+        return math.nan, math.nan, math.nan, math.nan
     center = mean(data)
+    if len(data) == 1:
+        return center, math.nan, math.nan, math.nan
     sd = stdev(data)
-    half_width = T_CRITICAL_95_DF2 * sd / math.sqrt(3.0)
+    half_width = T_CRITICAL_95[len(data) - 1] * sd / math.sqrt(float(len(data)))
     return center, sd, center - half_width, center + half_width
 
 
 def bootstrap_interval(values: Iterable[float], replicates: int, rng: np.random.Generator) -> tuple[float, float]:
-    data = np.asarray(tuple(float(value) for value in values), dtype=float)
-    require(data.size == 3, "The paired bootstrap requires exactly three training seeds.")
+    data = np.asarray(
+        tuple(float(value) for value in values if math.isfinite(float(value))),
+        dtype=float,
+    )
     require(replicates >= 1000, "--bootstrap-replicates must be at least 1000.")
+    if data.size == 0:
+        return math.nan, math.nan
+    if data.size == 1:
+        return float(data[0]), float(data[0])
     indices = rng.integers(0, data.size, size=(replicates, data.size))
     samples = data[indices].mean(axis=1)
     low, high = np.quantile(samples, (0.025, 0.975))
@@ -318,6 +328,7 @@ def summarize(
                     "factorization": factorization,
                     "metric": metric,
                     "training_seeds": 3,
+                    "defined_training_seeds": sum(math.isfinite(value) for value in values),
                     "mean": center,
                     "sd_across_training_seeds": sd,
                     "t95_low": low,
@@ -341,13 +352,18 @@ def summarize(
                     "contrast": f"{comparator}-minus-independent",
                     "metric": metric,
                     "paired_training_seeds": 3,
+                    "defined_paired_training_seeds": sum(
+                        math.isfinite(delta) for delta in deltas
+                    ),
                     "mean_paired_delta": center,
                     "sd_paired_delta": sd,
                     "paired_t95_low": low,
                     "paired_t95_high": high,
                     "paired_bootstrap95_low": bootstrap_low,
                     "paired_bootstrap95_high": bootstrap_high,
-                    "positive_seed_deltas": sum(delta > 0.0 for delta in deltas),
+                    "positive_seed_deltas": sum(
+                        delta > 0.0 for delta in deltas if math.isfinite(delta)
+                    ),
                     "seed_deltas": json.dumps(deltas),
                 }
             )
@@ -461,6 +477,61 @@ def plot_evaluation(per_seed: list[dict[str, Any]], seeds: tuple[int, int, int],
     save_figure(figure, output, "evaluation_discovery_summary")
 
 
+def plot_coordination_funnel(
+    per_seed: list[dict[str, Any]],
+    seeds: tuple[int, int, int],
+    output: Path,
+) -> None:
+    configure_plot()
+    by_key = {(str(row["factorization"]), int(row["training_seed"])): row for row in per_seed}
+    metrics = (
+        ("beam_alignment_rate_active_ratio_of_sums", "Bilateral alignment (%)", (0.0, 2.5)),
+        ("aligned_role_complementarity_rate_ratio_of_sums", "Complementary role after alignment (%)", (0.0, 100.0)),
+    )
+    figure, axes = plt.subplots(1, 2, figsize=(4.0, 3.0))
+    x = np.arange(len(FACTORIZATIONS))
+    offsets = np.asarray((-0.05, 0.0, 0.05))
+    for axis, (metric, ylabel, ylim) in zip(axes, metrics):
+        data = {
+            factorization: np.asarray(
+                [100.0 * float(by_key[(factorization, seed)][metric]) for seed in seeds]
+            )
+            for factorization in FACTORIZATIONS
+        }
+        centers = [float(data[factorization].mean()) for factorization in FACTORIZATIONS]
+        axis.bar(
+            x,
+            centers,
+            color=[COLORS[factorization] for factorization in FACTORIZATIONS],
+            width=0.62,
+            edgecolor="#333333",
+            linewidth=0.5,
+            zorder=2,
+        )
+        for seed_index, _seed in enumerate(seeds):
+            values = [data[factorization][seed_index] for factorization in FACTORIZATIONS]
+            axis.plot(
+                x + offsets[seed_index],
+                values,
+                color="#555555",
+                alpha=0.6,
+                linewidth=0.7,
+                zorder=3,
+            )
+            axis.scatter(
+                x + offsets[seed_index],
+                values,
+                color="#222222",
+                s=11,
+                zorder=4,
+            )
+        axis.set_xticks(x, ("Ind.", "Cond.", "Anti."), rotation=10)
+        axis.set_ylabel(ylabel)
+        axis.set_ylim(*ylim)
+        axis.grid(True, axis="y", color="#D9D9D9", linewidth=0.6, zorder=1)
+    save_figure(figure, output, "evaluation_coordination_funnel")
+
+
 def write_report(
     output: Path,
     manifests: dict[tuple[str, int], dict[str, Any]],
@@ -566,6 +637,7 @@ def main() -> None:
     write_csv(output / "paired_evaluation_rows.csv", paired_eval)
     plot_training(training, seeds, args.rolling_window, output)
     plot_evaluation(per_seed, seeds, output)
+    plot_coordination_funnel(per_seed, seeds, output)
     write_report(output, manifests, aggregate, contrasts)
     contract = {
         "run_root": str(run_root),
