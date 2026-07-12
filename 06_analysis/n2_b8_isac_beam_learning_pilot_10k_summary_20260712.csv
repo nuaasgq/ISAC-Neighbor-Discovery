@@ -1,0 +1,5 @@
+method,seed_39260711_discovery,seed_39261720_discovery,seed_39262729_discovery,mean_discovery,mean_beam_alignment_rate_active,mean_aligned_role_complementarity_rate,mean_tx_ratio
+random_beam_antisymmetric_role,0.17,0.16,0.16,0.163333,0.014793,0.742769,0.496354
+learned_beam_no_isac,0.15,0.17,0.19,0.170000,0.015038,0.759834,0.454062
+learned_beam_raw_isac,0.79,0.17,0.20,0.386667,0.037272,0.847343,0.473125
+learned_beam_raw_isac_local_credit,0.20,0.07,0.08,0.116667,0.009119,0.856522,0.143021
