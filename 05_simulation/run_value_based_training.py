@@ -27,8 +27,10 @@ from isac_nd_sim.value_decomposition import (  # noqa: E402
     JointReplayBuffer,
     JointTransition,
     ValueDecompositionLearner,
+    is_beam_only_action_contract,
     requires_global_training_state,
     select_beam_only_actions,
+    select_beam_only_complementary_actions,
     select_candidate_score_actions,
     select_local_actions,
 )
@@ -54,7 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--node-count", type=int, default=None)
     parser.add_argument("--azimuth-cells", type=int, default=None)
     parser.add_argument("--elevation-cells", type=int, default=None)
-    parser.add_argument("--sensing-measurement-mode", choices=SENSING_MEASUREMENT_MODES, default="noisy_count")
+    parser.add_argument("--sensing-measurement-mode", choices=SENSING_MEASUREMENT_MODES, default=None)
     parser.add_argument("--env-protocol", default="improved_rl_isac_tables")
     parser.add_argument("--candidate-source", default="residual_table")
     parser.add_argument("--reward-version", default="discovery_first")
@@ -77,9 +79,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gradient-clip", type=float, default=10.0)
     parser.add_argument("--torch-threads", type=int, default=1)
     parser.add_argument("--resource-log-period", type=int, default=100)
+    parser.add_argument("--flush-interval-episodes", type=int, default=1)
     parser.add_argument("--max-rss-mb", type=float, default=4096.0)
     parser.add_argument("--max-system-memory-percent", type=float, default=85.0)
     parser.add_argument("--eval-only-checkpoint", type=Path, default=None)
+    parser.add_argument(
+        "--training-scenario-mode",
+        choices=("varying", "fixed"),
+        default="varying",
+    )
+    parser.add_argument(
+        "--evaluation-scenario-mode",
+        choices=("held_out", "fixed"),
+        default="held_out",
+    )
+    parser.add_argument("--terminate-on-full-discovery", action="store_true")
+    parser.add_argument("--evaluation-profile", choices=("full", "gate"), default="full")
     return parser.parse_args()
 
 
@@ -93,6 +108,7 @@ def validate_args(args: argparse.Namespace) -> None:
         "update_interval",
         "target_update_interval",
         "epsilon_decay_steps",
+        "flush_interval_episodes",
     )
     for name in positive_ints:
         if int(getattr(args, name)) <= 0:
@@ -113,9 +129,10 @@ def resolved_config(args: argparse.Namespace):
         "episodes": int(args.episodes),
         "slots_per_episode": int(args.slots),
         "seed": int(args.seed),
-        "sensing_measurement_mode": str(args.sensing_measurement_mode),
         "rendezvous_observation_enabled": False,
     }
+    if args.sensing_measurement_mode is not None:
+        replacements["sensing_measurement_mode"] = str(args.sensing_measurement_mode)
     if args.node_count is not None:
         replacements["n_nodes"] = int(args.node_count)
     if args.azimuth_cells is not None:
@@ -123,6 +140,22 @@ def resolved_config(args: argparse.Namespace):
     if args.elevation_cells is not None:
         replacements["elevation_cells"] = int(args.elevation_cells)
     return replace(cfg, **replacements)
+
+
+def training_scenario_seed(args: argparse.Namespace, episode: int) -> int:
+    if str(getattr(args, "training_scenario_mode", "varying")) == "fixed":
+        return int(args.seed)
+    return int(args.seed) + int(episode)
+
+
+def evaluation_scenario_seed(args: argparse.Namespace, eval_episode: int) -> int:
+    if str(getattr(args, "evaluation_scenario_mode", "held_out")) == "fixed":
+        return int(args.seed)
+    return int(args.seed) + 2_000_000 + int(eval_episode)
+
+
+def evaluation_policy_seed(args: argparse.Namespace, eval_episode: int) -> int:
+    return int(args.seed) + 3_000_000 + int(eval_episode)
 
 
 def epsilon_at_step(args: argparse.Namespace, global_step: int) -> float:
@@ -189,6 +222,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
     beam_gate_rng = np.random.default_rng(int(args.seed) + 23)
     beam_choice_rng = np.random.default_rng(int(args.seed) + 29)
     cfg = resolved_config(args)
+    if str(args.action_contract) == "beam_only_complementary_role" and int(cfg.n_nodes) != 2:
+        raise ValueError("beam_only_complementary_role is a two-node diagnostic contract only.")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
 
@@ -204,6 +239,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         gradient_clip=float(args.gradient_clip),
         reward_scope=str(args.reward_scope),
         action_contract=str(args.action_contract),
+        azimuth_cells=int(cfg.azimuth_cells),
+        elevation_cells=int(cfg.elevation_cells),
     )
     if args.eval_only_checkpoint is not None:
         checkpoint_path = Path(args.eval_only_checkpoint)
@@ -243,22 +280,23 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
     global_step = 0
 
     for episode in range(int(args.episodes)):
+        scenario_seed = training_scenario_seed(args, episode)
         env = MarlNeighborDiscoveryEnv(
             cfg,
-            seed=int(args.seed) + episode,
+            seed=scenario_seed,
             protocol=str(args.env_protocol),
             reward_version=str(args.reward_version),
             candidate_source=str(args.candidate_source),
             collect_slot_metrics=False,
             rich_info=False,
         )
-        observations, _ = env.reset(seed=int(args.seed) + episode)
+        observations, _ = env.reset(seed=scenario_seed)
         episode_rewards: list[np.ndarray] = []
         episode_losses: list[dict[str, float]] = []
         role_trace = hashlib.blake2b(digest_size=12)
         uses_global_training_state = requires_global_training_state(str(args.algorithm))
-        truncated = False
-        while not truncated:
+        episode_done = False
+        while not episode_done:
             slot = len(episode_rewards)
             state_features = (
                 central_state_features(env.training_state(), cfg)
@@ -281,6 +319,15 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     beam_uniform_mixture=beam_mixture,
                 )
                 role_mixture = 1.0
+            elif str(args.action_contract) == "beam_only_complementary_role":
+                actions, action_indices = select_beam_only_complementary_actions(
+                    q_values,
+                    observations,
+                    beam_gate_rng,
+                    beam_choice_rng,
+                    beam_uniform_mixture=beam_mixture,
+                )
+                role_mixture = 0.0
             else:
                 actions, action_indices = select_local_actions(
                     q_values,
@@ -290,6 +337,12 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     beam_uniform_mixture=beam_mixture,
                 )
             next_observations, rewards, _terminated, truncated, info = env.step(actions)
+            full_discovery = (
+                bool(args.terminate_on_full_discovery)
+                and len(env._sim.first_true_slot) > 0
+                and len(env._sim.discovered_edges) >= len(env._sim.first_true_slot)
+            )
+            episode_done = bool(truncated or full_discovery)
             role_trace.update(bytes(1 if action.mode == "tx" else 0 for action in actions))
             next_state_features = (
                 central_state_features(env.training_state(), cfg)
@@ -302,7 +355,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     action_indices=action_indices.copy(),
                     rewards=np.asarray(rewards, dtype=np.float32).copy(),
                     next_observations=copy_observations(next_observations),
-                    done=bool(truncated),
+                    done=episode_done,
                     central_state=state_features.copy(),
                     next_central_state=next_state_features.copy(),
                 )
@@ -325,7 +378,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     "slot": slot,
                     "training_step": global_step,
                     "algorithm": str(args.algorithm),
-                    "scenario_seed": int(args.seed) + episode,
+                    "scenario_seed": scenario_seed,
                     "reward_sum": float(np.sum(rewards)),
                     "reward_mean": float(np.mean(rewards)),
                     "episode_cumulative_reward": float(np.sum(episode_rewards)),
@@ -333,7 +386,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     "discovery_rate": len(env._sim.discovered_edges) / max(1, len(env._sim.first_true_slot)),
                     "epsilon": epsilon,
                     "role_uniform_mixture": (
-                        "" if str(args.action_contract) == "beam_only_fixed_role" else role_mixture
+                        "" if is_beam_only_action_contract(str(args.action_contract)) else role_mixture
                     ),
                     "fixed_tx_probability": (
                         0.5 if str(args.action_contract) == "beam_only_fixed_role" else ""
@@ -341,6 +394,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                     "role_policy": (
                         "fixed_iid_bernoulli_0.5"
                         if str(args.action_contract) == "beam_only_fixed_role"
+                        else "fixed_alternating_tx_rx_diagnostic"
+                        if str(args.action_contract) == "beam_only_complementary_role"
                         else "learned_with_uniform_mixture"
                     ),
                     "beam_uniform_mixture": beam_mixture,
@@ -358,8 +413,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         row = {
             "episode": episode,
             "training_step": global_step,
-            "seed": int(args.seed) + episode,
-            "scenario_seed": int(args.seed) + episode,
+            "seed": scenario_seed,
+            "scenario_seed": scenario_seed,
             "algorithm": str(args.algorithm),
             "slots": int(cfg.slots_per_episode),
             "n_nodes": int(cfg.n_nodes),
@@ -373,7 +428,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             **env._sim.summarize(episode).as_dict(),
         }
         episode_rows.append(row)
-        flush_outputs(output, step_rows, episode_rows, [], resource_rows)
+        if (episode + 1) % int(args.flush_interval_episodes) == 0:
+            flush_outputs(output, step_rows, episode_rows, [], resource_rows)
 
     eval_rows = evaluate_learner(learner, cfg, args)
     checkpoint = {
@@ -408,7 +464,7 @@ def evaluate_learner(
 
     rows: list[dict[str, Any]] = []
     learner.eval()
-    if str(args.action_contract) == "beam_only_fixed_role":
+    if is_beam_only_action_contract(str(args.action_contract)):
         variants = {
             "pure_learned_beam": ("learned_mix", 1.0, 0.0),
             "learned_beam_random_mix_0.2": ("learned_mix", 1.0, 0.2),
@@ -430,9 +486,17 @@ def evaluate_learner(
             "random_role_learned_beam": ("joint_learned_mix", 1.0, 0.0),
             "random_uniform": ("joint_learned_mix", 1.0, 1.0),
         }
+    if str(getattr(args, "evaluation_profile", "full")) == "gate":
+        if not is_beam_only_action_contract(str(args.action_contract)):
+            raise ValueError("The gate evaluation profile requires a beam-only action contract.")
+        variants = {
+            "pure_learned_beam": ("learned_mix", 1.0, 0.0),
+            "random_candidate_beam": ("learned_mix", 1.0, 1.0),
+        }
     for variant, (policy_kind, role_mixture, beam_mixture) in variants.items():
         for eval_episode in range(int(args.eval_episodes)):
-            scenario_seed = int(args.seed) + 2_000_000 + eval_episode
+            scenario_seed = evaluation_scenario_seed(args, eval_episode)
+            policy_seed = evaluation_policy_seed(args, eval_episode)
             env = MarlNeighborDiscoveryEnv(
                 cfg,
                 seed=scenario_seed,
@@ -443,15 +507,15 @@ def evaluate_learner(
                 rich_info=False,
             )
             observations, _ = env.reset(seed=scenario_seed)
-            role_rng = np.random.default_rng(scenario_seed + 777)
-            beam_gate_rng = np.random.default_rng(scenario_seed + 888)
-            beam_choice_rng = np.random.default_rng(scenario_seed + 999)
+            role_rng = np.random.default_rng(policy_seed + 777)
+            beam_gate_rng = np.random.default_rng(policy_seed + 888)
+            beam_choice_rng = np.random.default_rng(policy_seed + 999)
             rewards_by_step: list[np.ndarray] = []
             role_trace = hashlib.blake2b(digest_size=12)
             beam_trace = hashlib.blake2b(digest_size=12)
             candidate_trace = hashlib.blake2b(digest_size=12)
-            truncated = False
-            while not truncated:
+            episode_done = False
+            while not episode_done:
                 with torch.no_grad():
                     q_values = learner.q_values(observations).cpu().numpy()
                 for observation in observations:
@@ -462,20 +526,32 @@ def evaluate_learner(
                         ).tobytes()
                     )
                 if policy_kind == "learned_mix":
-                    actions, _indices = select_beam_only_actions(
-                        q_values,
-                        observations,
-                        role_rng,
-                        beam_gate_rng,
-                        beam_choice_rng,
-                        beam_uniform_mixture=beam_mixture,
-                    )
+                    if str(args.action_contract) == "beam_only_complementary_role":
+                        actions, _indices = select_beam_only_complementary_actions(
+                            q_values,
+                            observations,
+                            beam_gate_rng,
+                            beam_choice_rng,
+                            beam_uniform_mixture=beam_mixture,
+                        )
+                    else:
+                        actions, _indices = select_beam_only_actions(
+                            q_values,
+                            observations,
+                            role_rng,
+                            beam_gate_rng,
+                            beam_choice_rng,
+                            beam_uniform_mixture=beam_mixture,
+                        )
                 elif policy_kind in ("score_argmax", "score_proportional"):
                     actions, _indices = select_candidate_score_actions(
                         observations,
                         role_rng,
                         beam_choice_rng,
                         selection="argmax" if policy_kind == "score_argmax" else "proportional",
+                        complementary_roles=(
+                            str(args.action_contract) == "beam_only_complementary_role"
+                        ),
                     )
                 else:
                     actions, _indices = select_local_actions(
@@ -491,6 +567,12 @@ def evaluate_learner(
                 )
                 observations, rewards, _terminated, truncated, _info = env.step(actions)
                 rewards_by_step.append(np.asarray(rewards, dtype=np.float32))
+                full_discovery = (
+                    bool(args.terminate_on_full_discovery)
+                    and len(env._sim.first_true_slot) > 0
+                    and len(env._sim.discovered_edges) >= len(env._sim.first_true_slot)
+                )
+                episode_done = bool(truncated or full_discovery)
             reward_array = np.stack(rewards_by_step)
             rows.append(
                 {
@@ -501,10 +583,11 @@ def evaluate_learner(
                     "episode": int(args.episodes) + eval_episode,
                     "seed": scenario_seed,
                     "scenario_seed": scenario_seed,
+                    "policy_seed": policy_seed,
                     "algorithm": str(args.algorithm),
                     "env_protocol": str(args.env_protocol),
                     "role_uniform_mixture": (
-                        "" if str(args.action_contract) == "beam_only_fixed_role" else role_mixture
+                        "" if is_beam_only_action_contract(str(args.action_contract)) else role_mixture
                     ),
                     "fixed_tx_probability": (
                         0.5 if str(args.action_contract) == "beam_only_fixed_role" else ""
@@ -569,11 +652,18 @@ def build_manifest(
         "slots_per_episode": int(cfg.slots_per_episode),
         "node_count": int(cfg.n_nodes),
         "beam_count": int(cfg.n_beams),
+        "beam_direction_features": "body_frame_unit_cell_center_xyz",
         "env_protocol": str(args.env_protocol),
         "candidate_source": str(args.candidate_source),
         "reward_version": str(args.reward_version),
         "reward_scope": str(args.reward_scope),
         "action_contract": str(args.action_contract),
+        "sanity_only": str(args.action_contract) == "beam_only_complementary_role",
+        "training_scenario_mode": str(getattr(args, "training_scenario_mode", "varying")),
+        "evaluation_scenario_mode": str(getattr(args, "evaluation_scenario_mode", "held_out")),
+        "terminate_on_full_discovery": bool(getattr(args, "terminate_on_full_discovery", False)),
+        "evaluation_profile": str(getattr(args, "evaluation_profile", "full")),
+        "flush_interval_episodes": int(getattr(args, "flush_interval_episodes", 1)),
         "training_contract_version": "common_local_residual_value_v1",
         "decentralized_execution": True,
         "centralized_training": learner.centralized_training,
@@ -585,24 +675,26 @@ def build_manifest(
         "joint_action_controller": False,
         "action_space": (
             "per_agent_beam_only"
-            if str(args.action_contract) == "beam_only_fixed_role"
+            if is_beam_only_action_contract(str(args.action_contract))
             else "per_agent_tx_rx_times_beam"
         ),
         "role_policy": (
             "fixed_iid_bernoulli_0.5_not_learned"
             if str(args.action_contract) == "beam_only_fixed_role"
+            else "fixed_alternating_tx_rx_diagnostic_not_learned"
+            if str(args.action_contract) == "beam_only_complementary_role"
             else "learned_tx_rx"
         ),
         "stochastic_support": {
             "role_uniform_mixture": (
                 None
-                if str(args.action_contract) == "beam_only_fixed_role"
+                if is_beam_only_action_contract(str(args.action_contract))
                 else float(args.role_uniform_mixture)
             ),
             "fixed_tx_probability": (
                 0.5 if str(args.action_contract) == "beam_only_fixed_role" else None
             ),
-            "role_learned": str(args.action_contract) != "beam_only_fixed_role",
+            "role_learned": not is_beam_only_action_contract(str(args.action_contract)),
             "beam_uniform_mixture": float(args.beam_uniform_mixture),
             "beam_randomization_domain": "uniform_within_residual_candidate_mask",
             "beam_gate_rng_separate_from_choice_rng": True,

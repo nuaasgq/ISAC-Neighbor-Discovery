@@ -6,6 +6,7 @@ from typing import Any, Sequence
 
 import numpy as np
 
+from .beam import beam_center_direction_features
 from .neural_contention_actor_critic import (
     ContentionFeatures,
     observations_to_batched_contention_tensors,
@@ -15,7 +16,16 @@ from .simulator import Action, MODE_RX, MODE_TX
 
 VALUE_BASED_ALGORITHMS = ("idqn", "shared_idqn", "vdn", "qmix")
 VALUE_ACTION_MODES = (MODE_TX, MODE_RX)
-VALUE_ACTION_CONTRACTS = ("joint_role_beam", "beam_only_fixed_role")
+VALUE_ACTION_CONTRACTS = (
+    "joint_role_beam",
+    "beam_only_fixed_role",
+    "beam_only_complementary_role",
+)
+BEAM_ONLY_ACTION_CONTRACTS = VALUE_ACTION_CONTRACTS[1:]
+
+
+def is_beam_only_action_contract(action_contract: str) -> bool:
+    return str(action_contract) in BEAM_ONLY_ACTION_CONTRACTS
 
 
 def requires_global_training_state(algorithm: str) -> bool:
@@ -126,6 +136,8 @@ def build_local_q_network(
     *,
     residual_features: bool = True,
     action_contract: str = "joint_role_beam",
+    azimuth_cells: int | None = None,
+    elevation_cells: int = 1,
 ):
     import torch
     import torch.nn as nn
@@ -133,7 +145,11 @@ def build_local_q_network(
     dims = ContentionFeatures()
     if str(action_contract) not in VALUE_ACTION_CONTRACTS:
         raise ValueError(f"action_contract must be one of {VALUE_ACTION_CONTRACTS}.")
-    beam_dim = dims.residual_beam_dim if residual_features else dims.beam_dim
+    azimuth_cells = int(n_beams if azimuth_cells is None else azimuth_cells)
+    elevation_cells = int(elevation_cells)
+    if azimuth_cells * elevation_cells != int(n_beams):
+        raise ValueError("azimuth_cells * elevation_cells must equal n_beams.")
+    beam_dim = (dims.residual_beam_dim if residual_features else dims.beam_dim) + 3
     context_dim = 9 + 4 + 4 + 1 + 1 + dims.candidate_stats_dim + 2 * int(hidden_dim)
 
     class LocalActionQNetwork(nn.Module):
@@ -143,6 +159,13 @@ def build_local_q_network(
             self.hidden_dim = int(hidden_dim)
             self.residual_features = bool(residual_features)
             self.action_contract = str(action_contract)
+            self.register_buffer(
+                "beam_center_directions",
+                torch.as_tensor(
+                    beam_center_direction_features(azimuth_cells, elevation_cells),
+                    dtype=torch.float32,
+                ),
+            )
             self.beam_encoder = nn.Sequential(
                 nn.Linear(beam_dim, hidden_dim),
                 nn.LayerNorm(hidden_dim),
@@ -176,7 +199,12 @@ def build_local_q_network(
                 nn.init.normal_(self.role_embedding, mean=0.0, std=0.05)
 
         def forward(self, tensors: dict[str, torch.Tensor]) -> torch.Tensor:
-            beam_tokens = self.beam_encoder(tensors["beam_features"])
+            directions = self.beam_center_directions.unsqueeze(0).expand(
+                tensors["beam_features"].shape[0], -1, -1
+            )
+            beam_tokens = self.beam_encoder(
+                torch.cat([tensors["beam_features"], directions], dim=-1)
+            )
             contention = self.contention_encoder(tensors["contention_state"])
             beam_context = beam_tokens.mean(dim=1)
             context_input = torch.cat(
@@ -193,7 +221,7 @@ def build_local_q_network(
                 dim=1,
             )
             context = self.context_encoder(context_input)
-            if self.action_contract == "beam_only_fixed_role":
+            if is_beam_only_action_contract(self.action_contract):
                 action_tokens = torch.tanh(beam_tokens + context[:, None, :])
                 advantage = self.action_advantage(action_tokens).squeeze(-1)
                 value = self.state_value(context)
@@ -260,6 +288,8 @@ class ValueDecompositionLearner:
         gradient_clip: float = 10.0,
         reward_scope: str = "team",
         action_contract: str = "joint_role_beam",
+        azimuth_cells: int | None = None,
+        elevation_cells: int = 1,
         device: str = "cpu",
     ):
         import torch
@@ -269,12 +299,16 @@ class ValueDecompositionLearner:
         self.algorithm = str(algorithm)
         self.n_agents = int(n_agents)
         self.n_beams = int(n_beams)
+        self.azimuth_cells = int(self.n_beams if azimuth_cells is None else azimuth_cells)
+        self.elevation_cells = int(elevation_cells)
+        if self.azimuth_cells * self.elevation_cells != self.n_beams:
+            raise ValueError("azimuth_cells * elevation_cells must equal n_beams.")
         self.action_contract = str(action_contract)
         if self.action_contract not in VALUE_ACTION_CONTRACTS:
             raise ValueError(f"action_contract must be one of {VALUE_ACTION_CONTRACTS}.")
         self.n_actions = (
             self.n_beams
-            if self.action_contract == "beam_only_fixed_role"
+            if is_beam_only_action_contract(self.action_contract)
             else len(VALUE_ACTION_MODES) * self.n_beams
         )
         self.state_dim = int(state_dim)
@@ -295,6 +329,8 @@ class ValueDecompositionLearner:
                     self.hidden_dim,
                     residual_features=True,
                     action_contract=self.action_contract,
+                    azimuth_cells=self.azimuth_cells,
+                    elevation_cells=self.elevation_cells,
                 )
                 for _ in range(network_count)
             ]
@@ -306,6 +342,8 @@ class ValueDecompositionLearner:
                     self.hidden_dim,
                     residual_features=True,
                     action_contract=self.action_contract,
+                    azimuth_cells=self.azimuth_cells,
+                    elevation_cells=self.elevation_cells,
                 )
                 for _ in range(network_count)
             ]
@@ -519,6 +557,8 @@ class ValueDecompositionLearner:
             "algorithm": self.algorithm,
             "n_agents": self.n_agents,
             "n_beams": self.n_beams,
+            "azimuth_cells": self.azimuth_cells,
+            "elevation_cells": self.elevation_cells,
             "state_dim": self.state_dim,
             "hidden_dim": self.hidden_dim,
             "mixer_dim": self.mixer_dim,
@@ -536,6 +576,8 @@ class ValueDecompositionLearner:
             "algorithm": self.algorithm,
             "n_agents": self.n_agents,
             "n_beams": self.n_beams,
+            "azimuth_cells": self.azimuth_cells,
+            "elevation_cells": self.elevation_cells,
             "action_contract": self.action_contract,
         }
         for key, value in expected.items():
@@ -659,12 +701,53 @@ def select_beam_only_actions(
     return actions, beam_indices
 
 
+def select_beam_only_complementary_actions(
+    q_values: np.ndarray,
+    observations: Sequence[dict[str, Any]],
+    beam_gate_rng: np.random.Generator,
+    beam_choice_rng: np.random.Generator,
+    *,
+    beam_uniform_mixture: float,
+) -> tuple[list[Action], np.ndarray]:
+    """Diagnostic selector with alternating deterministic roles and learned beams.
+
+    This contract removes TX/RX coordination from the two-node optimizer sanity
+    check. It is not a deployable neighbor-discovery policy.
+    """
+
+    if q_values.ndim != 2:
+        raise ValueError("q_values must have shape [agents, beams].")
+    n_agents, n_beams = q_values.shape
+    if len(observations) != n_agents:
+        raise ValueError("q_values and observation counts are inconsistent.")
+    if not 0.0 <= float(beam_uniform_mixture) <= 1.0:
+        raise ValueError("beam_uniform_mixture must be in [0, 1].")
+
+    actions: list[Action] = []
+    beam_indices = np.zeros(n_agents, dtype=np.int64)
+    for node, observation in enumerate(observations):
+        candidate = np.flatnonzero(np.asarray(observation["candidate_mask"], dtype=float) > 0.5)
+        if candidate.size == 0:
+            candidate = np.arange(n_beams, dtype=int)
+        random_gate = beam_gate_rng.random()
+        random_quantile = beam_choice_rng.random()
+        if random_gate < beam_uniform_mixture:
+            random_index = min(int(random_quantile * candidate.size), candidate.size - 1)
+            beam = int(candidate[random_index])
+        else:
+            beam = int(candidate[int(np.argmax(q_values[node, candidate]))])
+        actions.append(Action(MODE_TX if node % 2 == 0 else MODE_RX, beam))
+        beam_indices[node] = beam
+    return actions, beam_indices
+
+
 def select_candidate_score_actions(
     observations: Sequence[dict[str, Any]],
     role_rng: np.random.Generator,
     beam_choice_rng: np.random.Generator,
     *,
     selection: str,
+    complementary_roles: bool = False,
 ) -> tuple[list[Action], np.ndarray]:
     """Non-learning beam controls driven only by the exposed candidate score."""
 
@@ -683,7 +766,10 @@ def select_candidate_score_actions(
             np.asarray(observation.get("candidate_score", np.zeros(n_beams)), dtype=float)[candidate],
         )
         random_quantile = beam_choice_rng.random()
-        mode = MODE_TX if role_rng.random() < 0.5 else MODE_RX
+        if complementary_roles:
+            mode = MODE_TX if node % 2 == 0 else MODE_RX
+        else:
+            mode = MODE_TX if role_rng.random() < 0.5 else MODE_RX
         if selection == "argmax":
             beam = int(candidate[int(np.argmax(scores))])
         elif float(scores.sum()) <= 0.0:

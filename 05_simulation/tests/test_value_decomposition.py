@@ -12,9 +12,11 @@ from isac_nd_sim.value_decomposition import (
     JointTransition,
     MonotonicQMix,
     ValueDecompositionLearner,
+    beam_center_direction_features,
     mask_invalid_actions,
     requires_global_training_state,
     select_beam_only_actions,
+    select_beam_only_complementary_actions,
     select_candidate_score_actions,
     select_local_actions,
 )
@@ -63,6 +65,14 @@ def test_only_qmix_requires_global_training_state() -> None:
     assert not requires_global_training_state("shared_idqn")
     assert not requires_global_training_state("vdn")
     assert requires_global_training_state("qmix")
+
+
+def test_beam_center_direction_features_are_unit_and_opposite_in_planar_grid() -> None:
+    directions = beam_center_direction_features(8, 1)
+
+    assert directions.shape == (8, 3)
+    assert np.allclose(np.linalg.norm(directions, axis=1), 1.0)
+    assert np.allclose(directions[:4], -directions[4:], atol=1e-6)
 
 
 def test_beam_only_network_outputs_no_role_action_values() -> None:
@@ -152,6 +162,46 @@ def test_beam_only_roles_are_iid_half_probability_and_not_learned() -> None:
     assert tx_count / total == pytest.approx(0.5, abs=0.03)
 
 
+def test_complementary_role_selector_only_learns_beams() -> None:
+    env = small_env()
+    observations, _ = env.reset(seed=20260728)
+    q_values = np.tile(np.arange(env.n_beams, dtype=np.float32), (env.n_agents, 1))
+
+    actions, beams = select_beam_only_complementary_actions(
+        q_values,
+        observations,
+        np.random.default_rng(50),
+        np.random.default_rng(51),
+        beam_uniform_mixture=0.0,
+    )
+
+    assert [action.mode for action in actions] == ["tx", "rx", "tx"]
+    assert np.array_equal(beams, np.asarray([action.beam for action in actions]))
+    for action, observation in zip(actions, observations, strict=True):
+        candidates = np.flatnonzero(observation["candidate_mask"] > 0.5)
+        assert action.beam == int(candidates.max())
+
+
+def test_complementary_role_contract_has_beam_sized_q_output() -> None:
+    torch = pytest.importorskip("torch")
+    env = small_env()
+    observations, _ = env.reset(seed=20260729)
+    learner = ValueDecompositionLearner(
+        "vdn",
+        env.n_agents,
+        env.n_beams,
+        state_dim=23,
+        hidden_dim=16,
+        action_contract="beam_only_complementary_role",
+    )
+
+    with torch.no_grad():
+        q_values = learner.q_values(observations)
+
+    assert q_values.shape == (env.n_agents, env.n_beams)
+    assert learner.n_actions == env.n_beams
+
+
 def test_candidate_score_argmax_is_a_nonlearning_same_mask_control() -> None:
     env = small_env()
     observations, _ = env.reset(seed=20260730)
@@ -173,6 +223,21 @@ def test_candidate_score_argmax_is_a_nonlearning_same_mask_control() -> None:
 
     assert np.array_equal(beams, np.full(env.n_agents, env.n_beams - 1))
     assert [action.beam for action in actions] == beams.tolist()
+
+
+def test_candidate_score_control_can_share_complementary_diagnostic_roles() -> None:
+    env = small_env()
+    observations, _ = env.reset(seed=20260732)
+
+    actions, _ = select_candidate_score_actions(
+        observations,
+        np.random.default_rng(72),
+        np.random.default_rng(73),
+        selection="proportional",
+        complementary_roles=True,
+    )
+
+    assert [action.mode for action in actions] == ["tx", "rx", "tx"]
 
 
 def test_candidate_score_proportional_never_selects_a_masked_beam() -> None:

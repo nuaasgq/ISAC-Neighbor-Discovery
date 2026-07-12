@@ -286,6 +286,92 @@ def test_recurrent_beam_actor_reset_prevents_episode_state_leakage() -> None:
     assert not torch.allclose(first, second)
 
 
+def test_recurrent_complementary_role_sanity_contract_replays_beam_probability() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(
+        load_config("05_simulation/configs/mvp.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260841)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        action_contract="beam_only_complementary_role",
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+        disabled_modes=("sense", "idle"),
+    )
+
+    policy.reset_recurrent_state(cfg.n_nodes)
+    with torch.no_grad():
+        step = policy.act(observations, deterministic=True)
+    replay = policy.evaluate_action_sequence([observations], [step.actions])
+
+    assert [action.mode for action in step.actions] == ["tx", "rx"]
+    assert torch.count_nonzero(step.mode_log_probs) == 0
+    assert torch.allclose(replay["log_probs"][0], step.log_probs, atol=1e-6, rtol=1e-6)
+    assert policy.model.beam_center_directions.shape == (cfg.n_beams, 3)
+
+
+def test_beam_conditioned_role_factorization_replays_selected_beam_probability() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(
+        load_config("05_simulation/configs/mvp.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260842)
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        role_factorization="beam_conditioned",
+        use_decoupled_role_tower=True,
+        azimuth_cells=cfg.azimuth_cells,
+        elevation_cells=cfg.elevation_cells,
+        disabled_modes=("sense", "idle"),
+    )
+
+    conditional_logits, beam_logits, _values, _state = policy._step_from_state(
+        observations,
+        policy._zero_state(cfg.n_nodes),
+        hard_mask=True,
+    )
+    assert conditional_logits.shape == (cfg.n_nodes, cfg.n_beams, len(MODE_NAMES))
+    assert torch.allclose(
+        torch.softmax(conditional_logits, dim=-1)[..., MODE_NAMES.index("tx")],
+        torch.full((cfg.n_nodes, cfg.n_beams), 0.5),
+    )
+
+    policy.reset_recurrent_state(cfg.n_nodes)
+    with torch.no_grad():
+        step = policy.act(observations, deterministic=False)
+    replay = policy.evaluate_action_sequence([observations], [step.actions])
+    assert torch.allclose(replay["log_probs"][0], step.log_probs, atol=1e-6, rtol=1e-6)
+    assert torch.allclose(
+        replay["mode_tx_probabilities"][0],
+        torch.full((cfg.n_nodes,), 0.5),
+        atol=1e-6,
+    )
+
+    with torch.no_grad():
+        policy.model.mode_head.weight.normal_(0.0, 0.1)
+    policy.model.zero_grad(set_to_none=True)
+    conditional_logits, _beam_logits, _values, _state = policy._step_from_state(
+        observations,
+        policy._zero_state(cfg.n_nodes),
+        hard_mask=True,
+    )
+    conditional_logits[..., MODE_NAMES.index("tx")].sum().backward()
+    assert policy.model.role_beam_encoder[0].weight.grad is not None
+    assert policy.model.beam_linear.weight.grad is None
+
+
 def test_recurrent_beam_grid_wraps_azimuth_but_not_elevation() -> None:
     torch = pytest.importorskip("torch")
     cfg = replace(

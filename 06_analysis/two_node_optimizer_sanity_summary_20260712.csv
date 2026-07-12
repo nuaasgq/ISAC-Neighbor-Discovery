@@ -1,0 +1,4 @@
+method,implementation_scope,training_episodes,training_environment_steps,deterministic_discovery_rate,deterministic_mean_delay_slots,random_control_discovery_rate,random_control_mean_delay_slots,peak_rss_mb
+Normalized VDN,mean-normalized feed-forward VDN,300,1795,1.0,1.0,0.195,14.62,329.58
+Feed-forward QMIX,one-step replay feed-forward QMIX,300,1864,1.0,2.0,0.195,14.62,330.71
+Recurrent MAPPO,full-episode recurrent PPO with centralized critic,1000,1718,1.0,1.0,0.195,14.62,not_recorded

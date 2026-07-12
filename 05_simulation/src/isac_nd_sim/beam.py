@@ -5,6 +5,28 @@ import numpy as np
 from .mobility import NodeState
 
 
+def beam_center_direction_features(azimuth_cells: int, elevation_cells: int) -> np.ndarray:
+    """Return unit body-frame directions at the codebook cell centers."""
+
+    azimuth_cells = int(azimuth_cells)
+    elevation_cells = int(elevation_cells)
+    if azimuth_cells <= 0 or elevation_cells <= 0:
+        raise ValueError("Beam grid dimensions must be positive.")
+    rows: list[tuple[float, float, float]] = []
+    for elevation_index in range(elevation_cells):
+        elevation = -np.pi / 2.0 + (elevation_index + 0.5) * np.pi / elevation_cells
+        for azimuth_index in range(azimuth_cells):
+            azimuth = -np.pi + (azimuth_index + 0.5) * 2.0 * np.pi / azimuth_cells
+            rows.append(
+                (
+                    float(np.cos(elevation) * np.cos(azimuth)),
+                    float(np.cos(elevation) * np.sin(azimuth)),
+                    float(np.sin(elevation)),
+                )
+            )
+    return np.asarray(rows, dtype=np.float32)
+
+
 def rotation_body_to_global(yaw: float, pitch: float, roll: float) -> np.ndarray:
     cy, sy = np.cos(yaw), np.sin(yaw)
     cp, sp = np.cos(pitch), np.sin(pitch)
