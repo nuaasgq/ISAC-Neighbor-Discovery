@@ -105,9 +105,17 @@ class EpisodeResult:
     hello_transmissions: int
     handshake_attempts: int
     role_compatible_pairs: int
+    active_undiscovered_pair_slots: int
+    bilaterally_aligned_pair_slots: int
     aligned_handshake_opportunities: int
     forward_decodes: int
     handshake_successes: int
+    beam_alignment_rate_active: float
+    beam_alignment_rate_active_defined: bool
+    aligned_role_complementarity_rate: float
+    aligned_role_complementarity_defined: bool
+    handshake_success_conversion_rate: float
+    handshake_success_conversion_defined: bool
     forward_decode_failures: int
     ack_decode_failures: int
     interference_limited_failures: int
@@ -229,6 +237,8 @@ class NeighborDiscoverySimulator:
         self.scan_actions = 0
         self.handshake_attempts = 0
         self.role_compatible_pairs = 0
+        self.active_undiscovered_pair_slots = 0
+        self.bilaterally_aligned_pair_slots = 0
         self.aligned_handshake_opportunities = 0
         self.forward_decodes = 0
         self.handshake_successes = 0
@@ -315,6 +325,8 @@ class NeighborDiscoverySimulator:
         self.scan_actions = 0
         self.handshake_attempts = 0
         self.role_compatible_pairs = 0
+        self.active_undiscovered_pair_slots = 0
+        self.bilaterally_aligned_pair_slots = 0
         self.aligned_handshake_opportunities = 0
         self.forward_decodes = 0
         self.handshake_successes = 0
@@ -1629,6 +1641,16 @@ class NeighborDiscoverySimulator:
         ready_forward = ready_mask[node_idx, beams]
         tx_mask = modes == MODE_TX
         rx_mask = modes == MODE_RX
+        undiscovered_true_mask = true_mask.copy()
+        for node_a, node_b in self.discovered_edges:
+            undiscovered_true_mask[node_a, node_b] = False
+            undiscovered_true_mask[node_b, node_a] = False
+        active_pair_matrix = undiscovered_true_mask & active_mask[:, None] & active_mask[None, :]
+        bilateral_alignment_matrix = active_pair_matrix & ready_forward & ready_forward.T
+        self.active_undiscovered_pair_slots += int(np.triu(active_pair_matrix, k=1).sum())
+        self.bilaterally_aligned_pair_slots += int(
+            np.triu(bilateral_alignment_matrix, k=1).sum()
+        )
         role_matrix = true_mask & tx_mask[:, None] & rx_mask[None, :]
         for node_a, node_b in self.discovered_edges:
             role_matrix[node_a, node_b] = False
@@ -1970,9 +1992,26 @@ class NeighborDiscoverySimulator:
             hello_transmissions=self.tx_actions,
             handshake_attempts=self.handshake_attempts,
             role_compatible_pairs=self.role_compatible_pairs,
+            active_undiscovered_pair_slots=self.active_undiscovered_pair_slots,
+            bilaterally_aligned_pair_slots=self.bilaterally_aligned_pair_slots,
             aligned_handshake_opportunities=self.aligned_handshake_opportunities,
             forward_decodes=self.forward_decodes,
             handshake_successes=self.handshake_successes,
+            beam_alignment_rate_active=(
+                self.bilaterally_aligned_pair_slots
+                / max(1, self.active_undiscovered_pair_slots)
+            ),
+            beam_alignment_rate_active_defined=bool(self.active_undiscovered_pair_slots > 0),
+            aligned_role_complementarity_rate=(
+                self.aligned_handshake_opportunities
+                / max(1, self.bilaterally_aligned_pair_slots)
+            ),
+            aligned_role_complementarity_defined=bool(self.bilaterally_aligned_pair_slots > 0),
+            handshake_success_conversion_rate=(
+                self.handshake_successes
+                / max(1, self.aligned_handshake_opportunities)
+            ),
+            handshake_success_conversion_defined=bool(self.aligned_handshake_opportunities > 0),
             forward_decode_failures=self.forward_decode_failures,
             ack_decode_failures=self.ack_decode_failures,
             interference_limited_failures=self.interference_limited_failures,

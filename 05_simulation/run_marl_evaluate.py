@@ -250,10 +250,15 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         use_bounded_score_residual=bool(train_args.get("bounded_score_residual", False)),
         score_residual_max_logit=float(train_args.get("score_residual_max_logit", 2.0)),
         use_decoupled_role_tower=bool(train_args.get("decoupled_role_tower", False)),
+        role_factorization=str(train_args.get("role_factorization", "independent")),
     )
     checkpoint_loaded = str(args.policy_ablation) == "trained"
     if checkpoint_loaded:
-        policy.model.load_state_dict(checkpoint["policy_state_dict"])
+        policy_state = migrate_policy_state_dict(
+            checkpoint["policy_state_dict"],
+            policy.model.state_dict(),
+        )
+        policy.model.load_state_dict(policy_state)
     elif str(args.policy_ablation) == "zero_weights":
         zero_policy_weights(policy, torch)
     if bool(args.disable_rendezvous_adapter):
@@ -438,6 +443,43 @@ def load_checkpoint(path: str | Path, torch_module: Any) -> dict[str, Any]:
         return torch_module.load(path, map_location="cpu")
 
 
+def migrate_policy_state_dict(
+    source_state: dict[str, Any],
+    target_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Migrate derived buffers and pre-direction recurrent beam encoders."""
+
+    import torch
+
+    migrated = {
+        key: value
+        for key, value in source_state.items()
+        if not key.endswith("beam_center_directions")
+    }
+    weight_key = "beam_linear.weight"
+    if weight_key in migrated and weight_key in target_state:
+        source_weight = migrated[weight_key]
+        target_weight = target_state[weight_key]
+        if (
+            source_weight.ndim == 2
+            and target_weight.ndim == 2
+            and source_weight.shape[0] == target_weight.shape[0]
+            and source_weight.shape[1] + 3 == target_weight.shape[1]
+        ):
+            migrated[weight_key] = torch.cat(
+                [
+                    source_weight,
+                    torch.zeros(
+                        (source_weight.shape[0], 3),
+                        dtype=source_weight.dtype,
+                        device=source_weight.device,
+                    ),
+                ],
+                dim=1,
+            )
+    return migrated
+
+
 def ensure_resource_args(args: argparse.Namespace) -> None:
     defaults = {
         "area_size_m": None,
@@ -499,6 +541,7 @@ def build_policy(
     use_bounded_score_residual = bool(kwargs.pop("use_bounded_score_residual", False))
     score_residual_max_logit = float(kwargs.pop("score_residual_max_logit", 2.0))
     use_decoupled_role_tower = bool(kwargs.pop("use_decoupled_role_tower", False))
+    role_factorization = str(kwargs.pop("role_factorization", "independent"))
     if str(network) == "shared":
         return SharedBeamActorCritic(*args, **kwargs)
     if str(network) == "scalegraph_beam":
@@ -512,6 +555,7 @@ def build_policy(
     if str(network) == "contention_shared":
         return ContentionGraphActorCritic(*args, **kwargs)
     if str(network) == "recurrent_contention_shared":
+        kwargs["role_factorization"] = role_factorization
         kwargs["azimuth_cells"] = azimuth_cells
         kwargs["elevation_cells"] = elevation_cells
         kwargs["use_candidate_score_prior"] = use_candidate_score_prior

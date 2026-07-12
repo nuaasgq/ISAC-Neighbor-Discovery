@@ -332,6 +332,7 @@ def test_beam_conditioned_role_factorization_replays_selected_beam_probability()
         action_contract="joint_role_beam",
         role_factorization="beam_conditioned",
         use_decoupled_role_tower=True,
+        use_contention_mode_prior=False,
         azimuth_cells=cfg.azimuth_cells,
         elevation_cells=cfg.elevation_cells,
         disabled_modes=("sense", "idle"),
@@ -370,6 +371,140 @@ def test_beam_conditioned_role_factorization_replays_selected_beam_probability()
     conditional_logits[..., MODE_NAMES.index("tx")].sum().backward()
     assert policy.model.role_beam_encoder[0].weight.grad is not None
     assert policy.model.beam_linear.weight.grad is None
+
+
+def test_simulator_coordination_funnel_conditions_role_rate_on_reciprocal_alignment() -> None:
+    cfg = load_config("05_simulation/configs/sanity_planar_n2_b45_ideal.yaml")
+    env = MarlNeighborDiscoveryEnv(cfg, protocol="structured_marl_no_isac")
+    env.reset(seed=29260711)
+    forward = env._sim.beam_from_to(0, 1)
+    reverse = env._sim.beam_from_to(1, 0)
+
+    env.step([Action("tx", forward), Action("rx", reverse)])
+    complementary = env._sim.summarize(0).as_dict()
+    assert complementary["active_undiscovered_pair_slots"] == 1
+    assert complementary["bilaterally_aligned_pair_slots"] == 1
+    assert complementary["aligned_handshake_opportunities"] == 1
+    assert complementary["handshake_successes"] == 1
+    assert complementary["beam_alignment_rate_active"] == pytest.approx(1.0)
+    assert complementary["aligned_role_complementarity_rate"] == pytest.approx(1.0)
+    assert complementary["handshake_success_conversion_rate"] == pytest.approx(1.0)
+
+    env.reset(seed=29260711)
+    forward = env._sim.beam_from_to(0, 1)
+    reverse = env._sim.beam_from_to(1, 0)
+    env.step([Action("tx", forward), Action("tx", reverse)])
+    same_role = env._sim.summarize(0).as_dict()
+    assert same_role["active_undiscovered_pair_slots"] == 1
+    assert same_role["bilaterally_aligned_pair_slots"] == 1
+    assert same_role["aligned_handshake_opportunities"] == 0
+    assert same_role["aligned_role_complementarity_rate"] == pytest.approx(0.0)
+    assert same_role["aligned_role_complementarity_defined"] is True
+    assert same_role["handshake_success_conversion_defined"] is False
+
+
+def test_external_evaluator_builds_beam_conditioned_recurrent_policy() -> None:
+    module = load_evaluation_module()
+    policy = module.build_policy(
+        "recurrent_contention_shared",
+        8,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        role_factorization="beam_conditioned",
+        use_decoupled_role_tower=True,
+        use_contention_mode_prior=False,
+        azimuth_cells=8,
+        elevation_cells=1,
+        disabled_modes=("sense", "idle"),
+    )
+
+    assert policy.role_factorization == "beam_conditioned"
+    assert policy.model.role_beam_encoder is not None
+
+
+def test_recurrent_beam_uniform_mixture_is_part_of_policy_distribution() -> None:
+    torch = pytest.importorskip("torch")
+    policy = RecurrentContentionGraphActorCritic(
+        4,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        beam_uniform_mixture=1.0,
+        azimuth_cells=4,
+        elevation_cells=1,
+        disabled_modes=("sense", "idle"),
+    )
+    logits = torch.tensor([[100.0, -100.0, 5.0, -1.0e9]])
+
+    probabilities = policy._beam_probabilities(logits)
+
+    assert torch.allclose(
+        probabilities,
+        torch.tensor([[1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 0.0]]),
+        atol=1e-7,
+    )
+
+
+def test_antisymmetric_role_head_learns_orientation_without_fixing_tx_side() -> None:
+    torch = pytest.importorskip("torch")
+    cfg = replace(
+        load_config("05_simulation/configs/mvp.yaml"),
+        n_nodes=2,
+        azimuth_cells=8,
+        elevation_cells=1,
+    )
+    env = MarlNeighborDiscoveryEnv(cfg)
+    observations, _ = env.reset(seed=20260843)
+    for observation in observations:
+        observation["self_state"][6:9] = 0.0
+    policy = RecurrentContentionGraphActorCritic(
+        cfg.n_beams,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        role_factorization="beam_conditioned_antisymmetric",
+        use_decoupled_role_tower=True,
+        azimuth_cells=8,
+        elevation_cells=1,
+        disabled_modes=("sense", "idle"),
+    )
+
+    mode_logits, _beam_logits, _values, _state = policy._step_from_state(
+        observations,
+        policy._zero_state(cfg.n_nodes),
+        hard_mask=True,
+    )
+    tx = MODE_NAMES.index("tx")
+    rx = MODE_NAMES.index("rx")
+
+    assert torch.allclose(mode_logits[:, :4, tx], mode_logits[:, 4:, rx], atol=1e-6)
+    assert torch.allclose(mode_logits[:, :4, rx], mode_logits[:, 4:, tx], atol=1e-6)
+    assert policy.model.role_direction_axis.requires_grad
+    assert policy.model.role_direction_raw_scale.requires_grad
+
+
+def test_evaluator_migrates_legacy_direction_weights_without_persisting_grid() -> None:
+    torch = pytest.importorskip("torch")
+    module = load_evaluation_module()
+    policy = module.build_policy(
+        "recurrent_contention_shared",
+        8,
+        hidden_dim=16,
+        action_contract="joint_role_beam",
+        use_contention_mode_prior=False,
+        azimuth_cells=4,
+        elevation_cells=2,
+        disabled_modes=("sense", "idle"),
+    )
+    target = policy.model.state_dict()
+    legacy = {key: value.clone() for key, value in target.items()}
+    legacy["beam_linear.weight"] = legacy["beam_linear.weight"][:, :-3]
+    legacy["beam_center_directions"] = torch.ones((8, 3))
+
+    migrated = module.migrate_policy_state_dict(legacy, target)
+
+    assert "beam_center_directions" not in target
+    assert "beam_center_directions" not in migrated
+    assert migrated["beam_linear.weight"].shape == target["beam_linear.weight"].shape
+    assert torch.count_nonzero(migrated["beam_linear.weight"][:, -3:]) == 0
 
 
 def test_recurrent_beam_grid_wraps_azimuth_but_not_elevation() -> None:

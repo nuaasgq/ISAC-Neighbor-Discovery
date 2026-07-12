@@ -236,7 +236,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--role-factorization",
-        choices=("independent", "beam_conditioned"),
+        choices=("independent", "beam_conditioned", "beam_conditioned_antisymmetric"),
         default="independent",
     )
     parser.add_argument(
@@ -535,7 +535,7 @@ def validate_args(args: argparse.Namespace) -> None:
         getattr(args, "action_contract", "joint_role_beam")
     ) != "joint_role_beam":
         raise ValueError("--decoupled-role-tower requires --action-contract joint_role_beam.")
-    if str(getattr(args, "role_factorization", "independent")) == "beam_conditioned":
+    if str(getattr(args, "role_factorization", "independent")) != "independent":
         if str(getattr(args, "network", "")) != "recurrent_contention_shared":
             raise ValueError("--role-factorization beam_conditioned requires recurrent_contention_shared.")
         if str(getattr(args, "action_contract", "")) != "joint_role_beam":
@@ -2559,9 +2559,12 @@ def architecture_version(args: argparse.Namespace) -> str:
     actor = str(getattr(args, "network", "shared"))
     critic = str(getattr(args, "critic_network", "pooled"))
     contract = str(getattr(args, "action_contract", "joint_role_beam"))
+    role_factorization = str(getattr(args, "role_factorization", "independent"))
+    if actor == "recurrent_contention_shared" and role_factorization == "beam_conditioned_antisymmetric":
+        return f"joint_antisymmetric_beam_conditioned_role_recurrent_{critic}_direction_v1"
     if (
         actor == "recurrent_contention_shared"
-        and str(getattr(args, "role_factorization", "independent")) == "beam_conditioned"
+        and role_factorization != "independent"
     ):
         return f"joint_beam_conditioned_role_recurrent_{critic}_direction_v1"
     if (
@@ -2573,13 +2576,13 @@ def architecture_version(args: argparse.Namespace) -> str:
         if contract == "joint_role_beam" and bool(
             getattr(args, "decoupled_role_tower", False)
         ):
-            return "joint_decoupled_role_recurrent_beam_mpnn_score_residual_v4"
+            return "joint_decoupled_role_recurrent_beam_mpnn_score_residual_direction_v5"
         if bool(getattr(args, "bounded_score_residual", False)):
-            return f"{prefix}_recurrent_mpnn_bounded_score_residual_v3"
-        return f"{prefix}_recurrent_mpnn_score_residual_v2"
+            return f"{prefix}_recurrent_mpnn_bounded_score_residual_direction_v4"
+        return f"{prefix}_recurrent_mpnn_score_residual_direction_v3"
     if actor == "recurrent_contention_shared" and critic == "mpnn":
         prefix = "joint" if contract == "joint_role_beam" else "beam_only"
-        return f"{prefix}_recurrent_mpnn_v1"
+        return f"{prefix}_recurrent_mpnn_direction_v2"
     if actor == "recurrent_contention_shared":
         prefix = "joint" if contract == "joint_role_beam" else "beam_only"
         return f"{prefix}_recurrent_{critic}_direction_v2"
@@ -2804,8 +2807,14 @@ def build_manifest(
         "role_factorization": str(getattr(args, "role_factorization", "independent")),
         "role_conditioning": (
             "selected_beam"
-            if str(getattr(args, "role_factorization", "independent")) == "beam_conditioned"
+            if str(getattr(args, "role_factorization", "independent")) != "independent"
             else "none"
+        ),
+        "role_symmetry": (
+            "learned_global_direction_odd_tx_rx_logits"
+            if str(getattr(args, "role_factorization", "independent"))
+            == "beam_conditioned_antisymmetric"
+            else "unconstrained"
         ),
         "actor_gradient_isolation": (
             "role_and_beam_towers_disjoint"

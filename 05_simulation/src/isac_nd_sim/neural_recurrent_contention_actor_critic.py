@@ -112,16 +112,20 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self.supports_access_gate_action = False
         self.action_contract = str(action_contract)
         self.role_factorization = str(role_factorization)
-        if self.role_factorization not in {"independent", "beam_conditioned"}:
-            raise ValueError("role_factorization must be 'independent' or 'beam_conditioned'.")
-        if self.role_factorization == "beam_conditioned" and self.action_contract != "joint_role_beam":
-            raise ValueError("beam_conditioned roles require joint_role_beam.")
+        if self.role_factorization not in {
+            "independent",
+            "beam_conditioned",
+            "beam_conditioned_antisymmetric",
+        }:
+            raise ValueError("Unsupported role_factorization.")
+        if self.role_factorization != "independent" and self.action_contract != "joint_role_beam":
+            raise ValueError("Beam-conditioned roles require joint_role_beam.")
         self.learned_mode_head_present = self.action_contract == "joint_role_beam"
         self.use_decoupled_role_tower = bool(use_decoupled_role_tower)
         if self.use_decoupled_role_tower and not self.learned_mode_head_present:
             raise ValueError("decoupled role tower requires joint_role_beam.")
-        if self.role_factorization == "beam_conditioned" and not self.use_decoupled_role_tower:
-            raise ValueError("beam_conditioned roles require the decoupled role tower.")
+        if self.role_factorization != "independent" and not self.use_decoupled_role_tower:
+            raise ValueError("Beam-conditioned roles require the decoupled role tower.")
         self.disabled_mode_indices = tuple(
             MODE_NAMES.index(mode) for mode in (disabled_modes or ()) if mode in MODE_NAMES
         )
@@ -225,7 +229,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         )
         self._recurrent_state = next_state.detach()
         sample_beam_logits = _temperature_scaled_logits(beam_logits, beam_temperature)
-        beam_dist = Categorical(logits=sample_beam_logits)
+        beam_dist = self._beam_distribution(sample_beam_logits)
         if deterministic:
             beam_idx = torch.argmax(beam_logits, dim=-1)
         else:
@@ -339,7 +343,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
                 recurrent_state,
                 hard_mask=True,
             )
-            beam_dist = Categorical(logits=beam_logits)
+            beam_dist = self._beam_distribution(beam_logits)
             action_beams = torch.as_tensor(
                 [int(action.beam) for action in actions],
                 dtype=torch.long,
@@ -398,10 +402,9 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
     def _marginal_mode_logits(self, mode_logits, beam_logits):
         if mode_logits.ndim == 2:
             return mode_logits
-        joint_log_probability = (
-            self.torch.log_softmax(beam_logits, dim=-1).unsqueeze(-1)
-            + self.torch.log_softmax(mode_logits, dim=-1)
-        )
+        joint_log_probability = self.torch.log(
+            self._beam_probabilities(beam_logits).clamp_min(1.0e-12)
+        ).unsqueeze(-1) + self.torch.log_softmax(mode_logits, dim=-1)
         return self.torch.logsumexp(joint_log_probability, dim=1)
 
     def _conditional_mode_entropy(self, mode_logits, beam_logits):
@@ -410,8 +413,26 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         if mode_logits.ndim == 2:
             return Categorical(logits=mode_logits).entropy()
         per_beam_entropy = Categorical(logits=mode_logits).entropy()
-        beam_probability = self.torch.softmax(beam_logits, dim=-1)
+        beam_probability = self._beam_probabilities(beam_logits)
         return (beam_probability * per_beam_entropy).sum(dim=-1)
+
+    def _beam_probabilities(self, beam_logits):
+        probabilities = self.torch.softmax(beam_logits, dim=-1)
+        if self.beam_uniform_mixture <= 0.0:
+            return probabilities
+        valid = beam_logits > -1.0e8
+        has_valid = valid.any(dim=-1, keepdim=True)
+        valid = self.torch.where(has_valid, valid, self.torch.ones_like(valid))
+        uniform = valid.to(probabilities.dtype) / valid.sum(dim=-1, keepdim=True).clamp_min(1)
+        return (
+            (1.0 - self.beam_uniform_mixture) * probabilities
+            + self.beam_uniform_mixture * uniform
+        )
+
+    def _beam_distribution(self, beam_logits):
+        from torch.distributions import Categorical
+
+        return Categorical(probs=self._beam_probabilities(beam_logits))
 
     def _step_from_state(self, observations: Sequence[dict], recurrent_state, *, hard_mask: bool):
         if not observations:
@@ -514,6 +535,7 @@ class _RecurrentContentionGraphActorCriticModule:
                         beam_center_direction_features(self.azimuth_cells, self.elevation_cells),
                         dtype=torch.float32,
                     ),
+                    persistent=False,
                 )
                 self.beam_convolution = BeamGridResidualBlock(hidden_dim)
                 self.contention_encoder = nn.Sequential(
@@ -537,6 +559,8 @@ class _RecurrentContentionGraphActorCriticModule:
                 self.value_head = nn.Linear(hidden_dim, 1)
                 self.role_encoder = None
                 self.role_beam_encoder = None
+                self.role_direction_axis = None
+                self.role_direction_raw_scale = None
                 if use_learned_mode_head and use_decoupled_role_tower:
                     role_input_dim = dims.contention_dim + 4 + 4 + 1 + dims.candidate_stats_dim
                     self.role_encoder = nn.Sequential(
@@ -553,6 +577,18 @@ class _RecurrentContentionGraphActorCriticModule:
                             nn.SiLU(),
                             nn.Linear(hidden_dim, hidden_dim),
                             nn.SiLU(),
+                        )
+                    elif role_factorization == "beam_conditioned_antisymmetric":
+                        self.role_direction_axis = nn.Parameter(torch.empty(3))
+                        nn.init.normal_(self.role_direction_axis, mean=0.0, std=1.0)
+                        direction_mask = [1.0, 1.0, 0.0] if self.elevation_cells == 1 else [1.0, 1.0, 1.0]
+                        self.register_buffer(
+                            "role_direction_mask",
+                            torch.tensor(direction_mask, dtype=torch.float32),
+                            persistent=False,
+                        )
+                        self.role_direction_raw_scale = nn.Parameter(
+                            torch.tensor(float(np.log(np.expm1(2.0))), dtype=torch.float32)
                         )
                 self.mode_head = nn.Linear(hidden_dim, len(MODE_NAMES)) if use_learned_mode_head else None
                 if self.mode_head is not None:
@@ -637,7 +673,20 @@ class _RecurrentContentionGraphActorCriticModule:
                         role_hidden = self.role_encoder(role_input)
                     else:
                         role_hidden = next_state
-                    if self.role_beam_encoder is not None:
+                    if self.role_direction_axis is not None:
+                        global_directions = self._global_beam_directions(tensors["self_state"])
+                        masked_axis = self.role_direction_axis * self.role_direction_mask
+                        direction_axis = masked_axis / masked_axis.norm().clamp_min(1.0e-6)
+                        role_scale = functional.softplus(self.role_direction_raw_scale)
+                        role_score = role_scale * (global_directions @ direction_axis)
+                        mode_logits = torch.zeros(
+                            (*role_score.shape, len(MODE_NAMES)),
+                            dtype=role_score.dtype,
+                            device=role_score.device,
+                        )
+                        mode_logits[..., MODE_NAMES.index("tx")] = role_score
+                        mode_logits[..., MODE_NAMES.index("rx")] = -role_score
+                    elif self.role_beam_encoder is not None:
                         role_beam_hidden = self.role_beam_encoder(beam_inputs)
                         mode_logits = self.mode_head(
                             functional.silu(role_hidden.unsqueeze(1) + role_beam_hidden)
@@ -651,6 +700,25 @@ class _RecurrentContentionGraphActorCriticModule:
                         device=next_state.device,
                     )
                 return mode_logits, beam_logits, value, next_state
+
+            def _global_beam_directions(self, self_state: torch.Tensor) -> torch.Tensor:
+                body = self.beam_center_directions.unsqueeze(0).expand(self_state.shape[0], -1, -1)
+                yaw = self_state[:, 6] * np.pi
+                pitch = self_state[:, 7] * (np.pi / 2.0)
+                roll = self_state[:, 8] * np.pi
+                cy, sy = torch.cos(yaw)[:, None], torch.sin(yaw)[:, None]
+                cp, sp = torch.cos(pitch)[:, None], torch.sin(pitch)[:, None]
+                cr, sr = torch.cos(roll)[:, None], torch.sin(roll)[:, None]
+                x1 = body[..., 0]
+                y1 = cr * body[..., 1] - sr * body[..., 2]
+                z1 = sr * body[..., 1] + cr * body[..., 2]
+                x2 = cp * x1 + sp * z1
+                y2 = y1
+                z2 = -sp * x1 + cp * z1
+                return torch.stack(
+                    [cy * x2 - sy * y2, sy * x2 + cy * y2, z2],
+                    dim=-1,
+                )
 
             def _candidate_prior_logits(self, tensors: dict[str, torch.Tensor]) -> torch.Tensor:
                 scores = torch.clamp(tensors["candidate_score"], min=0.0)

@@ -165,6 +165,7 @@ def build_local_q_network(
                     beam_center_direction_features(azimuth_cells, elevation_cells),
                     dtype=torch.float32,
                 ),
+                persistent=False,
             )
             self.beam_encoder = nn.Sequential(
                 nn.Linear(beam_dim, hidden_dim),
