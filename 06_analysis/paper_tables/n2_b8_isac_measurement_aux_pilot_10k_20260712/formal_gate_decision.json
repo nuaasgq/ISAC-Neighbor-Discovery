@@ -1,0 +1,27 @@
+{
+  "primary_three_arm_formal_gate_passed": true,
+  "full_four_arm_formal_gate_passed": false,
+  "common_criteria": {
+    "contract_audit_passed": true
+  },
+  "direct_auxiliary_criteria": {
+    "action_contrast_positive_all_seeds": true,
+    "action_contrast_above_10pp_all_seeds": true,
+    "ba_above_no_isac_all_seeds": true,
+    "discovery_above_no_isac_all_seeds": true,
+    "tx_ratio_35_to_65_percent_all_seeds": true,
+    "final_training_discovery_at_least_60_percent_all_seeds": true,
+    "final_training_not_down_more_than_5pp_all_seeds": true,
+    "replay_error_zero_all_final_blocks": true
+  },
+  "residual_auxiliary_criteria": {
+    "action_contrast_positive_all_seeds": true,
+    "action_contrast_above_10pp_all_seeds": true,
+    "ba_above_no_isac_all_seeds": true,
+    "discovery_above_no_isac_all_seeds": true,
+    "tx_ratio_35_to_65_percent_all_seeds": true,
+    "final_training_discovery_at_least_60_percent_all_seeds": true,
+    "final_training_not_down_more_than_5pp_all_seeds": false,
+    "replay_error_zero_all_final_blocks": true
+  }
+}

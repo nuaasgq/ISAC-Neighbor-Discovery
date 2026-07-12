@@ -1,0 +1,1457 @@
+{
+  "passed": true,
+  "check_count": 290,
+  "failed_count": 0,
+  "checks": [
+    {
+      "check": "learned_beam_no_isac:three_seeds",
+      "passed": true,
+      "detail": "found=3"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='none'; expected='none'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:protocol",
+      "passed": true,
+      "detail": "observed='structured_marl_no_isac'; expected='structured_marl_no_isac'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39260711:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='none'; expected='none'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:protocol",
+      "passed": true,
+      "detail": "observed='structured_marl_no_isac'; expected='structured_marl_no_isac'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39261720:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='none'; expected='none'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:protocol",
+      "passed": true,
+      "detail": "observed='structured_marl_no_isac'; expected='structured_marl_no_isac'"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_no_isac/seed_39262729:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_direct_isac:three_seeds",
+      "passed": true,
+      "detail": "found=3"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='direct'; expected='direct'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39260711:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='direct'; expected='direct'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39261720:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='direct'; expected='direct'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_direct_isac/seed_39262729:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux:three_seeds",
+      "passed": true,
+      "detail": "found=3"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='direct'; expected='direct'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.1; expected=0.1"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39260711:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='direct'; expected='direct'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.1; expected=0.1"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39261720:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='direct'; expected='direct'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.1; expected=0.1"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_direct_isac_measurement_aux/seed_39262729:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux:three_seeds",
+      "passed": true,
+      "detail": "found=3"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='residual'; expected='residual'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.1; expected=0.1"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39260711:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='residual'; expected='residual'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.1; expected=0.1"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39261720:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:node_count",
+      "passed": true,
+      "detail": "observed=2; expected=2"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:beam_count",
+      "passed": true,
+      "detail": "observed=8; expected=8"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:slots_per_episode",
+      "passed": true,
+      "detail": "observed=16; expected=16"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:action_contract",
+      "passed": true,
+      "detail": "observed='joint_role_beam'; expected='joint_role_beam'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:network",
+      "passed": true,
+      "detail": "observed='recurrent_contention_shared'; expected='recurrent_contention_shared'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:role_factorization",
+      "passed": true,
+      "detail": "observed='beam_conditioned_antisymmetric'; expected='beam_conditioned_antisymmetric'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:decoupled_role_tower",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:clean_ctde",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:actor_global_state_access",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:pair_derived_action_guidance_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:rendezvous_observation_enabled",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:single_rf_chain",
+      "passed": true,
+      "detail": "observed=True; expected=True"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:allow_standalone_sense",
+      "passed": true,
+      "detail": "observed=False; expected=False"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:expert_bc_weight",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:beam_isac_feedback_coef",
+      "passed": true,
+      "detail": "observed=0.0; expected=0.0"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:measurement_feature_set",
+      "passed": true,
+      "detail": "observed='residual'; expected='residual'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:aux_coefficient",
+      "passed": true,
+      "detail": "observed=0.1; expected=0.1"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:protocol",
+      "passed": true,
+      "detail": "observed='improved_rl_isac_tables'; expected='improved_rl_isac_tables'"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:feature_flags_disabled",
+      "passed": true,
+      "detail": "{\"candidate_mask\": false, \"candidate_score\": false, \"rule_residual\": false, \"topology_deficit\": false}"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:uniform_exploration",
+      "passed": true,
+      "detail": "{\"beam_uniform_mixture\": 0.1, \"role_probability_floor\": 0.0}"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:train_rows",
+      "passed": true,
+      "detail": "found=625"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:eval_rows",
+      "passed": true,
+      "detail": "found=200"
+    },
+    {
+      "check": "learned_beam_residual_isac_measurement_aux/seed_39262729:replay_error",
+      "passed": true,
+      "detail": "maximum must be zero"
+    },
+    {
+      "check": "matrix:three_common_seeds",
+      "passed": true,
+      "detail": "seeds=[39260711, 39261720, 39262729]"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_direct_isac:seed_39260711",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_direct_isac_measurement_aux:seed_39260711",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_residual_isac_measurement_aux:seed_39260711",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_direct_isac:seed_39261720",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_direct_isac_measurement_aux:seed_39261720",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_residual_isac_measurement_aux:seed_39261720",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_direct_isac:seed_39262729",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_direct_isac_measurement_aux:seed_39262729",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    },
+    {
+      "check": "matrix:paired_eval_scenarios:learned_beam_residual_isac_measurement_aux:seed_39262729",
+      "passed": true,
+      "detail": "stochastic scenario-seed sequence equals no-ISAC control"
+    }
+  ]
+}

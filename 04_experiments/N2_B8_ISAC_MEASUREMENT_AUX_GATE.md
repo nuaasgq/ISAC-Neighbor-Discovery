@@ -43,6 +43,12 @@ Read-only monitoring:
 python 05_simulation/scripts/monitor_n2_b8_isac_measurement_aux_matrix.py --profile pilot --run-root 05_simulation/results_raw/n2_b8_isac_measurement_aux_pilot_3seed
 ```
 
+Continuously refreshed monitoring:
+
+```powershell
+python 05_simulation/scripts/monitor_n2_b8_isac_measurement_aux_matrix.py --profile pilot --run-root 05_simulation/results_raw/n2_b8_isac_measurement_aux_pilot_3seed --watch --interval-seconds 30
+```
+
 ## Gate Decision
 
 Do not launch the formal profile unless both auxiliary arms satisfy all of the following across every training seed:
@@ -53,3 +59,18 @@ Do not launch the formal profile unless both auxiliary arms satisfy all of the f
 4. Stable or improving final training blocks.
 
 The direct-versus-residual contrast determines whether engineered residual features are necessary. A direct-measurement success is preferred because it supports the cleaner data-driven claim.
+
+## Pilot Decision
+
+The 10k-step pilot passed the primary direct-measurement gate but not the complete four-arm
+gate. The residual arm failed late-training stability in one seed. The next formal campaign is
+therefore restricted to the no-ISAC control, direct ISAC without auxiliary prediction, and
+direct ISAC with auxiliary prediction:
+
+```powershell
+python 05_simulation/scripts/run_n2_b8_isac_measurement_aux_matrix.py `
+  --profile formal `
+  --methods learned_beam_no_isac,learned_beam_direct_isac,learned_beam_direct_isac_measurement_aux `
+  --run-root 05_simulation/results_raw/n2_b8_isac_measurement_aux_formal_primary_3seed `
+  --max-parallel 2
+```

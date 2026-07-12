@@ -1,0 +1,16 @@
+{
+  "raw_run": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\05_simulation\\results_raw\\n2_b8_isac_measurement_aux_pilot_3seed",
+  "table_dir": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_tables\\n2_b8_isac_measurement_aux_pilot_10k_20260712",
+  "figure_dir": "C:\\Users\\沈高青\\Documents\\通感一体化辅助的窄波束邻居发现方法研究\\06_analysis\\paper_figures\\n2_b8_isac_measurement_aux_pilot_10k_20260712",
+  "evaluation_phase": "eval_stochastic",
+  "inference_unit": "independent_training_seed",
+  "training_seeds": [
+    39260711,
+    39261720,
+    39262729
+  ],
+  "probe_scenarios": 32,
+  "probe_information_source": "synthetic_actor_visible_local_anonymous_measurements_only",
+  "primary_three_arm_formal_gate_passed": true,
+  "full_four_arm_formal_gate_passed": false
+}

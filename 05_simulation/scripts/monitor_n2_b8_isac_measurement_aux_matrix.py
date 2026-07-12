@@ -4,8 +4,14 @@ import argparse
 import csv
 import json
 from pathlib import Path
+import time
 
-from run_n2_b8_isac_measurement_aux_matrix import DEFAULT_SEEDS, METHOD_SPECS, PROFILES
+from run_n2_b8_isac_measurement_aux_matrix import (
+    DEFAULT_SEEDS,
+    METHOD_SPECS,
+    PROFILES,
+    parse_methods,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -19,6 +25,13 @@ def parse_args() -> argparse.Namespace:
         default=",".join(str(seed) for seed in DEFAULT_SEEDS),
     )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON only.")
+    parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Refresh the human-readable status until every run completes.",
+    )
+    parser.add_argument("--interval-seconds", type=float, default=30.0)
+    parser.add_argument("--methods", default=",".join(METHOD_SPECS))
     return parser.parse_args()
 
 
@@ -67,15 +80,29 @@ def run_status(output: Path, expected_episodes: int, expected_steps: int) -> dic
     }
 
 
-def collect_status(run_root: Path, profile: str, seeds: tuple[int, ...]) -> dict[str, object]:
+def collect_status(
+    run_root: Path, profile: str, seeds: tuple[int, ...], methods: tuple[str, ...] | None = None
+) -> dict[str, object]:
     expected_episodes = int(PROFILES[profile]["episodes"])
     expected_steps = expected_episodes * 16
     runs: dict[str, object] = {}
-    for method in METHOD_SPECS:
+    for method in methods or tuple(METHOD_SPECS):
         for seed in seeds:
             key = f"{method}/seed_{seed}"
             runs[key] = run_status(run_root / method / f"seed_{seed}", expected_episodes, expected_steps)
     states = [str(value["state"]) for value in runs.values()]  # type: ignore[index]
+    completed_steps = sum(int(value["training_step"]) for value in runs.values())  # type: ignore[index]
+    expected_total_steps = expected_steps * len(runs)
+    rss_values = [
+        float(value["latest_rss_mb"])
+        for value in runs.values()  # type: ignore[union-attr]
+        if value["latest_rss_mb"] is not None
+    ]
+    memory_values = [
+        float(value["latest_system_memory_percent"])
+        for value in runs.values()  # type: ignore[union-attr]
+        if value["latest_system_memory_percent"] is not None
+    ]
     return {
         "run_root": str(run_root.resolve()),
         "profile": profile,
@@ -83,25 +110,54 @@ def collect_status(run_root: Path, profile: str, seeds: tuple[int, ...]) -> dict
         "complete_runs": states.count("complete"),
         "partial_runs": states.count("partial"),
         "missing_runs": states.count("missing"),
+        "completed_training_steps": completed_steps,
+        "expected_total_training_steps": expected_total_steps,
+        "overall_progress_percent": 100.0 * completed_steps / max(1, expected_total_steps),
+        "latest_max_run_rss_mb": max(rss_values) if rss_values else None,
+        "latest_max_system_memory_percent": max(memory_values) if memory_values else None,
         "runs": runs,
     }
 
 
-def main() -> None:
-    args = parse_args()
-    status = collect_status(args.run_root, args.profile, parse_seeds(args.seeds))
-    if args.json:
-        print(json.dumps(status, ensure_ascii=False, indent=2))
-        return
+def print_human_status(status: dict[str, object]) -> None:
     print(
         f"complete={status['complete_runs']}/{status['expected_runs']} "
-        f"partial={status['partial_runs']} missing={status['missing_runs']}"
+        f"partial={status['partial_runs']} missing={status['missing_runs']} "
+        f"overall={status['overall_progress_percent']:.2f}% "
+        f"step={status['completed_training_steps']}/{status['expected_total_training_steps']}"
     )
+    memory = status["latest_max_system_memory_percent"]
+    memory_text = f"{memory:.1f}%" if memory is not None else "n/a"
+    rss = status["latest_max_run_rss_mb"]
+    rss_text = f"{rss:.1f} MB" if rss is not None else "n/a"
+    print(f"max_run_rss={rss_text} system_memory={memory_text}")
     for key, value in status["runs"].items():  # type: ignore[union-attr]
         print(
             f"{value['state']:8s} {value['progress_percent']:6.2f}% "
             f"step={value['training_step']:6d}/{value['expected_training_steps']:6d} {key}"
         )
+
+
+def main() -> None:
+    args = parse_args()
+    if args.watch and args.json:
+        raise ValueError("--watch and --json cannot be combined.")
+    if args.interval_seconds <= 0.0:
+        raise ValueError("--interval-seconds must be positive.")
+    seeds = parse_seeds(args.seeds)
+    methods = parse_methods(args.methods)
+    while True:
+        status = collect_status(args.run_root, args.profile, seeds, methods)
+        if args.json:
+            print(json.dumps(status, ensure_ascii=False, indent=2))
+            return
+        if args.watch:
+            print("\033[2J\033[H", end="")
+            print(time.strftime("ISAC experiment progress  %Y-%m-%d %H:%M:%S"))
+        print_human_status(status)
+        if not args.watch or int(status["complete_runs"]) == int(status["expected_runs"]):
+            return
+        time.sleep(args.interval_seconds)
 
 
 if __name__ == "__main__":

@@ -71,3 +71,20 @@ def test_measurement_arms_are_directly_predeclared_without_action_credit(tmp_pat
 def test_formal_profile_is_exactly_100k_environment_steps_per_run() -> None:
     module = load_launcher()
     assert module.PROFILES["formal"]["episodes"] * 16 == 100_000
+
+
+def test_primary_formal_subset_is_validated_without_residual_arm(tmp_path: Path) -> None:
+    module = load_launcher()
+    methods = module.parse_methods(
+        "learned_beam_no_isac,learned_beam_direct_isac,"
+        "learned_beam_direct_isac_measurement_aux"
+    )
+    commands = [
+        module.training_command("formal", tmp_path, method, seed, 1)
+        for seed in module.DEFAULT_SEEDS
+        for method in methods
+    ]
+
+    module.validate_matrix_contract(commands, len(methods))
+
+    assert len(commands) == 9

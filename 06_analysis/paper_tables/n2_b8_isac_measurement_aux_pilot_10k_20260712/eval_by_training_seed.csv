@@ -1,0 +1,13 @@
+method,method_label,training_seed,eval_episodes,discovery_rate,mean_delay_censored_slots,bilateral_alignment_per_active_pair_slot,aligned_opportunity_per_bilateral_alignment,success_per_aligned_opportunity,tx_ratio
+learned_beam_no_isac,"MARL, no ISAC",39260711,100,0.15,15.16,0.013852242744063324,0.7142857142857143,1.0,0.4928125
+learned_beam_no_isac,"MARL, no ISAC",39261720,100,0.17,14.8,0.015540540540540541,0.7391304347826086,1.0,0.48
+learned_beam_no_isac,"MARL, no ISAC",39262729,100,0.19,14.63,0.01572112098427888,0.8260869565217391,1.0,0.389375
+learned_beam_direct_isac,MARL + direct ISAC,39260711,100,0.05,15.46,0.004527813712807244,0.7142857142857143,1.0,0.211875
+learned_beam_direct_isac,MARL + direct ISAC,39261720,100,0.16,15.02,0.012649800266311585,0.8421052631578947,1.0,0.7615625
+learned_beam_direct_isac,MARL + direct ISAC,39262729,100,0.74,11.2,0.07767857142857143,0.8505747126436781,1.0,0.501875
+learned_beam_direct_isac_measurement_aux,Direct ISAC + auxiliary,39260711,100,0.88,9.89,0.11324570273003033,0.7857142857142857,1.0,0.5928125
+learned_beam_direct_isac_measurement_aux,Direct ISAC + auxiliary,39261720,100,0.83,10.18,0.1031434184675835,0.7904761904761904,1.0,0.6340625
+learned_beam_direct_isac_measurement_aux,Direct ISAC + auxiliary,39262729,100,0.88,10.17,0.1071779744346116,0.8073394495412844,1.0,0.5840625
+learned_beam_residual_isac_measurement_aux,Residual ISAC + auxiliary,39260711,100,0.83,11.15,0.09775784753363229,0.7614678899082569,1.0,0.5528125
+learned_beam_residual_isac_measurement_aux,Residual ISAC + auxiliary,39261720,100,0.76,9.7,0.09175257731958762,0.8539325842696629,1.0,0.5409375
+learned_beam_residual_isac_measurement_aux,Residual ISAC + auxiliary,39262729,100,0.8,10.49,0.09246901811248809,0.8247422680412371,1.0,0.6178125
