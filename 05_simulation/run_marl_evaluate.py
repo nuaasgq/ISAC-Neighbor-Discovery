@@ -20,6 +20,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
+from isac_nd_sim.evaluation_timeline import (  # noqa: E402
+    discovery_curve_summary,
+    discovery_timeline_rows,
+)
 from isac_nd_sim.marl_env import CANDIDATE_SOURCES, REWARD_VERSIONS, MarlNeighborDiscoveryEnv  # noqa: E402
 from isac_nd_sim.neural_contention_actor_critic import (  # noqa: E402
     AdaptiveGatedContentionGraphActorCritic,
@@ -175,6 +179,19 @@ def parse_args() -> argparse.Namespace:
         help="Classify selected beams with offline true topology; disabled by default because it is expensive.",
     )
     parser.add_argument(
+        "--collect-discovery-timeline",
+        action="store_true",
+        help="Write censored edge first-discovery rows and cumulative-curve metrics.",
+    )
+    parser.add_argument(
+        "--condition-role-on-executed-beam",
+        action="store_true",
+        help=(
+            "Choose a non-policy beam first, then condition a beam-dependent policy role "
+            "head on that executed beam."
+        ),
+    )
+    parser.add_argument(
         "--no-resume",
         action="store_true",
         help="Disable resume from an existing partial eval_episode_metrics.csv in the output directory.",
@@ -286,6 +303,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         args, cfg, feature_flags, env_protocol, candidate_source, reward_version
     )
     resource_rows: list[dict[str, Any]] = []
+    timeline_rows: list[dict[str, Any]] = []
     eval_rows = evaluate_policy(
         cfg,
         policy,
@@ -296,9 +314,12 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         reward_version,
         progress_dir=output,
         resource_rows=resource_rows,
+        timeline_rows=timeline_rows,
     )
     write_rows(output / "eval_episode_metrics.csv", eval_rows)
     write_rows(output / "resource_log.csv", resource_rows)
+    if bool(args.collect_discovery_timeline):
+        write_rows(output / "edge_discovery_timeline.csv", timeline_rows)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "scope": "marl_transfer_evaluation",
@@ -382,6 +403,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         "policy_rng_seed_policy": "torch_and_numpy_episode_seed",
         "beam_executor": str(args.beam_executor),
         "mode_executor": str(args.mode_executor),
+        "condition_role_on_executed_beam": bool(args.condition_role_on_executed_beam),
         "resource_limits": {
             "max_rss_mb": float(args.max_rss_mb),
             "max_system_memory_percent": float(args.max_system_memory_percent),
@@ -394,9 +416,15 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
             "collect_slot_metrics": bool(getattr(args, "full_step_info", False)),
             "rich_info": bool(getattr(args, "full_step_info", False)),
             "target_status_diagnostics": bool(getattr(args, "target_status_diagnostics", False)),
+            "collect_discovery_timeline": bool(args.collect_discovery_timeline),
         },
         "final_eval": eval_rows[-1] if eval_rows else {},
-        "files": ["eval_episode_metrics.csv", "resource_log.csv", "manifest.json"],
+        "files": [
+            "eval_episode_metrics.csv",
+            "resource_log.csv",
+            *(["edge_discovery_timeline.csv"] if bool(args.collect_discovery_timeline) else []),
+            "manifest.json",
+        ],
     }
     (output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
@@ -501,6 +529,8 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "area_size_m": None,
         "full_step_info": False,
         "target_status_diagnostics": False,
+        "collect_discovery_timeline": False,
+        "condition_role_on_executed_beam": False,
         "no_resume": False,
         "resource_log_period": 500,
         "max_rss_mb": 12000.0,
@@ -680,6 +710,10 @@ def evaluation_fingerprint(
         "beam_executor": str(args.beam_executor),
         "mode_executor": str(args.mode_executor),
         "target_status_diagnostics": bool(getattr(args, "target_status_diagnostics", False)),
+        "collect_discovery_timeline": bool(getattr(args, "collect_discovery_timeline", False)),
+        "condition_role_on_executed_beam": bool(
+            getattr(args, "condition_role_on_executed_beam", False)
+        ),
         "disable_rendezvous_adapter": bool(args.disable_rendezvous_adapter),
         "allow_idle": bool(args.allow_idle),
         "seed": int(args.seed),
@@ -698,6 +732,7 @@ def evaluate_policy(
     reward_version: str,
     progress_dir: Path | None = None,
     resource_rows: list[dict[str, Any]] | None = None,
+    timeline_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows = (
         existing_eval_rows(progress_dir, str(args._evaluation_fingerprint))
@@ -743,15 +778,37 @@ def evaluate_policy(
                 truncated = False
                 slot = 0
                 while not truncated:
-                    step = policy.act(
-                        observations,
-                        deterministic=not use_stochastic,
-                        mode_temperature=float(args.mode_temperature),
-                        beam_temperature=float(args.beam_temperature),
-                        gate_temperature=float(args.gate_temperature),
-                        role_rng=(role_rng if getattr(policy, "action_contract", "") == "beam_only_fixed_role" else None),
+                    forced_beams = None
+                    if bool(getattr(args, "condition_role_on_executed_beam", False)):
+                        if str(args.mode_executor) != "policy":
+                            raise ValueError(
+                                "--condition-role-on-executed-beam requires --mode-executor policy."
+                            )
+                        if str(args.beam_executor) == "policy":
+                            raise ValueError(
+                                "--condition-role-on-executed-beam requires a non-policy beam executor."
+                            )
+                        forced_beams = external_beam_indices(env, args)
+                    act_kwargs = {
+                        "deterministic": not use_stochastic,
+                        "mode_temperature": float(args.mode_temperature),
+                        "beam_temperature": float(args.beam_temperature),
+                        "gate_temperature": float(args.gate_temperature),
+                        "role_rng": (
+                            role_rng
+                            if getattr(policy, "action_contract", "") == "beam_only_fixed_role"
+                            else None
+                        ),
+                    }
+                    if forced_beams is not None:
+                        act_kwargs["forced_beam_indices"] = forced_beams
+                    step = policy.act(observations, **act_kwargs)
+                    executed_actions = apply_action_executor(
+                        step.actions,
+                        env,
+                        args,
+                        beams_already_executed=forced_beams is not None,
                     )
-                    executed_actions = apply_action_executor(step.actions, env, args)
                     observations, reward, _terminated, truncated, _info = env.step(executed_actions)
                     rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
                     slot += 1
@@ -787,6 +844,18 @@ def evaluate_policy(
                     "step_reward_mean": float(rewards_tensor.mean().item()),
                 }
                 row.update(summary)
+                if bool(getattr(args, "collect_discovery_timeline", False)):
+                    row.update(discovery_curve_summary(env._sim))
+                    if timeline_rows is not None:
+                        timeline_rows.extend(
+                            discovery_timeline_rows(
+                                env._sim,
+                                eval_episode=episode,
+                                scenario_seed=seed,
+                                method=str(args.ablation_label or args.policy_ablation),
+                                phase=phase,
+                            )
+                        )
                 rows.append(row)
                 if progress_dir is not None:
                     write_rows(progress_dir / "eval_episode_metrics.csv", rows)
@@ -825,7 +894,13 @@ def evaluate_policy(
     return rows
 
 
-def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, args: argparse.Namespace) -> list[Action]:
+def apply_action_executor(
+    actions: list[Action],
+    env: MarlNeighborDiscoveryEnv,
+    args: argparse.Namespace,
+    *,
+    beams_already_executed: bool = False,
+) -> list[Action]:
     """Apply optional rule-based execution constraints to neural MARL actions.
 
     The helper uses only simulator-local public memory: belief, success/failure
@@ -848,6 +923,8 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
             mode = env._sim.select_mode(node, env._slot)
         if mode == MODE_IDLE:
             beam = 0
+        elif beams_already_executed:
+            beam = action.beam
         elif beam_executor == "uniform_random":
             beam = uniform_random_beam(env, mode)
         elif beam_executor == "local_candidate_random":
@@ -860,6 +937,28 @@ def apply_action_executor(actions: list[Action], env: MarlNeighborDiscoveryEnv, 
             beam = wang_candidate_random_beam(env, node, mode)
         rewritten.append(Action(mode, int(beam), action.access_gate))
     return rewritten
+
+
+def external_beam_indices(env: MarlNeighborDiscoveryEnv, args: argparse.Namespace) -> list[int]:
+    """Choose external beams before evaluating a beam-conditioned role head."""
+
+    executor = str(getattr(args, "beam_executor", "policy"))
+    beams: list[int] = []
+    for node in range(env.n_agents):
+        if executor == "uniform_random":
+            beam = uniform_random_beam(env, MODE_TX)
+        elif executor == "local_candidate_random":
+            beam = local_candidate_random_beam(env, node, MODE_TX)
+        elif executor == "candidate_score_proportional":
+            beam = local_candidate_score_proportional_beam(env, node, MODE_TX)
+        elif executor == "rule_candidate":
+            beam = rule_candidate_beam(env, node, env._slot, MODE_TX)
+        elif executor == "wang_candidate_random":
+            beam = wang_candidate_random_beam(env, node, MODE_TX)
+        else:
+            raise ValueError(f"Unsupported external beam executor: {executor}")
+        beams.append(int(beam))
+    return beams
 
 
 def uniform_tx_rx_mode(env: MarlNeighborDiscoveryEnv) -> str:

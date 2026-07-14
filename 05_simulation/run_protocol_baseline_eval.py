@@ -17,6 +17,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
+from isac_nd_sim.evaluation_timeline import (  # noqa: E402
+    discovery_curve_summary,
+    discovery_timeline_rows,
+)
 from isac_nd_sim.runner import stable_protocol_offset, with_metric_aliases  # noqa: E402
 from isac_nd_sim.phy_sensing import SENSING_MEASUREMENT_MODES  # noqa: E402
 from isac_nd_sim.simulator import NeighborDiscoverySimulator  # noqa: E402
@@ -58,6 +62,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sensing-period-slots", type=int, default=None)
     parser.add_argument("--sensing-measurement-mode", choices=SENSING_MEASUREMENT_MODES, default=None)
     parser.add_argument("--slot-metric-period", type=int, default=0)
+    parser.add_argument(
+        "--collect-discovery-timeline",
+        action="store_true",
+        help="Write censored edge first-discovery rows and cumulative-curve metrics.",
+    )
     parser.add_argument(
         "--target-status-diagnostics",
         action="store_true",
@@ -148,6 +157,7 @@ def run_protocol_eval(protocol: str, cfg: SimulationConfig, args: argparse.Names
     output.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, Any]] = []
     resource_rows: list[dict[str, Any]] = []
+    timeline_rows: list[dict[str, Any]] = []
     offset = stable_protocol_offset(protocol)
     for episode in range(int(args.eval_episodes)):
         scenario_seed = int(args.seed) + episode
@@ -160,6 +170,16 @@ def run_protocol_eval(protocol: str, cfg: SimulationConfig, args: argparse.Names
             collect_target_status_metrics=bool(args.target_status_diagnostics),
         )
         row = with_metric_aliases(simulator.run_episode(episode).as_dict(), cfg.n_nodes)
+        if bool(args.collect_discovery_timeline):
+            row.update(discovery_curve_summary(simulator))
+            timeline_rows.extend(
+                discovery_timeline_rows(
+                    simulator,
+                    eval_episode=episode,
+                    scenario_seed=scenario_seed,
+                    method=method_name(protocol),
+                )
+            )
         row.update(
             {
                 "phase": "eval_stochastic",
@@ -176,6 +196,8 @@ def run_protocol_eval(protocol: str, cfg: SimulationConfig, args: argparse.Names
         write_rows(output / "eval_episode_metrics.csv", rows)
     write_rows(output / "eval_episode_metrics.csv", rows)
     write_rows(output / "resource_log.csv", resource_rows)
+    if bool(args.collect_discovery_timeline):
+        write_rows(output / "edge_discovery_timeline.csv", timeline_rows)
     manifest = build_manifest(protocol, cfg, args, output, rows)
     (output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
@@ -244,8 +266,14 @@ def build_manifest(
         "stochastic": protocol != "skyorbs_like_skip_scan",
         "eval_both": False,
         "target_status_diagnostics": bool(args.target_status_diagnostics),
+        "collect_discovery_timeline": bool(args.collect_discovery_timeline),
         "final_eval": rows[-1] if rows else {},
-        "files": ["eval_episode_metrics.csv", "resource_log.csv", "manifest.json"],
+        "files": [
+            "eval_episode_metrics.csv",
+            "resource_log.csv",
+            *(["edge_discovery_timeline.csv"] if bool(args.collect_discovery_timeline) else []),
+            "manifest.json",
+        ],
     }
 
 

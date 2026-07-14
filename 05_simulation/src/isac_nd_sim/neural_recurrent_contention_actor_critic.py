@@ -218,6 +218,7 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         beam_temperature: float = 1.0,
         gate_temperature: float = 1.0,
         role_rng: np.random.Generator | None = None,
+        forced_beam_indices: Sequence[int] | None = None,
     ) -> PolicyStep:
         del gate_temperature
         torch = self.torch
@@ -241,7 +242,15 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
         self._recurrent_state = next_state.detach()
         sample_beam_logits = _temperature_scaled_logits(beam_logits, beam_temperature)
         beam_dist = self._beam_distribution(sample_beam_logits)
-        if deterministic:
+        if forced_beam_indices is not None:
+            if len(forced_beam_indices) != len(observations):
+                raise ValueError("forced_beam_indices must match the agent count.")
+            beam_idx = torch.as_tensor(
+                list(forced_beam_indices), dtype=torch.long, device=self.device
+            )
+            if bool(((beam_idx < 0) | (beam_idx >= self.n_beams)).any()):
+                raise ValueError("forced_beam_indices contains an out-of-range beam.")
+        elif deterministic:
             beam_idx = torch.argmax(beam_logits, dim=-1)
         else:
             beam_idx = beam_dist.sample()
