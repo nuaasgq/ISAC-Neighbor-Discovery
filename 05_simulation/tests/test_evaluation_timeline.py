@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from isac_nd_sim.config import load_config
+from isac_nd_sim.evaluation_candidate_pool import candidate_pool_snapshot
 from isac_nd_sim.evaluation_timeline import discovery_curve_summary, discovery_timeline_rows
 from isac_nd_sim.marl_env import MarlNeighborDiscoveryEnv
 from isac_nd_sim.neural_recurrent_contention_actor_critic import (
     RecurrentContentionGraphActorCritic,
 )
+from isac_nd_sim.simulator import Action
 
 
 def test_discovery_timeline_records_found_and_censored_edges() -> None:
@@ -68,3 +71,31 @@ def test_recurrent_policy_conditions_role_on_forced_executed_beams() -> None:
     with pytest.raises(ValueError, match="out-of-range"):
         policy.reset_recurrent_state(env.n_agents)
         policy.act(observations, forced_beam_indices=[-1, 5])
+
+
+def test_candidate_pool_snapshot_separates_support_from_offline_truth_labels() -> None:
+    cfg = load_config("05_simulation/configs/sanity_planar_n2_b45_ideal.yaml")
+    env = MarlNeighborDiscoveryEnv(cfg, candidate_source="residual_table")
+    observations, _ = env.reset(seed=20)
+    true_beam_0 = env._sim.beam_from_to(0, 1)
+    true_beam_1 = env._sim.beam_from_to(1, 0)
+    for node, beam in ((0, true_beam_0), (1, true_beam_1)):
+        mask = np.zeros(cfg.n_beams, dtype=np.float32)
+        mask[beam] = 1.0
+        observations[node]["candidate_mask"] = mask
+
+    row = candidate_pool_snapshot(
+        env._sim,
+        observations,
+        [Action("tx", true_beam_0), Action("rx", true_beam_1)],
+        eval_episode=0,
+        scenario_seed=20,
+        slot=0,
+        method="test",
+    )
+
+    assert row["candidate_count_mean"] == 1.0
+    assert row["positive_beam_recall"] == 1.0
+    assert row["undiscovered_pair_beam_retention"] == 1.0
+    assert row["selected_candidate_compliance"] == 1.0
+    assert row["selected_undiscovered_beam_rate"] == 1.0

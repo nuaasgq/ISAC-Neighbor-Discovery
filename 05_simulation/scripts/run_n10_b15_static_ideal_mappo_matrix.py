@@ -74,6 +74,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile", choices=tuple(PROFILES), default="smoke")
     parser.add_argument("--run-root", type=Path, default=None)
     parser.add_argument("--seeds", default=",".join(str(seed) for seed in DEFAULT_SEEDS))
+    parser.add_argument("--methods", default=",".join(METHOD_SPECS))
     parser.add_argument("--torch-threads", type=int, default=1)
     parser.add_argument("--max-parallel", type=int, default=1)
     parser.add_argument("--skip-completed", action="store_true")
@@ -86,6 +87,16 @@ def parse_seeds(text: str) -> tuple[int, ...]:
     if not seeds or len(set(seeds)) != len(seeds):
         raise ValueError("--seeds must contain distinct integers.")
     return seeds
+
+
+def parse_methods(text: str) -> tuple[str, ...]:
+    methods = tuple(part.strip() for part in text.split(",") if part.strip())
+    if not methods or len(methods) != len(set(methods)):
+        raise ValueError("--methods must contain distinct method names.")
+    unknown = sorted(set(methods).difference(METHOD_SPECS))
+    if unknown:
+        raise ValueError(f"Unknown methods: {', '.join(unknown)}")
+    return methods
 
 
 def default_run_root(profile: str) -> Path:
@@ -226,8 +237,13 @@ def training_command(
     return command
 
 
-def validate_matrix_contract(commands: list[list[str]], seeds: tuple[int, ...]) -> None:
-    expected = len(METHOD_SPECS) * len(seeds)
+def validate_matrix_contract(
+    commands: list[list[str]],
+    seeds: tuple[int, ...],
+    methods: tuple[str, ...] | None = None,
+) -> None:
+    selected_methods = methods or tuple(METHOD_SPECS)
+    expected = len(selected_methods) * len(seeds)
     if len(commands) != expected:
         raise ValueError(f"Expected {expected} commands, received {len(commands)}.")
     for command in commands:
@@ -277,6 +293,7 @@ def limited_cpu_environment(threads: int) -> dict[str, str]:
 def main() -> None:
     args = parse_args()
     seeds = parse_seeds(args.seeds)
+    methods = parse_methods(args.methods)
     if args.torch_threads < 1:
         raise ValueError("--torch-threads must be positive.")
     if not 1 <= args.max_parallel <= 2:
@@ -286,9 +303,9 @@ def main() -> None:
     commands = [
         training_command(args.profile, run_root, method, seed, args.torch_threads)
         for seed in seeds
-        for method in METHOD_SPECS
+        for method in methods
     ]
-    validate_matrix_contract(commands, seeds)
+    validate_matrix_contract(commands, seeds, methods)
 
     pending: list[list[str]] = []
     for command in commands:

@@ -20,6 +20,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from isac_nd_sim.config import SimulationConfig, load_config  # noqa: E402
+from isac_nd_sim.evaluation_candidate_pool import candidate_pool_snapshot  # noqa: E402
 from isac_nd_sim.evaluation_timeline import (  # noqa: E402
     discovery_curve_summary,
     discovery_timeline_rows,
@@ -184,6 +185,14 @@ def parse_args() -> argparse.Namespace:
         help="Write censored edge first-discovery rows and cumulative-curve metrics.",
     )
     parser.add_argument(
+        "--collect-candidate-pool-timeline",
+        action="store_true",
+        help=(
+            "Write per-slot candidate-set diagnostics. True topology is used only for offline "
+            "retention/error labels and is never added to actor observations or actions."
+        ),
+    )
+    parser.add_argument(
         "--condition-role-on-executed-beam",
         action="store_true",
         help=(
@@ -304,6 +313,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     )
     resource_rows: list[dict[str, Any]] = []
     timeline_rows: list[dict[str, Any]] = []
+    candidate_pool_rows: list[dict[str, Any]] = []
     eval_rows = evaluate_policy(
         cfg,
         policy,
@@ -315,11 +325,14 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
         progress_dir=output,
         resource_rows=resource_rows,
         timeline_rows=timeline_rows,
+        candidate_pool_rows=candidate_pool_rows,
     )
     write_rows(output / "eval_episode_metrics.csv", eval_rows)
     write_rows(output / "resource_log.csv", resource_rows)
     if bool(args.collect_discovery_timeline):
         write_rows(output / "edge_discovery_timeline.csv", timeline_rows)
+    if bool(args.collect_candidate_pool_timeline):
+        write_rows(output / "candidate_pool_timeline.csv", candidate_pool_rows)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "scope": "marl_transfer_evaluation",
@@ -417,12 +430,14 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
             "rich_info": bool(getattr(args, "full_step_info", False)),
             "target_status_diagnostics": bool(getattr(args, "target_status_diagnostics", False)),
             "collect_discovery_timeline": bool(args.collect_discovery_timeline),
+            "collect_candidate_pool_timeline": bool(args.collect_candidate_pool_timeline),
         },
         "final_eval": eval_rows[-1] if eval_rows else {},
         "files": [
             "eval_episode_metrics.csv",
             "resource_log.csv",
             *(["edge_discovery_timeline.csv"] if bool(args.collect_discovery_timeline) else []),
+            *(["candidate_pool_timeline.csv"] if bool(args.collect_candidate_pool_timeline) else []),
             "manifest.json",
         ],
     }
@@ -530,6 +545,7 @@ def ensure_resource_args(args: argparse.Namespace) -> None:
         "full_step_info": False,
         "target_status_diagnostics": False,
         "collect_discovery_timeline": False,
+        "collect_candidate_pool_timeline": False,
         "condition_role_on_executed_beam": False,
         "no_resume": False,
         "resource_log_period": 500,
@@ -711,6 +727,9 @@ def evaluation_fingerprint(
         "mode_executor": str(args.mode_executor),
         "target_status_diagnostics": bool(getattr(args, "target_status_diagnostics", False)),
         "collect_discovery_timeline": bool(getattr(args, "collect_discovery_timeline", False)),
+        "collect_candidate_pool_timeline": bool(
+            getattr(args, "collect_candidate_pool_timeline", False)
+        ),
         "condition_role_on_executed_beam": bool(
             getattr(args, "condition_role_on_executed_beam", False)
         ),
@@ -733,12 +752,25 @@ def evaluate_policy(
     progress_dir: Path | None = None,
     resource_rows: list[dict[str, Any]] | None = None,
     timeline_rows: list[dict[str, Any]] | None = None,
+    candidate_pool_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows = (
         existing_eval_rows(progress_dir, str(args._evaluation_fingerprint))
         if progress_dir is not None and not bool(args.no_resume)
         else []
     )
+    if rows and progress_dir is not None:
+        if bool(getattr(args, "collect_discovery_timeline", False)) and timeline_rows is not None:
+            timeline_rows.extend(
+                required_existing_rows(progress_dir / "edge_discovery_timeline.csv")
+            )
+        if (
+            bool(getattr(args, "collect_candidate_pool_timeline", False))
+            and candidate_pool_rows is not None
+        ):
+            candidate_pool_rows.extend(
+                required_existing_rows(progress_dir / "candidate_pool_timeline.csv")
+            )
     args._resume_existing_rows = len(rows)
     completed = {
         (str(row.get("phase", "")), int(row.get("eval_episode", -1)))
@@ -809,6 +841,21 @@ def evaluate_policy(
                         args,
                         beams_already_executed=forced_beams is not None,
                     )
+                    if bool(getattr(args, "collect_candidate_pool_timeline", False)):
+                        if candidate_pool_rows is None:
+                            raise ValueError("Candidate-pool diagnostics require an output row collector.")
+                        candidate_pool_rows.append(
+                            candidate_pool_snapshot(
+                                env._sim,
+                                observations,
+                                executed_actions,
+                                eval_episode=episode,
+                                scenario_seed=seed,
+                                slot=slot,
+                                method=str(args.ablation_label or args.policy_ablation),
+                                phase=phase,
+                            )
+                        )
                     observations, reward, _terminated, truncated, _info = env.step(executed_actions)
                     rewards.append(torch_module.as_tensor(reward, dtype=torch_module.float32))
                     slot += 1
@@ -859,6 +906,13 @@ def evaluate_policy(
                 rows.append(row)
                 if progress_dir is not None:
                     write_rows(progress_dir / "eval_episode_metrics.csv", rows)
+                    if bool(getattr(args, "collect_discovery_timeline", False)):
+                        write_rows(progress_dir / "edge_discovery_timeline.csv", timeline_rows or [])
+                    if bool(getattr(args, "collect_candidate_pool_timeline", False)):
+                        write_rows(
+                            progress_dir / "candidate_pool_timeline.csv",
+                            candidate_pool_rows or [],
+                        )
                     progress = {
                         "updated_at": datetime.now().isoformat(timespec="seconds"),
                         "evaluation_fingerprint": str(args._evaluation_fingerprint),
@@ -1175,6 +1229,19 @@ def existing_eval_rows(progress_dir: Path, expected_fingerprint: str) -> list[di
             return list(csv.DictReader(handle))
     except OSError:
         return []
+
+
+def required_existing_rows(path: Path) -> list[dict[str, Any]]:
+    if not path.exists() or path.stat().st_size == 0:
+        raise RuntimeError(
+            f"Cannot resume evaluation because the requested diagnostic file is missing: {path}. "
+            "Use a new output directory or pass --no-resume."
+        )
+    try:
+        with path.open("r", newline="", encoding="utf-8-sig") as handle:
+            return list(csv.DictReader(handle))
+    except OSError as exc:
+        raise RuntimeError(f"Cannot read diagnostic rows from {path}.") from exc
 
 
 def main() -> None:

@@ -468,6 +468,23 @@ class RecurrentContentionGraphActorCritic(ContentionGraphActorCritic):
 
         return Categorical(probs=self._beam_probabilities(beam_logits))
 
+    def _regularize_stochastic_support(self, mode_logits, beam_logits, tensors: dict):
+        """Apply the role floor once; recurrent beam mixing happens in the distribution."""
+
+        del tensors
+        if self.role_probability_floor > 0.0:
+            allowed = self.torch.isfinite(mode_logits) & (mode_logits > -1.0e8)
+            allowed_count = allowed.sum(dim=-1, keepdim=True).clamp(min=1)
+            epsilon = self.torch.clamp(
+                allowed_count.to(mode_logits.dtype) * self.role_probability_floor,
+                max=1.0,
+            )
+            probabilities = self.torch.softmax(mode_logits, dim=-1)
+            uniform = allowed.to(mode_logits.dtype) / allowed_count.to(mode_logits.dtype)
+            probabilities = (1.0 - epsilon) * probabilities + epsilon * uniform
+            mode_logits = self.torch.log(probabilities.clamp_min(1.0e-12))
+        return mode_logits, beam_logits
+
     def _step_from_state(self, observations: Sequence[dict], recurrent_state, *, hard_mask: bool):
         if not observations:
             raise ValueError("A recurrent policy step requires at least one observation.")

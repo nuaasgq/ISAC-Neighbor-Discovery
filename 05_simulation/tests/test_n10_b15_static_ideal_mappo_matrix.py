@@ -61,3 +61,17 @@ def test_formal_profile_is_300k_environment_steps_and_50_eval_episodes() -> None
     module = load_launcher()
     assert module.PROFILES["formal"]["episodes"] * 300 == 300_000
     assert module.PROFILES["formal"]["eval_episodes"] == 50
+
+
+def test_method_subset_supports_a_fair_targeted_retrain(tmp_path: Path) -> None:
+    module = load_launcher()
+    methods = module.parse_methods("mappo_direct_isac")
+    commands = [
+        module.training_command("smoke", tmp_path, method, seed, 1)
+        for seed in (59260713, 59261722)
+        for method in methods
+    ]
+
+    module.validate_matrix_contract(commands, (59260713, 59261722), methods)
+    assert methods == ("mappo_direct_isac",)
+    assert len(commands) == 2

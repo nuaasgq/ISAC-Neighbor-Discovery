@@ -444,6 +444,35 @@ def test_recurrent_beam_uniform_mixture_is_part_of_policy_distribution() -> None
     )
 
 
+def test_recurrent_candidate_mask_survives_single_uniform_mixture() -> None:
+    torch = pytest.importorskip("torch")
+    policy = RecurrentContentionGraphActorCritic(
+        4,
+        hidden_dim=16,
+        use_candidate_mask=True,
+        action_contract="joint_role_beam",
+        beam_uniform_mixture=0.1,
+        azimuth_cells=4,
+        elevation_cells=1,
+        disabled_modes=("sense", "idle"),
+    )
+    mode_logits = torch.zeros((1, 4))
+    beam_logits = torch.tensor([[100.0, -100.0, -1.0e9, -1.0e9]])
+    candidate_mask = torch.tensor([[1.0, 1.0, 0.0, 0.0]])
+
+    _mode_logits, regularized_beams = policy._regularize_stochastic_support(
+        mode_logits,
+        beam_logits,
+        {"candidate_mask": candidate_mask},
+    )
+    probabilities = policy._beam_probabilities(regularized_beams)
+
+    assert probabilities[0, 0].item() == pytest.approx(0.95, abs=1.0e-6)
+    assert probabilities[0, 1].item() == pytest.approx(0.05, abs=1.0e-6)
+    assert probabilities[0, 2].item() == pytest.approx(0.0, abs=1.0e-8)
+    assert probabilities[0, 3].item() == pytest.approx(0.0, abs=1.0e-8)
+
+
 def test_antisymmetric_role_head_learns_orientation_without_fixing_tx_side() -> None:
     torch = pytest.importorskip("torch")
     cfg = replace(
