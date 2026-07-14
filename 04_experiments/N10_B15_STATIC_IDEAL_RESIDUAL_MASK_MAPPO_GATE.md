@@ -4,7 +4,11 @@
 
 - Artifact type: experiment contract
 - Created: 2026-07-14
-- Verification status: IN_PROGRESS
+- Verification status: ANALYZED
+- Gate decision: PASS for a 1,000-episode, three-seed formal run
+- Pilot training: 100/100 episodes, seed `59262731`
+- Paired evaluation: 50/50 scenarios, seeds `61262731--61262780`
+- Result package: `06_analysis/n10_b15_static_ideal_residual_mask_gate_20260714`
 - Configuration: `05_simulation/configs/n10_b15_static_ideal_isac.yaml`
 - Launcher: `05_simulation/scripts/run_n10_b15_static_ideal_residual_mask_mappo.py`
 
@@ -53,6 +57,11 @@ rate alone does not establish an RL contribution. Promotion to a 1,000-episode, 
 requires a repeatable improvement over residual candidate random in early discovery or curve AUC
 without materially reducing its final coverage. Direct-ISAC MAPPO remains the no-hard-mask neural
 comparator.
+
+The single-seed pilot passed this computational gate: Residual-mask MAPPO achieved 99.64% final
+discovery and 0.711 curve AUC, compared with 100.00% and 0.676 for residual candidate random.
+Its paired-scenario AUC improvement was 0.035 with a descriptive 95% interval of [0.020, 0.051].
+This interval conditions on one trained seed and does not establish training-seed robustness.
 
 ## Pilot Command
 
