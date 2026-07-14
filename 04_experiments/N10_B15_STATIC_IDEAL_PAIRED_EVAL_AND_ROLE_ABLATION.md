@@ -4,8 +4,9 @@
 
 - Artifact type: experiment contract
 - Created: 2026-07-14
-- Verification status: IN_PROGRESS
-- Paired evaluation: running (24 method-seed combinations planned)
+- Verification status: PARTIALLY_ANALYZED
+- Paired evaluation: completed (24/24 method-seed combinations; 1,200 episodes)
+- Paired analysis: `06_analysis/n10_b15_static_ideal_paired_eval_20260714`
 - Independent-role ablation: running (seed 59262731)
 - Configuration: `05_simulation/configs/n10_b15_static_ideal_isac.yaml`
 - Training source: `05_simulation/results_raw/n10_b15_static_ideal_mappo_formal_3seed`

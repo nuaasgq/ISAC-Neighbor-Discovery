@@ -308,8 +308,9 @@ def configure_plotting() -> Any:
             "axes.grid": True,
             "grid.alpha": 0.22,
             "figure.figsize": (8, 6),
-            "figure.dpi": 160,
-            "savefig.bbox": "tight",
+            "figure.dpi": 150,
+            "savefig.dpi": 150,
+            "savefig.bbox": None,
         }
     )
     return plt
@@ -317,7 +318,7 @@ def configure_plotting() -> Any:
 
 def plot_discovery_curves(rows: list[dict[str, Any]], output: Path) -> None:
     plt = configure_plotting()
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, 6), constrained_layout=True)
     main_methods = (
         "uniform_random",
         "wang2025_isac_tables",
@@ -359,7 +360,7 @@ def plot_action_ablation(summary: list[dict[str, Any]], output: Path) -> None:
     available = [method for method in methods if method in lookup]
     values = [100.0 * lookup[method]["discovery_rate_mean"] for method in available]
     errors = [100.0 * lookup[method]["discovery_rate_seed_sd"] for method in available]
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, 6), constrained_layout=True)
     x = np.arange(len(available))
     ax.bar(x, values, yerr=errors, capsize=4, color=[COLORS[method] for method in available])
     ax.set_xticks(x, [METHOD_LABELS[method] for method in available], rotation=18, ha="right")
@@ -408,7 +409,7 @@ def training_and_auxiliary_diagnostics(train_root: Path, output: Path) -> list[d
             )
 
     plt = configure_plotting()
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, 6), constrained_layout=True)
     for method in (
         "mappo_no_isac",
         "mappo_direct_isac",
@@ -438,12 +439,32 @@ def training_and_auxiliary_diagnostics(train_root: Path, output: Path) -> list[d
 
 def write_report(
     output: Path,
+    eval_root: Path,
     counts: dict[str, int],
     summary: list[dict[str, Any]],
     paired: list[dict[str, Any]],
     diagnostics: list[dict[str, Any]],
 ) -> None:
     lookup = {row["method"]: row for row in summary}
+
+    def contrast(comparator: str, metric: str) -> dict[str, Any]:
+        return next(
+            row
+            for row in paired
+            if row["reference"] == "mappo_direct_isac"
+            and row["comparator"] == comparator
+            and row["metric"] == metric
+        )
+
+    direct = lookup["mappo_direct_isac"]
+    auxiliary = lookup["mappo_direct_isac_measurement_aux"]
+    wang_final = contrast("wang2025_isac_tables", "discovery_rate")
+    wang_auc = contrast("wang2025_isac_tables", "discovery_curve_auc_normalized")
+    candidate_final = contrast("isac_candidate_pool_random", "discovery_rate")
+    candidate_auc = contrast("isac_candidate_pool_random", "discovery_curve_auc_normalized")
+    role_delta = contrast("random_role_learned_beam", "discovery_rate")
+    beam_delta = contrast("learned_role_uniform_beam", "discovery_rate")
+    aux_auc = contrast("mappo_direct_isac_measurement_aux", "discovery_curve_auc_normalized")
     lines = [
         "## Material Passport",
         "",
@@ -455,7 +476,7 @@ def write_report(
         "",
         "## Validation Report",
         "",
-        f"- Source: `{DEFAULT_EVAL_ROOT}`",
+        f"- Source: `{eval_root}`",
         "- Overall Confidence: CAUTION",
         "- Design: three trained seeds, 50 paired held-out scenarios per seed",
         "",
@@ -477,6 +498,30 @@ def write_report(
         )
     lines.extend(
         [
+            "",
+            "### Primary Interpretation",
+            "",
+            f"- Against Wang2025, Direct-ISAC MAPPO is {abs(100.0 * wang_final['reference_minus_comparator']):.2f} pp lower "
+            f"at 300 slots, but its discovery-curve AUC is {wang_auc['reference_minus_comparator']:.3f} higher "
+            f"(descriptive 95% hierarchical-bootstrap interval "
+            f"[{wang_auc['hierarchical_bootstrap_ci95_low']:.3f}, "
+            f"{wang_auc['hierarchical_bootstrap_ci95_high']:.3f}]). The supported claim is faster early discovery, "
+            "not better final coverage.",
+            f"- Against local residual-table candidate random, Direct-ISAC MAPPO is "
+            f"{abs(100.0 * candidate_final['reference_minus_comparator']):.2f} pp lower at 300 slots. Its AUC "
+            f"difference is {candidate_auc['reference_minus_comparator']:.3f} with interval "
+            f"[{candidate_auc['hierarchical_bootstrap_ci95_low']:.3f}, "
+            f"{candidate_auc['hierarchical_bootstrap_ci95_high']:.3f}]; this experiment does not establish "
+            "an advantage over the strong local candidate-pool rule.",
+            f"- Replacing only the learned role with uniform TX/RX reduces discovery by "
+            f"{100.0 * role_delta['reference_minus_comparator']:.2f} pp. Replacing only the learned beam with a "
+            f"uniform beam reduces discovery by {100.0 * beam_delta['reference_minus_comparator']:.2f} pp. "
+            "Beam selection is the dominant learned component, while role learning provides a smaller incremental gain.",
+            f"- The measurement auxiliary has AUC {auxiliary['discovery_curve_auc_normalized_mean']:.3f} versus "
+            f"{direct['discovery_curve_auc_normalized_mean']:.3f} for Direct-ISAC MAPPO, but the paired AUC interval "
+            f"for Direct minus auxiliary [{aux_auc['hierarchical_bootstrap_ci95_low']:.3f}, "
+            f"{aux_auc['hierarchical_bootstrap_ci95_high']:.3f}] crosses zero and auxiliary seed SD is "
+            f"{100.0 * auxiliary['discovery_rate_seed_sd']:.2f} pp. It is not a robust primary method yet.",
             "",
             "### Statistical Boundary",
             "",
@@ -532,7 +577,7 @@ def main() -> None:
     write_csv(output / "training_generalization_diagnostics.csv", diagnostics)
     plot_discovery_curves(curves, output)
     plot_action_ablation(summary, output)
-    write_report(output, counts, summary, paired, diagnostics)
+    write_report(output, args.eval_root.resolve(), counts, summary, paired, diagnostics)
     print(f"wrote {output}")
 
 
