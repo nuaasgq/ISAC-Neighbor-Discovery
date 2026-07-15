@@ -1,0 +1,23 @@
+{
+  "input": "C:\\Users\\\u6c88\u9ad8\u9752\\Documents\\\u901a\u611f\u4e00\u4f53\u5316\u8f85\u52a9\u7684\u7a84\u6ce2\u675f\u90bb\u5c45\u53d1\u73b0\u65b9\u6cd5\u7814\u7a76\\05_simulation\\results_raw\\paper_main_n10_b15_paired_eval_50ep",
+  "output": "C:\\Users\\\u6c88\u9ad8\u9752\\Documents\\\u901a\u611f\u4e00\u4f53\u5316\u8f85\u52a9\u7684\u7a84\u6ce2\u675f\u90bb\u5c45\u53d1\u73b0\u65b9\u6cd5\u7814\u7a76\\06_analysis\\paper_main_n10_b15_paired_eval_20260715",
+  "training_seeds": [
+    69260715,
+    69261724,
+    69262733
+  ],
+  "evaluation_seed_start": 79260715,
+  "evaluation_scenarios": 50,
+  "pairing_unit": "scenario after averaging three training seeds",
+  "files": [
+    "aggregate_metrics.csv",
+    "paired_deltas.csv",
+    "paper_main_discovery_vs_slot.pdf",
+    "paper_main_discovery_vs_slot.png",
+    "paper_main_final_rate_delay.pdf",
+    "paper_main_final_rate_delay.png",
+    "per_scenario_metrics.csv",
+    "training_seed_summary.csv",
+    "validation_report.md"
+  ]
+}
